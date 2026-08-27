@@ -78,15 +78,32 @@ return [
          * day — sent to a creator's EXISTING supporters. `birthday:remind` is
          * scheduled daily and no-ops (with a log line) while this is false.
          * Named exactly as the brief names it.
+         *
+         * 🚨 DEFAULT TRUE SINCE 26 Aug 2026 (client decision). The feature is
+         * ON in every environment that does not explicitly turn it off — there
+         * is no env var to set, and none is wanted. `DISCOVERY_BIRTHDAY_REMINDERS`
+         * still overrides, so `=false` is the kill switch if it ever has to stop.
+         *
+         * ⚠️ NOTHING SENDS WITHOUT `queue:work` — the fan-out is queued per
+         * recipient. A flag that is on with no worker running looks exactly like
+         * a flag that is off.
          */
-        'birthday_reminders' => env('DISCOVERY_BIRTHDAY_REMINDERS', false),
+        'birthday_reminders' => env('DISCOVERY_BIRTHDAY_REMINDERS', true),
 
         /*
          * The Monday "Birthdays This Week" campaign to supporters AND creators,
          * one copy per person. `birthday:weekly` is scheduled Mondays and
          * no-ops while this is false.
+         *
+         * 🚨 DEFAULT TRUE SINCE 26 Aug 2026 (client decision), same as the
+         * reminders above. This is the platform's LARGEST fan-out — every account
+         * with an address — so `DISCOVERY_BIRTHDAYS_THIS_WEEK=false` remains the
+         * way to stop it without a deploy.
+         *
+         * ⚠️ It still refuses to send below `collection_min_creators`, so a week
+         * with too few opted-in birthdays sends nothing however this flag reads.
          */
-        'birthdays_this_week' => env('DISCOVERY_BIRTHDAYS_THIS_WEEK', false),
+        'birthdays_this_week' => env('DISCOVERY_BIRTHDAYS_THIS_WEEK', true),
 
         /*
          * How many opted-in, eligible creators must have a birthday in the week
@@ -161,9 +178,32 @@ return [
         'creator_search' => 'live',
         'public_wishes' => 'live',
         'promo_placements' => 'live',
-        'similar_creators' => 'coming_soon',
-        'more_creators' => 'coming_soon',
-        'new_creator_collections' => 'coming_soon',
+        /*
+         * ✅ LIVE 26 Aug 2026 — Phase 3 and the Discover rebuild between them put
+         * all three of these on a surface a visitor actually sees. Verified by
+         * following each claim to the code that renders it, not to a service
+         * method that exists: a collection nothing draws is not a live capability,
+         * which is the standard `hidden_gems` was flipped under.
+         *
+         *   similar_creators        CreatorRecommendationService::SLOT_SIMILAR →
+         *                           pickSimilar(), drawn with the "Similar creator"
+         *                           chip in Components/discovery/MoreCreators.jsx on
+         *                           every public profile; plus the `similar_creators`
+         *                           collection on payment success (ThankYouController).
+         *   more_creators           AuthenticatedSessionController sends the
+         *                           `more_creators` prop → Dashboard.jsx renders
+         *                           <MoreCreators> at the foot of every public profile.
+         *   new_creator_collections Discover's own "New and verified" rail, plus the
+         *                           `new_creators` collection on Discover search and
+         *                           on payment success.
+         *
+         * ⚠️ `more_creators` was scheduled for Mon 31 Aug and shipped on 20 Aug. The
+         * schedule is not the gate — "is it live in the product" is — and the only
+         * direction that costs us is claiming something that is not.
+         */
+        'similar_creators' => 'live',
+        'more_creators' => 'live',
+        'new_creator_collections' => 'live',
         /*
          * ✅ LIVE 21 AUG 2026 — Discovery Phase 5 built the collection and
          * Phase 6 put it on the homepage, inside `CreatorShowcase`. Flipped in
@@ -172,14 +212,45 @@ return [
          * ships first would claim a capability nobody has.
          */
         'hidden_gems' => 'live',
-        'trending' => 'coming_soon',
+        /*
+         * ✅ LIVE 26 Aug 2026 — Discover draws its own "Trending creators" rail
+         * (Pages/discover/Discover.jsx), ranked by DiscoveryService::rankedCreatorIds
+         * on real signals; the `trending` collection also renders on Discover search.
+         */
+        'trending' => 'live',
         'almost_funded' => 'live',   // As hidden_gems — same collection service, same surface.
         'new_wishes' => 'coming_soon',
         'personalised' => 'coming_soon',
 
         // Block 2 — We'll Promote You
         'sitewide_promotion' => 'live',
-        'birthday' => 'coming_soon',
+        /*
+         * ✅ LIVE 26 Aug 2026. It was COMING SOON for one reason only — the two
+         * sending flags defaulted false, so `birthday:remind` and `birthday:weekly`
+         * ran daily and reported "WOULD be sent. Nothing sent." Both now default
+         * TRUE (client decision, see the `birthday` block above), so that reason is
+         * gone and holding the label would under-claim a shipped feature.
+         *
+         * 🚨 ONE KEY DRIVES ALL SEVEN OF THIS BLOCK'S LABELS, so every one was
+         * checked before flipping — a key cannot be half true:
+         *   "7 days before" / "1 day before" / "on your birthday"
+         *        BirthdayDiscoveryService::STAGES = [7, 1, 0], scheduled 09:30
+         *   "Weekly Birthdays This Week email"
+         *        birthday:weekly, scheduled 09:45
+         *   "Sent to both creators and supporters"
+         *        SendBirthdaysThisWeek selects User::query() with NO role filter —
+         *        every account with an address, creators included
+         *   "Up to 10 creators featured each week"
+         *        discovery.birthday.max_featured = 10, read by featuredCreators()
+         *   "Full Birthdays This Week Discover collection"
+         *        /discover/birthdays — never flag-gated, answers to the DATA
+         *
+         * ⚠️ Live does not mean loud. Nothing sends without `queue:work`; the weekly
+         * still refuses below `collection_min_creators`; and a creator appears only
+         * with `birthday_discovery_opt_in` set, which defaults FALSE. A thin week is
+         * a data state, not a broken capability.
+         */
+        'birthday' => 'live',
         'campaigns' => 'coming_soon',
 
         // Block 3 — Bring Supporters Back
@@ -187,9 +258,22 @@ return [
         'supporter_reminders' => 'live',
         'creator_push' => 'live',
         'deeper_reminders' => 'coming_soon',
-        'reengagement' => 'coming_soon',
+        /*
+         * ✅ LIVE 26 Aug 2026 — `reactivation:notify` is scheduled daily at 10:15
+         * (Console/Kernel.php, not flag-gated) and `ReactivationReminder` builds every
+         * creator link through DiscoverySources::profileUrl(..., 'personalised'), so
+         * the re-engagement mail is literally Discovery-linked. That tagging is what
+         * the claim says, and it is what the ledger records.
+         */
+        'reengagement' => 'live',
         'content_recommendations' => 'coming_soon',
-        'new_wish_reminders' => 'coming_soon',
+        /*
+         * ✅ LIVE 26 Aug 2026 — `CreatorContentObserver` (registered in
+         * AppServiceProvider) has `WishItem` in its MAP and calls
+         * CreatorEventNotifier::notifyFollowers when a wish goes live, gated on the
+         * moderation flags so a held item never notifies.
+         */
+        'new_wish_reminders' => 'live',
         'activity_notifications' => 'coming_soon',
 
         /*

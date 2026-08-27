@@ -151,12 +151,21 @@ class PromoCodeRedemptionTest extends TestCase
             ->assertJson(['status' => false, 'msg' => "That code isn't valid."]);
     }
 
-    /** Unauthenticated and it answers "does this code exist?" — so it is rate limited. */
+    /**
+     * Unauthenticated and it answers "does this code exist?" — so it is rate limited.
+     *
+     * ⚠️ Asserts THAT a throttle is applied, never which numbers. The figures are a
+     * tuning decision and have already moved once (20/min → 40/min, 26 Aug 2026);
+     * pinning them makes an ordinary adjustment fail a test that is really about the
+     * limit existing at all.
+     */
     public function test_the_code_check_is_throttled(): void
     {
-        $this->assertContains(
-            'throttle:20,1',
-            app('router')->getRoutes()->getByName('checkCouponCode')->gatherMiddleware()
+        $middleware = app('router')->getRoutes()->getByName('checkCouponCode')->gatherMiddleware();
+
+        $this->assertNotEmpty(
+            array_filter($middleware, fn ($m) => is_string($m) && str_starts_with($m, 'throttle:')),
+            'check-coupon-code must carry a throttle — it is an unauthenticated code-guessing oracle.'
         );
     }
 }

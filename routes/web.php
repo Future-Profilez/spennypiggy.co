@@ -39,6 +39,7 @@ use App\Http\Controllers\DeliveriesController;
 use App\Http\Controllers\EmailPreferenceController;
 use App\Http\Controllers\ErrorController;
 use App\Http\Controllers\FeatureSuggestionController;
+use App\Http\Controllers\GrowthBonusController;
 use App\Http\Controllers\GuestPurchaseController;
 use App\Http\Controllers\GuestSupportTicketController;
 use App\Http\Controllers\HealthController;
@@ -62,6 +63,7 @@ use App\Http\Controllers\ThankYouController;
 use App\Http\Controllers\VideoPosterController;
 use App\Models\FeatureSuggestion;
 use App\Models\FounderBonus;
+use App\Models\GrowthBonusProfile;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Services\Discovery\CollectionService;
@@ -249,6 +251,31 @@ Route::get('/', function (DiscoveryService $discoveryService) {
         return max(0, $maxSeats - $used);
     });
 
+    /*
+     * Growth Bonus figures for the landing page. NULL while the scheme is dark,
+     * and the component keys on that — never on the JS constants mirror, which
+     * is always importable and would advertise a /growth-bonus that 404s.
+     */
+    $growthBonus = null;
+    if (config('growth_bonus.enabled')) {
+        $ladder = (array) config('growth_bonus.ladder', []);
+        $maxSeats = (int) config('growth_bonus.limits.max_seats', 150);
+        $claimed = Cache::remember(
+            'growth_bonus_seats_claimed_v1',
+            300,
+            fn () => GrowthBonusProfile::seatsClaimed(),
+        );
+
+        $growthBonus = [
+            'maxTotal' => array_sum(array_column($ladder, 'amount')),
+            'activationGmv' => (float) config('growth_bonus.activation.threshold_gmv', 100),
+            'firstReward' => (float) ($ladder[0]['amount'] ?? 0),
+            'windowDays' => (int) config('growth_bonus.activation.window_days', 30),
+            'maxSeats' => $maxSeats,
+            'seatsRemaining' => max(0, $maxSeats - $claimed),
+        ];
+    }
+
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
@@ -262,6 +289,7 @@ Route::get('/', function (DiscoveryService $discoveryService) {
             'currencySymbol' => config('founder_bonus.display.currency_symbol'),
             'founderSpotsRemaining' => $founderSpots,
         ],
+        'growthBonus' => $growthBonus,
         // Load cached creator lists directly for the homepage showcase
         'trendingCreators' => $trendingCreators(),
         'newVerifiedCreators' => $newVerifiedCreators(),
@@ -436,47 +464,57 @@ Route::get('/giftstore', function () {
     return Inertia::render('rye/GiftStore');
 })->name('giftStore');
 
-Route::get('/creators', function () {
-    return Inertia::render('creators/Index');
-})->name('creators');
+/*
+ * The paid-ads landing pages, and the only routes on the site that are
+ * server-rendered. `ssr` (App\Http\Middleware\EnableSsr) turns Inertia SSR on
+ * for guests on these routes alone — the rest of the app stays client-rendered,
+ * because nothing else here is crawled and SSR costs a round trip to the render
+ * host. Every new /creators page belongs INSIDE this group; without it the page
+ * is an empty shell to Google and to link previews.
+ */
+Route::middleware('ssr')->group(function () {
+    Route::get('/creators', function () {
+        return Inertia::render('creators/Index');
+    })->name('creators');
 
-Route::get('/creators/stripe-safe', function () {
-    return Inertia::render('creators/StripeSafe');
-})->name('creators.stripe-safe');
+    Route::get('/creators/stripe-safe', function () {
+        return Inertia::render('creators/StripeSafe');
+    })->name('creators.stripe-safe');
 
-Route::get('/creators/keep-100', function () {
-    return Inertia::render('creators/Keep100');
-})->name('creators.keep-100');
+    Route::get('/creators/keep-100', function () {
+        return Inertia::render('creators/Keep100');
+    })->name('creators.keep-100');
 
-Route::get('/creators/features', function () {
-    return Inertia::render('creators/Features');
-})->name('creators.features');
+    Route::get('/creators/features', function () {
+        return Inertia::render('creators/Features');
+    })->name('creators.features');
 
-Route::get('/creators/disputes', function () {
-    return Inertia::render('creators/Disputes');
-})->name('creators.disputes');
+    Route::get('/creators/disputes', function () {
+        return Inertia::render('creators/Disputes');
+    })->name('creators.disputes');
 
-Route::get('/creators/founder-bonus', function () {
-    return Inertia::render('creators/FounderBonus');
-})->name('creators.founder-bonus');
+    Route::get('/creators/founder-bonus', function () {
+        return Inertia::render('creators/FounderBonus');
+    })->name('creators.founder-bonus');
 
-// A2 — the Discovery ad landing page. It reads the SAME label map as the
-// homepage Discovery section, so the two pages can never disagree about which
-// capabilities are live (see config/discovery.php).
-Route::get('/creators/discovery', function () {
-    return Inertia::render('creators/Discovery', [
-        'discovery' => DiscoveryPayload::forInertia(),
-    ]);
-})->name('creators.discovery');
+    // A2 — the Discovery ad landing page. It reads the SAME label map as the
+    // homepage Discovery section, so the two pages can never disagree about which
+    // capabilities are live (see config/discovery.php).
+    Route::get('/creators/discovery', function () {
+        return Inertia::render('creators/Discovery', [
+            'discovery' => DiscoveryPayload::forInertia(),
+        ]);
+    })->name('creators.discovery');
 
-// A3 — the Link in Bio ad landing page. Reads the same label map, which is why
-// its sections 3 and 6 correctly show COMING SOON until the B stream ships the
-// direct-checkout bio page (see config/discovery.php, `bio_direct_sales`).
-Route::get('/creators/link-in-bio', function () {
-    return Inertia::render('creators/LinkInBio', [
-        'discovery' => DiscoveryPayload::forInertia(),
-    ]);
-})->name('creators.link-in-bio');
+    // A3 — the Link in Bio ad landing page. Reads the same label map, which is why
+    // its sections 3 and 6 correctly show COMING SOON until the B stream ships the
+    // direct-checkout bio page (see config/discovery.php, `bio_direct_sales`).
+    Route::get('/creators/link-in-bio', function () {
+        return Inertia::render('creators/LinkInBio', [
+            'discovery' => DiscoveryPayload::forInertia(),
+        ]);
+    })->name('creators.link-in-bio');
+});
 
 // Route::post('test-stripe', function (Request $request) {
 //     $request = json_encode($request->all());
@@ -507,16 +545,16 @@ if (app()->environment('local')) {
 // which is a code-guessing oracle. A person typing their own code needs a handful of
 // attempts; a script working through a keyspace needs thousands.
 Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])
-    ->middleware('throttle:20,1')
+    ->middleware('throttle:40,1')
     ->name('checkCouponCode');
 // ⚠️ Both answer "is this username/email already taken?" to anyone. The register
 // form calls them per keystroke (debounced), so they need a limit that a real
 // signup never reaches but a scraper does.
 Route::post('/username-availablity', [RegisteredUserController::class, 'checkUsername'])
-    ->middleware('throttle:60,1')
+    ->middleware('throttle:120,1')
     ->name('check.username');
 Route::post('/register/validate', [RegisteredUserController::class, 'validateRegistration'])
-    ->middleware('throttle:60,1')
+    ->middleware('throttle:120,1')
     ->name('register.validate');
 
 Route::get('/dashboard', function (Request $request) {
@@ -1144,6 +1182,20 @@ Route::get('/cover-banners', fn () => response()->json(PresetCovers::forPicker()
     ->header('Cache-Control', 'public, max-age=3600'))
     ->middleware(['auth', 'throttle:30,1'])
     ->name('cover-banners');
+
+/*
+| Creator Growth Bonus — the ladder, the rules, and a signed-in creator's own
+| progress. Public: it is advertised on the landing page, so a logged-out
+| visitor deciding whether to sign up has to be able to read it.
+|
+| 404s while `growth_bonus.enabled` is false (guard in the controller), so the
+| scheme stays dark until the client's terms are published.
+|
+| ⚠️ Single-segment path, so it MUST stay above the auth.php require or the
+| profile catch-all reads `growth-bonus` as a username.
+*/
+Route::get('/growth-bonus', [GrowthBonusController::class, 'index'])
+    ->name('growth.bonus');
 
 /*
 | Sign-up waitlist — the lead we used to throw away.

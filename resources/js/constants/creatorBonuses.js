@@ -29,6 +29,36 @@ export const FOUNDER = {
     monthlyCap: 1000,
 };
 
+/**
+ * config/growth_bonus.php — the milestone ladder, first 150 creators.
+ *
+ * 🚨 THESE ARE GROSS CUSTOMER-SPEND THRESHOLDS, NOT EARNINGS. Unlike FOUNDER
+ * (net) and FAST_START (a rate on net), the Growth Bonus is measured on what the
+ * customer spends before the platform fee — so a creator at the £100 rung has
+ * received roughly £79. Every surface printing these must say "sales" or
+ * "customer spend", never "earn £100".
+ *
+ * ⚠️ The live figures are served as props by `GrowthBonusController` wherever a
+ * page can ask the server. This mirror exists for the marketing surfaces that
+ * render without one, and must be kept in step with `config/growth_bonus.php`.
+ */
+export const GROWTH = {
+    /** limits.max_seats */
+    seats: 150,
+    /** activation.threshold_gmv — GROSS customer spend, GBP-equivalent */
+    activationGmv: 100,
+    /** activation.window_days, from Stripe Connect activation */
+    windowDays: 30,
+    /** The sum of the ladder's increments */
+    maxTotal: 1000,
+    /** The first rung's reward */
+    firstReward: 25,
+    /** ladder length */
+    milestones: 11,
+    /** expiry_months, from activation */
+    expiryMonths: 12,
+};
+
 /** config/fast_start_bonus.php — bonus.flat_rate */
 export const FAST_START = {
     rate: 0.05,

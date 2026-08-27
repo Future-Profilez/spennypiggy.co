@@ -9,11 +9,24 @@ import Magnetic from '@/Components/animations/Magnetic';
 // docblock says it: "A number that is wrong here is a number in an advert." The
 // homepage is the biggest advert on the site and was the one page not reading it.
 // One of the eight was materially wrong — see the Founder card below.
-import { FOUNDER, FAST_START, REFERRAL, money, percent } from '@/constants/creatorBonuses';
+import { FOUNDER, FAST_START, GROWTH, REFERRAL, money, percent } from '@/constants/creatorBonuses';
 
-export default function EarnMoreAnnouncement({ founderBonus }) {
+export default function EarnMoreAnnouncement({ founderBonus, growthBonus }) {
     const spotsRemaining = founderBonus?.founderSpotsRemaining;
     const maxSeats = founderBonus?.maxFounderSeats ?? 150;
+
+    /* 🚨 THE WHOLE BLOCK IS GATED ON THE SERVER PROP, not on the constants.
+       `GROWTH` is a mirror of the config and is always importable, so keying on
+       it would advertise the scheme while `growth_bonus.enabled` is false — and
+       /growth-bonus 404s in that state, which is a CTA into nothing. The prop is
+       only sent when the feature is live. */
+    const growthLive = !!growthBonus;
+    const growthTotal = growthBonus?.maxTotal ?? GROWTH.maxTotal;
+    const growthSpend = growthBonus?.activationGmv ?? GROWTH.activationGmv;
+    const growthReward = growthBonus?.firstReward ?? GROWTH.firstReward;
+    const growthWindow = growthBonus?.windowDays ?? GROWTH.windowDays;
+    const growthLeft = growthBonus?.seatsRemaining;
+    const growthSeats = growthBonus?.maxSeats ?? GROWTH.seats;
 
     return (
         <section
@@ -48,6 +61,86 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                         </p>
                     </FadeIn>
                 </div>
+
+                {/* ── Creator Growth Bonus — the lead offer ──
+                    🚨 ONE ELEMENT, NOT TWO. The brief asks for a landing-page callout AND a
+                    card in the Bonuses section; drawn as two they would be the same offer
+                    stated twice in one scroll, which is precisely why `ReferEarnAnnouncement`
+                    and `StablecoinTipsAnnouncement` were removed from this page. A full-width
+                    lead card above the three is the callout and the card.
+
+                    ⚠️ The £100 is the creator's LISTED SALE VALUE — a £100 listing counts as
+                    £100 (client decision, 26 Aug 2026; terms clause 2.1). It was gross
+                    customer spend until then, when this block was careful to say "sales"
+                    rather than "earn"; all three cards on this screen now share a base. */}
+                {growthLive && (
+                    <div className="px-2 md:px-4 mb-6 md:mb-10">
+                        <FadeIn y={20} duration={0.6}>
+                        <div className="bg-[#8C52FF] border-black rounded-box p-6 md:p-10 relative">
+                            <div className="flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-10">
+                                <div className="lg:flex-1">
+                                    <span className="inline-block bg-black text-white font-black px-3 py-1 uppercase tracking-widest text-[11px] rounded-box-xs mb-4">
+                                        New · Growth Bonus
+                                    </span>
+                                    <h3 className="text-3xl md:text-5xl font-gulfs text-black uppercase leading-none mb-3">
+                                        Earn up to {money(growthTotal)}<br />as you grow
+                                    </h3>
+                                    <p className="text-black/75 text-base md:text-xl leading-snug max-w-xl">
+                                        Earn {money(growthSpend)} within your first {growthWindow} days
+                                        and we add {money(growthReward)}. Keep hitting milestones and unlock up
+                                        to {money(growthTotal)} in total.
+                                    </p>
+                                </div>
+
+                                {/* The first step, worked. "Up to £1,000" is the last of eleven
+                                    rungs and needs £25,000 of sales behind it — quoted alone it
+                                    reads as a sign-up reward. */}
+                                <div className="lg:w-[280px] shrink-0 bg-[#E6EA7B] border-black rounded-box-sm p-5">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-black/60 mb-3">
+                                        Your first step
+                                    </p>
+                                    <div className="flex items-baseline justify-between gap-3 mb-2">
+                                        <span className="text-black/70 font-bold uppercase text-xs">You earn</span>
+                                        <span className="font-gulfs text-2xl text-black">{money(growthSpend)}</span>
+                                    </div>
+                                    {/* 🚨 THE RULE IS INLINE, NOT `border-t-2 border-black`.
+                                        `resources/css/index.css` redefines `.border-black` as the
+                                        full `border: 2px solid` SHORTHAND, so pairing it with a
+                                        side utility draws a box on ALL FOUR sides — which is
+                                        exactly what shipped here: the "We add £25" row rendered
+                                        as a framed box instead of a divider. An inline border
+                                        cannot be dropped or widened by the compiler. */}
+                                    <div
+                                        className="flex items-baseline justify-between gap-3 pt-3 mt-1"
+                                        style={{ borderTop: "2px solid #000" }}
+                                    >
+                                        <span className="text-black font-black uppercase text-xs">We add</span>
+                                        <span className="font-gulfs text-2xl text-black">{money(growthReward)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex flex-wrap items-center gap-3">
+                                <Link
+                                    href="/growth-bonus"
+                                    className="inline-flex min-h-[48px] items-center gap-2 bg-black text-white font-black py-3 px-6 rounded-box-sm uppercase tracking-wide transition-[filter] duration-200 hover:brightness-125 active:brightness-90"
+                                >
+                                    See the milestones
+                                    <FaArrowRight />
+                                </Link>
+                                {/* ⚠️ A real count, not copy — it is the figure the seat claim
+                                    enforces. Absent rather than invented when the server did
+                                    not send one. */}
+                                {typeof growthLeft === "number" && (
+                                    <span className="inline-flex items-center bg-black/10 text-black font-black px-4 py-2 rounded-full uppercase tracking-widest text-xs">
+                                        {Math.max(0, growthLeft)} of {growthSeats} places left
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        </FadeIn>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 md:gap-y-10 px-2 md:px-4">
                     <StaggerItem index={0} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>

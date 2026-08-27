@@ -1,7 +1,9 @@
 import { FaSearchPlus } from "react-icons/fa";
 import spennys from "../../../assets/img/spennys.png";
 import Lightbox from '../../includes/Lightbox'
-import WishlistShowcase from './WishlistShowcase';
+// TEMPORARILY OFF (26 Aug 2026) — the floating "What you sell" card showcase.
+// Import stays so re-enabling is one uncomment, not a re-import.
+// import WishlistShowcase from './WishlistShowcase';
 import ScrollX from '@/Components/animations/ScrollX';
 import Parallax from '@/Components/animations/Parallax';
 import Reveal3D from '@/Components/animations/Reveal3D';
@@ -20,9 +22,15 @@ export default function LiveBarSection() {
        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         </div>
 
+      {/* TEMPORARILY OFF (26 Aug 2026) — WishlistShowcase, the floating card
+          showcase. The wrapper is commented out WITH it: left in place it is an
+          empty container still paying `pt-6 lg:pt-10`, which reads as a spacing
+          bug in the section above rather than as a removed block. */}
+      {/*
       <div className="relative container px-4 mx-auto pt-6 lg:pt-10">
         <WishlistShowcase />
       </div>
+      */}
 
 
     <div className='w-full livebarsections-hidden relative'>

@@ -1074,6 +1074,11 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         return $this->hasMany(FounderBonus::class, 'creator_id');
     }
 
+    public function growthBonusProfile()
+    {
+        return $this->hasOne(GrowthBonusProfile::class, 'creator_id');
+    }
+
     /**
      * Get current month founder bonus
      */

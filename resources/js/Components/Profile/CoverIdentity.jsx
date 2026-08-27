@@ -11,6 +11,7 @@ import {
     FaRedditAlien,
     FaFacebookF,
     FaTumblr,
+    FaTiktok,
 } from "react-icons/fa6";
 import userphoto from "../../../assets/siteicon.png";
 import lazyRetry from "@/utils/lazyRetry";
@@ -27,6 +28,23 @@ const SOCIALS = [
         key: "twitter",
         Icon: FaXTwitter,
         base: "https://twitter.com/",
+        classes: "bg-black",
+    },
+    /*
+     * 🚨 TikTok was MISSING from this list while being one of the three
+     * platforms verification is performed against (SocialLinks::ACCEPTED_PLATFORMS).
+     * A creator whose only handle was TikTok rendered no icon at all — the row
+     * existed, the admin had approved it, and their profile showed nothing.
+     * Nothing errors on a key this map does not carry.
+     *
+     * ⚠️ The `@` belongs in the base, not the stored value: the signup form saves
+     * a BARE handle (`App\Support\SocialHandle::normalise` strips it) while
+     * Creator Studio saves the canonical URL, and both have to build the same link.
+     */
+    {
+        key: "tiktok",
+        Icon: FaTiktok,
+        base: "https://tiktok.com/@",
         classes: "bg-black",
     },
     { key: "youtube", Icon: FaYoutube, base: "", classes: "bg-[#FF0000]" },

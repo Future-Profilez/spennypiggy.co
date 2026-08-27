@@ -19,6 +19,23 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- The `sentry` log channel is in the default stack, so without this an
+             expected-failure test would file a real issue in the production Sentry
+             project. An empty DSN makes the channel a no-op. -->
+        <!--
+            🚨 SSR IS OFF IN TESTS, AND THE URL IS WHAT TURNS IT OFF.
+            `EnableSsr::willRender()` answers false with no render host, which
+            keeps `StaticPageSeoMiddleware` in charge of the social tags on the
+            /creators routes. Without this the answer depends on whether the
+            machine running the suite happens to have `bootstrap/ssr/ssr.js`
+            built — present locally, absent in CI — so AdPageSocialCardTest
+            would pass or fail on a build artefact rather than on this code.
+            It also stops any test making a real HTTP call to a render host.
+            Same reasoning as the blanked Sentry DSN above.
+        -->
+        <env name="SSR_URL" value=""/>
+        <env name="SENTRY_LARAVEL_DSN" value=""/>
+        <env name="SENTRY_DSN" value=""/>
         <!--
             Analytics is OFF outside production (config/analytics.php), so the
             test suite has to turn it ON or every analytics test would pass by

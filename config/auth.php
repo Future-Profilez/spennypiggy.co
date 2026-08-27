@@ -120,4 +120,18 @@ return [
 
     'password_timeout' => 10800,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Sign-up attempts per hour, per IP
+    |--------------------------------------------------------------------------
+    |
+    | Read by the `register` rate limiter in RouteServiceProvider. This counts
+    | ATTEMPTS, including ones the form rejected — the cap on actual accounts is
+    | RegisteredUserController::store's 3-per-IP check plus the device cookie.
+    | Keep it high enough that a person correcting a typo never reaches it.
+    |
+    */
+
+    'register_attempts_per_hour' => (int) env('REGISTER_ATTEMPTS_PER_HOUR', 60),
+
 ];

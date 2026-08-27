@@ -127,6 +127,42 @@ class NotificationDispatcher
         }
     }
 
+    /**
+     * Give a claim back after the send it was taken for FAILED.
+     *
+     * 🚨 A CLAIM IS A PROMISE THAT THE MAIL WENT OUT. `claim()` is deliberately
+     * taken BEFORE the send (claiming afterwards leaves a window in which a crash
+     * re-sends), which means a send that then throws leaves a row saying
+     * "delivered" behind a mail nobody received — and every later run skips that
+     * person on the strength of it. The failure is logged and then made permanent.
+     *
+     * ⚠️ CALLERS RUN THIS INSIDE A `catch`, so it MUST NOT THROW. A second
+     * exception there would replace the real one and the original failure would
+     * never be logged at all. Failing to release is the lesser evil: it leaves
+     * exactly the un-retryable claim we had before this method existed.
+     *
+     * ⚠️ Release only where a retry can actually happen — a command whose next run
+     * would re-select the same person. Releasing a claim nothing will ever look at
+     * again buys nothing and costs a write.
+     */
+    public static function releaseClaim(int $userId, string $type, string $dedupKey): void
+    {
+        try {
+            EngagementNotification::query()
+                ->where('user_id', $userId)
+                ->where('type', $type)
+                ->where('dedup_key', $dedupKey)
+                ->delete();
+        } catch (\Throwable $e) {
+            Log::warning('Could not release a notification claim after a failed send', [
+                'user_id' => $userId,
+                'type' => $type,
+                'dedup_key' => $dedupKey,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     /** In-app bell. Marketing-class bell entries are gated by push consent. */
     private function allowsBell(User $user, bool $marketing): bool
     {

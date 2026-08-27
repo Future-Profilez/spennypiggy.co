@@ -1,5 +1,25 @@
 id: 54327
 name: SpennyPiggy
+
+# 🚨 THIS is the ignore list Vapor reads — `Manifest::ignoredFiles()` returns
+# `vapor.yml`'s top-level `ignore` key and NOTHING ELSE.
+#
+# ⚠️ `.vaporignore` IN THIS REPO IS DEAD. This CLI version never opens that file
+# (grep vendor/laravel/vapor-cli for "vaporignore" — no hits), so every line in
+# it has always been inert. It is left in place rather than half-ported; porting
+# it is a separate, deliberate decision, because entries that suddenly START
+# working can break a build — `composer.lock`, for one, is needed by the
+# `composer install` build step.
+#
+# `bootstrap/ssr` is the local Inertia SSR build: ~55MB of chunks and source
+# maps written by `npm run ssr:build`. Nothing on the Lambda executes it (the
+# render happens on the EC2 SSR host), and uploading it took the artefact from
+# ~251MB to ~306MB against Lambda's hard 262MB ceiling — every deploy then
+# failed with "Function code combined with layers exceeds the maximum allowed
+# size". Patterns are matched by RemoveIgnoredFiles::parsePattern, which splits
+# on the last "/", so a nested directory path works.
+ignore:
+  - bootstrap/ssr
 environments:
   development:
     memory: 2048
@@ -41,6 +61,24 @@ environments:
       # build:production = vite build + sw:build. Plain `npm run build` skips the
       # service worker, so every deploy shipped the PWA without a fresh SW.
       - "npm run build:production"
+      # 🚨 A MARKER FILE, NOT THE BUNDLE — AND IT IS REQUIRED.
+      #
+      # Inertia\Ssr\BundleDetector does a plain file_exists() on the path in
+      # config('inertia.ssr.bundle') before it will call the render host at all,
+      # and returns null if it is missing — so a deploy without this line
+      # disables SSR silently, with no error anywhere.
+      #
+      # ⚠️ It must NOT be the real bundle. Nothing on this Lambda ever executes
+      # it (Lambda cannot host the long-running Node process an Inertia SSR
+      # server needs — that is the whole reason for the EC2 host), while
+      # `npm run ssr:build` writes ~55MB of chunks and source maps into the
+      # deployment artefact. This package already sits around 254MB against
+      # Lambda's hard 262MB ceiling, so that step failed the deploy outright:
+      # "Function code combined with layers exceeds the maximum allowed size".
+      #
+      # The bundle that actually renders is built locally and deployed to the
+      # EC2 host via S3 — see the redeploy recipe in CLAUDE.md.
+      - "printf 'Marker only. Inertia BundleDetector requires this path to exist before it will call the SSR host. The bundle that renders lives on the EC2 SSR host, not here. See vapor.yml and config/inertia.php.\\n' > bootstrap/inertia-ssr.marker"
       - "rm -rf node_modules/.DS_Store || true"
       - "rm -rf node_modules || rm -rf node_modules"
       # - "rd /s /q node_modules"
@@ -104,6 +142,24 @@ environments:
       # build:production = vite build + sw:build. Plain `npm run build` skips the
       # service worker, so every deploy shipped the PWA without a fresh SW.
       - "npm run build:production"
+      # 🚨 A MARKER FILE, NOT THE BUNDLE — AND IT IS REQUIRED.
+      #
+      # Inertia\Ssr\BundleDetector does a plain file_exists() on the path in
+      # config('inertia.ssr.bundle') before it will call the render host at all,
+      # and returns null if it is missing — so a deploy without this line
+      # disables SSR silently, with no error anywhere.
+      #
+      # ⚠️ It must NOT be the real bundle. Nothing on this Lambda ever executes
+      # it (Lambda cannot host the long-running Node process an Inertia SSR
+      # server needs — that is the whole reason for the EC2 host), while
+      # `npm run ssr:build` writes ~55MB of chunks and source maps into the
+      # deployment artefact. This package already sits around 254MB against
+      # Lambda's hard 262MB ceiling, so that step failed the deploy outright:
+      # "Function code combined with layers exceeds the maximum allowed size".
+      #
+      # The bundle that actually renders is built locally and deployed to the
+      # EC2 host via S3 — see the redeploy recipe in CLAUDE.md.
+      - "printf 'Marker only. Inertia BundleDetector requires this path to exist before it will call the SSR host. The bundle that renders lives on the EC2 SSR host, not here. See vapor.yml and config/inertia.php.\\n' > bootstrap/inertia-ssr.marker"
       - "rm -rf node_modules/.DS_Store || true"
       - "rm -rf node_modules || rm -rf node_modules"
       # ── Caches LAST, so nothing below rebuilds or clears them again ──

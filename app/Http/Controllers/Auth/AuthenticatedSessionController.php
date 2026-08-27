@@ -28,6 +28,7 @@ use App\Services\UserProfileService;
 use App\Support\Badges;
 use App\Support\DiscoveryPayload;
 use App\Support\DiscoverySources;
+use App\Support\GrowthBonusPanelPayload;
 use App\Support\OpportunityPanelPayload;
 use App\Support\SubscriptionPayload;
 use App\TwitterAuthService;
@@ -505,6 +506,21 @@ class AuthenticatedSessionController extends Controller
                         $user,
                         strtoupper(request()->cookie('currency', $user->default_currency ?? 'GBP'))
                     )
+                    : null,
+                /*
+                 * Creator Growth Bonus (brief §6) — the creator's own position
+                 * on the milestone ladder.
+                 *
+                 * 🚨 OWNER ONLY, same reasoning as the panel above: this is the
+                 * creator's own progress and the money they are owed, and this
+                 * route is also the public profile.
+                 *
+                 * ⚠️ NULL while the scheme is dark and for a creator with no
+                 * profile row — the widget renders nothing rather than a bar at
+                 * zero, which would advertise a programme they are not in.
+                 */
+                'growth_bonus_panel' => $user->role == 1 && $isOwner
+                    ? GrowthBonusPanelPayload::forDashboard($user)
                     : null,
                 // Discovery Phase 3 — the "More creators to support" row at the
                 // foot of every public creator profile.

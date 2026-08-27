@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CreatorBioLink;
 use App\Models\FastStartBonusPayout;
+use App\Models\GrowthBonusProfile;
 use App\Models\User;
 use App\Support\SubscriptionPlan;
 use App\Support\VerifiedBadge;
@@ -206,6 +207,37 @@ class PromoBannerService
         return $facts;
     }
 
+    /**
+     * Growth Bonus figures, all read from `config/growth_bonus.php` — the same
+     * ladder `GrowthBonusService` walks, so the card and the engine cannot
+     * disagree about what the first step is or what the ceiling is.
+     *
+     * ⚠️ Returns an empty array when the ladder is empty or misconfigured, and
+     * the card falls back to copy rather than printing "£0".
+     *
+     * @return array<string, string>
+     */
+    private function growthBonusFacts(): array
+    {
+        $ladder = (array) config('growth_bonus.ladder', []);
+
+        if ($ladder === []) {
+            return [];
+        }
+
+        $first = $ladder[0];
+        $total = array_sum(array_column($ladder, 'amount'));
+
+        return [
+            'spend' => '£'.number_format((float) $first['gmv'], 0),
+            'reward' => '£'.number_format((float) $first['amount'], 0),
+            'total' => '£'.number_format((float) $total, 0),
+            'window' => (int) config('growth_bonus.activation.window_days', 30).' days',
+            'seats' => (string) (int) config('growth_bonus.limits.max_seats', 150),
+            'steps' => (string) count($ladder),
+        ];
+    }
+
     private function percent(float $rate): string
     {
         return rtrim(rtrim(number_format($rate * 100, 1, '.', ''), '0'), '.').'%';
@@ -290,6 +322,19 @@ class PromoBannerService
                 'price' => SubscriptionPlan::formatted(),
                 'currency' => SubscriptionPlan::currency(),
             ],
+
+            /*
+             * 🚨 THE FIRST RUNG AND THE TOTAL, BOTH DERIVED FROM THE LADDER
+             * `GrowthBonusService` pays against — never typed. "Up to £1,000"
+             * on its own is the same empty promise "5% on top" was: the card
+             * shows the first step, because the first step is the one a creator
+             * can act on today.
+             *
+             * ⚠️ `spend` is the GROSS customer-spend threshold, so the card
+             * labels it as sales. Calling it earnings would overstate what a
+             * creator keeps by the platform fee.
+             */
+            'growth_bonus' => $this->growthBonusFacts(),
 
             default => [],
         };
@@ -378,6 +423,17 @@ class PromoBannerService
 
             'fast_start' => $isCreator && ! $this->hasFastStartBonus($user),
 
+            /*
+             * 🚨 GATED ON THE FEATURE FLAG FIRST. The card's CTA points at
+             * `growth.bonus`, which 404s while the scheme is dark — a promo
+             * whose button leads to a missing page is worse than no promo.
+             *
+             * ⚠️ And only while there is still something to join or climb: a
+             * creator who missed the window, or whose 12 months have run out,
+             * is past this card. Same rule as `verified_badge`.
+             */
+            'growth_bonus' => $isCreator && $this->growthBonusOpen($user),
+
             'free_until_first_sale' => $isCreator
                 && (bool) ($context['free_until_first_sale'] ?? false)
                 && ! (bool) ($context['has_ever_sold'] ?? false),
@@ -442,6 +498,38 @@ class PromoBannerService
         $days = (int) config('founder_bonus.qualification.qualification_period_days', 30);
 
         return Carbon::parse($user->stripe_connected_at)->addDays($days)->isFuture();
+    }
+
+    /**
+     * Is the Growth Bonus still something this creator can act on?
+     *
+     * Dark scheme → no. No profile row yet → yes, they are inside their
+     * activation window by definition (the daily evaluator creates the row;
+     * a creator it has not reached yet is still a candidate). A `missed` or
+     * `expired` profile → no.
+     *
+     * ⚠️ Reads the profile through the relation rather than the service so this
+     * costs one query, not a full ledger recompute — the deck is built on every
+     * Inertia response.
+     */
+    private function growthBonusOpen(User $user): bool
+    {
+        if (! config('growth_bonus.enabled', false)) {
+            return false;
+        }
+
+        if (! app(GrowthBonusService::class)->eligibleForScheme($user)) {
+            return false;
+        }
+
+        $status = GrowthBonusProfile::query()
+            ->where('creator_id', $user->id)
+            ->value('status');
+
+        return ! in_array($status, [
+            GrowthBonusProfile::STATUS_MISSED,
+            GrowthBonusProfile::STATUS_EXPIRED,
+        ], true);
     }
 
     private function hasBioLinks(User $user): bool

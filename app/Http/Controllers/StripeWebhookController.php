@@ -84,6 +84,7 @@ use App\StripeControl as AppStripeControl;
 use App\Support\IdentityFailureReason;
 use App\Support\NotificationContext;
 use App\Support\PayoutDestinationAudit;
+use App\Support\StripeCurrencySync;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -5665,8 +5666,21 @@ class StripeWebhookController extends Controller
             // only — nothing is blocked, and no auth flow is touched.
             $this->observePayoutDestination($account);
 
+            // 🚨 THE CREATOR'S SETTLEMENT CURRENCY IS SYNCED HERE, ON EVERY
+            // account.updated — this is the only place that sees it for a creator
+            // who finished onboarding without landing back on `connectReturn`
+            // (closed the tab, or completed it from the Stripe dashboard). Stripe
+            // decides `default_currency` from the account's COUNTRY and quietly
+            // overrides the one we requested, so `users.default_currency` sat on
+            // its 'GBP' database default while the account settled in NZD/EUR/…
+            // — and that column is the charge currency at cart checkout, the
+            // currency stamped on every new listing, and the payout currency.
+            $creator = User::where('account_id', $account->id)->first();
+            if ($creator) {
+                StripeCurrencySync::apply($creator, $account, 'webhook:account.updated');
+            }
+
             if (($account->charges_enabled ?? false) === true) {
-                $creator = User::where('account_id', $account->id)->first();
                 if ($creator && ! $creator->stripe_connected_at) {
                     $creator->stripe_connected_at = now();
                     $creator->stripe_details_submitted = 1;

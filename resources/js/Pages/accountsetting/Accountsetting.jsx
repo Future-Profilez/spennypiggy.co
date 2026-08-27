@@ -851,6 +851,13 @@ export default function Accountsetting(props) {
                         </div>
 
                         <SettingItem
+                            icon={MailIcon}
+                            title="Communication Preferences"
+                            subtitle="Manage which emails you receive, including marketing and updates"
+                            onClick={() => router.get(route("email.preferences"))}
+                        />
+
+                        <SettingItem
                             icon={History}
                             title="Activity Logs"
                             subtitle="View your audit trail and filter activity entries"

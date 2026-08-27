@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ProfileAssetVisibility;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,6 +12,24 @@ class SocialLinks extends Model
     use HasFactory, SoftDeletes;
 
     protected $dates = ['deleted_at'];
+
+    /**
+     * 🚨 SERIALISED SO THE CLIENT NEVER HAS TO RE-DERIVE "does this creator have a
+     * handle?" — the two answers disagreeing is what shipped a Submit button that
+     * was enabled while the server refused.
+     *
+     * `CreatorVerification.jsx` asked `Object.values(slinks).some(v => v !== null
+     * && v !== "")`, which reads EVERY column on the row — `id`, `user_id`,
+     * `status`, `source`, the timestamps — so a row with all fourteen platforms
+     * blank still answered true. The creator was shown that step ticked, the
+     * button unlocked, and the server refused with a message naming a field their
+     * own screen said was done.
+     *
+     * ⚠️ A mirrored column list in JS would work and would drift the first time a
+     * platform column is added. This is one definition, on the model, read by both
+     * controllers that send this row.
+     */
+    protected $appends = ['has_any_handle'];
 
     /**
      * The platforms a creator may verify against (client decision, 11 Aug 2026).
@@ -77,5 +96,16 @@ class SocialLinks extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * ⚠️ `ProfileAssetVisibility::HANDLE_COLUMNS`, never `ACCEPTED_PLATFORMS`: a
+     * creator verified on a platform that has since been retired still HAS a
+     * handle, and reading their row as empty would treat their next edit as a
+     * first submission rather than a change to something already published.
+     */
+    public function getHasAnyHandleAttribute(): bool
+    {
+        return ProfileAssetVisibility::hasAnyHandle($this);
     }
 }

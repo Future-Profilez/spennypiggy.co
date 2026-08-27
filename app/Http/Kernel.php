@@ -7,6 +7,7 @@ use App\Http\Middleware\CheckGifterCardVerification;
 use App\Http\Middleware\CheckStripeIdentityVerification;
 use App\Http\Middleware\CheckSuspendedUser;
 use App\Http\Middleware\CheckUserBlock;
+use App\Http\Middleware\EnableSsr;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\EnforceEmulationTimeBox;
 use App\Http\Middleware\EnsureCsrfCookie;
@@ -26,6 +27,7 @@ use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\RequireActiveMembership;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\StaticPageSeoMiddleware;
+use App\Http\Middleware\ThrottleRequests;
 use App\Http\Middleware\TrackDiscoveryVisit;
 use App\Http\Middleware\TrackSiteVisit;
 use App\Http\Middleware\TrimStrings;
@@ -46,7 +48,6 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Http\Middleware\SetCacheHeaders;
 use Illuminate\Routing\Middleware\SubstituteBindings;
-use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
@@ -202,6 +203,7 @@ class Kernel extends HttpKernel
         'mustCompletedCardVerification' => CheckGifterCardVerification::class,
         'rye.enabled' => EnsureRyeEnabled::class,
         'sysdiag' => EnsureSystemDiagnosticsAccess::class,
+        'ssr' => EnableSsr::class,
         'membership' => RequireActiveMembership::class,
         'prevent-back-history' => PreventBackHistory::class,
         'check.block' => CheckUserBlock::class,

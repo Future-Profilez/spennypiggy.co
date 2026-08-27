@@ -9,6 +9,8 @@
 .env
 .env.backup
 .env.production
+.env.development
+.env.dev
 .env.testing
 .phpunit.result.cache
 Homestead.json
@@ -32,3 +34,7 @@ yarn-error.log
 # It carries the commit into the Vapor artifact so /health can say what is
 # actually live. Never commit it — a committed stamp is stale on arrival.
 .release
+
+# Inertia SSR build output — 55MB of bundle and source maps, rebuilt by
+# `npm run ssr:build` on every deploy. Never committed.
+/bootstrap/ssr

@@ -82,6 +82,35 @@ return [
             'route' => 'founder.bonus',
         ],
 
+        /*
+         * Creator Growth Bonus — the milestone ladder, first 150 creators.
+         *
+         * ⚠️ Eligibility is in PromoBannerService: hidden entirely while
+         * `growth_bonus.enabled` is false (the card would link at a route that
+         * 404s), and hidden from a creator whose window has closed or whose
+         * programme has expired — a card selling a scheme you can no longer
+         * join is the deck telling you something untrue about your own account,
+         * the same fault `verified_badge` and `birthday_discovery` were fixed
+         * for.
+         *
+         * ⚠️ Headline says "sales", NOT "earnings". Qualifying GMV is gross
+         * customer spend before the platform fee — the one word that stops a
+         * creator reading the threshold as their own take-home.
+         */
+        'growth_bonus' => [
+            'priority' => 10,
+            'layout' => 'ladder',
+            'audience' => 'creator',
+            'ground' => 'violet',
+            'accent' => 'mint',
+            'art' => 'meter',
+            'eyebrow' => 'Growth bonus',
+            'headline' => 'Climb to £1,000 in bonuses',
+            'body' => 'Hit sales milestones and we add a bonus at every step.',
+            'cta' => 'See the ladder',
+            'route' => 'growth.bonus',
+        ],
+
         'fast_start' => [
             'priority' => 9,
             'layout' => 'faststart',

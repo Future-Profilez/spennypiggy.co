@@ -33,6 +33,7 @@ use App\Observers\CreatorContentObserver;
 use App\Observers\DeliverableObserver;
 use App\Services\BioPageService;
 use App\Services\ResourcePreloadService;
+use App\Services\Ssr\TimeoutGateway;
 use App\Support\Testing\OfflineStripeHttpClient;
 use Illuminate\Contracts\Validation\UncompromisedVerifier;
 use Illuminate\Http\Client\Factory as HttpFactory;
@@ -41,6 +42,7 @@ use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\NotPwnedVerifier;
 use Illuminate\Validation\Rules\Password;
+use Inertia\Ssr\Gateway as SsrGateway;
 use Stripe\ApiRequestor;
 use Stripe\HttpClient\CurlClient;
 
@@ -86,10 +88,52 @@ class AppServiceProvider extends ServiceProvider
     ];
 
     /**
+     * Put the `sentry` log channel behind whatever channel this environment logs to.
+     *
+     * A caught exception - `catch { Log::error(...) }`, of which this app has many -
+     * is invisible unless a channel carries it off the box. Adding `sentry` to the
+     * `stack` definition in config/logging.php is not enough on its own: if the
+     * environment sets `LOG_CHANNEL` to anything else (Vapor logs to `stderr`), the
+     * stack is never used and that whole change is silently dead - the exact class of
+     * fault it was written to close.
+     *
+     * So the channel is appended HERE, to whatever the environment actually chose,
+     * rather than trusted to a config default nobody re-checks after a deploy.
+     *
+     * Runs in register() because it must happen before the logger is first resolved.
+     */
+    private function ensureErrorsReachSentry(): void
+    {
+        $default = config('logging.default');
+
+        if ($default === null || config('logging.channels.sentry') === null) {
+            return;
+        }
+
+        $channels = $default === 'stack'
+            ? (array) config('logging.channels.stack.channels', ['single'])
+            : [$default];
+
+        if (in_array('sentry', $channels, true)) {
+            return;
+        }
+
+        $channels[] = 'sentry';
+
+        config([
+            'logging.channels.stack.channels' => $channels,
+            'logging.channels.stack.ignore_exceptions' => false,
+            'logging.default' => 'stack',
+        ]);
+    }
+
+    /**
      * Register any application services.
      */
     public function register(): void
     {
+        $this->ensureErrorsReachSentry();
+
         /*
          * ⚠️ HaveIBeenPwned gets 3 seconds, not Laravel's default 30.
          *
@@ -146,6 +190,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ResourcePreloadService::class, function ($app) {
             return new ResourcePreloadService;
         });
+
+        /*
+         * Inertia's stock SSR gateway posts with no timeout, so it waits the
+         * HTTP default of 30 seconds — half a minute of a 60-second Lambda —
+         * before deciding the render host is down. Ours waits 3 and falls back
+         * to client-side rendering. See App\Services\Ssr\TimeoutGateway.
+         */
+        $this->app->bind(SsrGateway::class, TimeoutGateway::class);
     }
 
     /**

@@ -86,8 +86,15 @@ Route::middleware('guest')->group(function () {
     // has no time window — so a caller could create accounts as fast as the
     // server would answer. Rate limiting is what actually stops someone
     // hammering this endpoint; the email-domain list never could.
+    //
+    // ⚠️ Named limiter, NOT a flat `throttle:10,60` (which this was until
+    // 26 Aug 2026). Every rejected submit consumed one of those ten, so a person
+    // who mistyped an e-mail — or a tester walking the multi-step form — met a
+    // raw 429 on a first real submit. See RouteServiceProvider::boot: off in
+    // local/testing, 30/hour per IP otherwise, and a refusal comes back as a
+    // field error rather than an error page.
     Route::post('register', [RegisteredUserController::class, 'store'])
-        ->middleware('throttle:10,60');
+        ->middleware('throttle:register');
 
     // Sign in / sign up with Google. The callback NEVER creates a user — a new person is sent
     // back to `register` with their verified profile in the session, so the account is still
@@ -225,7 +232,7 @@ Route::withoutMiddleware([VerifyCsrfToken::class])
 // ⚠️ Same oracle as `check-coupon-code`: unauthenticated, and it answers whether a
 // referral code exists. Throttled to match.
 Route::get('/check-referral-code/{code}', [ReferAndEarnController::class, 'checkCreatorReferral'])
-    ->middleware('throttle:20,1');
+    ->middleware('throttle:40,1');
 Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])->name('stripe.identity.verify');
 Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
 Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
@@ -1522,6 +1529,7 @@ Route::controller(StaticPageController::class)->group(function () {
     Route::get('/us-addendum', 'usAddendum')->name('us-addendum');
     Route::get('/copyright-policy', 'copyrightPolicy')->name('copyright-policy');
     Route::get('/fast-start-bonus-terms', 'fastStartBonusTerms')->name('fast-start-bonus-terms');
+    Route::get('/growth-bonus-terms', 'growthBonusTerms')->name('growth-bonus-terms');
     Route::get('/content-payment-policy', 'contentPaymentFramework')->name('content-payment-policy');
     Route::get('/how-spenny-piggy-works', 'howSpennyPiggyWorks')->name('how-spenny-piggy-works');
     Route::post('/accept-terms', 'acceptTerms')->name('accept-terms')->middleware('auth');

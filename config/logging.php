@@ -64,10 +64,43 @@ return [
     */
 
     'channels' => [
+        /*
+         * A CAUGHT EXCEPTION IS INVISIBLE UNLESS A CHANNEL CARRIES IT OFF THE BOX.
+         *
+         * The stack used to be `['single']` alone, i.e. storage/logs/laravel.log,
+         * and on Vapor that is the read-only Lambda filesystem: `vapor tail` can
+         * never show a line written there. Every `catch { Log::error(...) }` in the
+         * app - and there are many - was therefore reporting into nothing, in both
+         * the logs and Sentry, which is how a live profile-save failure could be
+         * seen by creators and by no one else.
+         *
+         * `sentry` fixes that for good: any Log::error/critical/alert/emergency
+         * anywhere in the app becomes a Sentry issue with its context attached, so a
+         * caught exception no longer needs the author to have remembered report().
+         *
+         * Override per environment with LOG_STACK (comma separated). On Vapor set
+         * `LOG_STACK=stderr,sentry` so `vapor tail` works too - `single` is useless
+         * there and only costs a failed write.
+         */
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
+            'channels' => explode(',', (string) env('LOG_STACK', 'single,sentry')),
             'ignore_exceptions' => false,
+        ],
+
+        /*
+         * Level is `error`, NOT the app's LOG_LEVEL (which is `debug` here).
+         * Sentry bills by event and an issue stream carrying every info line is one
+         * nobody reads - the point is that a real failure stands out. Warnings still
+         * arrive as breadcrumbs on the events that matter (sentry.breadcrumbs.logs).
+         *
+         * With no SENTRY_LARAVEL_DSN set - local, and the test suite - this channel
+         * silently does nothing, so it is safe to leave in the default stack.
+         */
+        'sentry' => [
+            'driver' => 'sentry',
+            'level' => env('SENTRY_LOG_LEVEL', 'error'),
+            'bubble' => true,
         ],
 
         'single' => [

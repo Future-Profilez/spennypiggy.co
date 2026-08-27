@@ -238,6 +238,32 @@ Developer Master Plan, 19 Aug 2026, §E. Extends the existing system — nothing
 - **`EmailService::sendCategoryEmail()` now takes `string|array`** and `sendMarketingEmail()` takes an optional third `$alsoRequire`. Both route through the private `categoriesAllow()` — the ONE place consent is decided. An unknown column is **refused**, not ignored: a mistyped category that fell through would send consent-free mail that looks exactly like consent-checked mail.
 - 🚨 **Fixed while here: `sendMarketingEmail` read `! $user->marketing_emails_enabled` with no `?? true`**, so a row predating the column (NULL) read as opted-OUT and was silently skipped — the exact fault this file's own rule warns about, in the platform's largest fan-out.
 - **Both birthday footers now carry TWO links**: the narrowest possible opt-out (`category=birthday_emails_enabled` — stops both birthday sends, nothing else) and "Choose what you hear from us" → the no-login centre. *Stop this one* and *choose what I do want* are different intentions, and a footer offering only the first is what makes people opt out of everything.
+- 🚨 **THE SHARED LAYOUT USED TO ADD A SECOND, WRONGER PAIR UNDERNEATH — fixed 26 Aug 2026.**
+  `email/default-2.blade.php` rendered its own "Manage preferences · Unsubscribe" row
+  unconditionally, so **all ten mails that draw their own footer shipped FOUR links leading
+  to two destinations**, and the layout's two were the wrong two:
+  - 🚨 Its Unsubscribe called `generateUnsubscribeToken($user)` with **no category**, which
+    defaults to `marketing_emails_enabled` **and suppresses the address for all marketing**.
+    On a category-class mail like the birthday reminder that is the wrong switch entirely —
+    so the link labelled "Unsubscribe", the one a reader is likeliest to press, silenced
+    every promotion the person had agreed to **and did not stop the birthday mail at all**.
+  - ⚠️ Its "Manage preferences" was a bare `url('/email-preferences')`, which sits behind
+    `auth` — for a suspended creator, who cannot sign in, precisely the login dead end the
+    SIGNED no-login centre exists to avoid.
+  - **The rule now: the opt-out is the mail's own when it has one; the preference link is
+    always the signed token.** A mail supplying `unsubscribeUrl` gets no second opt-out (it
+    has already drawn one, in its own words). ⚠️ **The two halves are decided separately on
+    purpose** — eight of those ten (`AbandonedCheckoutReminder`, `FinishAddingYourCard`,
+    `PublishYourFirstItem`, `FounderCongratulations`, `PushAlertsNeedChecking`,
+    `ReactivationReminder`, `StockBackInStock`, `SubscriptionPolicyChanged`) draw an opt-out
+    and **no** centre link, so suppressing the whole pair would take the preference centre
+    away from all eight. Only the birthday pair supply both.
+  - ⚠️ **`generateManageToken()` returns NULL when the route is unregistered** (it is called
+    from `Mailable::content()`, where a throw would take the mail down) — the layout guards
+    on null rather than rendering `href=""`.
+  - Tests: `tests/Feature/EmailFooterLinkTest.php` (5). ⚠️ Verified FAILING against the bug
+    first — three of the five flip red when the `@if` is put back to unconditional, and the
+    no-links fallback case correctly stays green as the control.
 - ⚠️ **Admin app needs nothing.** It reads preference columns as raw attributes with `?? true` (`SupporterOutreachController`), casts none of them except `birthday_discovery_opt_in`, and never reads this one. Migration in this app only. ⚠️ Do not confuse `birthday_emails_enabled` (the RECIPIENT's consent to receive birthday mail) with `birthday_discovery_opt_in` (the CREATOR's consent to be shown on Birthday Discovery) — different people, different decisions.
 - Tests: `tests/Feature/EmailPreferenceCentreTest.php` (15), alongside `EmailPreferenceTest` (4) and `CommunicationPreferenceCategoriesTest` (14). `BirthdayDiscoveryTest`'s footer assertion was updated to the narrower category.
 
@@ -285,6 +311,64 @@ Multi-method checkout (July 2026 client spec): supporters pay by **card/wallet (
 - **Bank async completion needs SESSION-level metadata + matching `type`** (critical — only bites bank/SEPA/ACH, card completes via redirect handler): the webhook reads `$event->data->object->metadata` (**session-level**) to route `checkout.session.async_payment_succeeded` to the right processor. Pot/Tip/one-time-Wish checkouts previously set metadata only under `payment_intent_data.metadata` → session-level was empty → webhook couldn't route the delayed bank settlement → payment stuck `processing`, no deliverable, no notification/mail. Fix: pot (`PiggyPotPaymentController`), tip (`tipToJar`), one-time wish (`wishItemSubscribe`) now also set top-level `'metadata' => $paymentIntentData['metadata']` on the session payload (shop/task already did). ALSO: `Helpers::buildStripeMetadata('piggy_pot')` tags `type='piggy_pot_contribution'`, but the webhook checked `=== 'piggy_pot'` — now accepts both. When adding a new one-off checkout, always set session-level metadata whose `type`/`deliverable_type` matches the webhook routing in `handleCheckoutSessionCompleted`, or bank payments silently never fulfil.
 - **Status columns must allow `processing`** (bank/SEPA/ACH in-flight): migration `2026_07_13_000003` widened `piggy_pot_contributions.status` (was a tight `enum('pending','paid','refunded','disputed')` → `varchar(20)`) and added `processing` to the `payments.status` enum — a bank pot payment set `status='processing'` and MySQL threw "Data truncated for column 'status'", surfacing to the buyer as "Something went wrong while verifying the payment." The migration is **MySQL-guarded** (`DB::getDriverName() !== 'mysql'` early-return) so the raw `ALTER … MODIFY` doesn't break the sqlite test DB. `shop_payments`/`tip_goals_payments`/`task_purchases`/`wish_item_subscriptions` status columns are already varchar and fine.
 - New transactions only; historical rows keep `fee_profile` NULL (= card pricing).
+
+## 🚨 The charge currency is the CREATOR's, and it was stuck on GBP (26 Aug 2026, spennypiggy.co)
+
+**Every payment is charged in the creator's own currency** — the rule is written at
+`Auth\CheckoutController:156` (*"Client Requirement: Always charge in Creator's Currency"*)
+and read from `users.default_currency`. The supporter's cookie currency (`global_currency`)
+is DISPLAY ONLY; the GBP-equivalent price limits and the `gbp_amount` reporting column are
+separate again. Three different currencies on one screen — never conflate them.
+
+🚨 **`users.default_currency` IS A MONEY COLUMN AND ITS DATABASE DEFAULT IS `'GBP'`**
+(migration `2023_12_09_150353`). It decides the charge currency at cart checkout, the
+`currency` stamped on every new Shop / Bill / Task / Wish / Piggy Pot listing at save time,
+and **the currency `Risk\PayoutService` issues the payout in**. A creator whose column never
+synced is charged in GBP while their Stripe account settles in NZD/EUR/… — Stripe converts
+it, nothing errors, and the amount the creator expected is not the amount they get.
+
+- 🚨 **THE ONLY SYNC IN THE CODEBASE WAS ONE LINE, INSIDE A GUARD THAT USUALLY CLOSED
+  FIRST.** `connectReturn()` set it inside `if (empty($user->stripe_details_submitted))` —
+  and `handleAccountUpdated` sets `stripe_details_submitted = 1` too, so for any creator
+  whose webhook landed first the guard was shut before they ever returned. It also never
+  ran at all for a creator who finished onboarding and closed the tab, or completed it from
+  the Stripe Express dashboard. `handleAccountUpdated` did not touch the column.
+- 🚨 **STRIPE DECIDES THE CURRENCY; THE ONE WE REQUEST IS A SUGGESTION.** `initConnect`
+  sends `default_currency` derived from the country the creator picked, and Stripe overrides
+  it from the account's own country **without erroring** — an NZ account asked for `gbp`
+  comes back `nzd`. The value is therefore always read BACK off the Account object Stripe
+  returns, never assumed from the request.
+- **`App\Support\StripeCurrencySync::apply($user, $account, $source)` is the one writer**,
+  called from four places: both `initConnect` create paths, `connectReturn` (now OUTSIDE the
+  guard), and **`handleAccountUpdated` on every `account.updated`** — that last one is what
+  covers the creator who never came back.
+  - ⚠️ **An ABSENT `default_currency` is "not known yet", never "reset them to GBP"** —
+    Stripe omits it until the account has a country. A malformed value is refused the same
+    way.
+  - ⚠️ **Compared case-insensitively, so a correct row is not rewritten just to change its
+    case.** Rows written by the old line hold Stripe's lower-case string; `User::
+    getDefaultCurrencyAttribute()` uppercases on READ, so the stored case is invisible from
+    PHP — assert against the raw column, or a test cannot see a needless write at all.
+  - 🚨 **It never throws** — every caller is inside a Stripe webhook or an onboarding
+    redirect. House pattern, same as `PayoutDestinationAudit`. A change is logged at
+    **warning** even on a first fill: this is the line you grep when a payout lands in the
+    wrong currency.
+- **`php artisan stripe:sync-currencies [--dry-run] [--limit=] [--user=]`** repairs existing
+  creators by READING Stripe, one account at a time. 🚨 **It never guesses** — country, the
+  creator's listings and the GBP default are all ignored, and a creator Stripe cannot be
+  asked about is reported and skipped. Run `--dry-run` first.
+- 🚨 **EXISTING LISTINGS ARE NOT RE-PRICED, AND THAT IS DELIBERATE.** Each listing carries
+  its own `currency` column, stamped at save time. After a creator's column is corrected,
+  their old listings keep the currency they were created under while cart checkout reads the
+  new one — so **check a corrected creator's live listings before assuming the job is done**.
+  A number typed under the old assumption does not say which currency it was meant for; only
+  the creator can answer that.
+- ⚠️ **Cross-app: admin.spennypiggy.co only READS this column** (no writes, not `$fillable`
+  there), so no mirror change was needed. But `PayoutRequestController` and
+  `PaymentManagementController` split their payout lists on `default_currency = 'GBP'`, so a
+  correction MOVES that creator from the UK bucket to the international one — which is the
+  right answer, and will look like the figures changed.
+- Tests: `tests/Feature/StripeCurrencySyncTest.php` (6).
 
 ## One ledger, four surfaces — `LedgerRules` (4 Aug 2026, spennypiggy.co)
 
@@ -655,6 +739,76 @@ Developer Master Plan", 19 Aug 2026 (`../docs/client/19 Aug/`).
   rebuild and a release. `DISCOVERY_ANALYTICS_LIVE` (env, default **false**) is the only
   env var this adds. Four flips are already scheduled — analytics (Discovery Phase 2),
   `more_creators` (Mon 31 Aug), `birthday` (Phase 4), `tips` (when Bridge lands).
+- 🚨 **BIRTHDAY SENDING NOW DEFAULTS **ON** — `env(..., true)`, no env var to set
+  (26 Aug 2026, client decision).** `DISCOVERY_BIRTHDAY_REMINDERS` and
+  `DISCOVERY_BIRTHDAYS_THIS_WEEK` shipped defaulting **false**, so `birthday:remind`
+  (09:30) and `birthday:weekly` (09:45) ran every day and reported *"WOULD be sent.
+  Nothing sent."* — a complete feature that had never delivered anything. Both now default
+  **true**: the feature is on in every environment that does not explicitly turn it off.
+  The `birthday` label flipped to `live` in the same change, since the only reason it was
+  COMING SOON was that nothing sent.
+  - 🚨 **ALL SEVEN OF THAT KEY'S LABELS WERE CHECKED BEFORE FLIPPING — a key cannot be
+    half true.** `STAGES = [7, 1, 0]` covers the three reminders; `birthday:weekly` covers
+    the campaign; its audience is `User::query()` with **no role filter**, which is what
+    makes *"Sent to both creators and supporters"* true; `max_featured = 10` backs *"Up to
+    10 creators featured each week"*; and `/discover/birthdays` is never flag-gated.
+  - 🚨 **THE `env()` READ IS THE KILL SWITCH AND IS NOW PINNED AGAINST THE CONFIG SOURCE.**
+    With ON as the default, `DISCOVERY_BIRTHDAYS_THIS_WEEK=false` is the only way to stop
+    the platform's largest fan-out **without a deploy**. ⚠️ The two "sends nothing while
+    the flag is off" tests set the config at RUNTIME, so they prove the commands honour it
+    and prove **nothing** about whether the env var reaches it — verified by replacing the
+    `env()` call with a bare `true` and watching both still pass.
+    `test_both_flags_are_still_overridable_by_env` reads `config/discovery.php` itself.
+  - ⚠️ **`phpunit.xml` sets neither flag**, so the suite runs against the real default.
+    Three tests pinned the old one and were rewritten rather than deleted — a test proving
+    "sends nothing when off" by *relying* on the default proves nothing the day the default
+    moves, which is exactly what happened here.
+  - ⚠️ **Live is not the same as loud.** Nothing sends without `queue:work`; the weekly
+    still refuses below `collection_min_creators` (3); and a creator appears only with
+    `birthday_discovery_opt_in`, which **defaults false** and whose promo-card nudge only
+    shipped 24 Aug. A thin first week is a data state, not a broken capability — **check
+    the opt-in count before reading silence as a fault.**
+- ✅ **SIX KEYS FLIPPED TO LIVE ON 26 Aug 2026**, each traced to the code that
+  **RENDERS** it — never to a service method that merely exists. That is the standard
+  `hidden_gems` was flipped under, and it is the one that matters here: `CollectionService`
+  has answered ten collections since Phase 5, and a collection nothing draws is not a live
+  capability.
+
+  | Key | What backs the claim |
+  |---|---|
+  | `similar_creators` | `CreatorRecommendationService::SLOT_SIMILAR` → the "Similar creator" chip in `MoreCreators.jsx` on every public profile, plus the `similar_creators` collection on payment success |
+  | `more_creators` | `AuthenticatedSessionController` sends the prop → `Dashboard.jsx` renders `<MoreCreators>` at the foot of every public profile |
+  | `new_creator_collections` | Discover's own "New and verified" rail + the `new_creators` collection on search and payment success |
+  | `trending` | Discover's own "Trending creators" rail (`rankedCreatorIds`) + the `trending` collection on search |
+  | `reengagement` | `reactivation:notify` daily 10:15, not flag-gated; `ReactivationReminder` builds every link through `DiscoverySources::profileUrl(…, 'personalised')` — literally Discovery-linked |
+  | `new_wish_reminders` | `CreatorContentObserver` (WishItem in its `MAP`, registered in `AppServiceProvider`) → `CreatorEventNotifier::notifyFollowers`, moderation-gated |
+
+  ⚠️ **`more_creators` was scheduled for Mon 31 Aug and the code shipped 20 Aug.** The
+  schedule was never the gate — "is it live in the product" is — so it left
+  `the_four_scheduled_flips_are_still_pending` early, with its evidence recorded. The only
+  direction that costs us is claiming something that is not live.
+- 🚨 **EIGHT KEYS DELIBERATELY LEFT AT COMING SOON, and the reason is recorded so nobody
+  re-litigates them from the roadmap** — the safe direction is always to under-claim:
+  - **`new_wishes`, `personalised`, `campaigns`** — `CollectionService` answers
+    `new_wishes`, `recommended_for_you` and `spotlight`, and **no surface renders any of
+    them.** The four call sites are the homepage (`hidden_gems`, `almost_funded`), Discover
+    search (`trending`, `hidden_gems`, `new_creators`), Discover landing (`hidden_gems`,
+    `almost_funded`) and payment success (`similar_creators`, `hidden_gems`,
+    `new_creators`). ⚠️ Discover's "Just added" rail is the MIXED FEED across all five
+    modules, not the `new_wishes` collection — it is not evidence for that claim.
+  - ⚠️ **`birthday` WAS ON THIS LIST FOR HALF A DAY AND CAME OFF — see the flag change
+    below.** It was held back for one reason only: both sending flags defaulted false, so
+    the two commands ran daily and reported *"WOULD be sent. Nothing sent."*
+  - **`deeper_reminders`, `content_recommendations`, `activity_notifications`** — 🚩 **copy
+    questions for Jack, not flags.** Each has a plausible live feature behind it and a label
+    that claims MORE than that feature: `content_recommendations` reads "New content
+    recommendations" on A2 and "New-content and new-wish notifications" on A3, and what
+    exists is a follower ALERT (`CreatorContentObserver`), which is a notification, not a
+    recommendation. `activity_notifications` reads "Creator-controlled push with your own
+    notification settings" on A3 — which `CreatorPushService` + the preference categories
+    satisfy exactly — and "**More** personalised creator activity notifications" on A2,
+    where "more" claims something beyond the live `creator_push`. **One key cannot be half
+    true; the two labels have to be settled before it flips.**
 - ⚠️ **Copy still lives in `resources/js/constants/discovery.js`**, the house pattern (see
   `constants/stablecoinTips.js`) — transcribed **word for word** from the brief and reused
   by A2. Items are stored as one flat list carrying a `key`, never their own label, so a
@@ -1387,6 +1541,38 @@ Monday "Birthdays This Week" campaign) and `/discover/birthdays`.
   — **the week only, no creator id** — so supporting eight of that week's creators still
   produces one e-mail. The per-creator REMINDER is deliberately the opposite: one per
   creator, keyed `{creatorId}|{stage}|{year}`.
+- 🚨 **THE REMINDER KEYS ON THE BIRTHDAY DATE, NOT THE YEAR — fixed 26 Aug 2026.**
+  The key was `{creatorId}|{stage}|{year}`, and `birthday_day`/`birthday_month` are
+  **derived from `date_of_birth`**, so a creator correcting a date they mistyped at
+  signup is an ordinary flow. Their corrected birthday arrived already claimed by the
+  reminders the WRONG one had fired, and **every supporter of that creator heard
+  nothing for the rest of the year, on the one date that was right** — nothing wrong
+  in any log. It is `{creatorId}|{stage}|{Y-m-d of the target}` now. ⚠️ A creator has
+  one birthday a year, so for an unchanged date this is the same key the year gave —
+  **the dedup is not loosened**, which is pinned by its own test. What it adds is that
+  a MOVED date is a new send, which it should be: the old e-mail named a day that
+  turned out to be wrong.
+- 🚨 **A FAILED SEND GIVES ITS CLAIM BACK — `NotificationDispatcher::releaseClaim()`
+  (26 Aug 2026).** `claim()` is taken BEFORE the send on purpose (claiming afterwards
+  leaves a window in which a crash re-sends), so a send that then threw left a row
+  saying "delivered" behind a mail nobody got, and every later run skipped that person
+  on the strength of it. **For `birthday:weekly` that broke the recovery its own
+  docblock promises** — a later run in the same week is supposed to skip the claimed
+  and pick up who is left, and a burnt claim is indistinguishable from a delivered one,
+  so Tuesday's run walked past exactly the people Monday's run failed to reach. For
+  `birthday:remind` it made an operator re-running the command the same day — which is
+  what somebody does after seeing a mail outage in these logs — send nothing while
+  reporting success.
+  - ⚠️ **`releaseClaim()` MUST NOT THROW**: every caller runs it inside a `catch` that
+    is already handling the real failure, and a second exception there would replace
+    the original and it would never be logged. It logs and returns instead.
+  - ⚠️ **Release only where a retry can actually happen.** A claim nothing will ever
+    re-select buys nothing and costs a write.
+  - Tests: `tests/Feature/BirthdayReminderClaimTest.php` (4). ⚠️ The weekly test needs
+    **three** birthday creators — the campaign refuses to send below
+    `collection_min_creators`, so the first version of it selected nobody and passed
+    against the bug. Every one of the four was verified failing against its own fault
+    first.
 - 🚨 **Eligibility is DUPLICATED from `CreatorRecommendationService::eligibleCreators()`
   clause for clause** (role 1, not suspended, `profile_status_lock = 2`, approved avatar,
   name + username, `exclude_from_discovery` off) plus opt-in and ≥1 live item. The
@@ -2263,6 +2449,33 @@ fourth was a JSX edit, which is why there was nothing stopping a fifth.
   for a single huge figure.** gulfs' ascenders overflow a line box shorter than the
   glyphs, so the receipt card's `£0.00` climbed into the dashed rule above it at 250px.
   A one-line display figure wants `leading-[1]`.
+- 🚨 **£0.00 IS THE ABSENCE OF A CHARGE, SO IT IS NOT THE CARD'S DISPLAY ELEMENT**
+  (26 Aug 2026). `ReceiptCard` set it at 40/50/64px — larger than the HEADLINE on every
+  other card in the deck — and a nothing rendered as the loudest figure on screen reads
+  as a price. It is now the TOTAL LINE of the receipt it belongs to (24/26/30px, beside
+  its own "Due today" label), and the display slot went to the sentence that makes the
+  offer: *"Free until your first sale"*. The card also gained the deck's own
+  left-argument / right-panel rhythm — headline, copy and CTA on the left, a white
+  receipt SLIP on the right from `sm:` up — which is what filled a card that was
+  otherwise a column of content and 500px of empty ground. ⚠️ **The torn foot and the
+  "Nothing due" stamp belong to the SLIP, not to the card**: a torn edge on the card
+  itself reads as decoration, on a paper slip it reads as a receipt. ⚠️ Below `sm:` the
+  slip has nowhere to go, so the rows sit in the flow and are cut to ONE struck line —
+  at 320px the second row cost more height than it earned and clipped the button by
+  1.5px.
+- 🚨 **THE WIDTH SWEEP READS THE COMPILED STYLESHEET, SO BUILD BEFORE YOU MEASURE.**
+  A sweep run after editing a card but before `npm run build` reported **18 widths
+  clean** while the new `md:w-[214px]` / `lg:w-[240px]` had never been emitted by
+  Tailwind — the browser was laying the card out with those classes absent, and the
+  harness certified a layout that does not exist. Rebuild, re-point the harness at the
+  new `app-*.css` hash, then measure. The same trap makes a screenshot lie.
+  ⚠️ **The harness itself is disposable and must NOT be left in `public/`** — Vapor
+  uploads that directory to S3/CloudFront. Recipe: bundle a probe entry that imports
+  `PromoCard` with `npx esbuild … --alias:@=./resources/js` (the `@` alias is why a
+  bare esbuild run fails on `@/lib/pwaInstall`), serve `public/` with `php -S`, frame
+  one iframe per width, and drive it with
+  `chrome --headless=new --virtual-time-budget=20000 --dump-dom`, which fast-forwards
+  the measurement timer instead of waiting on it.
 - 🚨 **THE LEADERBOARD CARD SHOWS RANK AND NOTHING ELSE — no amounts, no names.** The real
   supporter wall ranks by purchase COUNT and never by money (Stripe content-first rule),
   so a mock carrying a figure would advertise a screen that does not exist.
@@ -3696,10 +3909,52 @@ the 33 creators who signed up in the previous 90 days, **3 had a handle on file*
 - ⚠️ **The write cannot throw.** It runs after the user row exists and one line before
   `Auth::login()`; failing a signup over it would turn an optional field into the thing that
   broke registration. Catch `\Throwable`, log, carry on — same house pattern as `VisitTracker`.
-- ⚠️ **Pre-existing and NOT fixed here:** `CreatorVerification.jsx`'s `hasAnySocialMedia` is
-  `Object.values(slinks).some(v => v !== null && v !== "")` — every column on the row, `id`,
-  `status` and now `source` included — so ANY `social_links` row reads as "has a handle",
-  including one with every platform blank.
+- ✅ **FIXED 26 Aug 2026 — `CreatorVerification.jsx`'s `hasAnySocialMedia` was
+  `Object.values(slinks).some(v => v !== null && v !== "")`**, which walks EVERY column
+  on the row — `id`, `user_id`, `status`, `source`, the timestamps — so a `social_links`
+  row with **all fourteen platforms blank answered TRUE**. The creator saw that step
+  ticked and *Submit for review* unlocked, and the server refused with a message naming a
+  field their own screen said was done. It was the client half of the same disagreement
+  as the `$user->socialLinks` phantom relation above; fixing only the server would have
+  left the button enabled and the refusal unexplained.
+  - **`SocialLinks` now appends `has_any_handle`**, delegating to
+    `ProfileAssetVisibility::hasAnyHandle()` — one definition, on the model, read by both
+    controllers that send this row. ⚠️ **A mirrored column list in JS would work and would
+    drift** the first time a platform column is added; the page reads the server's answer
+    instead of deriving its own.
+  - ⚠️ **`HANDLE_COLUMNS`, never `ACCEPTED_PLATFORMS`** — a creator verified on a retired
+    platform still HAS a handle, and reading their row as empty would treat their next
+    edit as a first submission rather than a change to something published.
+  - Tests: `tests/Feature/SocialHandlePresenceTest.php` (5), including a **two-language
+    pin** that the JSX still reads the server key: the halves are in different languages
+    and neither the build nor any scanner can see that they agree, so a rename would leave
+    that step permanently "todo" and the button permanently locked — indistinguishable
+    from a creator who has not filled it in. ⚠️ **That scan blanks comments first** — the
+    note left at the call site explains the bug by quoting the old expression, so a raw
+    scan finds the very string it is checking has gone.
+- 🚨 **NO CREATOR COULD SUBMIT FOR REVIEW — `$user->socialLinks` IS NOT A RELATION** (fixed
+  26 Aug 2026). The relation is `social_links()`, and Laravel resolves an unknown property to
+  **NULL rather than erroring**, so `missingForReview()`'s handle check was false for
+  everybody: every creator who pressed *Submit for review* was told *"Add a social handle
+  before submitting for review"* with their handle rendered on the page behind the message,
+  and the profile never reached the admin queue. Nothing appeared in any log. It also wrote
+  out an **eight-item subset** of the fourteen platform columns, so a creator whose only
+  handle was on a retired platform read as empty even once the relation was right — it now
+  calls `ProfileAssetVisibility::hasAnyHandle()`, which is the one definition and already
+  answers exactly this question. ⚠️ The client-side gate never agreed with it (see the bullet
+  above), which is why the button was enabled and the server refused. Pinned by
+  `tests/Feature/SubmitProfileForReviewTest.php` (4) — verified failing against the bug first.
+- 🚨 **TIKTOK WAS MISSING FROM THE PROFILE'S SOCIAL ICONS** (fixed 26 Aug 2026).
+  `Components/Profile/CoverIdentity.jsx` is the ONLY place the handles are rendered as links,
+  and its `SOCIALS` map carried instagram/twitter/youtube/twitch/discord/reddit/facebook/tumblr
+  — **not TikTok**, one of the three platforms verification is performed against. A creator
+  whose only handle was TikTok had an approved row and no icon at all. Nothing errors on a key
+  a map does not carry; same class as `SaveButton`'s dead `is_saved` prop.
+  ⚠️ **The two writers store DIFFERENT SHAPES in one column and both must build the same
+  link:** the signup form stores a BARE handle (`SocialHandle::normalise` strips the `@`),
+  Creator Studio stores the CANONICAL URL (`validatePlatformValue` → `toCanonicalUrl`). The
+  component branches on `startsWith("http")` and prepends its own `base` otherwise — so
+  TikTok's base carries the `@` (`https://tiktok.com/@`), never the stored value.
 - **Admin app:** `source` mirrored into its `SocialLinks::$fillable` (shared DB, migration in
   this app only) and surfaced as the badge. See `../admin.spennypiggy.co/CLAUDE.md` for the two
   faults that screen was carrying.
@@ -3737,6 +3992,71 @@ found five of the eight and reported the suite green, which it was not.
 
 - Tests: `tests/Feature/SignupSocialHandleTest.php` (14),
   `tests/javascript/signupSocialHandle.test.jsx` (10).
+
+## Growth Bonus — where a creator and a visitor MEET it (26 Aug 2026)
+
+Backend + rules live in the root `../CLAUDE.md`. This is the three surfaces, and the one
+rule they all share.
+
+- 🚨 **EVERY ENTRY POINT IS GATED ON THE SERVER FLAG, NOT ON THE JS CONSTANTS.**
+  `GET /growth-bonus` (`growth.bonus`) **404s** while `growth_bonus.enabled` is false, so a
+  surface that advertises the scheme off a constant — `GROWTH` in
+  `constants/creatorBonuses.js` is always importable — is a button into nothing on the page
+  the creator was sent to. The landing card keys on the `growthBonus` prop (null while dark);
+  the promo card keys on `config('growth_bonus.enabled')` inside `PromoBannerService`.
+  ⚠️ The route is single-segment, so it MUST stay above the `auth.php` require or the
+  `/{username}/{page?}` catch-all reads it as a username.
+- ⚠️ **THE LABEL IS "QUALIFYING EARNINGS" — the terms' defined term.** The rungs are the
+  creator's LISTED SALE VALUE since 26 Aug 2026 (a £100 listing counts as £100), so "earn" is
+  correct and all three bonus surfaces on a screen now share a base. **Until that date they
+  were gross customer spend**, which is why the older comments in these files insist on
+  "sales" over "earnings" — that rule is dead, but do not reintroduce "customer spend": the
+  page links to the terms that define the word.
+- ⚠️ **Payout copy says "on the same payout as the earnings that qualified you", NEVER "the
+  following Friday"** (client, 26 Aug 2026). Each transaction waits its own 7 days before a
+  Friday run, so the bonus lands 7–13 days after the milestone depending on the weekday it
+  was crossed — a named day is wrong for most creators.
+- **The three surfaces:**
+  - `Pages/GrowthBonus/Index.jsx` — the ladder, the rules and (signed in) the creator's own
+    position. Every figure is a prop from `GrowthBonusController`, which reads
+    `config/growth_bonus.php` — the same file the engine enforces.
+  - `home/EarnMoreAnnouncement.jsx` — a full-width lead card ABOVE the three bonus cards.
+    🚨 **ONE element, not two.** The brief asks for a landing callout AND a Bonuses-section
+    card; drawn separately they are the same offer twice in one scroll, which is exactly why
+    `ReferEarnAnnouncement` and `StablecoinTipsAnnouncement` were removed from this page.
+  - `Promo/cards/LadderCard.jsx` (layout `ladder`, promo key `growth_bonus`) — the profile
+    deck. Hidden while dark, before the launch cutoff, and once the creator is
+    `missed`/`expired`: a card selling a scheme you can no longer join is the deck telling
+    you something untrue about your own account (the `verified_badge` rule).
+- 🚨 **THE HEADLINE IS THE FIRST RUNG, NOT THE CEILING.** "Up to £1,000" is the last of
+  eleven rungs and needs £25,000 of sales behind it; quoted alone it reads as a sign-up
+  reward. Both the card and the landing block lead with £100 → £25 and carry the ceiling
+  beside it — the same correction the referral card was given.
+- ⚠️ Figures come from `PromoBannerService::growthBonusFacts()` / the controller, never from
+  JSX. An empty or misconfigured ladder returns no facts and the card falls back to copy
+  rather than printing "£0".
+- **The dashboard widget and the milestone notification** are covered in the root
+  `../CLAUDE.md`; the surfaces above and the widget both read
+  `GrowthBonusPanelPayload::shape()`, so the page, the widget and the mail cannot disagree
+  about the creator's own figures.
+- 🚨 **`border-t-2 border-black` DREW A BOX ON ALL FOUR SIDES, AND IT SHIPPED.** The homepage
+  card's "We add £25" row was meant to sit under a divider rule and rendered as a framed box
+  instead — `resources/css/index.css` redefines `.border-black` as the full
+  `border: 2px solid` SHORTHAND, so a side utility beside it is discarded and the shorthand
+  paints every edge. The rule is already written twice in this file and in `promoKit.jsx`,
+  and it was still hit while writing new markup, which is the point: **a side rule is an
+  inline `style={{ borderTop: "2px solid #000" }}`, every time.**
+  ⚠️ `border-black/10` is a DIFFERENT class (`.border-black\/10`) — Tailwind's real
+  colour-only utility with an alpha — so it is safe beside `border-t-2`. Only the bare
+  `border-black` carries the shorthand. Verified against the compiled stylesheet: both rules
+  exist and `{border:2px solid var(--black)}` is the later one, so it wins.
+  ⚠️ **No scanner catches this** — `npm run check`'s conflicting-class pass classifies the
+  two as different properties. Measure `borderTopWidth`/`Right`/`Bottom`/`Left` in a browser
+  after writing one; the fix above reports `2px / 0 / 0 / 0` at 1440 and at 390.
+- Tests: `tests/Feature/GrowthBonusSurfacesTest.php` (16) + `GrowthBonusNotificationTest.php`
+  (15). ⚠️ Inertia's `where()` compares
+  against the JSON-DECODED payload and a whole float (`1000.0`) comes back as an int — assert
+  numerics through a closure, or the test fails for a reason unrelated to the value.
 
 ## Detailed topic index — load the skill, do not inline this content
 
