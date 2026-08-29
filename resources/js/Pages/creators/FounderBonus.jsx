@@ -208,7 +208,7 @@ export default function FounderBonus() {
                             />
                             <LedgerRow
                                 title="Creator referrals"
-                                line={`${money(REFERRAL.amount)} for every creator you bring who starts selling. Your referral link is in your dashboard from the day you join.`}
+                                line={`${money(REFERRAL.amount)} for every creator you bring, paid once they have earned ${money(REFERRAL.qualifyingGmv)}. Your referral link is in your dashboard from the day you join.`}
                                 figure={money(REFERRAL.amount)}
                                 tag="per creator"
                             />

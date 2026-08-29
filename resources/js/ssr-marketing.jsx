@@ -13,8 +13,22 @@ import { route } from 'ziggy-js';
 import { Ziggy } from './ziggy';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Spenny Piggy';
-// Use lazy loading (no eager: true) to allow code splitting and match user guide
-const pages = import.meta.glob('./Pages/**/*.jsx');
+/*
+ * 🚨 EAGER. Code splitting is a BROWSER optimisation and it is actively wrong here.
+ *
+ * With a lazy glob every page arrives as a dynamic import, and `renderToString`
+ * is synchronous — it cannot wait for one. React throws "A component suspended
+ * while responding to synchronous input", the render returns an empty body, and
+ * TimeoutGateway falls back to client-side rendering. Measured against a freshly
+ * started server: /leaderboard failed its first TWO requests and only rendered on
+ * the third, once Node had the chunk in its module cache. So after every deploy
+ * the first visitors to each page silently got no SSR, and nothing looked broken.
+ *
+ * Eager resolves every page at startup instead: one bundle, no suspense, correct
+ * from the first request. The cost is startup time and memory on the SSR host,
+ * which is what that host is for — it serves nothing else.
+ */
+const pages = import.meta.glob('./Pages/**/*.jsx', { eager: true });
 
 // Capture the mock window from shims
 const mockWindow = globalThis.window;
@@ -65,7 +79,9 @@ createServer((page) => {
       if (!pageFn) {
          return () => React.createElement('div', null, `Page not found: ${name}`);
       }
-      return pageFn();
+      // Eager glob hands back the module itself; the lazy form hands back a
+      // loader. Accept both so this does not break if the glob is ever changed.
+      return typeof pageFn === 'function' ? pageFn() : pageFn;
     },
     setup: ({ App, props }) => {
       const ziggy = props.initialPage.props.ziggy;

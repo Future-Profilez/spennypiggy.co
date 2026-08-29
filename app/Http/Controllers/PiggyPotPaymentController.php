@@ -23,6 +23,7 @@ use App\Services\Risk\ReservePolicy;
 use App\Services\Risk\RiskService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\BlockedPaymentAlert;
 use App\Support\NotificationContext;
 use App\Traits\RiskEnforcement;
 use Illuminate\Http\Request;
@@ -166,6 +167,15 @@ class PiggyPotPaymentController extends Controller
         $requestedMethod = $request->input('payment_method', 'card') === 'bank' ? 'bank' : 'card';
 
         if ($requestedMethod === 'card' && ! StripeControl::hasCardPaymentsCapability($creator->account_id)) {
+            // Same rule as the subscription gate below: a refusal nobody records
+            // is a lost sale the creator never hears about and no admin can see.
+            BlockedPaymentAlert::record(
+                $creator,
+                $request->amount ?? 0,
+                $request->currency ?? $creator->default_currency ?? 'GBP',
+                'stripe_disabled',
+            );
+
             return response()->json([
                 'status' => false,
                 'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ['eligible' => false, 'status' => 'stripe_disabled']),

@@ -13,10 +13,10 @@ import { CARD_FRAME, Chip, Cta, Fact, display, groundOf, accentOf } from "../pro
  * `PromoBannerService::growthBonusFacts()` from `config/growth_bonus.php` — the same
  * ladder `GrowthBonusService` pays against. No figure is typed here.
  *
- * ⚠️ The rungs are the creator's LISTED SALE VALUE — a £100 listing counts as £100
- * (client decision, 26 Aug 2026; terms clause 2.1). They were gross customer spend until
- * then, which is why this card used to insist on "sales" over "earn"; both are accurate
- * now that the base is the listed price, and it matches Founder and Fast Start.
+ * ⚠️ The rungs are the creator's LISTED SALE VALUE, VAT included — a £100 listing counts
+ * as £100 whatever the creator's VAT status (client decision, 26 Aug 2026; terms clause
+ * 2.1). 🚨 So the card may say "earn", but must never say the creator KEEPS the figure:
+ * where VAT applies part of it is passed to HMRC.
  *
  * ⚠️ The staircase is `sm:` and up at a fixed width, like Fast Start's receipt — a
  * pixel-width block in a column narrower than it expects is what clipped the install

@@ -55,13 +55,46 @@ export function reloadOnce() {
 
     const reload = () => window.location.reload();
 
-    // Drop the cached document first: a reload is a navigation and goes through
-    // the service worker, which is what served the stale chunk in the first place.
-    if (typeof caches !== "undefined" && caches.delete) {
-        caches.delete("pages-v1").then(reload, reload);
-    } else {
-        reload();
-    }
+    /*
+     * 🚨 DROPPING THE DOCUMENT CACHE ALONE COULD NEVER FIX A BAD CHUNK.
+     *
+     * This deleted only `pages-v1`. But the service worker caches JS with
+     * **CacheFirst** in `static-assets-v1` for a year (service-worker.js), so the
+     * reload fetched a fresh document and then took the very same broken chunk
+     * straight back out of the asset cache. The recovery could not work: the
+     * second failure fell through to the throw, and the visitor was left on a
+     * blank page that reloading would never fix. Live as
+     * JAVASCRIPT-REACT-AC on /creators.
+     *
+     * ⚠️ MATCHED BY PREFIX, NOT BY EXACT NAME. `pages-v1` was hardcoded here, so
+     * the day somebody bumps a cache to `-v2` this silently stops clearing
+     * anything — the same class of fault as the bug it is fixing, and just as
+     * invisible.
+     *
+     * Only the two caches that can serve a stale APP are dropped. Images and
+     * fonts are content-addressed and cost bandwidth to refetch for no benefit.
+     */
+    const clearStaleAppCaches = () => {
+        if (typeof caches === "undefined" || ! caches.keys) {
+            return Promise.resolve();
+        }
+
+        return caches
+            .keys()
+            .then((names) =>
+                Promise.all(
+                    names
+                        .filter(
+                            (name) =>
+                                name.startsWith("pages") ||
+                                name.startsWith("static-assets")
+                        )
+                        .map((name) => caches.delete(name))
+                )
+            );
+    };
+
+    clearStaleAppCaches().then(reload, reload);
 
     return true;
 }

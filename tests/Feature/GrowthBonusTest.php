@@ -49,13 +49,16 @@ class GrowthBonusTest extends TestCase
      * A completed sale.
      *
      * 🚨 `$listed` IS THE CREATOR'S LISTED PRICE, WHICH IS WHAT QUALIFIES —
-     * `net_amount`, per terms clause 2.1. The supporter's charge is grossed up
-     * ON TOP of it (roughly 30% on the card profile), so the fixture derives
-     * `gross_amount` from the listed value rather than the other way round.
-     * Writing these the other way round is what made every threshold in this
-     * file mean something different from the threshold a creator sees.
+     * `net_amount + vat_amount`, per terms clause 2.1. The supporter's charge is
+     * grossed up ON TOP of it (roughly 30% on the card profile), so the fixture
+     * derives `gross_amount` from the listed value rather than the other way
+     * round. Writing these the other way round is what made every threshold in
+     * this file mean something different from the threshold a creator sees.
+     *
+     * ⚠️ `$vat` splits the listed price rather than adding to it — that is how
+     * the ledger stores it, and it is what makes the VAT test below meaningful.
      */
-    private function income(User $creator, float $listed, array $overrides = []): FinancialTransaction
+    private function income(User $creator, float $listed, array $overrides = [], float $vat = 0.0): FinancialTransaction
     {
         $gross = round($listed * 1.3055, 2);
 
@@ -68,8 +71,8 @@ class GrowthBonusTest extends TestCase
             'gross_amount' => $gross,
             'platform_fee' => round($gross - $listed, 2),
             'stripe_fee' => 0,
-            'vat_amount' => 0,
-            'net_amount' => $listed,
+            'vat_amount' => $vat,
+            'net_amount' => round($listed - $vat, 2),
             'currency' => 'GBP',
             'status' => 'completed',
             'description' => 'test sale',
@@ -266,6 +269,50 @@ class GrowthBonusTest extends TestCase
         $profile = $this->evaluate($creator);
         $this->assertSame(GrowthBonusProfile::STATUS_ACTIVE, $profile->status);
         $this->assertSame(1, GrowthBonusReward::count());
+        Carbon::setTestNow();
+    }
+
+    /**
+     * 🚨 VAT IS INCLUDED IN QUALIFYING EARNINGS (client, 28 Aug 2026, option
+     * (a)). A VAT-registered creator listing at £100 keeps about £83.33 and
+     * passes £16.67 to HMRC — but £100 is what qualifies, so their ladder is not
+     * slower than an unregistered creator's.
+     */
+    public function test_a_vat_registered_creator_qualifies_on_the_full_listed_price(): void
+    {
+        Carbon::setTestNow('2026-09-10');
+        $creator = $this->creator();
+        // Listed £100, of which £16.67 is VAT the creator collects for HMRC.
+        $this->income($creator, 100, ['transaction_date' => Carbon::parse('2026-09-03')], vat: 16.67);
+
+        $gmv = app(GrowthBonusService::class)->computeGmv($creator->fresh());
+        $this->assertSame(100.0, $gmv['total']);
+
+        $profile = $this->evaluate($creator);
+        $this->assertSame(GrowthBonusProfile::STATUS_ACTIVE, $profile->status);
+        Carbon::setTestNow();
+    }
+
+    /**
+     * The point of including VAT: two creators selling the identical listing
+     * reach the milestone at the same moment, whatever their VAT status.
+     */
+    public function test_vat_status_does_not_change_the_pace_of_the_ladder(): void
+    {
+        Carbon::setTestNow('2026-09-10');
+
+        $registered = $this->creator();
+        $this->income($registered, 100, ['transaction_date' => Carbon::parse('2026-09-03')], vat: 16.67);
+
+        $notRegistered = $this->creator();
+        $this->income($notRegistered, 100, ['transaction_date' => Carbon::parse('2026-09-03')]);
+
+        $service = app(GrowthBonusService::class);
+
+        $this->assertSame(
+            $service->computeGmv($notRegistered->fresh())['total'],
+            $service->computeGmv($registered->fresh())['total'],
+        );
         Carbon::setTestNow();
     }
 

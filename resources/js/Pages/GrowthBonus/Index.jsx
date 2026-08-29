@@ -12,11 +12,14 @@ import { FaCheck, FaLock } from "react-icons/fa";
  * number typed into this file is a number that can disagree with the one that
  * pays.
  *
- * ⚠️ THE FIGURE IS "QUALIFYING EARNINGS" — the creator's listed sale value, the
- * defined term in the programme terms (clause 2.1). It was gross customer spend
- * until 26 Aug 2026, when the client fixed the base to the listed price: a £100
- * listing counts as £100. Use the defined term rather than a synonym, because
- * this page links to the terms that define it.
+ * ⚠️ THE FIGURE IS "QUALIFYING EARNINGS" — the creator's listed sale value
+ * including any VAT, the defined term in the programme terms (clause 2.1). A
+ * £100 listing counts as £100 whatever the creator's VAT status.
+ *
+ * 🚨 NEVER DESCRIBE IT AS MONEY THE CREATOR KEEPS (client instruction, 26 Aug
+ * 2026). Where VAT applies, part of it is collected on HMRC's behalf. Use the
+ * defined term — this page links to the terms that define it — and never "you
+ * keep", "take-home" or "your balance".
  *
  * ⚠️ Payout timing copy says "on the same payout as the earnings that qualified
  * you" and must NOT say "the following Friday". The bonus rides the qualifying
@@ -189,9 +192,9 @@ export default function GrowthBonusIndex() {
 
                         <Rule title="What counts" ground="#FF007F">
                             Completed sales to real customers, counted at your
-                            listed price — a £100 listing counts as £100.
-                            Refunds, chargebacks and anything you buy from
-                            yourself do not count.
+                            listed price — a £100 listing counts as £100,
+                            including any VAT. Refunds, chargebacks and anything
+                            you buy from yourself do not count.
                         </Rule>
 
                         <Rule title="How long you have" ground="#8C52FF">

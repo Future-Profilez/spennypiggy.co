@@ -37,6 +37,17 @@ class BlockedPaymentAlert
      * ⚠️ Never throws. This runs on the supporter's checkout path, where the
      * purchase has already been refused — an error here would turn a refusal into
      * a crash, and the supporter would see a broken page instead of a message.
+     *
+     * 🚨 `$reason` IS THE CREATOR-ELIGIBILITY STATUS CODE, and every caller must
+     * pass it — `CreatorSubscriptionService::validateCreatorSubscription()`'s
+     * `status` (`no_subscription`, `subscription_expired`,
+     * `unknown_subscription_status`). All eight call sites left it null for
+     * months, so the admin activity feed fell back to inventing one and told
+     * admins the purchase failed "a risk check" — the supporter reads as
+     * screened when it is the CREATOR who cannot sell, which sends the
+     * investigation at the wrong person. `$currency` matters for the same
+     * reason: an amount with no currency renders as a bare number, and 25 is
+     * three different sums depending on what the creator prices in.
      */
     public static function record(?User $creator, $amount = null, ?string $currency = null, ?string $reason = null): void
     {
@@ -61,7 +72,7 @@ class BlockedPaymentAlert
 
             $count = self::countInWindow($creator);
 
-            self::notify($creator, $count);
+            self::notify($creator, $count, $reason);
         } catch (\Throwable $e) {
             Log::warning('BlockedPaymentAlert: could not record a blocked payment: '.$e->getMessage(), [
                 'creator_id' => $creator->id,
@@ -77,7 +88,7 @@ class BlockedPaymentAlert
      * the day while every further blocked purchase is recorded and silently
      * suppressed — the one day they most needed telling.
      */
-    private static function notify(User $creator, int $count): void
+    private static function notify(User $creator, int $count, ?string $reason = null): void
     {
         try {
             NotificationDispatcher::queue(
@@ -88,8 +99,8 @@ class BlockedPaymentAlert
                         ? "{$count} purchases were turned away"
                         : 'A purchase was turned away',
                     'body' => $count > 1
-                        ? "{$count} attempts to buy from you were blocked in the last ".self::WINDOW_DAYS.' days because your subscription is not active. Activate it and they can buy again.'
-                        : 'Someone tried to buy from you and was turned away because your subscription is not active. Activate it and they can buy again.',
+                        ? "{$count} attempts to buy from you were blocked in the last ".self::WINDOW_DAYS.' days '.self::becauseOf($reason)
+                        : 'Someone tried to buy from you and was turned away '.self::becauseOf($reason),
                 ],
                 // ⚠️ Bell and push only, deliberately. The email on this refusal is
                 // already sent by SubscriptionBlockedNotification at the same call
@@ -114,6 +125,31 @@ class BlockedPaymentAlert
         }
     }
 
+    /**
+     * Why the sale was refused, and what the creator can do about it.
+     *
+     * 🚨 THE MESSAGE USED TO SAY "because your subscription is not active" FOR
+     * EVERY REFUSAL, whatever the cause — so a creator whose Stripe account had
+     * lost card payments was sent to renew a subscription that was already
+     * active, and the thing actually stopping their sales went unmentioned.
+     * `$reason` is the gate's own status code (see `record()`); an unrecognised
+     * or missing one says what IS known rather than guessing a cause.
+     *
+     * ⚠️ Only ONE of these is sent a day (the claim in `record()`), so a creator
+     * with two faults hears about whichever refused first. That is deliberate —
+     * a creator who mutes this alert hears about none of them — and the
+     * dashboard card carries every gate at once for exactly that reason.
+     */
+    private static function becauseOf(?string $reason): string
+    {
+        return match ($reason) {
+            'no_subscription' => 'because your subscription is not active. Activate it and they can buy again.',
+            'subscription_expired' => 'because your subscription has expired. Renew it and they can buy again.',
+            'stripe_disabled' => 'because your Stripe account cannot take card payments at the moment. Open your payout settings to finish setting it up.',
+            default => 'and we could not take the payment. Open your dashboard to see what needs fixing.',
+        };
+    }
+
     /** Lost sales in the creator-facing window. */
     public static function countInWindow(User $creator): int
     {
@@ -121,5 +157,45 @@ class BlockedPaymentAlert
             ->where('creator_id', $creator->id)
             ->where('created_at', '>=', now()->subDays(self::WINDOW_DAYS))
             ->count();
+    }
+
+    /**
+     * The window's lost sales as a count plus a money total PER CURRENCY.
+     *
+     * 🚨 The totals are NEVER summed across currencies and never converted. A
+     * creator who prices in two currencies would otherwise be shown one number
+     * that is true in neither, on a card whose whole job is to be believed —
+     * and this figure exists to make the loss concrete enough to act on, so a
+     * wrong one is worse than none.
+     *
+     * ⚠️ A row with no currency (every row written before the eight checkout
+     * gates started passing one) contributes to the COUNT but to no total. Its
+     * amount is a bare number that cannot be named, and guessing GBP would
+     * quietly restate a yen sale as pounds.
+     *
+     * @return array{count:int, window_days:int, totals:list<array{currency:string, amount:float}>}
+     */
+    public static function lostSalesInWindow(User $creator): array
+    {
+        $rows = DB::table('blocked_payment_attempts')
+            ->where('creator_id', $creator->id)
+            ->where('created_at', '>=', now()->subDays(self::WINDOW_DAYS))
+            ->whereNotNull('currency')
+            ->whereNotNull('amount')
+            ->selectRaw('UPPER(currency) as currency, SUM(amount) as total')
+            ->groupBy('currency')
+            ->orderByDesc('total')
+            ->get();
+
+        return [
+            'count' => self::countInWindow($creator),
+            'window_days' => self::WINDOW_DAYS,
+            'totals' => $rows
+                ->map(fn ($row) => [
+                    'currency' => (string) $row->currency,
+                    'amount' => round((float) $row->total, 2),
+                ])
+                ->all(),
+        ];
     }
 }

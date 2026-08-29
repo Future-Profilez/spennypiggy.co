@@ -21,7 +21,12 @@ import LegalLayout from "@/Layouts/LegalLayout";
  *     supporter's charge. The original wording named both ("the gross amount
  *     paid by supporters … measured before the supporter fee") and they are
  *     different figures here: a £100 listing charges £130.55. A £100 listing
- *     now counts as £100.
+ *     now counts as £100. ⚠️ VAT-INCLUSIVE (client, 26 Aug 2026, option (a)) so
+ *     a VAT-registered creator is not slowed relative to one who is not.
+ *   · 2.5 — NEW, added on the client's instruction: Qualifying Earnings are
+ *     explicitly NOT a statement of what the creator receives or retains, since
+ *     with VAT included that would not be true. No surface may describe the
+ *     figure as money the creator keeps.
  *   · 2.3 — settlement gates PAYMENT, not qualification. As written it also
  *     gated activation, so a sale on day 28 that settled on day 35 would have
  *     cost a creator the programme on a technicality.
@@ -96,9 +101,10 @@ export default function GrowthBonusTerms(props) {
                             <Clause n="2.1">
                                 &quot;Qualifying Earnings&quot; means the creator&rsquo;s listed
                                 sale value for completed, genuine transactions attributed to them
-                                on Spenny Piggy — the price the creator set, before any bonus and
-                                excluding the supporter fee added on top at checkout. A £100
-                                listing counts as £100 of Qualifying Earnings.
+                                on Spenny Piggy — the price the creator set, inclusive of any VAT
+                                and before any bonus, and excluding the supporter fee added on top
+                                at checkout. A £100 listing counts as £100 of Qualifying Earnings
+                                whether or not the creator is registered for VAT.
                             </Clause>
                             <Clause n="2.2">
                                 The following are not Qualifying Earnings: payments made by the
@@ -119,6 +125,14 @@ export default function GrowthBonusTerms(props) {
                                 If a transaction is later refunded, reversed or charged back, it
                                 is removed from Qualifying Earnings from the date of the refund,
                                 reversal or chargeback (clause 7).
+                            </Clause>
+                            <Clause n="2.5">
+                                Qualifying Earnings measure the value of a creator&rsquo;s sales
+                                for the purpose of this Programme. They are not a statement of the
+                                amount a creator receives or retains: fees are deducted, and where
+                                a creator is registered for VAT part of the listed price is
+                                collected on behalf of HM Revenue &amp; Customs. Creators should
+                                refer to their payout statements for amounts received.
                             </Clause>
                         </Section>
 

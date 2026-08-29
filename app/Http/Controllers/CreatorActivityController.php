@@ -14,7 +14,9 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\WishItem;
 use App\Services\CreatorActivityService;
+use App\Services\CreatorSubscriptionService;
 use App\Services\PostingCadenceService;
+use App\Support\BlockedPaymentAlert;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -605,7 +607,50 @@ class CreatorActivityController extends Controller
         $activityStatus = $this->activityService->validateCreatorActivity($user);
         $activityStatus['postingCadence'] = app(PostingCadenceService::class)->statusFor($user);
 
-        return response()->json($activityStatus);
+        return response()->json(array_merge($activityStatus, $this->sellableState($user)));
+    }
+
+    /**
+     * The THIRD rule, and the only one that can stop every sale at once.
+     *
+     * 🚨 The card on the dashboard covered two content rules and said nothing
+     * about the creator's own platform subscription — which is the gate that
+     * actually refuses most blocked purchases. A creator with no subscription
+     * saw a green "Payments running" plate while every supporter who tried to
+     * buy from them was being turned away, and learned about it only from a
+     * bell notification that says nothing about what to do.
+     *
+     * ⚠️ This calls `validateCreatorSubscription` rather than reading
+     * `$user->subscription_status` directly, deliberately: that method carries
+     * the throttled Stripe re-sync (`Cache::add`, once per 5 minutes, and only
+     * when the local record already reads blocked), so a missed webhook cannot
+     * leave the dashboard telling a paid-up creator to buy a subscription they
+     * already have. A healthy creator costs zero Stripe calls.
+     *
+     * @return array{subscription:array, lost_sales:array, links:array}
+     */
+    private function sellableState(User $user): array
+    {
+        $subscription = app(CreatorSubscriptionService::class)->validateCreatorSubscription($user);
+
+        return [
+            'subscription' => [
+                'eligible' => (bool) ($subscription['eligible'] ?? true),
+                'status' => $subscription['status'] ?? 'unknown_subscription_status',
+            ],
+            // ⚠️ Counted for EVERY creator, not just blocked ones. A creator
+            // whose subscription lapsed and was fixed this morning still needs
+            // to see what the lapse cost — that number is the whole argument
+            // for not letting it happen again.
+            'lost_sales' => BlockedPaymentAlert::lostSalesInWindow($user),
+            // Named routes, never a hardcoded path: `/creator/activity` was
+            // written by hand in the widget and would have gone quietly dead
+            // if the prefix ever moved.
+            'links' => [
+                'activity' => route('creator.activity'),
+                'activate_subscription' => route('activate-subscription'),
+            ],
+        ];
     }
 
     /**

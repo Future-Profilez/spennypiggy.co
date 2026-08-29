@@ -4006,12 +4006,15 @@ rule they all share.
   the promo card keys on `config('growth_bonus.enabled')` inside `PromoBannerService`.
   ⚠️ The route is single-segment, so it MUST stay above the `auth.php` require or the
   `/{username}/{page?}` catch-all reads it as a username.
-- ⚠️ **THE LABEL IS "QUALIFYING EARNINGS" — the terms' defined term.** The rungs are the
-  creator's LISTED SALE VALUE since 26 Aug 2026 (a £100 listing counts as £100), so "earn" is
-  correct and all three bonus surfaces on a screen now share a base. **Until that date they
-  were gross customer spend**, which is why the older comments in these files insist on
-  "sales" over "earnings" — that rule is dead, but do not reintroduce "customer spend": the
-  page links to the terms that define the word.
+- 🚨 **THE LABEL IS "QUALIFYING EARNINGS", AND IT IS NOT "WHAT YOU KEEP".** The rungs are the
+  creator's LISTED SALE VALUE **including VAT** (client, 28 Aug 2026), so a £100 listing counts
+  as £100 whatever their VAT status — which means part of the figure may be passed to HMRC.
+  "Earn" is fine; **"you keep", "take-home" and "your balance" are banned**, and terms clause
+  2.5 says so publicly. ⚠️ Do not reintroduce "customer spend" either (the base was gross until
+  26 Aug 2026, which is why older comments in these files insist on "sales" over "earnings" —
+  that rule is dead). ⚠️ `FounderProgressTracker` renders inches away on the same dashboard
+  reporting a figure NET of VAT, so the two legitimately differ for a VAT-registered creator —
+  keep the defined term or they read as the same number.
 - ⚠️ **Payout copy says "on the same payout as the earnings that qualified you", NEVER "the
   following Friday"** (client, 26 Aug 2026). Each transaction waits its own 7 days before a
   Friday run, so the bonus lands 7–13 days after the milestone depending on the weekday it
@@ -4057,6 +4060,221 @@ rule they all share.
   (15). ⚠️ Inertia's `where()` compares
   against the JSON-DECODED payload and a whole float (`1000.0`) comes back as an int — assert
   numerics through a closure, or the test fails for a reason unrelated to the value.
+
+## 🚨 The dashboard card carries THREE rules now (29 Aug 2026, spennypiggy.co)
+
+`Components/CreatorActivityWidget.jsx` covered the two CONTENT rules and said nothing about
+the creator's own platform subscription — **the gate that actually refuses most blocked
+purchases**. A creator with no subscription read a green "Payments running" plate while every
+supporter who tried to buy from them was turned away, and heard about it only from a bell
+notification that says nothing about what to do. The cross-app half of this (the reason
+column, the admin feed wording) is in the root `../CLAUDE.md`.
+
+- **`CreatorActivityController::sellableState()`** adds `subscription`, `lost_sales` and
+  `links` to `GET /creator/activity/status`. ⚠️ It calls
+  `CreatorSubscriptionService::validateCreatorSubscription`, **not** `$user->subscription_status`
+  — that method carries the throttled Stripe re-sync (`Cache::add`, once per 5 minutes, and
+  only when the local record already reads blocked), so a missed webhook cannot leave the
+  dashboard telling a paid-up creator to buy a subscription they already have. A healthy
+  creator costs zero Stripe calls.
+- 🚨 **THE PILL READS EVERY RULE.** A card that says "Payments active" above a section
+  saying paused is worse than no indicator, because the creator believes the top line. Three
+  states: green ● *Payments active* · red ● *Payments off* (a gate we can name is blocking) ·
+  amber ● *Sales turned away*.
+- 🚨 **THE AMBER STATE EXISTS BECAUSE ONE GATE CANNOT BE CHECKED FROM HERE.** The Stripe
+  card-payments capability is a live API call per account — far too expensive on a dashboard
+  poll — and **`users.charges_enabled` is written by nothing in `app/`**: the creator whose
+  report started this had it at `0` while the live capability check said yes, so the column
+  is stale and unusable as a proxy. So a refusal we cannot predict is reported from the one
+  local fact we do have — `lost_sales.count > 0` with every readable gate green. ⚠️ Its
+  headline and body are overridden too: *"Your payments are running normally"* directly above
+  *"1 sale was turned away"* is the card contradicting itself, and the creator believes the
+  headline. ⚠️ A gate we CAN name outranks it, because that one says what to go and fix.
+- 🚨 **The subscription LEADS the card when it is the thing that is wrong**, and the content
+  gate is demoted below a divider — never hidden. It is the only rule that stops every sale
+  at once, and a creator who fixes it and then meets a second rule nobody mentioned has been
+  sent round the loop twice.
+- 🚨 **`BlockedPaymentAlert::lostSalesInWindow()` totals PER CURRENCY and never sums across
+  them.** *"2 sales worth £50 were turned away in the last 7 days"* is the argument; a number
+  that is true in neither currency, on the card whose job is to be believed, is worse than
+  none. ⚠️ A row with no currency is **counted and never totalled** — guessing GBP would
+  restate a yen sale as pounds — so the count can legitimately exceed what the money line
+  accounts for.
+- ⚠️ **`subscription` absent means "not reported", which must read as fine.** A cached status
+  response written before these keys existed has none, and it must not tell a paid-up creator
+  their payments are off.
+- ⚠️ Copy is keyed on the server's status code: `subscription_expired` and `no_subscription`
+  are different situations, and a creator who let one lapse should not be told to go and start
+  one.
+- ⚠️ **The `Creator/ActivityStatus` PAGE was deliberately not changed** — only the endpoint the
+  dashboard widget reads. The two can now disagree about the subscription; move the page onto
+  `sellableState()` when it next needs work.
+- Tests: `tests/Feature/CreatorPaymentStatusTest.php` (5).
+
+## 🚨 A stalled creator heard NOTHING about the step they were stuck on (29 Aug 2026, spennypiggy.co)
+
+Found on a live creator: signed up, profile approved, card added, Stripe connected,
+**opened Stripe Identity and never completed it**. `identity_status = 2`, and there she
+sat. What the platform then did was ask her, by email and by push, to **publish her first
+item** — which the identity gate was blocking. The only messages she could receive were
+about work she was not allowed to do.
+
+- 🚨 **`identity_status = 2` IS WRITTEN WHEN THE SESSION IS CREATED, NOT WHEN THE DOCUMENT
+  IS SUBMITTED** (`Auth\StripeController` ~5092). So "2" means *a check was started*, never
+  *Stripe is deciding*. **Stripe sends NO event for an abandoned session** — `requires_input`
+  fires after a failed ATTEMPT, not after someone closes the tab — so the row stays at 2
+  for ever. Every terminal outcome moves it: verified → 1, failed → 0, fraud → 3, each with
+  `identity_verification_error` set. **A row at 2 with a null error and a null
+  `identity_verified_at` therefore means the creator never finished, not that we are
+  waiting.**
+- 🚨 **`CreatorSetupService` now requires `identity_status = 1`** in BOTH `candidateQuery()`
+  and `needsFirstListing()` — the two must not drift; their own docblocks say so. The
+  authenticated creator area sits behind `mustCompletedStripeIdentity` (`routes/auth.php`),
+  so nudging an unverified creator to publish sends them to a wall, twice (day 3 and day 10).
+  ⚠️ On live data this shrinks the first-listing nudge audience hard — 304 creators sit at
+  `identity_status = 0` against 20 verified. That is correct: the other 304 cannot list.
+
+**New: `creators:nudge-journey`** (daily 09:40, `--dry-run` / `--max` / `--include-dormant`),
+`app/Console/Commands/NudgeStuckJourney.php`, mail `App\Mail\FinishYourSetup` +
+`resources/views/email/finish-setup.blade.php`.
+
+- 🚨 **TWO MESSAGES PER STEP, THEN SILENCE.** Day 2 and day 7 after the creator ENTERED the
+  step (`CreatorJourneyService::NUDGE_STAGES`, measured off `journey_step_at`, which records
+  entry and not the last sync). Finishing a step restarts the clock, so somebody progressing
+  hears about each new thing once or twice and no more. A creator who ignored the second
+  reminder will ignore the fifth, and a platform that keeps asking teaches them to filter
+  the receipt and the payout notice too.
+- ⚠️ **`first_listing` is DELIBERATELY EXCLUDED** (`CreatorJourneyService::nudgeableSteps()`).
+  It has its own two-stage nudge with its own mailable and its own ledger; handling it here
+  would mail one creator twice for one task from two commands that cannot see each other.
+- ⚠️ **The copy is NOT written in the mailable.** Every heading, body line and button label
+  comes from `CreatorJourneyService::STEPS`, which the dashboard card and nudge bar also
+  render — so the inbox cannot say something different from the screen it links to. Only the
+  subject and the one "why now" sentence live in `FinishYourSetup`.
+- ⚠️ **Newest threshold first**, so anyone already past both stages when this shipped gets
+  exactly ONE message, not a backlog of two.
+- ⚠️ **Gates:** verified email, `notification_send`, `profile_status_lock != 1` (a delisting
+  is a punishment — coaching them to publish is the wrong message), not suspended, and a
+  **30-day fresh window** (`NUDGE_FRESH_WINDOW_DAYS`) unless `--include-dormant`, which also
+  applies `MarketingConsent::isSuppressed()` because re-engaging a dormant signup is
+  marketing by the client's own brief. 🚨 A dormant run reaches ~100 creators at once —
+  never run it casually.
+- ⚠️ **Never two setup messages in one day**: the command checks the shared `notifications`
+  table for a `creator_onboarding` row dated today, because the admin app's drip is the
+  other sender and the two share a database, not code. That read is wrapped in a try/catch —
+  a missing column must not stop the reminder.
+- ⚠️ **`$marketing = false`** (it is the state of the creator's own account) but
+  `channelsFor()` still drops the email channel on a `creator_updates_enabled` opt-out,
+  or the unsubscribe link in the email is decorative. Bell and push always go.
+- **Needs `queue:work`** — the fan-out is queued through `NotificationDispatcher`.
+- Tests: `tests/Feature/JourneyNudgeTest.php` (17), plus the identity gate pinned in
+  `FirstListingNudgeTest`.
+
+## ✅ `/creators/vs/throne` is PUBLISHED, and two guards came with it (30 Aug 2026)
+
+`config/comparisons/throne.php` → `published => true`, on the client's instruction. Every fee
+row on that sheet carries a value read from Throne's own help centre with the date it was
+read, and none is flagged `verify`.
+
+- 🚨 **A SHEET WITH AN UNCLEARED `verify` ROW CANNOT BE PUBLISHED — `CompetitorSheet::assertValid()`
+  now REFUSES IT.** A `verify` row's `value` is a note to ourselves: Linktree's five read
+  *"Verify the current tier names and prices on their pricing page before publishing"* and
+  *"Verify. On a link page the buyer usually pays…"*. Published, those render verbatim on a
+  public, indexable, paid-ads destination as our statement of what a named competitor charges.
+  The rule existed only as prose at the top of every sheet and in `isPublished()`'s own
+  docblock — **prose is not a guard**, and flipping one boolean was all it took. It fails LOUD
+  naming every offending row, rather than dropping them: a silently omitted fee line is a
+  comparison with a hole in it.
+- 🚨 **`RiskBlock` WAS LINKING EVERY LIVE PAGE TO A 404.** It renders on every comparison, on
+  `/creators/compare` and on `/creators/wishlist`, and its third line links to
+  `/creators/vs/wishtender` — **a draft sheet, which `show()` answers with a 404 in
+  production**. The link is now gated on `wishtenderLive`, resolved once by
+  `ComparisonController::wishtenderPublished()` and passed to all five call sites.
+  ⚠️ **The prop defaults to `false`**, so a caller that forgets it drops a link rather than
+  shipping a broken one; the sentence beside it names WishTender and stands on its own.
+  Publishing the sheet restores the link with no edit to the component.
+- **Sitemap:** `/creators/vs/throne` added **by name** in `routes/web.php`'s
+  `/dynamic-sitemap-pages`, per the rule already written there — vs pages are never listed as
+  a group, because submitting a draft's URL teaches Search Console the path is dead.
+  ⚠️ `SitemapController::STATIC_PAGES` is a **different, second** sitemap and does not carry
+  these; don't add them twice.
+- **Still drafts, deliberately:**
+  - 🚨 **linktree — NOT PUBLISHABLE.** 5 of its 5 fee rows are `verify: true` placeholders.
+    The new guard now refuses it outright.
+  - **wishtender — ready, but it is a judgement call, not a technical one.** 0 verify rows and
+    every claim sourced to WishTender's own posts, but its docblock calls it *"the one page on
+    this build with legal consequences if it is written carelessly"* and sets six absolute
+    rules. Publishing it also restores the `RiskBlock` link above.
+- Tests: `ComparisonPageTest` (19). Four are new — the publish guard, a draft may still hold
+  unverified rows, **every published sheet on the real config is verified**, and the sitemap
+  lists no unpublished comparison. ⚠️ The last two assert against the LIVE config rather than a
+  fixture: the fixtures prove the guard works, these prove nothing has been shipped past it.
+  Verified failing by planting `/creators/vs/linktree` in the sitemap.
+
+## The comparison pages show a cost DIFFERENCE, and it needs no exchange rate (29 Aug 2026)
+
+Client direction: *"Split them down the middle on all comparison pages. So we can show the
+difference in cost. And how small it is for the extra benefits we provide."*
+
+- **`FeeBlock` is split down the middle at `lg:`** — ours left, theirs right, one rule
+  between. It was STACKED (our rails across the top, their fee rows underneath), so the page
+  asked a reader to scroll between the two things it was comparing. ⚠️ `lg:`, not `md:`: at
+  768 a half is ~350px and their fee VALUES are three lines of prose at that width. Shared
+  with `/creators/wishlist` and `vs/Generic`, so "all comparison pages" is satisfied by one
+  change.
+- 🚨 **SUBTRACTING TWO CURRENCIES IS NOT A DIFFERENCE, AND CONVERTING IS WORSE.** Throne
+  prices in USD and we price in the creator's own currency, so £27.45 − $23.11 is a number
+  with no meaning; converting at a live rate puts a figure on the page that **moves daily and
+  depends on a third party**, on the one page whose whole claim is that every number is
+  sourced, dated and stable.
+  - **Both worked examples pay the creator exactly 20 of their OWN unit**, so the comparable
+    quantity is the RATIO — what a supporter pays per 1 the creator receives. Currency-free,
+    exact, and the gap between two ratios applied to our listed price IS the difference in
+    cost. Rendered as a **"Per £1 you receive"** row (£1.37 card · £1.27 bank · £1.16 Throne)
+    and a closing line (**£4.34 more on Card, £2.19 more on Pay by Bank**) beside what the gap
+    buys.
+  - ⚠️ **The stated gap UNDERSTATES the real one.** A competitor ratio is only as flat as
+    their fee structure, and Throne's carries a fixed $0.30 that is diluted on a larger sale —
+    so at a £20-equivalent their real ratio is slightly lower. It errs in THEIR favour, the
+    only safe direction here.
+  - ⚠️ **The row and the whole difference block are DROPPED when the competitor quotes no
+    number.** A link page does not process the sale, so Linktree has no ratio and gets none
+    invented — verified live: three rows, no difference block.
+  - 🚨 The label is **"you receive"**, matching the row above it, deliberately not "you keep"
+    — that phrasing is banned on the Growth Bonus surfaces and must not leak across.
+- **`config/comparisons/*.php` carries `theirs.supporter_pays_amount` /
+  `creator_receives_amount`** — the same two sourced figures as numbers, existing only so the
+  ratio can be derived. The display strings stay authoritative for what is printed.
+- **`resources/js/Pages/creators/feeGap.js`** holds `payRatio()` / `feeGaps()`, out of the
+  component so the arithmetic is testable without mounting Inertia — same reasoning as
+  `Pages/leaderboard/measure.js`.
+- Tests: `tests/javascript/feeGap.test.js` (9). ⚠️ The load-bearing ones assert the gap is
+  **independent of the unit either side is priced in**, and that it **moves when our own
+  pricing moves** — a test against today's £4.34 would pass just as happily with the number
+  typed into the component.
+
+### The `/creators/vs/*` pages are on the twelve-column spine (29 Aug 2026)
+
+`vs/Show.jsx` and `vs/CaseStudy.jsx` were the only pages in the section not using `GRID` /
+`SectionHeadSplit`, and it showed: eight sections opened identically (96px of space, an
+eyebrow, a heading at `md:text-5xl` at the same x, a `max-w-2xl` lead), left edges agreed and
+**right edges ended on four different lines**. Both now use the shared head, so every section
+opens on a hairline and there are **two heading ranks, not five** (42px argument, 64px page).
+
+- `FeatureMatrix`, `FeeBlock` and `WhyTheFee` each drew their own `md:text-5xl` h2 and now
+  take **`headless`** (default false, so `Wishlist` and `vs/Generic` are untouched).
+- **The £20 snapshot** (`components/FeeSnapshot.jsx`) is a TABLE, not cards — the argument is
+  read across a row, and three cards put the three figures at three different heights.
+  🚨 It sits **below `RiskBlock`, not above**: that block's heading is transcribed word for
+  word and reads *"Before you compare fees, read this."*
+- 🚨 **The h1 is `text-[clamp(2.5rem,11vw,3rem)]`.** A competitor's name is DATA, so the
+  longest line is whatever the sheet is called — "vs WishTender" ran 325px inside a 280px
+  column at 320px and was clipped by the shell's `overflow-hidden`, silently.
+- ⚠️ Competitor fee rows are **one frame sharing hairlines**, not a card each; `switchSteps`
+  is an abutting numbered strip (the numbering is TRUE there — a real sequence — where "Where
+  they are better" directly above is a SET and stays unnumbered).
+- Verified in a browser at 320 / 390 / 768 / 1440 on all three pages: 0 horizontal overflow,
+  0 clipped controls, 0 shadows of ours, 0 scale classes.
 
 ## Detailed topic index — load the skill, do not inline this content
 

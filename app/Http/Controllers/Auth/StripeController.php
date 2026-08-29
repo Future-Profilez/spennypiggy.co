@@ -2764,6 +2764,13 @@ class StripeController extends Controller
             if (! $hasCardPayments) {
                 $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
 
+                BlockedPaymentAlert::record(
+                    $wish->user,
+                    $wish->price ?? 0,
+                    $wish->currency ?? $wish->user->default_currency ?? 'GBP',
+                    'stripe_disabled',
+                );
+
                 return back()->with('error', app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
             }
 
@@ -3835,6 +3842,15 @@ class StripeController extends Controller
         if (! StripeControl::hasCardPaymentsCapability($creator->account_id)) {
             $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
 
+            // Same rule as the subscription gate below: a refusal nobody records
+            // is a lost sale the creator never hears about and no admin can see.
+            BlockedPaymentAlert::record(
+                $creator,
+                $request->amount ?? 0,
+                $request->currency ?? $creator->default_currency ?? 'GBP',
+                'stripe_disabled',
+            );
+
             return response()->json([
                 'status' => false,
                 'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck),
@@ -3848,7 +3864,12 @@ class StripeController extends Controller
             // Send notification to creator about blocked payment
             $creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $request->amount ?? 0));
             // Recorded and counted: one lost sale is a warning, six is a reason.
-            BlockedPaymentAlert::record($creator, $request->amount ?? 0);
+            BlockedPaymentAlert::record(
+                $creator,
+                $request->amount ?? 0,
+                $request->currency ?? $creator->default_currency ?? 'GBP',
+                $subscriptionCheck['status'] ?? null,
+            );
 
             // Log the blocked payment for subscription issues
             Log::warning('Tip jar payment blocked due to subscription issue', [
@@ -4064,6 +4085,13 @@ class StripeController extends Controller
                 || StripeControl::hasCardPaymentsCapability($creator->account_id);
 
             if (! $hasCardPayments) {
+                BlockedPaymentAlert::record(
+                    $creator,
+                    $request->amount ?? 0,
+                    $request->currency ?? $creator->default_currency ?? 'GBP',
+                    'stripe_disabled',
+                );
+
                 return response()->json([
                     'status' => false,
                     'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ['eligible' => false, 'status' => 'stripe_disabled']),

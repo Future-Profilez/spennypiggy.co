@@ -75,7 +75,13 @@ const ONE_OFF = [
         mark: '✅',
         title: 'Paid requests',
         line: 'Custom work, paid up front and held until you deliver.',
-        detail: 'You set the price, the deadline and the rules, and you approve every request before it starts. The money sits in escrow until the work is handed over.',
+        // 🚨 NOT "escrow", and the distinction is the product, not pedantry.
+        // The supporter pays up front and the money is credited to the creator's
+        // balance immediately; what waits is the BANK PAYOUT, and Spenny Piggy
+        // runs the refund process itself. Nobody holds the money hostage, which
+        // is the opposite of what "sits in escrow" tells a creator. Corrected
+        // per the client's 24 Aug 2026 spec appendix.
+        detail: 'Paid up front and credited to your balance straight away. We manage the refund process automatically and hold the bank payout until you deliver — so both sides are protected.',
         figure: `${price(PRICE_LIMITS.min)}–${price(PRICE_LIMITS.tasks)}`,
         best: 'Personalised work you would otherwise do over DMs',
     },
@@ -328,7 +334,7 @@ export default function Features() {
                             />
                             <LedgerRow
                                 title="Creator referrals"
-                                line={`${money(REFERRAL.amount)} for every creator you bring who starts selling. Your link is in your dashboard from day one.`}
+                                line={`${money(REFERRAL.amount)} for every creator you bring, paid once they have earned ${money(REFERRAL.qualifyingGmv)}. Your link is in your dashboard from day one.`}
                                 figure={money(REFERRAL.amount)}
                                 tag="per creator"
                             />

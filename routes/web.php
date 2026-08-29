@@ -19,11 +19,13 @@ use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\BrandAssetController;
+use App\Http\Controllers\ComparisonController;
 use App\Http\Controllers\Creator\DisputeController;
 use App\Http\Controllers\Creator\ReviewHoldController;
 use App\Http\Controllers\CreatorActivityController;
 use App\Http\Controllers\CreatorPushController;
 use App\Http\Controllers\CreatorSubscriptionController;
+use App\Http\Controllers\Debug\SupportImageTestController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -34,7 +36,6 @@ use App\Http\Controllers\CreatorSubscriptionController;
 */
 
 // Health check endpoint for Vapor
-use App\Http\Controllers\Debug\SupportImageTestController;
 use App\Http\Controllers\DeliveriesController;
 use App\Http\Controllers\EmailPreferenceController;
 use App\Http\Controllers\ErrorController;
@@ -69,6 +70,7 @@ use App\Models\UserCart;
 use App\Services\Discovery\CollectionService;
 use App\Services\DiscoveryService;
 use App\Services\PendingApprovalService;
+use App\Support\CompetitorSheet;
 use App\Support\DiscoveryPayload;
 use App\Support\PresetCovers;
 use App\Support\PwaSplash;
@@ -319,11 +321,11 @@ Route::get('/', function (DiscoveryService $discoveryService) {
             8
         ),
     ]);
-})->name('home');
+})->middleware('ssr')->name('home');
 
 Route::get('/pride', function () {
     return Inertia::render('Pride/Index');
-})->name('pride.landing');
+})->middleware('ssr')->name('pride.landing');
 
 // =====================================================
 // Creator Dashboards
@@ -462,7 +464,7 @@ Route::get('/giftstore', function () {
     }
 
     return Inertia::render('rye/GiftStore');
-})->name('giftStore');
+})->middleware('ssr')->name('giftStore');
 
 /*
  * The paid-ads landing pages, and the only routes on the site that are
@@ -474,7 +476,16 @@ Route::get('/giftstore', function () {
  */
 Route::middleware('ssr')->group(function () {
     Route::get('/creators', function () {
-        return Inertia::render('creators/Index');
+        return Inertia::render('creators/Index', [
+            // Client spec v4.3 §7 — the "how we compare" cards. Only published
+            // comparisons are sent, so the overview can never link to a page
+            // that is still being checked.
+            'comparisons' => array_map(fn ($sheet) => [
+                'slug' => $sheet->slug,
+                'name' => $sheet->name(),
+                'what' => $sheet->get('what'),
+            ], CompetitorSheet::published()),
+        ]);
     })->name('creators');
 
     Route::get('/creators/stripe-safe', function () {
@@ -514,6 +525,35 @@ Route::middleware('ssr')->group(function () {
             'discovery' => DiscoveryPayload::forInertia(),
         ]);
     })->name('creators.link-in-bio');
+
+    /*
+     * The comparison pages — client spec "Comparison Build FINAL v4.3",
+     * 24 Aug 2026. One template, one config file per competitor.
+     *
+     * 🚨 `/creators/compare` MUST be declared before `/creators/vs/{slug}`?
+     * No — they do not overlap ("compare" is not under "vs"). But the INDEX is
+     * declared first anyway so the pair reads in the order a person meets them.
+     *
+     * ⚠️ The slug is the config file name and nothing else is consulted, so an
+     * unknown competitor 404s rather than rendering an empty template.
+     */
+    /*
+     * The wishlist keyword landing page (spec Section 5c). NOT a comparison —
+     * it is where the whole wishlist keyword cluster lands, which today points
+     * at /creators/features, a page that never uses the word "wishlist".
+     *
+     * ⚠️ Declared before `/creators/vs/{slug}` for readability only; "wishlist"
+     * is not under "vs", so the two cannot collide.
+     */
+    Route::get('/creators/wishlist', [ComparisonController::class, 'wishlist'])
+        ->name('creators.wishlist');
+
+    Route::get('/creators/compare', [ComparisonController::class, 'index'])
+        ->name('creators.compare');
+
+    Route::get('/creators/vs/{slug}', [ComparisonController::class, 'show'])
+        ->where('slug', '[a-z0-9-]+')
+        ->name('creators.vs');
 });
 
 // Route::post('test-stripe', function (Request $request) {
@@ -1091,6 +1131,29 @@ Route::withoutMiddleware([])->group(function () {
             ['url' => '/creators/founder-bonus', 'priority' => '0.7', 'changefreq' => 'weekly'],
             ['url' => '/creators/discovery', 'priority' => '0.7', 'changefreq' => 'weekly'],
             ['url' => '/creators/link-in-bio', 'priority' => '0.7', 'changefreq' => 'weekly'],
+
+            /*
+             * The comparison build (client spec v4.3). ⚠️ Server-rendering a page
+             * is only half of being found — a page in no sitemap is discovered
+             * only by crawling an internal link to it, which is slower and less
+             * reliable on a site this size. The four live pages were missing here
+             * until 29 Aug 2026.
+             *
+             * 🚨 THE `/creators/vs/{slug}` PAGES ARE DELIBERATELY NOT LISTED AS A
+             * GROUP. Each is added by name only once its sheet is published —
+             * submitting a URL that answers 404 (which every draft sheet does in
+             * production) teaches Search Console the path is dead.
+             */
+            ['url' => '/creators/wishlist', 'priority' => '0.8', 'changefreq' => 'weekly'],
+            ['url' => '/creators/compare', 'priority' => '0.7', 'changefreq' => 'weekly'],
+            ['url' => '/creators/vs/wishlist', 'priority' => '0.7', 'changefreq' => 'monthly'],
+            ['url' => '/creators/vs/link-in-bio', 'priority' => '0.7', 'changefreq' => 'monthly'],
+            // Published 30 Aug 2026. Every fee row on that sheet carries a value
+            // read from Throne's own help centre with the date it was read, and
+            // `CompetitorSheet::assertValid()` now REFUSES to build a published
+            // sheet that still has a `verify` row — so "published" and "checked"
+            // can no longer drift apart the way the by-name rule above assumes.
+            ['url' => '/creators/vs/throne', 'priority' => '0.7', 'changefreq' => 'monthly'],
         ];
 
         $content = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
@@ -1395,7 +1458,10 @@ if (app()->environment('local', 'testing')) {
 | there is.
 */
 Route::prefix('help')->name('help.')->group(function () {
-    Route::get('/', [HelpController::class, 'index'])->name('index');
+    // Server-rendered — the Help Centre index is a public, crawlable page.
+    // ⚠️ Only this one: the rest of this group is JSON, and the category and
+    // article pages have not been checked for SSR safety.
+    Route::get('/', [HelpController::class, 'index'])->middleware('ssr')->name('index');
 
     // JSON. Throttled because search sorts a corpus on every keystroke.
     Route::get('/search', [HelpController::class, 'search'])

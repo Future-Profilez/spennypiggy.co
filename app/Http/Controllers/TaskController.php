@@ -538,7 +538,12 @@ class TaskController extends Controller
             // Send notification to creator about blocked payment
             $creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $task->price));
             // Recorded and counted: one lost sale is a warning, six is a reason.
-            BlockedPaymentAlert::record($creator, $task->price);
+            BlockedPaymentAlert::record(
+                $creator,
+                $task->price,
+                $task->currency ?? $creator->default_currency ?? 'GBP',
+                $subscriptionCheck['status'] ?? null,
+            );
 
             // Log the blocked payment for subscription issues
             Log::warning('Task payment blocked due to subscription issue', [
@@ -690,6 +695,13 @@ class TaskController extends Controller
 
         if (! $hasCardPayments) {
             $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
+
+            BlockedPaymentAlert::record(
+                $creator,
+                $task->price,
+                $task->currency ?? $creator->default_currency ?? 'GBP',
+                'stripe_disabled',
+            );
 
             return redirect()->back()->with('error', app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
         }

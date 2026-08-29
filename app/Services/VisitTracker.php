@@ -67,6 +67,15 @@ class VisitTracker
         'creators.keep-100' => 'ad_keep_100',
         'creators.discovery' => 'ad_discovery',
         'creators.link-in-bio' => 'ad_link_in_bio',
+
+        // The comparison build (client spec v4.3, 24 Aug 2026). ⚠️ `creators.vs`
+        // is ONE route serving every competitor, so every comparison shares this
+        // counter — the per-competitor split lives in GA4, not here. A second key
+        // per slug would need a PAGE_TYPES entry each, and `flush()` enumerates
+        // that list, so an unknown type is a counter written and never collected.
+        'creators.wishlist' => 'ad_wishlist',
+        'creators.compare' => 'ad_compare',
+        'creators.vs' => 'ad_vs',
     ];
 
     /**
@@ -90,6 +99,9 @@ class VisitTracker
         'ad_keep_100',
         'ad_discovery',
         'ad_link_in_bio',
+        'ad_wishlist',
+        'ad_compare',
+        'ad_vs',
     ];
 
     /**

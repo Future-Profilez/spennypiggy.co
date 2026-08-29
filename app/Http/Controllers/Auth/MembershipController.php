@@ -686,7 +686,12 @@ class MembershipController extends Controller
         if (! $subscriptionCheck['eligible']) {
             $membership->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $membership->price));
             // Recorded and counted: one lost sale is a warning, six is a reason.
-            BlockedPaymentAlert::record($membership->user, $membership->price);
+            BlockedPaymentAlert::record(
+                $membership->user,
+                $membership->price,
+                $membership->currency ?? $membership->user->default_currency ?? 'GBP',
+                $subscriptionCheck['status'] ?? null,
+            );
 
             return $this->awayFrom(
                 $membership,
@@ -855,6 +860,13 @@ class MembershipController extends Controller
                 // Check if creator has card_payments capability
                 if (! StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
                     $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
+
+                    BlockedPaymentAlert::record(
+                        $membership->user,
+                        $membership->price,
+                        $membership->currency ?? $membership->user->default_currency ?? 'GBP',
+                        'stripe_disabled',
+                    );
 
                     return back()->with('error', app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
                 }

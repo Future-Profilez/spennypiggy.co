@@ -35,12 +35,13 @@ return [
      * ⚠️ Config is cached in production (`config:cache` on deploy), so a change
      * here reaches the site on the next deploy, not instantly.
      *
-     * 🚨 OFF SINCE 26 Aug 2026, ON THE CLIENT'S INSTRUCTION: the published terms
-     * carried four clauses that did not match this engine, and a creator must
-     * not be enrolled against terms the platform does not honour. Switch to
-     * `true` once the terms and the engine agree.
+     * ✅ ON SINCE 28 Aug 2026 (client approval). It was held off from 26 Aug while
+     * the published terms carried clauses this engine did not honour; Part A and
+     * Part B were corrected, the client signed both off, and it was switched on
+     * with that deploy. Turning it off again is safe and reversible — no rows
+     * are deleted and the admin screens keep working.
      */
-    'enabled' => false,
+    'enabled' => true,
 
     // Only creators whose Stripe Connect activation is ON or AFTER this date
     // are in the scheme (client, 26 Aug 2026). Earlier creators are excluded —

@@ -43,6 +43,10 @@ export default function CreatorGuideLinks() {
         { href: '/creators/disputes', label: 'Disputes' },
         { href: '/creators/discovery', label: 'Get discovered' },
         { href: '/creators/link-in-bio', label: 'Link in bio' },
+        { href: '/creators/wishlist', label: 'Wishlist' },
+        // Client spec v4.3 §2 — "Compare" is added to this nav on every
+        // /creators page, and ships with the first published comparison.
+        { href: '/creators/compare', label: 'Compare' },
     ];
 
     const path = (url || '').split('?')[0].replace(/\/$/, '') || '/creators';

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers;
 use App\Models\Bills;
 use App\Models\BlockedPayment;
 use App\Models\Membership;
@@ -13,6 +14,7 @@ use App\Models\WishItem;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class CreatorActivityService
@@ -424,37 +426,119 @@ class CreatorActivityService
     }
 
     /**
-     * Get recent blocked payments for a creator
+     * Every purchase this creator lost in the window, from BOTH tables.
+     *
+     * 🚨 THERE ARE TWO BLOCKED-PAYMENT TABLES AND THIS CARD ONLY EVER READ ONE.
+     * `blocked_payments` is written by the risk engine (`Risk\RiskService::evaluate`)
+     * and by `logBlockedPayment()`, whose only checkout caller — `validatePaymentAndLog`
+     * — has ZERO call sites. Every real refusal on the platform (21 gates across nine
+     * controllers) writes `blocked_payment_attempts` via `BlockedPaymentAlert::record`.
+     * So the creator was told "no payments have been blocked" on a page whose whole job
+     * is to say how many were, while the dashboard widget beside it counted them.
+     *
+     * 🚨 MONEY IS NEVER SUMMED ACROSS CURRENCIES and never converted — same rule as
+     * `BlockedPaymentAlert::lostSalesInWindow`. A creator pricing in two currencies
+     * would otherwise be shown one figure true in neither. A row with no currency or
+     * no amount counts toward `count` but toward no total: the gates wrote NULL for
+     * both for months, and guessing GBP restates a yen sale as pounds.
+     *
+     * ⚠️ A risk-engine reason (`DAILY_LIMIT_EXCEEDED`, …) is NEVER shown raw. It is an
+     * internal screening code, and the same rule the moderation queue follows applies —
+     * the creator gets a category, not the detector's label.
      */
     public function getRecentBlockedPayments(User $creator, int $days = 30): array
     {
-        $blockedPayments = BlockedPayment::forCreator($creator->id)
-            ->recent($days)
-            ->with(['payer'])
-            ->orderBy('blocked_at', 'desc')
-            ->get();
+        $since = Carbon::now()->subDays($days);
 
-        $totalBlocked = $blockedPayments->sum('amount');
-        $lastBlockedAt = $blockedPayments->first()?->blocked_at;
+        $attempts = DB::table('blocked_payment_attempts')
+            ->where('creator_id', $creator->id)
+            ->where('created_at', '>=', $since)
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn ($row) => [
+                'id' => 'attempt-'.$row->id,
+                'source' => 'eligibility',
+                'amount' => is_numeric($row->amount) ? (float) $row->amount : null,
+                'currency' => $row->currency ? strtoupper($row->currency) : null,
+                'reason' => self::blockedReasonLabel($row->reason),
+                'at' => $row->created_at ? Carbon::parse($row->created_at) : null,
+            ]);
+
+        $risk = BlockedPayment::forCreator($creator->id)
+            ->recent($days)
+            ->orderByDesc('blocked_at')
+            ->get()
+            ->map(fn ($row) => [
+                'id' => 'risk-'.$row->uuid,
+                'source' => 'screening',
+                'amount' => is_numeric($row->amount) ? (float) $row->amount : null,
+                'currency' => $row->currency ? strtoupper($row->currency) : null,
+                // Deliberately category-only: the stored reason is a risk code.
+                'reason' => 'Held by payment screening',
+                'at' => $row->blocked_at,
+            ]);
+
+        $all = $attempts->concat($risk)
+            ->filter(fn ($row) => $row['at'] !== null)
+            ->sortByDesc(fn ($row) => $row['at']->getTimestamp())
+            ->values();
+
+        $totals = $all
+            ->filter(fn ($row) => $row['amount'] !== null && $row['currency'] !== null)
+            ->groupBy('currency')
+            ->map(fn ($rows, $currency) => [
+                'currency' => $currency,
+                'amount' => round((float) $rows->sum('amount'), 2),
+                'zero_decimal' => Helpers::isZeroDecimalCurrency($currency),
+            ])
+            ->sortByDesc('amount')
+            ->values()
+            ->all();
+
+        $lastBlockedAt = $all->first()['at'] ?? null;
 
         return [
-            'count' => $blockedPayments->count(),
-            'last_blocked_at' => $lastBlockedAt ? $lastBlockedAt->toISOString() : null,
-            'last_blocked_at_human' => $lastBlockedAt ? $lastBlockedAt->diffForHumans() : null,
-            'total_amount_blocked' => number_format((float) $totalBlocked, 2, '.', ''),
-            'currency' => $blockedPayments->first()?->currency ?? 'USD',
-            'recent_attempts' => $blockedPayments->take(10)->map(function ($blocked) {
-                return [
-                    'id' => $blocked->uuid,
-                    'amount' => $blocked->formatted_amount,
-                    'payment_type' => $blocked->payment_type,
-                    'blocked_reason' => $blocked->blocked_reason,
-                    'blocked_at' => $blocked->time_ago,
-                    'blocked_at_iso' => $blocked->blocked_at->toISOString(),
-                    'payer_name' => $blocked->payer?->name ?? 'Unknown',
-                ];
-            })->toArray(),
+            'count' => $all->count(),
+            'window_days' => $days,
+            'last_blocked_at' => $lastBlockedAt?->toISOString(),
+            'last_blocked_at_human' => $lastBlockedAt?->diffForHumans(),
+            'totals' => $totals,
+            'recent_attempts' => $all->take(10)->map(fn ($row) => [
+                'id' => $row['id'],
+                'source' => $row['source'],
+                // ⚠️ A fractional yen is meaningless — same rule the price fields follow.
+                'amount' => $row['amount'] !== null && $row['currency'] !== null
+                    ? $row['currency'].' '.number_format(
+                        $row['amount'],
+                        Helpers::isZeroDecimalCurrency($row['currency']) ? 0 : 2,
+                        '.',
+                        ','
+                    )
+                    : null,
+                'reason' => $row['reason'],
+                'blocked_at' => $row['at']->diffForHumans(),
+                'blocked_at_iso' => $row['at']->toISOString(),
+            ])->values()->all(),
         ];
+    }
+
+    /**
+     * The creator-facing name for a gate's status code.
+     *
+     * ⚠️ An unrecognised or missing code says what IS known rather than inventing a
+     * cause — the admin feed's "a risk check" fallback sent an investigation at the
+     * supporter when it was the creator who could not sell.
+     */
+    private static function blockedReasonLabel(?string $reason): string
+    {
+        return match ($reason) {
+            'no_subscription' => 'Your subscription is not active',
+            'subscription_expired' => 'Your subscription has expired',
+            'unknown_subscription_status' => 'Your subscription status could not be confirmed',
+            'stripe_disabled' => 'Your Stripe account cannot take card payments',
+            'insufficient_content' => 'Not enough recent content',
+            default => 'Reason not recorded',
+        };
     }
 
     /**

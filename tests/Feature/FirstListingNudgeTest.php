@@ -63,12 +63,26 @@ class FirstListingNudgeTest extends TestCase
             'stripe_details_submitted' => 1,
             'suspended_account' => 0,
             'email_verified_at' => now(),
+            // Identity is a hard precondition for listing anything, so it is part of the
+            // baseline "eligible creator" rather than something each test sets.
+            'identity_status' => 1,
         ], $overrides));
     }
 
     public function test_creator_without_stripe_connected_does_not_need_first_listing(): void
     {
         $creator = $this->creator(['stripe_details_submitted' => 0]);
+        $service = app(CreatorSetupService::class);
+
+        $this->assertFalse($service->needsFirstListing($creator));
+    }
+
+    public function test_creator_without_identity_does_not_need_first_listing(): void
+    {
+        // They are blocked from listing by `mustCompletedStripeIdentity`, so asking them
+        // to publish sends them to a wall. `creators:nudge-journey` chases the identity
+        // check itself instead.
+        $creator = $this->creator(['identity_status' => 0]);
         $service = app(CreatorSetupService::class);
 
         $this->assertFalse($service->needsFirstListing($creator));

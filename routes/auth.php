@@ -1517,7 +1517,16 @@ Route::get('/how-it-works', function () {
     return redirect()->route('how-spenny-piggy-works', [], 301);
 })->name('how-it-works');
 
-Route::controller(StaticPageController::class)->group(function () {
+/*
+ * Server-rendered. These are long, static, public documents — the pages a
+ * search result, a payment partner's reviewer and a link unfurler land on — and
+ * every one of them was an empty shell in view-source. All fourteen were
+ * verified to render under SSR before this was added; see App\Http\Middleware\EnableSsr.
+ *
+ * ⚠️ `accept-terms` below is a POST and carries `auth`, so `EnableSsr` skips it
+ * on both counts (it only ever enables SSR for a signed-out GET).
+ */
+Route::controller(StaticPageController::class)->middleware('ssr')->group(function () {
     Route::get('/terms-and-conditions', 'terms')->name('terms-and-conditions');
     Route::get('/creator-agreement', 'creatorAgreement')->name('creator-agreement');
     Route::get('/supporter-terms', 'supporterTerms')->name('supporter-terms');
@@ -1537,7 +1546,7 @@ Route::controller(StaticPageController::class)->group(function () {
 
 Route::get('/promotion-terms', function () {
     return Inertia::render('Promotions');
-})->name('promotion-terms');
+})->middleware('ssr')->name('promotion-terms');
 
 // Removed: GET /files/{filename}. It passed asset($filename) — a full URL — to
 // Storage::response(), which resolved the default S3 disk with no bucket
@@ -1561,7 +1570,7 @@ Route::post('leaderboard/opt-out', [LeaderBoardController::class, 'toggleOptOut'
     ->name('leaderboard.opt-out');
 
 /* wishtender */
-Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');
+Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->middleware('ssr')->name('leaderboard');
 Route::get('first-three-leaderboard/{type?}', [LeaderBoardController::class, 'firstThreeWisher'])->name('first-three-wishes');
 /* check username exist */
 // Route::get('/data-check', function () {
@@ -1608,7 +1617,7 @@ Route::get('gift-items/{username}', [AuthenticatedSessionController::class, 'use
 Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('user.posts.comments');
 
 // Founder routes - must come before profile route to prevent interception
-Route::get('/founder/bonus', [FounderBonusController::class, 'index'])->name('founder.bonus');
+Route::get('/founder/bonus', [FounderBonusController::class, 'index'])->middleware('ssr')->name('founder.bonus');
 Route::get('/founder/winners/all-time', [FounderBonusController::class, 'getAllTimeWinners'])->name('founder.winners.all-time');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/founder/leaderboard', [FounderBonusController::class, 'getLeaderboard'])->name('founder.leaderboard');

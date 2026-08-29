@@ -69,10 +69,10 @@ export default function EarnMoreAnnouncement({ founderBonus, growthBonus }) {
                     and `StablecoinTipsAnnouncement` were removed from this page. A full-width
                     lead card above the three is the callout and the card.
 
-                    ⚠️ The £100 is the creator's LISTED SALE VALUE — a £100 listing counts as
-                    £100 (client decision, 26 Aug 2026; terms clause 2.1). It was gross
-                    customer spend until then, when this block was careful to say "sales"
-                    rather than "earn"; all three cards on this screen now share a base. */}
+                    ⚠️ The £100 is the creator's LISTED SALE VALUE, VAT included — a £100
+                    listing counts as £100 whatever their VAT status (client decision,
+                    26 Aug 2026; terms clause 2.1). 🚨 "Earn" is fine; "keep" is not —
+                    where VAT applies part of the figure is passed to HMRC. */}
                 {growthLive && (
                     <div className="px-2 md:px-4 mb-6 md:mb-10">
                         <FadeIn y={20} duration={0.6}>

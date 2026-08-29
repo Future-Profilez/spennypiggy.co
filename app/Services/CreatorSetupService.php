@@ -91,6 +91,14 @@ class CreatorSetupService
             return false;
         }
 
+        // 🚨 Identity gates LISTING itself — the creator area sits behind
+        // `mustCompletedStripeIdentity`. Asking them to publish sends them to a wall, so
+        // the identity reminder (`creators:nudge-journey`) owns this creator until it
+        // passes. Mirrored in candidateQuery(); the two must not drift.
+        if ((int) ($creator->identity_status ?? 0) !== 1) {
+            return false;
+        }
+
         return ! $this->hasAnyListing($creator);
     }
 
@@ -150,7 +158,16 @@ class CreatorSetupService
         $query = User::query()
             ->where('role', 1)
             ->where('stripe_details_submitted', 1)
-            ->where('suspended_account', 0);
+            ->where('suspended_account', 0)
+            // 🚨 A creator who has not passed identity CANNOT list anything — the whole
+            // authenticated creator area sits behind `mustCompletedStripeIdentity`
+            // (routes/auth.php), which renders the identity screen instead. Nudging them to
+            // "publish your first item" sends them to a wall, twice, and it was doing
+            // exactly that: a creator who abandoned the Stripe Identity flow got the
+            // first-listing email on day 3 and again on day 10 for work the platform was
+            // blocking. They are reminded about the identity check itself instead, by
+            // `creators:nudge-journey`.
+            ->where('identity_status', 1);
 
         foreach (self::LISTING_SOURCES as $model => $ownerColumn) {
             $table = (new $model)->getTable();

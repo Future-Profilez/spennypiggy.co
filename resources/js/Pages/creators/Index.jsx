@@ -123,7 +123,7 @@ const REASONS = [
     },
 ];
 
-export default function Index() {
+export default function Index({ comparisons = [] }) {
     const title = 'Sell your content and keep 100% — Spenny Piggy for creators';
     const description = `Seven ways to get paid on one profile, weekly payouts, and dispute evidence gathered for you. You keep 100% of your listed price. ${SUBSCRIPTION_COPY.promise}.`;
     const promise = `${SUBSCRIPTION_COPY.promise} · ${PRICE_FORMATTED} + VAT / month after · cancel anytime`;
@@ -327,6 +327,49 @@ export default function Index() {
                         </ul>
                     </div>
 
+                    {/*
+                     * How we compare (client spec v4.3, §7). Inserted directly
+                     * after "Why creators lose money on payment apps" — those
+                     * cards state the problem, and this turns them into a reason
+                     * to act by pointing at the named comparisons.
+                     *
+                     * 🚨 CARDS ONLY FOR PUBLISHED COMPARISONS. The server sends
+                     * exactly what is live, so an unpublished page can never be
+                     * linked from here. Nothing renders at all while the list is
+                     * empty — a heading over no cards reads as a broken section.
+                     */}
+                    {comparisons?.length > 0 && (
+                        <div className="mt-20 md:mt-28">
+                            <SectionHead
+                                eyebrow="How we compare"
+                                accent={ACCENT.safe}
+                                lead="Every fee on those pages comes from the other platform’s own website, with a link and the date we checked it."
+                            >
+                                Compare us to{' '}
+                                <span className="text-gradient-wishlist">
+                                    what you use now
+                                </span>
+                            </SectionHead>
+
+                            <div className="mt-10 grid gap-3 md:grid-cols-2">
+                                {comparisons.map((row) => (
+                                    <Link
+                                        key={row.slug}
+                                        href={`/creators/vs/${row.slug}`}
+                                        className="rounded-box border-2 border-white/15 bg-white/[0.04] px-5 py-4 transition-colors duration-200 hover:border-white/40"
+                                    >
+                                        <div className="font-gulfs text-base uppercase tracking-wide text-white md:text-lg">
+                                            vs {row.name}
+                                        </div>
+                                        <div className="mt-1.5 text-sm text-white/60 md:text-base">
+                                            {row.what}
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Bonuses */}
                     <div className="mt-20 md:mt-28">
                         <SectionHead
@@ -355,7 +398,7 @@ export default function Index() {
                             />
                             <LedgerRow
                                 title="Creator referrals"
-                                line={`${money(REFERRAL.amount)} for every creator you bring who starts selling. Your link is in your dashboard from day one.`}
+                                line={`${money(REFERRAL.amount)} for every creator you bring, paid once they have earned ${money(REFERRAL.qualifyingGmv)}. Your link is in your dashboard from day one.`}
                                 figure={money(REFERRAL.amount)}
                                 tag="per creator"
                             />

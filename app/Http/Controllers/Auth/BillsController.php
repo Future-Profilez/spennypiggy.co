@@ -641,6 +641,15 @@ class BillsController extends Controller
         if (! StripeControl::hasCardPaymentsCapability($bill->user->account_id)) {
             $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
 
+            // Same rule as the subscription gate below: a refusal nobody records
+            // is a lost sale the creator never hears about and no admin can see.
+            BlockedPaymentAlert::record(
+                $bill->user,
+                $bill->price,
+                $bill->currency ?? $bill->user->default_currency ?? 'GBP',
+                'stripe_disabled',
+            );
+
             return $this->awayFrom($bill, app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
         }
 
@@ -651,7 +660,12 @@ class BillsController extends Controller
             // Send notification to creator about blocked payment
             $bill->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $bill->price));
             // Recorded and counted: one lost sale is a warning, six is a reason.
-            BlockedPaymentAlert::record($bill->user, $bill->price);
+            BlockedPaymentAlert::record(
+                $bill->user,
+                $bill->price,
+                $bill->currency ?? $bill->user->default_currency ?? 'GBP',
+                $subscriptionCheck['status'] ?? null,
+            );
 
             // Log the blocked payment for subscription issues
             Log::warning('Bill payment blocked due to subscription issue', [

@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\FinancialTransaction;
 use App\Models\Post;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -138,6 +140,111 @@ class CreatorJourneyService
      * Short-circuits: the first unfinished step wins, so a creator early in the journey
      * costs one or two checks rather than all six.
      */
+    /**
+     * How many days after ENTERING a step the creator is reminded about it.
+     *
+     * 🚨 Two, and then silence on that step forever. A creator who has not acted on the
+     * second reminder is not going to act on the fifth, and a platform that keeps asking
+     * is how a creator learns to filter everything we send — including the receipt and the
+     * payout notice. Moving to a new step resets the clock (`journey_step_at`), so the
+     * cap is per step, not per creator.
+     */
+    public const NUDGE_STAGES = [2, 7];
+
+    /**
+     * ⚠️ `first_listing` is DELIBERATELY ABSENT. It already has its own two-stage nudge
+     * (`creators:nudge-first-listing`, days 3 and 10) with its own mailable and its own
+     * dedup ledger. Adding it here would mail the same creator twice for the same task
+     * from two commands that cannot see each other.
+     *
+     * @return array<int, string>
+     */
+    public static function nudgeableSteps(): array
+    {
+        return array_values(array_diff(array_keys(self::STEPS), ['first_listing']));
+    }
+
+    /**
+     * A creator who signed up months ago is dormant, not onboarding.
+     *
+     * Same window and same reasoning as the admin app's drip: mailing a long tail of
+     * abandoned signups in one run is how a sending domain earns a spam reputation, after
+     * which the mail that matters stops arriving for everyone.
+     */
+    public const NUDGE_FRESH_WINDOW_DAYS = 30;
+
+    /**
+     * Everyone who might be due a "you have not finished setting up" reminder.
+     *
+     * The step itself is NOT filtered here — `nudgeStageFor()` decides, once, so the rule
+     * lives in one place rather than being half in a query and half in a method.
+     */
+    public function nudgeCandidateQuery(bool $includeDormant = false): Builder
+    {
+        $query = User::query()
+            ->where('role', 1)
+            ->where('suspended_account', 0)
+            // ⚠️ `profile_status_lock = 1` is a PUNISHMENT, not a review state — it delists
+            // everything the creator sells. Coaching them to finish setting up is the wrong
+            // message entirely. Same exclusion as the admin drip.
+            ->where('profile_status_lock', '!=', 1)
+            // Never mail an address nobody has confirmed: a guaranteed bounce against our
+            // sending reputation. The verification reminder is the right message for them.
+            ->whereNotNull('email_verified_at')
+            ->where('notification_send', 1)
+            ->whereNotNull('journey_step')
+            ->where('journey_step', '!=', self::STEP_DONE)
+            ->whereIn('journey_step', self::nudgeableSteps())
+            // NULL means the hourly sync has not stamped them yet, so there is no clock to
+            // measure against — "unknown", never "stuck since forever".
+            ->whereNotNull('journey_step_at');
+
+        if (! $includeDormant) {
+            $query->where('created_at', '>=', now()->subDays(self::NUDGE_FRESH_WINDOW_DAYS));
+        }
+
+        return $query;
+    }
+
+    /**
+     * Which reminder is due for this creator, or null when none is.
+     *
+     * Pure and separated from delivery so the one business rule is testable on its own —
+     * the same split `NudgeFirstListing::stageFor()` uses.
+     */
+    public function nudgeStageFor(User $creator): ?int
+    {
+        $step = $creator->journey_step ?? null;
+
+        if ($step === null || $step === self::STEP_DONE || ! in_array($step, self::nudgeableSteps(), true)) {
+            return null;
+        }
+
+        if (empty($creator->journey_step_at)) {
+            return null;
+        }
+
+        $enteredAt = Carbon::parse($creator->journey_step_at);
+
+        // ⚠️ diffInDays() is absolute. A timestamp in the future — clock skew or bad data —
+        // would otherwise read as "stuck for 90 days" and fire the final reminder at once.
+        if ($enteredAt->isFuture()) {
+            return null;
+        }
+
+        $days = (int) $enteredAt->diffInDays(now());
+
+        // Newest threshold first, so a creator past day 7 gets the second reminder rather
+        // than the first — and anyone already past both when this shipped gets exactly one.
+        foreach (array_reverse(self::NUDGE_STAGES) as $stage) {
+            if ($days >= $stage) {
+                return $stage;
+            }
+        }
+
+        return null;
+    }
+
     public function currentStep(User $creator): string
     {
         foreach (array_keys(self::STEPS) as $step) {

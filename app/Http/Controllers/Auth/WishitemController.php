@@ -1112,7 +1112,12 @@ class WishitemController extends Controller
         if (! $subscriptionCheck['eligible']) {
             // ⚠️ This gate refused sales silently — it had no notification of any
             // kind, so a creator lost wish purchases and was never told.
-            BlockedPaymentAlert::record($wishitem->user, $wishitem->price ?? 0);
+            BlockedPaymentAlert::record(
+                $wishitem->user,
+                $wishitem->price ?? 0,
+                $wishitem->currency ?? $wishitem->user->default_currency ?? 'GBP',
+                $subscriptionCheck['status'] ?? null,
+            );
 
             return response()->json([
                 'success' => false,
@@ -1719,7 +1724,12 @@ class WishitemController extends Controller
                 // Send notification to creator about blocked payment
                 $orderDetails->creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $request->amount ?? 0));
                 // Recorded and counted: one lost sale is a warning, six is a reason.
-                BlockedPaymentAlert::record($orderDetails->creator, $request->amount ?? 0);
+                BlockedPaymentAlert::record(
+                    $orderDetails->creator,
+                    $request->amount ?? 0,
+                    $request->currency ?? $orderDetails->creator->default_currency ?? 'GBP',
+                    $subscriptionCheck['status'] ?? null,
+                );
 
                 // Log the blocked payment for subscription issues
                 Log::warning('Rye product payment blocked due to subscription issue', [
@@ -1815,6 +1825,16 @@ class WishitemController extends Controller
             $hasCardPayments = StripeControl::hasCardPaymentsCapability($orderDetails->creator->account_id);
 
             if (! $hasCardPayments) {
+                // Same rule as the subscription gate below: a refusal nobody
+                // records is a lost sale the creator never hears about and no
+                // admin can see.
+                BlockedPaymentAlert::record(
+                    $orderDetails->creator,
+                    $request->amount ?? 0,
+                    $request->currency ?? $orderDetails->creator->default_currency ?? 'GBP',
+                    'stripe_disabled',
+                );
+
                 return response()->json([
                     'status' => false,
                     'message' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ['eligible' => false, 'status' => 'stripe_disabled']),

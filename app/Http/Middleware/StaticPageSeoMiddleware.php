@@ -192,7 +192,16 @@ class StaticPageSeoMiddleware
             ],
             'creators/disputes' => [
                 'title' => 'Chargeback & Dispute Protection for Creators — Spenny Piggy',
-                'description' => 'Spenny Piggy provides real human support and dedicated dispute management. We fight chargebacks on your behalf to protect your income and keep your business safe.',
+                /*
+                 * 🚨 NOT "we fight chargebacks on your behalf" — that is a claim
+                 * the platform cannot make and the page itself contradicts. The
+                 * creator is MERCHANT OF RECORD: they answer the dispute, using
+                 * the delivery record and evidence we gather for them. The old
+                 * wording promised representation we do not provide, in the one
+                 * place a creator reads before deciding whether their income is
+                 * safe here. Corrected per the client's 24 Aug 2026 spec appendix.
+                 */
+                'description' => 'Every payment carries a delivery record, and we gather the evidence for you. You answer the dispute as merchant of record, with real human support behind you.',
             ],
             /*
              * 🚨 THE TWO DISCOVERY-ERA AD PAGES. They had NO og: or twitter:
@@ -219,6 +228,23 @@ class StaticPageSeoMiddleware
             'creators/link-in-bio' => [
                 'title' => 'One Link. Sell Straight From Your Bio. — Spenny Piggy',
                 'description' => 'Put your Spenny Piggy link in your social bio and supporters can buy on the spot — exclusive content, memberships, paid tasks and shop items, on the first page they land on. Your link should not just list. It should sell.',
+            ],
+            /*
+             * The comparison build (client spec v4.3, 24 Aug 2026).
+             *
+             * ⚠️ ONLY THE INDEX IS LISTED HERE. `$seoData` matches on an EXACT
+             * path, so `/creators/vs/{slug}` can never match — each comparison
+             * carries its own metaTitle/metaDescription in its config file and
+             * ComparisonController sends them to the page's own <Head>. Adding a
+             * wildcard here would give twenty competitors one shared description.
+             */
+            'creators/wishlist' => [
+                'title' => 'Creator wishlist that pays you 100% — Spenny Piggy',
+                'description' => 'A wishlist where supporters buy the content you made, at the price you set. You keep 100% of your listed price, with a delivery record on every wish and weekly payouts to your own bank.',
+            ],
+            'creators/compare' => [
+                'title' => 'Compare Spenny Piggy — fees and features, side by side',
+                'description' => 'Every fee from each platform’s own pages, with a link and the date we checked it, next to ours. What you keep, what the supporter pays, and what happens if a payment is ever questioned.',
             ],
             'creators/founder-bonus' => [
                 'title' => 'Spenny Piggy Founder Bonus — Earn Extra Rewards 👑',
@@ -274,39 +300,34 @@ class StaticPageSeoMiddleware
         }
 
         /*
-         * 🚨 A SERVER-RENDERED PAGE WRITES ITS OWN SOCIAL TAGS, SO THIS ONE MUST NOT.
+         * 🚨 THIS MAP ALWAYS EMITS, EVEN ON A SERVER-RENDERED ROUTE. DO NOT ADD
+         * A "the page owns its own tags" SUPPRESSION HERE — one was written on
+         * 26 Aug 2026 and had to be removed on 28 Aug, because it is only true
+         * of a handful of pages and silently strips the rest.
          *
          * Until SSR shipped, an Inertia page's `<Head>` never reached the raw
-         * HTML — it was applied client-side, long after any crawler or link
-         * unfurler had read the document — so this map was the ONLY source of
-         * og:/twitter: tags and there was nothing to collide with. On an
-         * SSR'd route `@inertiaHead` now emits the page's set as well, and the
-         * two disagree: /creators carried og:title "Monetise Your Content…"
-         * from here and "Sell your content and keep 100%…" from the component.
-         * Which one Google and each unfurler pick is not defined anywhere.
+         * HTML — it was applied client-side, long after any crawler or unfurler
+         * had read the document — so this map was the only source of og:/twitter:
+         * tags. On an SSR'd route `@inertiaHead` now emits the page's set too,
+         * and where both exist they disagree (/creators carried "Monetise Your
+         * Content…" from here and "Sell your content and keep 100%…" from the
+         * component). Suppressing this side looked like the fix.
          *
-         * The page wins, because that is where the copy sits next to the words
-         * it describes. This middleware keeps everything the page does NOT
-         * emit — robots, and the breadcrumb JSON-LD.
+         * ⚠️ IT IS NOT, AND THE NUMBERS SAY SO. Measured across the 30 SSR
+         * routes: only ~11 components emit og tags of their own, while this map
+         * covers ~19. Suppressing here left **thirteen legal and policy pages
+         * with NO og:title and NO description at all** — /terms-and-conditions,
+         * /supporter-terms, /creator-agreement, /return-policy and the rest —
+         * and, because `$tags['title']` falls back to SeoMeta::DEFAULT_TITLE
+         * when nothing sets it, replaced each page's specific <title> with the
+         * generic site one. Two og:title tags is untidy; none is a page with no
+         * social card and no description in a search result.
          *
-         * ⚠️ `willRender()` is deliberately the gate rather than "is this route
-         * in the ssr group": with no SSR bundle on the machine (a fresh
-         * checkout, CI) Inertia attempts no render, the page's `<Head>` never
-         * reaches the HTML, and these tags must still be emitted or the ad
-         * landing pages unfurl bare — the exact fault fixed on 24 Aug 2026.
-         *
-         * ⚠️ KNOWN NARROW GAP: bundle present but the render host unreachable.
-         * The gateway falls back to client-side rendering and the raw HTML then
-         * carries neither set. It costs a social card, never a broken page, and
-         * closing it would mean emitting both and stripping one back out of the
-         * response body. Watch for the gateway's "falling back to CSR" warning.
+         * The duplicate is real and is worth closing — by removing the og/twitter
+         * block from the ~11 page components that repeat what is already here,
+         * so this map stays the single definition. Never by muting this side.
          */
-        $pageOwnsSocialTags = $match
-            && $request->route()
-            && in_array('ssr', $request->route()->gatherMiddleware(), true)
-            && EnableSsr::willRender($request);
-
-        if ($match && ! $pageOwnsSocialTags) {
+        if ($match) {
             SeoMeta::addTag('title', $match['title']);
             SeoMeta::addTag('meta', ['name' => 'description', 'content' => $match['description']]);
 
@@ -333,12 +354,7 @@ class StaticPageSeoMiddleware
 
             // Canonical
             SeoMeta::setCanonical($url);
-        }
 
-        // Outside the block above on purpose: an SSR'd page writes its own
-        // social tags but NO breadcrumb JSON-LD, so skipping this with them
-        // would silently drop the breadcrumb trail from every /creators page.
-        if ($match) {
             $segments = array_values(array_filter(explode('/', $path)));
             $breadcrumbs = [
                 ['name' => 'Home', 'url' => url('/')],

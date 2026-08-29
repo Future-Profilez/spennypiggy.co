@@ -21,11 +21,15 @@ use Illuminate\Support\Facades\Log;
  * pattern as `OpportunityPanelPayload::forDashboard` and `VisitTracker`:
  * catch `\Throwable`, log, return null.
  *
- * ⚠️ `qualifying_gmv` KEEPS ITS NAME AND NO LONGER MEANS GMV. Since 26 Aug 2026
- * the base is the creator's LISTED SALE VALUE (`net_amount`), not the
- * supporter's charge — the key and the column were deliberately left alone
- * rather than renamed across two apps and a live table, so read the service, not
- * the name. It renders as "Qualifying earnings", the terms' defined term.
+ * ⚠️ `qualifying_gmv` KEEPS ITS NAME AND NO LONGER MEANS GMV. The base is the
+ * creator's LISTED SALE VALUE (`net_amount + vat_amount`), not the supporter's
+ * charge — the key and the column were deliberately left alone rather than
+ * renamed across two apps and a live table, so read the service, not the name.
+ * It renders as "Qualifying earnings", the terms' defined term.
+ *
+ * 🚨 NOT "WHAT THE CREATOR KEEPS". VAT is included so that a VAT-registered
+ * creator is not slowed relative to one who is not — which means part of the
+ * figure may be passed to HMRC. No label on this payload may imply take-home.
  */
 class GrowthBonusPanelPayload
 {
@@ -97,7 +101,7 @@ class GrowthBonusPanelPayload
             'status' => $profile->status,
             'missed_reason' => $profile->missed_reason,
 
-            // The creator's listed sale value, per terms clause 2.1.
+            // Listed sale value including VAT, per terms clause 2.1. Not take-home.
             'qualifying_gmv' => round($gmv, 2),
 
             'earned_total' => (float) $live->sum('amount'),

@@ -270,6 +270,13 @@ class Kernel extends ConsoleKernel
             ->daily()
             ->withoutOverlapping();
 
+        // Remind creators stuck part-way through setup — day 2 and day 7 after entering a
+        // step, then silence on that step. Runs AFTER journey:sync's hourly stamp, and at
+        // 09:40 so it never lands in the same hour as the admin app's 10:00 drip.
+        $schedule->command('creators:nudge-journey')
+            ->dailyAt('09:40')
+            ->withoutOverlapping();
+
         // Recompute where each creator has got to. This must run BEFORE the admin app's
         // onboarding drip (10:00 and 20:00) reads `users.journey_step`, or the drip coaches
         // creators on a step they finished yesterday. Hourly rather than daily because the

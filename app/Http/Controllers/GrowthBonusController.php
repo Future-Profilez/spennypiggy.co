@@ -18,9 +18,13 @@ use Inertia\Inertia;
  * disagree with the one that pays — the same rule the promo deck follows.
  *
  * ⚠️ Progress is labelled "Qualifying earnings", the terms' own defined term.
- * Since 26 Aug 2026 the base is the creator's listed sale value, so a £100
- * listing counts as £100 — the figure and what the creator takes home are the
- * same thing now, and it matches the Founder tracker beside it.
+ * The base is the creator's LISTED SALE VALUE including any VAT, so a £100
+ * listing counts as £100 whatever their VAT status.
+ *
+ * 🚨 IT IS NOT "WHAT YOU KEEP" AND MUST NEVER BE DESCRIBED AS SUCH (client
+ * instruction, 26 Aug 2026). Where VAT applies, part of the figure is collected
+ * on HMRC's behalf. Use "qualifying earnings" or "listed sale value"; never
+ * "you keep", "take-home" or "your balance".
  */
 class GrowthBonusController extends Controller
 {

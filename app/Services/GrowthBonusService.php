@@ -16,13 +16,18 @@ use Illuminate\Support\Facades\Log;
  * Creator Growth Bonus engine (brief 25 Aug 2026, client-confirmed 26 Aug 2026).
  *
  * "Qualifying Earnings" (terms clause 2.1) are the creator's LISTED SALE VALUE in
- * GBP-equivalent — `net_amount`, converted at the row's own frozen rate — NOT the
- * supporter's charge. Fees are grossed up on top of the listed price on this
- * platform, so a £100 listing charges the supporter £130.55 and pays the creator
- * £100.01; counting the charge would climb the ladder ~30% faster than the terms
- * promise. ⚠️ Changed from gross on 26 Aug 2026 (client decision) — this is the
- * same base `FounderBonus::calculateCompletedNetEarnings` uses, so the two
- * schemes now agree on what a creator has earned.
+ * GBP-equivalent — `net_amount + vat_amount`, converted at the row's own frozen
+ * rate — NOT the supporter's charge. Fees are grossed up on top of the listed
+ * price on this platform, so a £100 listing charges the supporter £130.55;
+ * counting the charge would climb the ladder ~30% faster than the terms promise.
+ *
+ * ⚠️ VAT IS INCLUDED DELIBERATELY (client decision, 26 Aug 2026, option (a)):
+ * £100 listed is £100 qualifying whatever the creator's VAT status, so a
+ * VAT-registered creator is not slowed down relative to one who is not. It
+ * follows that this figure is NOT "what the creator keeps" — where VAT applies,
+ * part of it is passed to HMRC — and no user-facing copy may describe it that
+ * way. ⚠️ This is why it is close to, but not the same as,
+ * `FounderBonus::calculateCompletedNetEarnings`, which is net of VAT.
  *
  * Excluded: self-payments
  * (supporter_id == user_id), refunded/disputed/held rows (status filter), the
@@ -150,13 +155,12 @@ class GrowthBonusService
      * threshold, not just the sum, because the bonus is paid in the payout run
      * that carries that row.
      *
-     * 🚨 THE BASE IS THE CREATOR'S LISTED SALE VALUE (`net_amount`), NOT THE
-     * SUPPORTER'S CHARGE (client decision, 26 Aug 2026 — terms clause 2.1).
-     * Fees are grossed up ON TOP of the listed price here, so a £100 listing
-     * charges the supporter £130.55 and pays the creator £100.01. Counting the
-     * charge would have every creator climb the ladder ~30% faster than the
-     * terms say. `net_amount` is the same column `FounderBonus` measures, so the
-     * two schemes now share a base.
+     * 🚨 THE BASE IS THE CREATOR'S LISTED SALE VALUE (`net_amount + vat_amount`),
+     * NOT THE SUPPORTER'S CHARGE (client decision, 26 Aug 2026 — terms clause
+     * 2.1). Fees are grossed up ON TOP of the listed price here, so a £100
+     * listing charges the supporter £130.55. Counting the charge would have
+     * every creator climb the ladder ~30% faster than the terms say; counting
+     * the creator's share alone would penalise VAT-registered creators.
      *
      * @return array{total: float, unconverted: int, contributions: array<int, array{id: int, date: Carbon, gbp: float, cumulative: float}>}
      */
@@ -177,7 +181,7 @@ class GrowthBonusService
             ->with('source')
             ->orderBy('transaction_date')
             ->orderBy('id')
-            ->get(['id', 'gross_amount', 'net_amount', 'refunded_amount', 'gbp_amount', 'gbp_rate', 'currency', 'source_type', 'source_id', 'transaction_date']);
+            ->get(['id', 'gross_amount', 'net_amount', 'vat_amount', 'refunded_amount', 'gbp_amount', 'gbp_rate', 'currency', 'source_type', 'source_id', 'transaction_date']);
 
         $contributions = [];
         $running = 0.0;
@@ -192,7 +196,7 @@ class GrowthBonusService
                 continue;
             }
 
-            $gbp = $this->rowGbpNet($tx);
+            $gbp = $this->rowGbpQualifying($tx);
 
             if ($gbp === null) {
                 $unconverted++;
@@ -221,32 +225,45 @@ class GrowthBonusService
     }
 
     /**
-     * One row's contribution: the CREATOR'S share (`net_amount`) in GBP, less
-     * any refunded portion. NULL = cannot be converted (the caller counts it
-     * rather than guessing at a rate).
+     * One row's contribution: the LISTED SALE VALUE in GBP, less any refunded
+     * portion. NULL = cannot be converted (the caller counts it rather than
+     * guessing at a rate).
+     *
+     * 🚨 `net_amount + vat_amount`, NOT `net_amount` ALONE (client decision,
+     * 26 Aug 2026, option (a)). The listed price is what the creator typed, and
+     * for a VAT-registered creator part of it is VAT they collect and pass on —
+     * so `net_amount` alone would make that creator climb the ladder more
+     * slowly than a non-registered creator selling the identical listing. The
+     * client's rule is "£100 listed = £100 qualifying, whatever the VAT status".
+     *
+     * ⚠️ THIS IS NOT "WHAT THE CREATOR KEEPS" AND NO COPY MAY SAY SO. Where VAT
+     * applies, part of this figure is money the creator hands to HMRC. It is the
+     * LISTED SALE VALUE, which is why the terms define it as "Qualifying
+     * Earnings" rather than as earnings in the take-home sense.
      *
      * 🚨 `gbp_amount` IS THE GROSS AND IS DELIBERATELY NOT USED FOR THE TOTAL.
-     * It is still read for its FROZEN RATE (`gbp_rate`), so the net converts at
-     * the rate in force when the money moved rather than at today's — the whole
-     * point of `FreezesLedgerFx`.
+     * It is still read for its FROZEN RATE (`gbp_rate`), so the figure converts
+     * at the rate in force when the money moved rather than at today's — the
+     * whole point of `FreezesLedgerFx`.
      *
      * ⚠️ A partial refund is applied PROPORTIONALLY. `refunded_amount` is a
-     * refund of the supporter's GROSS, so subtracting it from the net would
-     * remove more than the sale ever added — on a £100 listing a £130.55 full
-     * refund would take the creator to −£30. It is scaled by the row's own
-     * net/gross ratio instead.
+     * refund of the supporter's GROSS, so subtracting it whole would remove more
+     * than the sale ever added — on a £100 listing a £130.55 full refund would
+     * take the creator to −£30. It is scaled by the row's own listed/gross ratio
+     * instead.
      */
-    private function rowGbpNet(FinancialTransaction $tx): ?float
+    private function rowGbpQualifying(FinancialTransaction $tx): ?float
     {
-        $net = (float) ($tx->net_amount ?? 0);
+        // The listed sale value: the creator's share plus any VAT carried on it.
+        $listed = (float) ($tx->net_amount ?? 0) + (float) ($tx->vat_amount ?? 0);
         $gross = (float) ($tx->gross_amount ?? 0);
         $refunded = (float) ($tx->refunded_amount ?? 0);
 
-        $refundedNet = ($refunded > 0 && $gross > 0)
-            ? $refunded * ($net / $gross)
+        $refundedShare = ($refunded > 0 && $gross > 0)
+            ? $refunded * ($listed / $gross)
             : 0.0;
 
-        $value = max(0.0, $net - $refundedNet);
+        $value = max(0.0, $listed - $refundedShare);
 
         if ((float) $tx->gbp_rate > 0) {
             return $value / (float) $tx->gbp_rate;

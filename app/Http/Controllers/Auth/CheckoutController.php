@@ -167,7 +167,12 @@ class CheckoutController extends Controller
                 // Send notification to creator about blocked payment
                 $owner->notify(new SubscriptionBlockedNotification($subscriptionCheck, $preliminaryTotal));
                 // Recorded and counted: one lost sale is a warning, six is a reason.
-                BlockedPaymentAlert::record($owner, $preliminaryTotal);
+                BlockedPaymentAlert::record(
+                    $owner,
+                    $preliminaryTotal,
+                    $chargeCurrency ?? $owner->default_currency ?? 'GBP',
+                    $subscriptionCheck['status'] ?? null,
+                );
 
                 // Return user-friendly error to fan
                 return redirect()->back()->with('error', app(CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null));
@@ -224,6 +229,16 @@ class CheckoutController extends Controller
 
             if (request()->input('payment_method', 'card') !== 'bank' && ! StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
                 $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
+
+                // Same rule as the subscription gate below: a refusal nobody
+                // records is a lost sale the creator never hears about and no
+                // admin can see.
+                BlockedPaymentAlert::record(
+                    $owner,
+                    $preliminaryTotal ?? null,
+                    $chargeCurrency ?? $owner->default_currency ?? 'GBP',
+                    'stripe_disabled',
+                );
 
                 return redirect()->back()->with('error', app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
             }
@@ -339,7 +354,14 @@ class CheckoutController extends Controller
 
             // Check if creator has card_payments capability (card path only)
             if ($methodResolution['fee_profile'] === 'card' && ! StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
-                return redirect()->back()->with('error', 'This creator cannot receive direct payments at the moment.');
+                BlockedPaymentAlert::record(
+                    $owner,
+                    $grandTotalSupporterPays ?? null,
+                    $chargeCurrency ?? $owner->default_currency ?? 'GBP',
+                    'stripe_disabled',
+                );
+
+                return redirect()->back()->with('error', app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ['eligible' => false, 'status' => 'stripe_disabled']));
             }
 
             // Unified Risk Enforcement

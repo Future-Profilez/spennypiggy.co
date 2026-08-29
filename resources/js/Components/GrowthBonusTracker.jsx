@@ -4,13 +4,15 @@ import { FaArrowRight, FaClock } from "react-icons/fa";
 /**
  * The creator's own Growth Bonus position, on their dashboard (brief §6).
  *
- * ⚠️ THE FIGURE IS "QUALIFYING EARNINGS" — the creator's listed sale value,
- * the defined term in the programme terms (clause 2.1). It was gross customer
- * spend until 26 Aug 2026, when the client fixed the base to the listed price;
- * every label here changed with it. It is now the SAME base
- * `FounderProgressTracker` reports a few inches above on this dashboard, so the
- * two no longer need a label to keep them apart — but keep the defined term,
- * because the terms page a creator can click through to uses it.
+ * ⚠️ THE FIGURE IS "QUALIFYING EARNINGS" — the creator's listed sale value
+ * including any VAT, the defined term in the programme terms (clause 2.1).
+ *
+ * 🚨 IT IS NOT WHAT THE CREATOR KEEPS, AND THIS TRACKER MUST NEVER SAY IT IS
+ * (client instruction, 26 Aug 2026). Where VAT applies, part of the figure goes
+ * to HMRC. ⚠️ That is also what separates it from `FounderProgressTracker`,
+ * which renders a few inches above on this same dashboard and reports a figure
+ * net of VAT — so keep the defined term rather than reaching for "earnings"
+ * plain, or the two read as the same number and will not match.
  *
  * 🚨 THE BAR MEASURES THE CURRENT LEG, NOT THE WHOLE LADDER. Measured from
  * zero, a creator at £9,900 of a £10,000 rung sits at 99% for the entire

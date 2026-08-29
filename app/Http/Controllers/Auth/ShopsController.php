@@ -1103,6 +1103,16 @@ class ShopsController extends Controller
 
             // Check if creator has card_payments capability
             if (! StripeControl::hasCardPaymentsCapability($shop->user->account_id)) {
+                // Same rule as the subscription gate below: a refusal nobody
+                // records is a lost sale the creator never hears about and no
+                // admin can see.
+                BlockedPaymentAlert::record(
+                    $shop->user,
+                    $shop->price,
+                    $shop->currency ?? $shop->user->default_currency ?? 'GBP',
+                    'stripe_disabled',
+                );
+
                 return response()->json([
                     'status' => false,
                     'message' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ['eligible' => false, 'status' => 'stripe_disabled']),
@@ -1113,7 +1123,12 @@ class ShopsController extends Controller
                 // Send notification to creator about blocked payment
                 $shop->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $shop->price));
                 // Recorded and counted: one lost sale is a warning, six is a reason.
-                BlockedPaymentAlert::record($shop->user, $shop->price);
+                BlockedPaymentAlert::record(
+                    $shop->user,
+                    $shop->price,
+                    $shop->currency ?? $shop->user->default_currency ?? 'GBP',
+                    $subscriptionCheck['status'] ?? null,
+                );
 
                 // Log the blocked payment for subscription issues
                 Log::warning('Shop payment blocked due to subscription issue', [
@@ -1332,6 +1347,13 @@ class ShopsController extends Controller
             $connectedAccountId = $shop->user->account_id;
 
             if ($methodResolution['fee_profile'] === 'card' && ! StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
+                BlockedPaymentAlert::record(
+                    $shop->user,
+                    $shop->price,
+                    $shop->currency ?? $shop->user->default_currency ?? 'GBP',
+                    'stripe_disabled',
+                );
+
                 return response()->json([
                     'status' => false,
                     'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ['eligible' => false, 'status' => 'stripe_disabled']),

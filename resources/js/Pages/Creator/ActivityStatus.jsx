@@ -373,7 +373,8 @@ const ActivityStatus = ({
                             "safe" badge above a window saying 1 / 3. */}
                         <div className="mt-6 border-t border-black/10 pt-4">
                             <p className="mb-3 text-[12px] font-black uppercase tracking-[0.18em] text-black/60">
-                                Separate rule &middot; Content membership posting
+                                Separate rule &middot; Content membership
+                                posting
                             </p>
                             {/* ⚠️ The cadence payload is nested under
                                 `postingCadence` — the controller merges it in
@@ -403,9 +404,8 @@ const ActivityStatus = ({
                                         at_risk: "risk",
                                         active: "safe",
                                         grace: "safe",
-                                    }[
-                                        activityStatus?.postingCadence?.status
-                                    ] ?? "risk"
+                                    }[activityStatus?.postingCadence?.status] ??
+                                    "risk"
                                 }
                             />
                         </div>
@@ -702,7 +702,8 @@ const ActivityStatus = ({
                         {/* ---- Blocked payments ---- */}
                         <Card>
                             <h3 className="text-lg font-gulfs uppercase mb-4">
-                                Payment impact (30 days)
+                                Payment impact (
+                                {blockedPayments?.window_days ?? 30} days)
                             </h3>
 
                             {blockedPayments?.count > 0 ? (
@@ -715,17 +716,27 @@ const ActivityStatus = ({
                                             {blockedPayments.count}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between items-center text-sm mt-3">
-                                        <span className="text-gray-700">
-                                            Total blocked
-                                        </span>
-                                        <span className="font-bold text-red-700">
-                                            {blockedPayments.currency}{" "}
-                                            {
-                                                blockedPayments.total_amount_blocked
-                                            }
-                                        </span>
-                                    </div>
+
+                                    {/* Never summed across currencies — one number
+                                        true in neither is worse than two numbers. */}
+                                    {blockedPayments.totals?.length > 0 &&
+                                        blockedPayments.totals.map((t) => (
+                                            <div
+                                                key={t.currency}
+                                                className="flex justify-between items-center text-sm mt-3"
+                                            >
+                                                <span className="text-gray-700">
+                                                    Total blocked ({t.currency})
+                                                </span>
+                                                <span className="font-bold text-red-700">
+                                                    {t.currency}{" "}
+                                                    {Number(t.amount).toFixed(
+                                                        t.zero_decimal ? 0 : 2,
+                                                    )}
+                                                </span>
+                                            </div>
+                                        ))}
+
                                     {blockedPayments.last_blocked_at_human && (
                                         <div className="flex justify-between items-center text-sm mt-3">
                                             <span className="text-gray-700">
@@ -739,48 +750,43 @@ const ActivityStatus = ({
                                         </div>
                                     )}
 
-                                    <Note tone="red">
-                                        💡 Once you meet the requirement,
-                                        payments resume automatically within a
-                                        few minutes.
-                                    </Note>
-
                                     {blockedPayments.recent_attempts?.length >
-                                        1 && (
-                                        <details className="mt-3">
-                                            <summary className="text-sm text-red-700 cursor-pointer min-h-[44px] flex items-center">
-                                                View all{" "}
-                                                {
-                                                    blockedPayments
-                                                        .recent_attempts.length
-                                                }{" "}
-                                                blocked payments
-                                            </summary>
-                                            <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
-                                                {blockedPayments.recent_attempts.map(
-                                                    (a) => (
-                                                        <div
-                                                            key={a.id}
-                                                            className="text-xs text-gray-600 flex justify-between gap-2 border-b border-gray-100 pb-1.5"
-                                                        >
-                                                            <span>
-                                                                {a.payment_type}{" "}
-                                                                • {a.amount}
+                                        0 && (
+                                        <div className="mt-4 space-y-2 max-h-60 overflow-y-auto">
+                                            {blockedPayments.recent_attempts.map(
+                                                (a) => (
+                                                    <div
+                                                        key={a.id}
+                                                        className="text-xs text-gray-700 border-b border-gray-100 pb-2"
+                                                    >
+                                                        <div className="flex justify-between gap-2">
+                                                            <span className="font-bold">
+                                                                {a.amount ??
+                                                                    "Amount not recorded"}
                                                             </span>
-                                                            <span className="whitespace-nowrap">
+                                                            <span className="whitespace-nowrap text-gray-500">
                                                                 {a.blocked_at}
                                                             </span>
                                                         </div>
-                                                    ),
-                                                )}
-                                            </div>
-                                        </details>
+                                                        <div className="text-gray-600 mt-0.5">
+                                                            {a.reason}
+                                                        </div>
+                                                    </div>
+                                                ),
+                                            )}
+                                        </div>
                                     )}
+
+                                    <Note tone="red">
+                                        💡 Fix the reason above and payments
+                                        resume automatically within a few
+                                        minutes.
+                                    </Note>
                                 </>
                             ) : (
                                 <Note tone="green">
-                                    ✅ No payments have been blocked in the last
-                                    30 days.
+                                    ✅ No payments have been blocked in the last{" "}
+                                    {blockedPayments?.window_days ?? 30} days.
                                 </Note>
                             )}
                         </Card>
