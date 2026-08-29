@@ -6,7 +6,9 @@ const Wishlist = lazyRetry(() => import("./Auth/Wishlist"));
 const Wishlistbox = lazyRetry(() => import("@/wishlist/Wishlistbox"));
 import Userprofile from "@/wishlist/Userprofile";
 import ProfileRightRail from "@/Components/Profile/ProfileRightRail";
-const CoverIdentity = lazyRetry(() => import("@/Components/Profile/CoverIdentity"));
+const CoverIdentity = lazyRetry(
+    () => import("@/Components/Profile/CoverIdentity"),
+);
 import EarningsMilestone from "@/Components/Profile/EarningsMilestone";
 import SupporterWall from "@/Components/Profile/SupporterWall";
 import CategoryTags from "@/Components/Profile/CategoryTags";
@@ -17,7 +19,9 @@ const LoadingScreen = lazyRetry(() => import("@/includes/LoadingScreen"));
 const PaymentDashboard = lazyRetry(() => import("./stripe/PaymentDashboard"));
 const ChangeCurrency = lazyRetry(() => import("@/Components/ChangeCurrency"));
 const Popup = lazyRetry(() => import("@/Components/Popup"));
-const MembershipsLists = lazyRetry(() => import("./membership/MembershipsLists"));
+const MembershipsLists = lazyRetry(
+    () => import("./membership/MembershipsLists"),
+);
 import { BiTask } from "react-icons/bi";
 const AddMembership = lazyRetry(() => import("./membership/AddMembership"));
 const Gifter = lazyRetry(() => import("./gifter/Gifter"));
@@ -80,20 +84,26 @@ import AddMoreTile from "@/Components/AddMoreTile";
 const ProfileProductLists = lazyRetry(
     () => import("./shop/profile/ProfileProductLists"),
 );
-const ProfileTaskLists = lazyRetry(() => import("./Tasks/Profile/ProfileTaskLists"));
+const ProfileTaskLists = lazyRetry(
+    () => import("./Tasks/Profile/ProfileTaskLists"),
+);
 const AddItem = lazyRetry(() => import("./shop/AddItem"));
 
 const GiftListing = lazyRetry(() => import("./rye/GiftListing"));
 const OldSubscribe = lazyRetry(() => import("./webpush/OldSubscribe"));
 const AddSocial = lazyRetry(() => import("./Auth/Social"));
-const CreatorVerification = lazyRetry(() => import("./Profile/CreatorVerification"));
+const CreatorVerification = lazyRetry(
+    () => import("./Profile/CreatorVerification"),
+);
 const SiteSubscription = lazyRetry(() => import("./Profile/SiteSubscription"));
 const EnableCardCapabilities = lazyRetry(
     () => import("./stripe/EnableCardCapabilities"),
 );
 const ActionRequired = lazyRetry(() => import("./stripe/ActionRequired"));
 const ErrorBoundary = lazyRetry(() => import("@/Components/ErrorBoundary"));
-const SubscriptionNewsPopup = lazyRetry(() => import("@/Components/SubscriptionNewsPopup"));
+const SubscriptionNewsPopup = lazyRetry(
+    () => import("@/Components/SubscriptionNewsPopup"),
+);
 // Small, always rendered on the creator's own About tab — not worth a lazy chunk.
 const PromoSlider = lazyRetry(() => import("@/Components/Promo/PromoSlider"));
 const FounderProgressTracker = lazyRetry(
@@ -211,7 +221,9 @@ export default function Dashboard(props) {
             .filter((m) => m.count > 0)
             .sort((a, b) => b.count - a.count);
 
-        const who = user?.name || (user?.username ? `@${user.username}` : "This creator");
+        const who =
+            user?.name ||
+            (user?.username ? `@${user.username}` : "This creator");
 
         if (modules.length === 0) {
             return {
@@ -222,7 +234,8 @@ export default function Dashboard(props) {
         }
 
         const names = modules.slice(0, 2).map((m) => m.label);
-        const list = names.length === 2 ? `${names[0]} and ${names[1]}` : names[0];
+        const list =
+            names.length === 2 ? `${names[0]} and ${names[1]}` : names[0];
 
         return {
             text: "Nothing here yet",
@@ -331,8 +344,8 @@ export default function Dashboard(props) {
         () =>
             Boolean(
                 props.founderData?.isEligible &&
-                    IsloggedIn &&
-                    auth?.user?.role === 1,
+                IsloggedIn &&
+                auth?.user?.role === 1,
             ),
         [props.founderData?.isEligible, IsloggedIn, auth?.user?.role],
     );
@@ -508,9 +521,16 @@ export default function Dashboard(props) {
         // other values each open a specific form on top of the chooser, which is the
         // wrong landing for "add something".
         const [showAdd, setShowAdd] = useState(
-            () => addIntent === "menu" || addIntent === "wish" || addIntent === "shop" || addIntent === "digital" || addIntent === "physical",
+            () =>
+                addIntent === "menu" ||
+                addIntent === "wish" ||
+                addIntent === "shop" ||
+                addIntent === "digital" ||
+                addIntent === "physical",
         );
-        const [wishOptions, setWishOptions] = useState(() => addIntent === "wish");
+        const [wishOptions, setWishOptions] = useState(
+            () => addIntent === "wish",
+        );
 
         // `?add=post` opens the composer DIRECTLY, deliberately not via `showAdd`. The
         // AddPost inside the chooser would need the chooser open behind it, which is the
@@ -547,7 +567,11 @@ export default function Dashboard(props) {
             } else if (addIntent) {
                 // Safe to strip now: every consumer took its value from `addIntent` during
                 // render, so nothing downstream still needs the query string.
-                window.history.replaceState({}, document.title, window.location.pathname);
+                window.history.replaceState(
+                    {},
+                    document.title,
+                    window.location.pathname,
+                );
             }
 
             return () => {
@@ -579,7 +603,10 @@ export default function Dashboard(props) {
                     chooser so closing it returns the creator to the dashboard, not to a menu. */}
                 {postOpen && (
                     <Suspense fallback={null}>
-                        <AddPost open={postOpen} onClose={() => setPostOpen(false)} />
+                        <AddPost
+                            open={postOpen}
+                            onClose={() => setPostOpen(false)}
+                        />
                     </Suspense>
                 )}
                 {IsloggedIn ? (
@@ -627,7 +654,10 @@ export default function Dashboard(props) {
                                                   screen edge — only the CONTENT is inset. */}
                                               <div
                                                   className="relative flex min-h-dvh w-full flex-col bg-[#FFF6EC] px-4 py-6 sm:px-6 md:px-8 md:py-10"
-                                                  style={{ paddingTop: "max(1.5rem, calc(env(safe-area-inset-top) + 0.75rem))" }}
+                                                  style={{
+                                                      paddingTop:
+                                                          "max(1.5rem, calc(env(safe-area-inset-top) + 0.75rem))",
+                                                  }}
                                               >
                                                   <button
                                                       type="button"
@@ -639,7 +669,9 @@ export default function Dashboard(props) {
                                                       // Absolute positioning resolves against the
                                                       // padding EDGE, so the parent's inset does
                                                       // not move this — it needs its own.
-                                                      style={{ top: "max(0.75rem, calc(env(safe-area-inset-top) + 0.25rem))" }}
+                                                      style={{
+                                                          top: "max(0.75rem, calc(env(safe-area-inset-top) + 0.25rem))",
+                                                      }}
                                                   >
                                                       ×
                                                   </button>
@@ -855,7 +887,9 @@ export default function Dashboard(props) {
                                                                       <AddItem
                                                                           classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                           product_type="digital_products"
-                                                                          addIntent={addIntent}
+                                                                          addIntent={
+                                                                              addIntent
+                                                                          }
                                                                       />
                                                                       {/* The one row here that is not a way to list something for
                                                                           sale. Every other option adds a product; this one is what
@@ -871,13 +905,13 @@ export default function Dashboard(props) {
                                                                           classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-[#D9F9EE] hover:bg-[#C2F3E1] border-[3px] border-black transition-colors rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#00B98C] after:transition-colors hover:after:text-[#05EFB8]"
                                                                       />
                                                                       {/* <AddGift
- text="Add Gift"
- classes="font-bold py-3 px-3 mb-2 text-center"
- fetch_gifts={
- fetch_gifts
-                                                                    }
- addressAdded={
- auth?.user
+                                                                            text="Add Gift"
+                                                                            classes="font-bold py-3 px-3 mb-2 text-center"
+                                                                            fetch_gifts={
+                                                                            fetch_gifts
+                                                                                                                                                }
+                                                                            addressAdded={
+                                                                            auth?.user
                                                                             ?.is_creator_address_found
                                                                     }
                                                                 /> */}
@@ -891,7 +925,10 @@ export default function Dashboard(props) {
                                                   {!wishOptions && (
                                                       <div
                                                           className="sticky bottom-0 bg-[#FFF6EC] pt-4 flex justify-center"
-                                                          style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+                                                          style={{
+                                                              paddingBottom:
+                                                                  "max(0.5rem, env(safe-area-inset-bottom))",
+                                                          }}
                                                       >
                                                           <button
                                                               onClick={() =>
@@ -900,21 +937,21 @@ export default function Dashboard(props) {
                                                                   )
                                                               }
                                                               className="
- w-full
- max-w-[220px]
- h-[56px]
- bg-[#E9E1D7]
- border-[3px]
- border-black
- rounded-box-sm
+                                                                w-full
+                                                                max-w-[220px]
+                                                                h-[56px]
+                                                                bg-[#E9E1D7]
+                                                                border-[3px]
+                                                                border-black
+                                                                rounded-box-sm
 
- font-black
- uppercase
- tracking-wider
- text-black
- transition-colors
- hover:bg-black/[0.04]
-"
+                                                                font-black
+                                                                uppercase
+                                                                tracking-wider
+                                                                text-black
+                                                                transition-colors
+                                                                hover:bg-black/[0.04]
+                                                                "
                                                           >
                                                               Cancel
                                                           </button>
@@ -994,14 +1031,9 @@ export default function Dashboard(props) {
 
     // An empty bio is a prompt for the owner and a plain fact for a visitor — never the
     // old placeholder sentence, which put words in the creator's mouth on their own page.
-    const bioText =
-        (user && user.bio) ||
-        (IsloggedIn
-            ? "Say what you make in a line or two. It shows up right here, above everything you sell."
-            : `${user?.name || "This creator"} has not written an intro yet.`);
+    const bioText = (user && user.bio) || (IsloggedIn ? "Say what you make in a line or two. It shows up right here, above everything you sell." : `${user?.name || "This creator"} has not written an intro yet.`);
 
-    const aboutMeCard =
-        user && user.role == 1 ? (
+    const aboutMeCard = user && user.role == 1 ? (
             <div className="w-full text-left">
                 <div className="relative">
                     {/* Tail: black outline triangle with the fill drawn 1px inside it,
@@ -1042,7 +1074,7 @@ export default function Dashboard(props) {
                         "Your social media links are waiting for admin approval. Currently only you can see them.",
                     )}
             </div>
-        ) : null;
+    ) : null;
 
     // Earnings against the creator's live goal — the headline figure. About me moved out
     // of this band into the rail, so it is now the earnings card alone and renders only
@@ -1058,12 +1090,13 @@ export default function Dashboard(props) {
     const creatorPayoutAction =
         IsloggedIn && user && user.role == 1 ? (
             <>
-                {auth?.user?.role == 1 && AuthUserStripeConnected == 1 &&  (
+                {(auth?.user?.role == 1 && AuthUserStripeConnected == 1 && (
                     <PaymentDashboard
                         classes="w-full rounded-box-sm border-2 border-black bg-black !px-4 py-3 text-sm font-black uppercase tracking-wider text-white transition-colors hover:bg-gray-900"
                         text="Creator Payment Dashboard"
                     />
-                )  || ''}
+                )) ||
+                    ""}
             </>
         ) : null;
 
@@ -1103,11 +1136,11 @@ export default function Dashboard(props) {
                                         fetchpriority="high"
                                     />
                                     {/* Scrim: carries the founder badge, the cover notice, and — on
- desktop — the creator's name and avatar over any cover image. */}
+                                        desktop — the creator's name and avatar over any cover image. */}
                                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-transparent" />
 
                                     {/* Desktop identity overlay. Hidden on phones, where the same
- component sits at the top of the identity card instead. */}
+                                        component sits at the top of the identity card instead. */}
                                     <div className="absolute inset-x-0 bottom-0 z-10 hidden md:block bg-gradient-to-t from-black/90 via-black/55 to-transparent">
                                         <div className="px-5 pb-4 pt-20 lg:px-6 lg:pb-5 lg:pt-24 xl:px-8 xl:pb-6">
                                             <Suspense fallback={null}>
@@ -1177,28 +1210,27 @@ export default function Dashboard(props) {
                                         even be OFFERED the upload — the empty AddIntro card IS
                                         the "add" affordance for the owner (21 Aug 2026). Gating
                                         here also keeps the lazy chunk off a gifter's page. */}
-                                    {isCreatorProfile && (IsloggedIn || introProp?.approved == 1) && (
-                                        <Suspense
-                                            fallback={
-                                                <div className="h-40 animate-pulse rounded-box border-[3px] border-black bg-gray-100"></div>
-                                            }
-                                        >
-                                            <AddIntro
-                                                uuid={user?.id || null}
-                                                IsloggedIn={IsloggedIn}
-                                                user={user}
-                                            />
-                                        </Suspense>
-                                    )}
+                                    {isCreatorProfile &&
+                                        (IsloggedIn ||
+                                            introProp?.approved == 1) && (
+                                            <Suspense
+                                                fallback={
+                                                    <div className="h-40 animate-pulse rounded-box border-[3px] border-black bg-gray-100"></div>
+                                                }
+                                            >
+                                                <AddIntro
+                                                    uuid={user?.id || null}
+                                                    IsloggedIn={IsloggedIn}
+                                                    user={user}
+                                                />
+                                            </Suspense>
+                                        )}
 
                                     <div className="hidden md:block">
                                         <ProfileRightRail
                                             IsloggedIn={IsloggedIn}
                                             compact
-                                            sections={[
-                                                "highlights",
-                                                "quick",
-                                            ]}
+                                            sections={["highlights", "quick"]}
                                         />
                                     </div>
                                 </aside>
@@ -1207,19 +1239,19 @@ export default function Dashboard(props) {
                                     {/* Stripe Account Migration Warning */}
 
                                     {/* {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
-                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-box">
-                                    <div>
-                                        <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
-                                        Please contact <a target="_blank" href="https://spennypiggy.co" className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">support</a> for more information.
-                                        <button
- onClick={handleDismiss}
- className="absolute top-2 right-2 text-blue-700 hover:text-blue-900"
- aria-label="Dismiss alert">
-                                            ✕
-                                        </button>
-                                    </div>
-                                </div>
-                            : ''} */}
+                                        <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-box">
+                                            <div>
+                                                <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
+                                                Please contact <a target="_blank" href="https://spennypiggy.co" className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">support</a> for more information.
+                                                <button
+                                                onClick={handleDismiss}
+                                                className="absolute top-2 right-2 text-blue-700 hover:text-blue-900"
+                                                aria-label="Dismiss alert">
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        </div>
+                                    : ''} */}
 
                                     {user && user.role == 1 ? (
                                         <div className="wishManage sticky top-8 w-full">
@@ -1227,7 +1259,7 @@ export default function Dashboard(props) {
                                             {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
                                         <Suspense fallback={<div className="mb-4">Loading subscription status...</div>}>
                                             <CreatorSubscriptionWidget 
- className="mb-4"
+                                            className="mb-4"
                                             />
                                         </Suspense>
                                     )} */}
@@ -1442,7 +1474,10 @@ export default function Dashboard(props) {
 
                                                             <div className="tabs-containers min-height">
                                                                 <>
-                                                                    {page === "about" || page === false ? (
+                                                                    {page ===
+                                                                        "about" ||
+                                                                    page ===
+                                                                        false ? (
                                                                         <Suspense
                                                                             fallback={
                                                                                 <LoadingScreen />
@@ -1498,7 +1533,11 @@ export default function Dashboard(props) {
                                                                                     creator.) A new promo is a
                                                                                     `config/promos.php` entry, NEVER a second banner beside
                                                                                     this one. */}
-                                                                                <Suspense fallback={null}>
+                                                                                <Suspense
+                                                                                    fallback={
+                                                                                        null
+                                                                                    }
+                                                                                >
                                                                                     <PromoSlider
                                                                                         exclude={[
                                                                                             ...(showFounderTracker
@@ -1569,31 +1608,35 @@ export default function Dashboard(props) {
                                                                                 </div>
 
                                                                                 {/* The creator's pinned goal, right under who they are */}
-                                                                                {props.piggyPots && props.piggyPots.length > 0 && (
-                                                                                            <div className="flex flex-col md:flex-row gap-6 md:gap-8">
-                                                                                                <Suspense
-                                                                                                    fallback={
-                                                                                                        <div className="mb-4">
-                                                                                                            Loading
-                                                                                                            Piggy
-                                                                                                            Pot...
-                                                                                                        </div>
+                                                                                {props.piggyPots &&
+                                                                                    props
+                                                                                        .piggyPots
+                                                                                        .length >
+                                                                                        0 && (
+                                                                                        <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+                                                                                            <Suspense
+                                                                                                fallback={
+                                                                                                    <div className="mb-4">
+                                                                                                        Loading
+                                                                                                        Piggy
+                                                                                                        Pot...
+                                                                                                    </div>
+                                                                                                }
+                                                                                            >
+                                                                                                <PiggyPotWidget
+                                                                                                    piggyPots={
+                                                                                                        props.piggyPots
                                                                                                     }
-                                                                                                >
-                                                                                                    <PiggyPotWidget
-                                                                                                        piggyPots={
-                                                                                                            props.piggyPots
-                                                                                                        }
-                                                                                                        user={
-                                                                                                            user
-                                                                                                        }
-                                                                                                        global_currency={
-                                                                                                            global_currency
-                                                                                                        }
-                                                                                                    />
-                                                                                                </Suspense>
-                                                                                            </div>
-                                                                                )}
+                                                                                                    user={
+                                                                                                        user
+                                                                                                    }
+                                                                                                    global_currency={
+                                                                                                        global_currency
+                                                                                                    }
+                                                                                                />
+                                                                                            </Suspense>
+                                                                                        </div>
+                                                                                    )}
 
                                                                                 {/* Proof: who else buys here, and whether this creator delivers.
                                                                                     ⚠️ `empty:hidden` because SupporterWall renders NOTHING for a
@@ -1608,7 +1651,9 @@ export default function Dashboard(props) {
                                                                                 {/* Phone: the rail cards live here so About Me follows the avatar */}
                                                                                 <div className="md:hidden">
                                                                                     <ProfileRightRail
-                                                                                        IsloggedIn={IsloggedIn}
+                                                                                        IsloggedIn={
+                                                                                            IsloggedIn
+                                                                                        }
                                                                                         compact
                                                                                         sections={[
                                                                                             "highlights",
@@ -1620,7 +1665,15 @@ export default function Dashboard(props) {
                                                                                     About me — it is the creator's payment status and was
                                                                                     unreadable buried here. Rendering it in both places
                                                                                     left the page saying the same thing twice. */}
-                                                                                {IsloggedIn && auth?.user?.role == 1 && auth?.user?.identity_status !== 1 ? (
+                                                                                {IsloggedIn &&
+                                                                                auth
+                                                                                    ?.user
+                                                                                    ?.role ==
+                                                                                    1 &&
+                                                                                auth
+                                                                                    ?.user
+                                                                                    ?.identity_status !==
+                                                                                    1 ? (
                                                                                     <CreatorVerification
                                                                                         IsloggedIn={
                                                                                             IsloggedIn
@@ -1631,300 +1684,310 @@ export default function Dashboard(props) {
                                                                                 )}
 
                                                                                 {IsloggedIn && (
-                                                                                <div className="w-full h-auto">
-                                                                                    <div>
-
-                                                                                        <DashboardStripeMigrationWarning
-                                                                                            migrationStatus={
-                                                                                                migration_status
-                                                                                            }
-                                                                                        />
-
-                                                                                        {IsloggedIn &&
-                                                                                        auth?.user &&
-                                                                                        auth
-                                                                                            ?.user
-                                                                                            ?.role ==
-                                                                                            1 &&
-                                                                                        stripe_requirements &&
-                                                                                        stripe_requirements.has_requirements &&
-                                                                                        stripe_requirements.requirements &&
-                                                                                        stripe_requirements
-                                                                                            .requirements
-                                                                                            .length >
-                                                                                            0 &&
-                                                                                        (AuthUserStripeConnected ||
-                                                                                            has_stripe_account) ? (
-                                                                                            <ActionRequired
-                                                                                                requirements={
-                                                                                                    stripe_requirements.requirements
+                                                                                    <div className="w-full h-auto">
+                                                                                        <div>
+                                                                                            <DashboardStripeMigrationWarning
+                                                                                                migrationStatus={
+                                                                                                    migration_status
                                                                                                 }
                                                                                             />
-                                                                                        ) : (
-                                                                                            ""
-                                                                                        )}
 
-                                                                                        {IsloggedIn &&
-                                                                                        auth?.user &&
-                                                                                        auth
-                                                                                            ?.user
-                                                                                            ?.role ==
-                                                                                            1 &&
-                                                                                        !card_capabilities &&
-                                                                                        !isNeedToUpgrade &&
-                                                                                        !hasPendingCardPayments &&
-                                                                                        !hasStripeActionPanel &&
-                                                                                        (AuthUserStripeConnected ||
-                                                                                            has_stripe_account) ? (
-                                                                                            <EnableCardCapabilities />
-                                                                                        ) : (
-                                                                                            ""
-                                                                                        )}
-                                                                                        {IsloggedIn &&
-                                                                                        auth?.user &&
-                                                                                        auth
-                                                                                            ?.user
-                                                                                            ?.role ==
-                                                                                            1 &&
-                                                                                        (auth
-                                                                                            ?.user
-                                                                                            ?.subscription_status ==
-                                                                                            3 ||
+                                                                                            {IsloggedIn &&
+                                                                                            auth?.user &&
                                                                                             auth
                                                                                                 ?.user
-                                                                                                ?.subscription_status ==
-                                                                                                0) ? (
-                                                                                            <SiteSubscription
-                                                                                                auth={
-                                                                                                    auth
-                                                                                                }
-                                                                                                subscription_status={
-                                                                                                    auth
-                                                                                                        ?.user
-                                                                                                        ?.subscription_status
-                                                                                                }
-                                                                                                charges={
-                                                                                                    auth
-                                                                                                        ?.user
-                                                                                                        ?.monthly_charge_enabled
-                                                                                                }
-                                                                                                user={
-                                                                                                    auth?.user
-                                                                                                }
-                                                                                                card_capabilities={
-                                                                                                    card_capabilities
-                                                                                                }
-                                                                                                monthly_charges={
-                                                                                                    monthly_charges
-                                                                                                }
-                                                                                            />
-                                                                                        ) : (
-                                                                                            ""
-                                                                                        )}
-
-                                                                                        {IsloggedIn &&
-                                                                                        ((user?.profile_status_lock == 0 && user?.profile_reject_reason) || (user?.edit_bio_reason &&
-                                                                                                user?.bio_approved ==
-                                                                                                    2) ||
-                                                                                            slinks?.reason ||
-                                                                                            user?.avatar_approved ==
-                                                                                                2) ? (
-                                                                                            <div className="bg-white border-1 border-black rounded-box mb-4 p-4">
-                                                                                                <h2 className="text-red-600 font-bold text-xl">
-                                                                                                    Action Required
-                                                                                                    {
-                                                                                                        ""
+                                                                                                ?.role ==
+                                                                                                1 &&
+                                                                                            stripe_requirements &&
+                                                                                            stripe_requirements.has_requirements &&
+                                                                                            stripe_requirements.requirements &&
+                                                                                            stripe_requirements
+                                                                                                .requirements
+                                                                                                .length >
+                                                                                                0 &&
+                                                                                            (AuthUserStripeConnected ||
+                                                                                                has_stripe_account) ? (
+                                                                                                <ActionRequired
+                                                                                                    requirements={
+                                                                                                        stripe_requirements.requirements
                                                                                                     }
-                                                                                                </h2>
-                                                                                                {user?.profile_status_lock ==
-                                                                                                    0 &&
-                                                                                                    user?.profile_reject_reason && (
+                                                                                                />
+                                                                                            ) : (
+                                                                                                ""
+                                                                                            )}
+
+                                                                                            {IsloggedIn &&
+                                                                                            auth?.user &&
+                                                                                            auth
+                                                                                                ?.user
+                                                                                                ?.role ==
+                                                                                                1 &&
+                                                                                            !card_capabilities &&
+                                                                                            !isNeedToUpgrade &&
+                                                                                            !hasPendingCardPayments &&
+                                                                                            !hasStripeActionPanel &&
+                                                                                            (AuthUserStripeConnected ||
+                                                                                                has_stripe_account) ? (
+                                                                                                <EnableCardCapabilities />
+                                                                                            ) : (
+                                                                                                ""
+                                                                                            )}
+                                                                                            {IsloggedIn &&
+                                                                                            auth?.user &&
+                                                                                            auth
+                                                                                                ?.user
+                                                                                                ?.role ==
+                                                                                                1 &&
+                                                                                            (auth
+                                                                                                ?.user
+                                                                                                ?.subscription_status ==
+                                                                                                3 ||
+                                                                                                auth
+                                                                                                    ?.user
+                                                                                                    ?.subscription_status ==
+                                                                                                    0) ? (
+                                                                                                <SiteSubscription
+                                                                                                    auth={
+                                                                                                        auth
+                                                                                                    }
+                                                                                                    subscription_status={
+                                                                                                        auth
+                                                                                                            ?.user
+                                                                                                            ?.subscription_status
+                                                                                                    }
+                                                                                                    charges={
+                                                                                                        auth
+                                                                                                            ?.user
+                                                                                                            ?.monthly_charge_enabled
+                                                                                                    }
+                                                                                                    user={
+                                                                                                        auth?.user
+                                                                                                    }
+                                                                                                    card_capabilities={
+                                                                                                        card_capabilities
+                                                                                                    }
+                                                                                                    monthly_charges={
+                                                                                                        monthly_charges
+                                                                                                    }
+                                                                                                />
+                                                                                            ) : (
+                                                                                                ""
+                                                                                            )}
+
+                                                                                            {IsloggedIn &&
+                                                                                            ((user?.profile_status_lock ==
+                                                                                                0 &&
+                                                                                                user?.profile_reject_reason) ||
+                                                                                                (user?.edit_bio_reason &&
+                                                                                                    user?.bio_approved ==
+                                                                                                        2) ||
+                                                                                                slinks?.reason ||
+                                                                                                user?.avatar_approved ==
+                                                                                                    2) ? (
+                                                                                                <div className="bg-white border-1 border-black rounded-box mb-4 p-4">
+                                                                                                    <h2 className="text-red-600 font-bold text-xl">
+                                                                                                        Action
+                                                                                                        Required
+                                                                                                        {
+                                                                                                            ""
+                                                                                                        }
+                                                                                                    </h2>
+                                                                                                    {user?.profile_status_lock ==
+                                                                                                        0 &&
+                                                                                                        user?.profile_reject_reason && (
+                                                                                                            <div className="mt-3">
+                                                                                                                <p className="text-red-700 font-bold">
+                                                                                                                    Profile
+                                                                                                                    Edit
+                                                                                                                    Request
+                                                                                                                </p>
+                                                                                                                <p className="text-red-500 text-sm">
+                                                                                                                    Reason:
+                                                                                                                    {
+                                                                                                                        ""
+                                                                                                                    }
+                                                                                                                    {
+                                                                                                                        user.profile_reject_reason
+                                                                                                                    }
+                                                                                                                </p>
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                    {user?.edit_bio_reason &&
+                                                                                                    user?.bio_approved ==
+                                                                                                        2 ? (
                                                                                                         <div className="mt-3">
                                                                                                             <p className="text-red-700 font-bold">
+                                                                                                                {
+                                                                                                                    ""
+                                                                                                                }
+                                                                                                                Bio
+                                                                                                                Edit
+                                                                                                                Request
+                                                                                                                {
+                                                                                                                    ""
+                                                                                                                }
+                                                                                                            </p>
+                                                                                                            <p className="text-red-500 text-sm">
+                                                                                                                Reason
+                                                                                                                :
+                                                                                                                {
+                                                                                                                    user?.edit_bio_reason
+                                                                                                                }
+                                                                                                                Please
+                                                                                                                update
+                                                                                                                your
+                                                                                                                bio
+                                                                                                                as
+                                                                                                                per
+                                                                                                                requested.
+                                                                                                            </p>
+                                                                                                        </div>
+                                                                                                    ) : (
+                                                                                                        ""
+                                                                                                    )}
+
+                                                                                                    {user?.avatar_approved ==
+                                                                                                        2 && (
+                                                                                                        <div className="mt-3">
+                                                                                                            <p className="text-red-700 font-semibold">
+                                                                                                                Avatar
+                                                                                                                Edit
+                                                                                                                Request
+                                                                                                            </p>
+                                                                                                            <p className="text-red-500 text-sm">
                                                                                                                 Profile
+                                                                                                                avatar
+                                                                                                                has
+                                                                                                                been
+                                                                                                                rejected
+                                                                                                                by
+                                                                                                                admin.
+                                                                                                                Please
+                                                                                                                upload
+                                                                                                                a
+                                                                                                                new
+                                                                                                                avatar.
+                                                                                                            </p>
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                    {slinks?.reason && (
+                                                                                                        <div className="mt-3">
+                                                                                                            <p className="text-red-700 font-semibold">
+                                                                                                                Social
+                                                                                                                Media
                                                                                                                 Edit
                                                                                                                 Request
                                                                                                             </p>
                                                                                                             <p className="text-red-500 text-sm">
                                                                                                                 Reason:
                                                                                                                 {
-                                                                                                                    ""
+                                                                                                                    slinks.reason
                                                                                                                 }
-                                                                                                                {
-                                                                                                                    user.profile_reject_reason
-                                                                                                                }
+                                                                                                                <br />
+                                                                                                                Please
+                                                                                                                update
+                                                                                                                your
+                                                                                                                social
+                                                                                                                links
+                                                                                                                as
+                                                                                                                per
+                                                                                                                the
+                                                                                                                requested
+                                                                                                                changes.
                                                                                                             </p>
                                                                                                         </div>
                                                                                                     )}
-                                                                                                {user?.edit_bio_reason &&
-                                                                                                user?.bio_approved ==
-                                                                                                    2 ? (
-                                                                                                    <div className="mt-3">
-                                                                                                        <p className="text-red-700 font-bold">
-                                                                                                            {
-                                                                                                                ""
-                                                                                                            }
-                                                                                                            Bio
-                                                                                                            Edit
-                                                                                                            Request
-                                                                                                            {
-                                                                                                                ""
-                                                                                                            }
-                                                                                                        </p>
-                                                                                                        <p className="text-red-500 text-sm">
-                                                                                                            Reason
-                                                                                                            :
-                                                                                                            {
-                                                                                                                user?.edit_bio_reason
-                                                                                                            }
-                                                                                                            Please
-                                                                                                            update
-                                                                                                            your
-                                                                                                            bio
-                                                                                                            as
-                                                                                                            per
-                                                                                                            requested.
-                                                                                                        </p>
-                                                                                                    </div>
-                                                                                                ) : (
-                                                                                                    ""
-                                                                                                )}
+                                                                                                </div>
+                                                                                            ) : (
+                                                                                                ""
+                                                                                            )}
 
-                                                                                                {user?.avatar_approved ==
-                                                                                                    2 && (
-                                                                                                    <div className="mt-3">
-                                                                                                        <p className="text-red-700 font-semibold">
-                                                                                                            Avatar
-                                                                                                            Edit
-                                                                                                            Request
-                                                                                                        </p>
-                                                                                                        <p className="text-red-500 text-sm">
-                                                                                                            Profile
-                                                                                                            avatar
-                                                                                                            has
-                                                                                                            been
-                                                                                                            rejected
-                                                                                                            by
-                                                                                                            admin.
-                                                                                                            Please
-                                                                                                            upload
-                                                                                                            a
-                                                                                                            new
-                                                                                                            avatar.
-                                                                                                        </p>
-                                                                                                    </div>
-                                                                                                )}
-                                                                                                {slinks?.reason && (
-                                                                                                    <div className="mt-3">
-                                                                                                        <p className="text-red-700 font-semibold">
-                                                                                                            Social
-                                                                                                            Media
-                                                                                                            Edit
-                                                                                                            Request
-                                                                                                        </p>
-                                                                                                        <p className="text-red-500 text-sm">
-                                                                                                            Reason:
-                                                                                                            {
-                                                                                                                slinks.reason
-                                                                                                            }
-                                                                                                            <br />
-                                                                                                            Please
-                                                                                                            update
-                                                                                                            your
-                                                                                                            social
-                                                                                                            links
-                                                                                                            as
-                                                                                                            per
-                                                                                                            the
-                                                                                                            requested
-                                                                                                            changes.
-                                                                                                        </p>
-                                                                                                    </div>
-                                                                                                )}
-                                                                                            </div>
-                                                                                        ) : (
-                                                                                            ""
-                                                                                        )}
-
-                                                                                        {!IsloggedIn && auth?.user?.username && auth?.user?.username !== user?.username ? (
-                                                                                            <div className="mb-6 !mt-6 relative group">
-                                                                                                {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#FF007F] to-[#05EFB8] rounded-box blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
-                                                                                                <div className="relative overflow-hidden p-5 md:p-6 rounded-box bg-[#fdfbf7] border-[3px] border-black min-h-[120px] md:min-h-[140px]">
-                                                                                                    <div className="items-stretch md:items-center justify-between gap-5 relative z-10">
-                                                                                                        <div className="flex items-center gap-4 order-1 w-full md:w-auto justify-center md:justify-start">
-                                                                                                            <div className="relative">
-                                                                                                                <img
-                                                                                                                    src={
-                                                                                                                        auth
-                                                                                                                            ?.user
-                                                                                                                            ?.avatar_url ||
+                                                                                            {!IsloggedIn &&
+                                                                                            auth
+                                                                                                ?.user
+                                                                                                ?.username &&
+                                                                                            auth
+                                                                                                ?.user
+                                                                                                ?.username !==
+                                                                                                user?.username ? (
+                                                                                                <div className="mb-6 !mt-6 relative group">
+                                                                                                    {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#FF007F] to-[#05EFB8] rounded-box blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
+                                                                                                    <div className="relative overflow-hidden p-5 md:p-6 rounded-box bg-[#fdfbf7] border-[3px] border-black min-h-[120px] md:min-h-[140px]">
+                                                                                                        <div className="items-stretch md:items-center justify-between gap-5 relative z-10">
+                                                                                                            <div className="flex items-center gap-4 order-1 w-full md:w-auto justify-center md:justify-start">
+                                                                                                                <div className="relative">
+                                                                                                                    <img
+                                                                                                                        src={
+                                                                                                                            auth
+                                                                                                                                ?.user
+                                                                                                                                ?.avatar_url ||
+                                                                                                                            ""
+                                                                                                                        }
+                                                                                                                        alt="you"
+                                                                                                                        className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black"
+                                                                                                                    />
+                                                                                                                </div>
+                                                                                                                <div className="text-black text-xl font-black tracking-widest">
+                                                                                                                    +
+                                                                                                                </div>
+                                                                                                                <div className="relative">
+                                                                                                                    <img
+                                                                                                                        src={
+                                                                                                                            user?.avatar_url ||
+                                                                                                                            ""
+                                                                                                                        }
+                                                                                                                        alt="creator"
+                                                                                                                        className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black"
+                                                                                                                    />
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                            <div className="flex-1 order-2 text-center md:text-left mt-6">
+                                                                                                                <p className="text-[12px] font-black tracking-[0.25em] uppercase text-gray-700 mb-1">
+                                                                                                                    Support
+                                                                                                                    Story
+                                                                                                                </p>
+                                                                                                                <p className="text-black font-black uppercase text-xl md:text-xl leading-snug">
+                                                                                                                    Relive
+                                                                                                                    your
+                                                                                                                    moments
+                                                                                                                    with
+                                                                                                                    {
                                                                                                                         ""
                                                                                                                     }
-                                                                                                                    alt="you"
-                                                                                                                    className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black"
-                                                                                                                />
+                                                                                                                    {user?.name ||
+                                                                                                                        "@" +
+                                                                                                                            user?.username}
+                                                                                                                </p>
+                                                                                                                <p className="text-gray-700 font-bold text-sm md:text-sm mt-1">
+                                                                                                                    Purchases,
+                                                                                                                    thank‑yous
+                                                                                                                    and
+                                                                                                                    milestones
+                                                                                                                    —
+                                                                                                                    beautifully
+                                                                                                                    in
+                                                                                                                    one
+                                                                                                                    place.
+                                                                                                                </p>
                                                                                                             </div>
-                                                                                                            <div className="text-black text-xl font-black tracking-widest">
-                                                                                                                +
+                                                                                                            <div className="order-3 w-full md:w-auto md:shrink-0 mt-6">
+                                                                                                                <Link
+                                                                                                                    href={`/support/${user?.username}/${auth?.user?.username}`}
+                                                                                                                    className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-box-sm text-sm uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
+                                                                                                                >
+                                                                                                                    View
+                                                                                                                    Your
+                                                                                                                    Story
+                                                                                                                </Link>
                                                                                                             </div>
-                                                                                                            <div className="relative">
-                                                                                                                <img
-                                                                                                                    src={
-                                                                                                                        user?.avatar_url ||
-                                                                                                                        ""
-                                                                                                                    }
-                                                                                                                    alt="creator"
-                                                                                                                    className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black"
-                                                                                                                />
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                        <div className="flex-1 order-2 text-center md:text-left mt-6">
-                                                                                                            <p className="text-[12px] font-black tracking-[0.25em] uppercase text-gray-700 mb-1">
-                                                                                                                Support
-                                                                                                                Story
-                                                                                                            </p>
-                                                                                                            <p className="text-black font-black uppercase text-xl md:text-xl leading-snug">
-                                                                                                                Relive
-                                                                                                                your
-                                                                                                                moments
-                                                                                                                with
-                                                                                                                {
-                                                                                                                    ""
-                                                                                                                }
-                                                                                                                {user?.name ||
-                                                                                                                    "@" +
-                                                                                                                        user?.username}
-                                                                                                            </p>
-                                                                                                            <p className="text-gray-700 font-bold text-sm md:text-sm mt-1">
-                                                                                                                Purchases,
-                                                                                                                thank‑yous
-                                                                                                                and
-                                                                                                                milestones
-                                                                                                                —
-                                                                                                                beautifully
-                                                                                                                in
-                                                                                                                one
-                                                                                                                place.
-                                                                                                            </p>
-                                                                                                        </div>
-                                                                                                        <div className="order-3 w-full md:w-auto md:shrink-0 mt-6">
-                                                                                                            <Link
-                                                                                                                href={`/support/${user?.username}/${auth?.user?.username}`}
-                                                                                                                className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-box-sm text-sm uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
-                                                                                                            >
-                                                                                                                View
-                                                                                                                Your
-                                                                                                                Story
-                                                                                                            </Link>
                                                                                                         </div>
                                                                                                     </div>
                                                                                                 </div>
-                                                                                            </div>
-                                                                                        ) : (
-                                                                                            ""
-                                                                                        )}
+                                                                                            ) : (
+                                                                                                ""
+                                                                                            )}
+                                                                                        </div>
                                                                                     </div>
-                                                                                </div>
                                                                                 )}
                                                                                 {props.piggyPotTopSupporters &&
                                                                                     (props
@@ -1960,7 +2023,9 @@ export default function Dashboard(props) {
                                                                                     )}
 
                                                                                 <div className="w-full">
-                                                                                    {IsloggedIn && UserStripeConnected == 1 ? (
+                                                                                    {IsloggedIn &&
+                                                                                    UserStripeConnected ==
+                                                                                        1 ? (
                                                                                         <>
                                                                                             <Suspense
                                                                                                 fallback={
@@ -1987,7 +2052,6 @@ export default function Dashboard(props) {
                                                                                         ""
                                                                                     )}
 
-
                                                                                     {!IsloggedIn &&
                                                                                     UserStripeConnected ==
                                                                                         1 &&
@@ -2003,7 +2067,7 @@ export default function Dashboard(props) {
                                                                                                 null
                                                                                             }
                                                                                         >
-                                                                                            <div className='pb-4'>
+                                                                                            <div className="pb-4">
                                                                                                 <TipInner classes="" />
                                                                                             </div>
                                                                                         </Suspense>
@@ -2046,9 +2110,12 @@ export default function Dashboard(props) {
                                                                         ""
                                                                     )}
 
-                                                                    {IsloggedIn || UserStripeConnected == 1 ? (
+                                                                    {IsloggedIn ||
+                                                                    UserStripeConnected ==
+                                                                        1 ? (
                                                                         <>
-                                                                            {page === "wishes" ? (
+                                                                            {page ===
+                                                                            "wishes" ? (
                                                                                 <ErrorBoundary>
                                                                                     <Suspense
                                                                                         fallback={
@@ -2056,7 +2123,8 @@ export default function Dashboard(props) {
                                                                                         }
                                                                                     >
                                                                                         <div className="wishes-items pb-6">
-                                                                                            {wish_categories && wish_categories.length ? (
+                                                                                            {wish_categories &&
+                                                                                            wish_categories.length ? (
                                                                                                 <>
                                                                                                     <div className="new-wish-cats flex items-center mb-3 md:mb-6 gap-2 flex-wrap p-2">
                                                                                                         <Link
@@ -2064,7 +2132,8 @@ export default function Dashboard(props) {
                                                                                                             href={route(
                                                                                                                 "user.show",
                                                                                                                 {
-                                                                                                                    username: user.username,
+                                                                                                                    username:
+                                                                                                                        user.username,
                                                                                                                     page: "wishes",
                                                                                                                 },
                                                                                                             )}
@@ -2113,7 +2182,11 @@ export default function Dashboard(props) {
                                                                                                         {IsloggedIn ? (
                                                                                                             <EditCategories
                                                                                                                 username={
-                                                                                                                    (auth && auth?.user?.username) || null
+                                                                                                                    (auth &&
+                                                                                                                        auth
+                                                                                                                            ?.user
+                                                                                                                            ?.username) ||
+                                                                                                                    null
                                                                                                                 }
                                                                                                             />
                                                                                                         ) : (
@@ -2125,9 +2198,15 @@ export default function Dashboard(props) {
                                                                                                 ""
                                                                                             )}
 
-                                                                                            {loading || (isInitialLoad && (!wishitems || wishitems.length === 0)) ? (
+                                                                                            {loading ||
+                                                                                            (isInitialLoad &&
+                                                                                                (!wishitems ||
+                                                                                                    wishitems.length ===
+                                                                                                        0)) ? (
                                                                                                 <LoadingScreen />
-                                                                                            ) : wishitems && wishitems.length > 0 ? (
+                                                                                            ) : wishitems &&
+                                                                                              wishitems.length >
+                                                                                                  0 ? (
                                                                                                 <>
                                                                                                     <DndContext
                                                                                                         sensors={
@@ -2444,7 +2523,10 @@ export default function Dashboard(props) {
                                                                                             IsloggedIn
                                                                                         }
                                                                                         username={
-                                                                                            user?.username || auth?.user?.username
+                                                                                            user?.username ||
+                                                                                            auth
+                                                                                                ?.user
+                                                                                                ?.username
                                                                                         }
                                                                                         suppressEmptyState={
                                                                                             IsloggedIn &&
@@ -2455,7 +2537,12 @@ export default function Dashboard(props) {
                                                                                                     0)
                                                                                         }
                                                                                     />
-                                                                                    {IsloggedIn && (!props.memberships || props.memberships?.length === 0) && (
+                                                                                    {IsloggedIn &&
+                                                                                        (!props.memberships ||
+                                                                                            props
+                                                                                                .memberships
+                                                                                                ?.length ===
+                                                                                                0) && (
                                                                                             <>
                                                                                                 <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
@@ -2497,8 +2584,10 @@ export default function Dashboard(props) {
                                                                                 ""
                                                                             )}
 
-                                                                            {page === "bills" ? (
-                                                                                <Suspense fallback={
+                                                                            {page ===
+                                                                            "bills" ? (
+                                                                                <Suspense
+                                                                                    fallback={
                                                                                         <LoadingScreen />
                                                                                     }
                                                                                 >
@@ -2507,20 +2596,40 @@ export default function Dashboard(props) {
                                                                                             IsloggedIn
                                                                                         }
                                                                                         suppressEmptyState={
-                                                                                            IsloggedIn && (!props.bills || props.bills?.length === 0)
+                                                                                            IsloggedIn &&
+                                                                                            (!props.bills ||
+                                                                                                props
+                                                                                                    .bills
+                                                                                                    ?.length ===
+                                                                                                    0)
                                                                                         }
                                                                                     />
-                                                                                    {IsloggedIn && (!props.bills || props.bills?.length === 0) && (
+                                                                                    {IsloggedIn &&
+                                                                                        (!props.bills ||
+                                                                                            props
+                                                                                                .bills
+                                                                                                ?.length ===
+                                                                                                0) && (
                                                                                             <>
                                                                                                 <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         🧾
                                                                                                     </div>
                                                                                                     <h3 className="font-gulfs text-2xl uppercase mb-2">
-                                                                                                        No Active Bills
+                                                                                                        No
+                                                                                                        Active
+                                                                                                        Bills
                                                                                                     </h3>
                                                                                                     <p className="text-gray-600 font-bold mb-6">
-                                                                                                        Offer a content membership your fans can subscribe to.
+                                                                                                        Offer
+                                                                                                        a
+                                                                                                        content
+                                                                                                        membership
+                                                                                                        your
+                                                                                                        fans
+                                                                                                        can
+                                                                                                        subscribe
+                                                                                                        to.
                                                                                                     </p>
                                                                                                     <button
                                                                                                         onClick={() =>
@@ -2543,7 +2652,8 @@ export default function Dashboard(props) {
                                                                                 ""
                                                                             )}
 
-                                                                            {page === "shop" ? (
+                                                                            {page ===
+                                                                            "shop" ? (
                                                                                 <Suspense
                                                                                     fallback={
                                                                                         <LoadingScreen />
@@ -2557,22 +2667,42 @@ export default function Dashboard(props) {
                                                                                             IsloggedIn
                                                                                         }
                                                                                         suppressEmptyState={
-                                                                                            IsloggedIn && (!props.shops || props.shops.length === 0)
+                                                                                            IsloggedIn &&
+                                                                                            (!props.shops ||
+                                                                                                props
+                                                                                                    .shops
+                                                                                                    .length ===
+                                                                                                    0)
                                                                                         }
                                                                                     />
                                                                                     {IsloggedIn &&
-                                                                                        (!props.shops || props.shops.length === 0) && (
+                                                                                        (!props.shops ||
+                                                                                            props
+                                                                                                .shops
+                                                                                                .length ===
+                                                                                                0) && (
                                                                                             <>
                                                                                                 <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         🛍️
                                                                                                     </div>
                                                                                                     <h3 className="font-gulfs text-2xl uppercase mb-2">
-                                                                                                        No Shop Items Yet
+                                                                                                        No
+                                                                                                        Shop
+                                                                                                        Items
+                                                                                                        Yet
                                                                                                     </h3>
                                                                                                     <p className="text-gray-600 font-bold mb-6">
-                                                                                                        Create physical or digital products for
-                                                                                                        your fans to buy.
+                                                                                                        Create
+                                                                                                        physical
+                                                                                                        or
+                                                                                                        digital
+                                                                                                        products
+                                                                                                        for
+                                                                                                        your
+                                                                                                        fans
+                                                                                                        to
+                                                                                                        buy.
                                                                                                     </p>
                                                                                                     <button
                                                                                                         onClick={() =>
@@ -2584,7 +2714,8 @@ export default function Dashboard(props) {
                                                                                                         }
                                                                                                         className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                                                                                     >
-                                                                                                        Add Item
+                                                                                                        Add
+                                                                                                        Item
                                                                                                     </button>
                                                                                                 </div>
                                                                                             </>
