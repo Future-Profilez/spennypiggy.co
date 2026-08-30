@@ -1,4 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
+import ThreeProgrammes, {
+    THREE_PROGRAMMES,
+} from './components/ThreeProgrammes';
 import Guest from '@/Layouts/GuestLayout';
 import AdPage from './components/AdPage';
 import {
@@ -197,7 +200,10 @@ export default function Index({ comparisons = [] }) {
 
                     {/* Ways to earn */}
                     <div className="mt-20 md:mt-28">
-                        <SectionHead eyebrow="Ways to earn" accent={ACCENT.earn}>
+                        <SectionHead
+                            eyebrow="Ways to earn"
+                            accent={ACCENT.earn}
+                        >
                             One profile,{' '}
                             <span className="text-gradient-wishlist">
                                 seven ways to be paid
@@ -373,9 +379,9 @@ export default function Index({ comparisons = [] }) {
                     {/* Bonuses */}
                     <div className="mt-20 md:mt-28">
                         <SectionHead
-                            eyebrow="Paid on top"
+                            eyebrow={THREE_PROGRAMMES.eyebrow}
                             accent={ACCENT.bonus}
-                            lead="Each one is a qualifying threshold, not a promise. Earnings are never assured and terms apply."
+                            lead={THREE_PROGRAMMES.lead}
                         >
                             Three programmes{' '}
                             <span className="text-gradient-wishlist">
@@ -383,42 +389,19 @@ export default function Index({ comparisons = [] }) {
                             </span>
                         </SectionHead>
 
-                        <LedgerFrame className="mt-10">
-                            <LedgerRow
-                                title="Founder bonus"
-                                line={`First ${FOUNDER.seats} creators to earn ${money(FOUNDER.qualifyingNet)} net in ${FOUNDER.windowDays} days. Founders then earn ${percent(FOUNDER.monthlyRate)} on top of monthly earnings, up to ${money(FOUNDER.monthlyCap)} a month.`}
-                                figure={percent(FOUNDER.monthlyRate)}
-                                tag="monthly"
-                            />
-                            <LedgerRow
-                                title="Fast start bonus"
-                                line={`An extra ${percent(FAST_START.rate)} on everything you earn in your first ${FAST_START.windowDays} days, paid alongside your normal payout.`}
-                                figure={percent(FAST_START.rate)}
-                                tag={`${FAST_START.windowDays} days`}
-                            />
-                            <LedgerRow
-                                title="Creator referrals"
-                                line={`${money(REFERRAL.amount)} for every creator you bring, paid once they have earned ${money(REFERRAL.qualifyingGmv)}. Your link is in your dashboard from day one.`}
-                                figure={money(REFERRAL.amount)}
-                                tag="per creator"
-                            />
-                        </LedgerFrame>
-
-                        <Link
-                            href="/creators/founder-bonus"
-                            className="mt-6 inline-flex items-center gap-2 font-gulfs text-[12px] uppercase tracking-[0.18em] text-white underline decoration-2 underline-offset-4 hover:opacity-70 min-h-[44px]"
-                            style={{ textDecorationColor: ACCENT.bonus }}
-                        >
-                            How the founder bonus works
-                            <ArrowRight size={14} />
-                        </Link>
+                        {/* ⚠️ The body lives in `components/ThreeProgrammes`
+                            so the vs pages can reuse it UNCHANGED, which is what
+                            spec v4.3 §3a asks for. */}
+                        <ThreeProgrammes className="mt-10" />
                     </div>
 
                     {/* Close */}
                     <div className="mt-20 text-center md:mt-28">
                         <h2 className="font-gulfs text-3xl uppercase leading-[0.95] tracking-tight text-white md:text-5xl">
                             Start selling{' '}
-                            <span className="text-gradient-wishlist">today</span>
+                            <span className="text-gradient-wishlist">
+                                today
+                            </span>
                         </h2>
                         <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-gray-300 md:text-xl">
                             Listing is free. You are not charged anything until

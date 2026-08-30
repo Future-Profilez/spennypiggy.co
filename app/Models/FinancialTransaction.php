@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\EvaluateGrowthBonusForCreator;
 use App\Models\Concerns\FreezesLedgerFx;
 use App\Services\Discovery\AttributionService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -122,6 +123,43 @@ class FinancialTransaction extends Model
                 }
             } catch (\Throwable $e) {
                 Log::warning('Discovery: ledger attribution hook failed', [
+                    'transaction' => $model->getKey(),
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
+
+        /*
+         * Growth Bonus — re-evaluate the creator as soon as a sale lands.
+         *
+         * 🚨 A SEPARATE HOOK, NOT FOLDED INTO THE ATTRIBUTION ONE ABOVE. That
+         * block `return`s early at three points once it has attributed the row,
+         * so anything appended to it would be skipped for most transactions —
+         * the majority, in fact, since an attributed row is the normal case.
+         *
+         * ⚠️ Queued, never inline. This runs inside a Stripe webhook and inside
+         * `finance:sync-transactions`; a full per-creator ledger recompute there
+         * would add seconds to a payment path on a 60-second Lambda. The job is
+         * unique per creator for two minutes, so a basket writing five rows
+         * queues one evaluation.
+         *
+         * ⚠️ `created` only. A resync uses `updateOrCreate`, so an existing row
+         * fires `updated` instead — deliberately not hooked, or every sync pass
+         * would re-queue the whole platform. The daily command covers that.
+         *
+         * 🚨 Nothing here may throw: a bonus that fails to refresh must never
+         * fail the ledger write that pays the creator.
+         */
+        static::created(function ($model) {
+            try {
+                if ($model->type !== 'income' || ! config('growth_bonus.enabled', false)) {
+                    return;
+                }
+
+                EvaluateGrowthBonusForCreator::dispatch((int) $model->user_id)
+                    ->delay(now()->addSeconds(20));
+            } catch (\Throwable $e) {
+                Log::warning('Growth Bonus: could not queue instant evaluation', [
                     'transaction' => $model->getKey(),
                     'error' => $e->getMessage(),
                 ]);

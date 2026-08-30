@@ -39,6 +39,35 @@ export default function GrowthBonusIndex() {
     const reached = (rung) =>
         progress ? progress.qualifying_gmv >= rung.gmv : false;
 
+    /* 🚨 "Unlocked" answers whether they SOLD enough. This answers whether they
+       have been PAID, which is the question a creator actually asks — and until
+       28 Aug 2026 the page could not answer it at all. */
+    const rewardFor = (rung) =>
+        (progress?.milestones ?? []).find((m) => m.gmv === rung.gmv) ?? null;
+
+    const payState = (r, rung) => {
+        /* ⚠️ The figure on this page is computed live from the ledger, but a
+           reward is a money record and is only ever created by the daily
+           evaluator. So a creator can cross a rung minutes before the row
+           exists. Saying so beats leaving the cell blank, which reads as the
+           platform having missed the sale. */
+        if (!r) {
+            return reached(rung) && progress?.awaiting_evaluation
+                ? { label: "Confirming your bonus", tone: "due" }
+                : null;
+        }
+        if (r.status === "paid")
+            return { label: `Paid ${r.paid_at ?? ""}`.trim(), tone: "paid" };
+        if (r.status === "reversed")
+            return { label: "Reversed — refunded", tone: "off" };
+        return {
+            label: r.expected_payout
+                ? `Expected ${r.expected_payout}`
+                : "With your next payout",
+            tone: "due",
+        };
+    };
+
     return (
         <Guest auth={auth}>
             <Head title="Creator Growth Bonus" />
@@ -62,8 +91,8 @@ export default function GrowthBonusIndex() {
 
                         <p className="mx-auto max-w-2xl text-base font-medium leading-relaxed text-white/65 md:text-xl">
                             Earn your first {money(programme.activation_gmv)}{" "}
-                            within {programme.activation_window_days} days
-                            to unlock the Creator Growth Bonus. Then keep hitting
+                            within {programme.activation_window_days} days to
+                            unlock the Creator Growth Bonus. Then keep hitting
                             milestones and unlock up to{" "}
                             {money(programme.max_total)} in total rewards.
                         </p>
@@ -132,42 +161,36 @@ export default function GrowthBonusIndex() {
                                         <Th>Qualifying earnings</Th>
                                         <Th>Bonus unlocked</Th>
                                         <Th>Running total</Th>
-                                        {progress && <Th>Status</Th>}
+                                        {progress && <Th>Your bonus</Th>}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {programme.ladder.map((rung) => (
-                                        <tr
+                                        <LadderRow
                                             key={rung.gmv}
-                                            className="border-t-2 border-black/10"
-                                        >
-                                            <Td strong>{money(rung.gmv)}</Td>
-                                            <Td>{money(rung.amount)}</Td>
-                                            <Td>{money(rung.cumulative)}</Td>
-                                            {progress && (
-                                                <Td>
-                                                    {reached(rung) ? (
-                                                        <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-black">
-                                                            <FaCheck className="shrink-0" />
-                                                            Unlocked
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-black/40">
-                                                            <FaLock className="shrink-0" />
-                                                            Locked
-                                                        </span>
-                                                    )}
-                                                </Td>
-                                            )}
-                                        </tr>
+                                            rung={rung}
+                                            money={money}
+                                            reached={
+                                                progress ? reached(rung) : null
+                                            }
+                                            state={
+                                                progress
+                                                    ? payState(
+                                                          rewardFor(rung),
+                                                          rung,
+                                                      )
+                                                    : null
+                                            }
+                                        />
                                     ))}
                                 </tbody>
                             </table>
                         </div>
 
                         <p className="mt-4 text-center text-sm text-white/50">
-                            Milestones are cumulative. Reaching a later milestone
-                            also unlocks any earlier one you have not yet earned.
+                            Milestones are cumulative. Reaching a later
+                            milestone also unlocks any earlier one you have not
+                            yet earned.
                         </p>
                     </div>
                 </section>
@@ -178,9 +201,10 @@ export default function GrowthBonusIndex() {
                         <Rule title="How you join" ground="#E6EA7B">
                             The first {programme.max_seats} creators to reach{" "}
                             {money(programme.activation_gmv)} in qualifying
-                            earnings within {programme.activation_window_days} days of
-                            their payouts going live. Registering or setting up a
-                            profile does not take a place — only sales do.
+                            earnings within {programme.activation_window_days}{" "}
+                            days of their payouts going live. Registering or
+                            setting up a profile does not take a place — only
+                            sales do.
                         </Rule>
 
                         <Rule title="When you are paid" ground="#05EFB8">
@@ -213,10 +237,10 @@ export default function GrowthBonusIndex() {
                     <p className="mx-auto mt-8 max-w-3xl text-center text-xs leading-[1.6] text-white/40">
                         The Creator Growth Bonus runs alongside the Fast Start
                         Bonus, the Founders Bonus and referral rewards — earning
-                        one does not affect the others. Milestones are qualifying
-                        thresholds, not a promise of earnings. Bonuses are
-                        subject to validation, settlement, refund and chargeback
-                        rules. Read the full{" "}
+                        one does not affect the others. Milestones are
+                        qualifying thresholds, not a promise of earnings.
+                        Bonuses are subject to validation, settlement, refund
+                        and chargeback rules. Read the full{" "}
                         <Link
                             href="/growth-bonus-terms"
                             className="underline transition-opacity duration-200 hover:opacity-70"
@@ -282,7 +306,9 @@ function ProgressPanel({ progress, programme, money }) {
     return (
         <>
             <Eyebrow>
-                {progress.status === "expired" ? "Programme ended" : "You're in"}
+                {progress.status === "expired"
+                    ? "Programme ended"
+                    : "You're in"}
             </Eyebrow>
             <h3 className="mb-3 font-gulfs text-xl uppercase text-white md:text-3xl">
                 {progress.next_milestone
@@ -355,6 +381,52 @@ const Rule = ({ title, ground, children }) => (
             {children}
         </p>
     </div>
+);
+
+/**
+ * One rung of the ladder.
+ *
+ * ⚠️ Extracted so the payment state is resolved ONCE. Written inline it was
+ * called four times per row — for the guard, twice for the colour and again for
+ * the label — which prettier then nested six levels deep and made unreadable.
+ */
+const LadderRow = ({ rung, money, reached, state }) => (
+    <tr className="border-t-2 border-black/10">
+        <Td strong>{money(rung.gmv)}</Td>
+        <Td>{money(rung.amount)}</Td>
+        <Td>{money(rung.cumulative)}</Td>
+
+        {reached !== null && (
+            <Td>
+                {reached ? (
+                    <>
+                        <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-black">
+                            <FaCheck className="shrink-0" />
+                            Unlocked
+                        </span>
+                        {state && (
+                            <span
+                                className={`mt-1 block text-[12px] leading-[1.4] ${
+                                    state.tone === "paid"
+                                        ? "font-bold text-black"
+                                        : state.tone === "off"
+                                          ? "text-black/40"
+                                          : "text-black/60"
+                                }`}
+                            >
+                                {state.label}
+                            </span>
+                        )}
+                    </>
+                ) : (
+                    <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-black/40">
+                        <FaLock className="shrink-0" />
+                        Locked
+                    </span>
+                )}
+            </Td>
+        )}
+    </tr>
 );
 
 const Th = ({ children }) => (

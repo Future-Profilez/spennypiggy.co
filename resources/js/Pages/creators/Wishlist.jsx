@@ -1,20 +1,20 @@
-import { Head, Link } from "@inertiajs/react";
-import Guest from "@/Layouts/GuestLayout";
-import AdPage from "./components/AdPage";
-import FeeBlock from "./components/FeeBlock";
-import RiskBlock from "./components/RiskBlock";
-import WhyTheFee from "./components/WhyTheFee";
+import { Head, Link } from '@inertiajs/react';
+import Guest from '@/Layouts/GuestLayout';
+import AdPage from './components/AdPage';
+import FeeBlock from './components/FeeBlock';
+import RiskBlock from './components/RiskBlock';
+import WhyTheFee from './components/WhyTheFee';
 import {
     ACCENT,
     Eyebrow,
     SectionHead,
     StartSelling,
     StatCell,
-} from "./components/Ledger";
+} from './components/Ledger';
 import {
     PRICE_FORMATTED,
     SUBSCRIPTION_COPY,
-} from "@/constants/creatorSubscription";
+} from '@/constants/creatorSubscription';
 
 /**
  * /creators/wishlist — the wishlist keyword landing page.
@@ -45,7 +45,7 @@ export default function Wishlist({
     threeTierLine,
 }) {
     const accent = ACCENT.safe;
-    const title = "Creator wishlist that pays you 100% — Spenny Piggy";
+    const title = 'Creator wishlist that pays you 100% — Spenny Piggy';
     const promise = `${SUBSCRIPTION_COPY.promise} · ${PRICE_FORMATTED} + VAT / month after · cancel anytime`;
 
     return (
@@ -122,24 +122,24 @@ export default function Wishlist({
                                 heading="A gift wishlist"
                                 muted
                                 rows={[
-                                    "A fan sends money or a gift. Nothing is exchanged.",
-                                    "No record of what it was for.",
-                                    "Your bank sees unexplained money from a stranger.",
-                                    "A dispute has nothing to defend.",
-                                    "Withdrawal fees, instant-payout fees and conversion on the way out.",
-                                    "Tips and gifts are still taxable — and hard to evidence.",
+                                    'A fan sends money or a gift. Nothing is exchanged.',
+                                    'No record of what it was for.',
+                                    'Your bank sees unexplained money from a stranger.',
+                                    'A dispute has nothing to defend.',
+                                    'Withdrawal fees, instant-payout fees and conversion on the way out.',
+                                    'Tips and gifts are still taxable — and hard to evidence.',
                                 ]}
                             />
                             <Column
                                 heading="A Spenny Piggy wishlist"
                                 accent={accent}
                                 rows={[
-                                    "A fan buys a wish. You deliver the content.",
-                                    "A delivery record, time-stamped, on every wish.",
-                                    "Your bank sees a sale from a registered business.",
-                                    "A dispute is answered with evidence.",
-                                    "You receive the price you listed. Weekly. No creator-side fees.",
-                                    "Income that is simple to declare, because it looks like income.",
+                                    'A fan buys a wish. You deliver the content.',
+                                    'A delivery record, time-stamped, on every wish.',
+                                    'Your bank sees a sale from a registered business.',
+                                    'A dispute is answered with evidence.',
+                                    'You receive the price you listed. Weekly. No creator-side fees.',
+                                    'Income that is simple to declare, because it looks like income.',
                                 ]}
                             />
                         </div>
@@ -274,7 +274,7 @@ function Column({ heading, rows, accent, muted = false }) {
                 className="font-gulfs text-[13px] uppercase tracking-[0.1em]"
                 style={{ color: muted ? undefined : accent }}
             >
-                <span className={muted ? "text-gray-400" : undefined}>
+                <span className={muted ? 'text-gray-400' : undefined}>
                     {heading}
                 </span>
             </h3>
@@ -283,7 +283,7 @@ function Column({ heading, rows, accent, muted = false }) {
                 {rows.map((row) => (
                     <li
                         key={row}
-                        className={`text-[15px] leading-[1.55] ${muted ? "text-gray-400" : "text-gray-200"}`}
+                        className={`text-[15px] leading-[1.55] ${muted ? 'text-gray-400' : 'text-gray-200'}`}
                     >
                         {row}
                     </li>

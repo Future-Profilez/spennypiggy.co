@@ -25,6 +25,7 @@ import AddressForm from "../rye/AddressForm";
 import FollowersBulkNotification from "@/Components/FollowersBulkNotification";
 import SubscriptionHistory, { billedRecords } from "@/Components/SubscriptionHistory";
 import ManagePasskey from "@/Components/ManagePasskey";
+import BioLinkCard from "@/Components/bio/BioLinkCard";
 import SecurityZone from "@/Components/SecurityZone";
 import { Switch } from "@headlessui/react";
 import {
@@ -48,7 +49,6 @@ import {
     GlobeIcon,
     ShieldCheckIcon,
     ShoppingBagIcon,
-    LinkIcon,
 } from "@animateicons/react/lucide";
 import lazyRetry from "@/utils/lazyRetry";
 import {
@@ -460,16 +460,17 @@ export default function Accountsetting(props) {
                                 onClick={() => router.visit(route("catalogue.index"))}
                             />
 
-                            {/*
-                                The editor is the only way in — the bio page itself
-                                shows an "Edit this page" line, but only to a creator
-                                who already knows the URL exists.
-                            */}
-                            <SettingItem
-                                icon={LinkIcon}
-                                title="Link in Bio"
-                                subtitle="One link for your Instagram or TikTok bio"
-                                onClick={() => router.visit(route("bio.edit"))}
+                            {/* 🚨 A ROW HERE SAID THE PAGE EXISTED AND NOTHING ELSE.
+                                The whole product is "paste this one link into your
+                                Instagram bio", so the URL and the copy button ARE the
+                                feature — a row that only opened the editor sent every
+                                creator hunting for the link afterwards. The card
+                                carries the address, the copy, the editor and a preview,
+                                so it replaces the row rather than sitting beside it.
+                                Moved off `/{username}` (the public profile) 30 Aug 2026. */}
+                            <BioLinkCard
+                                username={auth?.user?.username}
+                                className="mb-3"
                             />
 
                             <SettingItem

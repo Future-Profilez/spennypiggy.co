@@ -1,19 +1,19 @@
-import { Head, Link } from "@inertiajs/react";
-import Guest from "@/Layouts/GuestLayout";
-import AdPage from "../components/AdPage";
-import FeeBlock from "../components/FeeBlock";
-import RiskBlock from "../components/RiskBlock";
-import WhyTheFee from "../components/WhyTheFee";
+import { Head, Link } from '@inertiajs/react';
+import Guest from '@/Layouts/GuestLayout';
+import AdPage from '../components/AdPage';
+import FeeBlock from '../components/FeeBlock';
+import RiskBlock from '../components/RiskBlock';
+import WhyTheFee from '../components/WhyTheFee';
 import {
     ACCENT,
     Eyebrow,
-    SectionHead,
+    SectionHeadSplit,
     StartSelling,
-} from "../components/Ledger";
+} from '../components/Ledger';
 import {
     PRICE_FORMATTED,
     SUBSCRIPTION_COPY,
-} from "@/constants/creatorSubscription";
+} from '@/constants/creatorSubscription';
 
 /**
  * The two generic comparison pages — vs a wishlist, vs just a link in bio.
@@ -70,7 +70,7 @@ export default function Generic({
                 <AdPage>
                     <Eyebrow accent={accent}>Compare</Eyebrow>
 
-                    <h1 className="mt-5 font-gulfs text-5xl uppercase leading-[0.85] tracking-tight text-white sm:text-6xl md:text-[64px]">
+                    <h1 className="mt-5 font-gulfs text-[clamp(2.5rem,11vw,3rem)] uppercase leading-[0.85] tracking-tight text-white sm:text-6xl md:text-[64px]">
                         Spenny Piggy
                         <br />
                         <span className="text-gradient-wishlist">
@@ -90,14 +90,15 @@ export default function Generic({
                     />
 
                     {/* ── The comparison ──────────────────────────────── */}
-                    <section className="mt-16 md:mt-24">
-                        <SectionHead
+                    <section className="mt-14 md:mt-16">
+                        <SectionHeadSplit
                             eyebrow="Side by side"
                             accent={accent}
                             lead={`No brand names below — this is ${competitor.name} as a category, not any one product.`}
                         >
-                            What each one does
-                        </SectionHead>
+                            What each one{' '}
+                            <span className="text-gradient-wishlist">does</span>
+                        </SectionHeadSplit>
 
                         {/* Desktop table, in its own scroll container. */}
                         <div className="mt-8 hidden overflow-x-auto md:block">
@@ -167,32 +168,62 @@ export default function Generic({
                         </div>
                     </section>
 
-                    <div className="mt-16 md:mt-24">
-                        <FeeBlock
-                            fees={fees}
-                            competitor={competitor.name}
-                            /* A category publishes no fees, so there is nothing
-                               to list and nothing to source. */
-                            competitorFees={[]}
+                    <section className="mt-14 md:mt-16">
+                        <SectionHeadSplit
+                            eyebrow="The money"
                             accent={accent}
-                            threeTierLine={threeTierLine}
-                        />
-                    </div>
+                            lead="Every rate and the flat fee, read live from our own checkout — so they can never drift from what a supporter is charged."
+                        >
+                            What a payment{' '}
+                            <span className="text-gradient-wishlist">
+                                really costs
+                            </span>
+                        </SectionHeadSplit>
 
-                    <div className="mt-16 md:mt-24">
-                        <WhyTheFee accent={accent} />
-                    </div>
+                        <div className="mt-10">
+                            <FeeBlock
+                                headless
+                                fees={fees}
+                                competitor={competitor.name}
+                                /* A category publishes no fees, so there is nothing
+                               to list and nothing to source. */
+                                competitorFees={[]}
+                                accent={accent}
+                                threeTierLine={threeTierLine}
+                            />
+                        </div>
+                    </section>
 
-                    <section className="mt-16 md:mt-24">
-                        <SectionHead
+                    <section className="mt-14 md:mt-16">
+                        <SectionHeadSplit
+                            eyebrow="Why the fee"
+                            accent={accent}
+                            lead="Three rails, one flat fee, and what the difference pays for — including the parts a link page does not do at all."
+                        >
+                            Why our fee is{' '}
+                            <span className="text-gradient-wishlist">
+                                what it is
+                            </span>
+                        </SectionHeadSplit>
+
+                        <div className="mt-10">
+                            <WhyTheFee headless accent={accent} />
+                        </div>
+                    </section>
+
+                    <section className="mt-14 md:mt-16">
+                        <SectionHeadSplit
                             eyebrow="To be fair"
                             accent={accent}
-                            lead="We would rather you chose with the whole picture."
+                            lead="We would rather you chose with the whole picture. These are the things it does better than us, in our own words."
                         >
-                            Where {competitor.name} is better
-                        </SectionHead>
+                            Where {competitor.name} is{' '}
+                            <span className="text-gradient-wishlist">
+                                better
+                            </span>
+                        </SectionHeadSplit>
 
-                        <ul className="mt-8 grid gap-3 md:grid-cols-2">
+                        <ul className="mt-10 grid gap-3 md:grid-cols-2">
                             {competitor.betterAt.map((point) => (
                                 <li
                                     key={point}
@@ -204,24 +235,40 @@ export default function Generic({
                         </ul>
                     </section>
 
-                    <section className="mt-16 md:mt-24">
-                        <SectionHead eyebrow="Ten minutes" accent={accent}>
-                            Moving across
-                        </SectionHead>
+                    <section className="mt-14 md:mt-16">
+                        <SectionHeadSplit
+                            eyebrow="Ten minutes"
+                            accent={accent}
+                            lead="Nothing to cancel first, and nothing to pay until you have made a sale."
+                        >
+                            Moving{' '}
+                            <span className="text-gradient-wishlist">
+                                across
+                            </span>
+                        </SectionHeadSplit>
 
-                        <ol className="mt-8 grid gap-3 md:grid-cols-3">
+                        {/*
+                         * 🚨 THE NUMBERING IS TRUE HERE — a real sequence, where
+                         * "Where they are better" directly above is a SET and
+                         * stays unnumbered. The cells ABUT (`gap-px` over the
+                         * parent's fill), same device as the hero's stat strip:
+                         * one route, three stages. Kept identical to `Show` and
+                         * `CaseStudy` so the three layouts read as one page
+                         * type.
+                         */}
+                        <ol className="mt-10 grid gap-px overflow-hidden rounded-box bg-white/15 md:grid-cols-3">
                             {competitor.switchSteps.map((step, i) => (
                                 <li
                                     key={step}
-                                    className="rounded-box-sm border border-white/15 px-5 py-5"
+                                    className="bg-[#0B0B0C] px-5 py-6 md:px-6 md:py-7"
                                 >
                                     <span
-                                        className="font-gulfs text-[13px] uppercase tracking-[0.14em]"
+                                        className="block font-gulfs text-3xl uppercase leading-none md:text-4xl"
                                         style={{ color: accent }}
                                     >
-                                        Step {i + 1}
+                                        {String(i + 1).padStart(2, '0')}
                                     </span>
-                                    <p className="mt-3 text-[15px] leading-[1.6] text-gray-200">
+                                    <p className="mt-4 text-[15px] leading-[1.6] text-gray-200">
                                         {step}
                                     </p>
                                 </li>
@@ -229,9 +276,12 @@ export default function Generic({
                         </ol>
                     </section>
 
-                    <section className="mt-16 md:mt-24">
-                        <h2 className="font-gulfs text-4xl uppercase leading-[0.9] tracking-tight text-white md:text-6xl">
-                            Keep the price you list.
+                    <section className="mt-14 border-t-2 border-white/15 pt-10 md:mt-16 md:pt-12">
+                        <h2 className="font-gulfs text-4xl uppercase leading-[0.9] tracking-tight text-white md:text-[64px]">
+                            Keep the price{' '}
+                            <span className="text-gradient-wishlist">
+                                you list.
+                            </span>
                         </h2>
                         <p className="mt-5 max-w-xl text-base leading-relaxed text-gray-300 md:text-lg">
                             Listing is free. You are not charged anything until

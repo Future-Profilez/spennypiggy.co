@@ -33,8 +33,20 @@ return [
         'not_stated' => 'Not stated',
     ],
 
+    /*
+     * 🚨 `group` OPENS A BAND, IT DOES NOT REORDER ANYTHING. Twenty-one rows in
+     * one fixed order on every page is the whole value of this matrix, and that
+     * order is untouched — the four bands simply fall on the boundaries the list
+     * already had. Drawn flat it was 21 identical rows and 1,476px of wall, which
+     * a reader scrolls past rather than reads.
+     *
+     * ⚠️ Only the FIRST row of a band carries the key; `FeatureMatrix` opens a new
+     * band whenever it sees one. Moving a row between bands means moving the key,
+     * not the row.
+     */
     'rows' => [
         [
+            'group' => 'What you can sell',
             'key' => 'exclusive_content',
             'label' => 'Sell exclusive content (unlock on payment)',
             'ours' => 'yes',
@@ -97,6 +109,7 @@ return [
             'ours' => 'yes',
         ],
         [
+            'group' => 'Your money',
             'key' => 'keep_listed_price',
             'label' => 'You keep 100% of your listed price',
             'ours' => 'yes',
@@ -117,6 +130,7 @@ return [
             'ours' => 'yes',
         ],
         [
+            'group' => 'If a payment is questioned',
             'key' => 'delivery_record',
             'label' => 'Delivery record on every payment',
             'ours' => 'yes',
@@ -146,6 +160,7 @@ return [
              * ⚠️ A competitor cell here may NEVER read yes without a link to the
              * policy page that says so.
              */
+            'group' => 'The rest',
             'key' => 'permits_adult',
             'label' => 'Permits 18+ content (a risk flag for banks and payment providers)',
             'ours' => 'No — SFW only',

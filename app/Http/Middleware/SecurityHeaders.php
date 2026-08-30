@@ -162,7 +162,25 @@ class SecurityHeaders
         $asset = $this->assetOrigin();
 
         $stripe = 'https://js.stripe.com https://api.stripe.com https://checkout.stripe.com https://billing.stripe.com https://hooks.stripe.com https://verify.stripe.com https://m.stripe.network https://*.stripe.com';
-        $uploadcare = 'https://ucarecdn.com https://upload.uploadcare.com https://api.uploadcare.com https://social.uploadcare.com https://*.uploadcare.com';
+        /*
+         * A LARGE FILE DOES NOT GO TO uploadcare.com AT ALL.
+         *
+         * Uploadcare switches to a MULTIPART upload above its size threshold and
+         * hands the browser presigned URLs on `uploadcare.s3-accelerate.amazonaws.com`
+         * - one request per part - so `*.uploadcare.com` never matches and the whole
+         * upload is refused. Seen live as 40 connect-src reports from one creator
+         * uploading a screen recording from an iPhone (JAVASCRIPT-REACT-AF): the
+         * video, the intro clip and any long post media.
+         *
+         * ⚠️ The EXACT host, never `*.amazonaws.com` - that wildcard would authorise
+         * every S3 bucket on the internet from our own pages.
+         *
+         * ⚠️ It costs nothing today because the policy is report-only. The day
+         * SECURITY_CSP_ENFORCE goes true, this line is the difference between
+         * creators being able to upload video and not, with nothing in any log
+         * except a CSP report nobody reads during a deploy.
+         */
+        $uploadcare = 'https://ucarecdn.com https://upload.uploadcare.com https://api.uploadcare.com https://social.uploadcare.com https://*.uploadcare.com https://uploadcare.s3-accelerate.amazonaws.com';
         $intercom = 'https://widget.intercom.io https://js.intercomcdn.com https://api-iam.intercom.io https://intercom.help https://*.intercom.io https://*.intercomcdn.com https://*.intercomassets.com';
         $magicbell = 'https://api.magicbell.com https://*.magicbell.com https://*.magicbell.io';
         $sentry = 'https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io';
@@ -196,7 +214,19 @@ class SecurityHeaders
          */
         $xAds = 'https://static.ads-twitter.com https://analytics.twitter.com https://ads-twitter.com https://*.ads-twitter.com https://t.co';
 
-        $googleAds = 'https://www.googleadservices.com https://googleads.g.doubleclick.net https://ad.doubleclick.net https://stats.g.doubleclick.net https://*.doubleclick.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://www.google.com https://google.com https://www.google.co.uk https://www.google.ie';
+        /*
+         * ⚠️ GOOGLE ADS PINGS THE VISITOR'S OWN COUNTRY DOMAIN, AND CSP CANNOT
+         * WILDCARD A TLD - `https://www.google.*` is not valid source syntax, so every
+         * ccTLD a real visitor arrives from has to be listed by name. That makes this
+         * list grow one CSP report at a time: `.com.br` was added after
+         * JAVASCRIPT-REACT-AB (two Brazilian visitors), and the next country will
+         * arrive the same way.
+         *
+         * ⚠️ Only add a domain a REPORT has actually named. Pre-loading Google's whole
+         * ccTLD list (~190 entries) would push a already-4KB header past what some
+         * proxies will forward, to authorise hosts nobody has ever reached.
+         */
+        $googleAds = 'https://www.googleadservices.com https://googleads.g.doubleclick.net https://ad.doubleclick.net https://stats.g.doubleclick.net https://*.doubleclick.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://www.google.com https://google.com https://www.google.co.uk https://www.google.ie https://www.google.com.br https://www.google.nl';
 
         /*
          * ⚠️ Termly's consent API is on its OWN regional subdomain

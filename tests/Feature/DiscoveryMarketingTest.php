@@ -52,7 +52,7 @@ class DiscoveryMarketingTest extends TestCase
         'hidden_gems' => 'CollectionService::hiddenGems + homepage CreatorShowcase (Phase 6)',
         'almost_funded' => 'CollectionService::almostFunded + homepage CreatorShowcase (Phase 6)',
 
-        // Verified 26 Aug 2026. Each traced to the code that RENDERS it, never to a
+        // Verified 30 Aug 2026. Each traced to the code that RENDERS it, never to a
         // service method that merely exists — a collection nothing draws is not a
         // live capability, which is the standard hidden_gems was flipped under.
         'similar_creators' => 'CreatorRecommendationService::SLOT_SIMILAR → MoreCreators.jsx chip on every profile; similar_creators collection on payment success',
@@ -102,7 +102,7 @@ class DiscoveryMarketingTest extends TestCase
         // access lands. If one has genuinely shipped, move it here AND to
         // VERIFIED_LIVE.
         //
-        // ⚠️ `more_creators` LEFT THIS LIST ON 26 Aug 2026. It was scheduled for
+        // ⚠️ `more_creators` LEFT THIS LIST ON 30 Aug 2026. It was scheduled for
         // Mon 31 Aug and the code shipped on 20 Aug — the schedule was never the
         // gate, "is it live in the product" is. Evidence is in VERIFIED_LIVE.
         //

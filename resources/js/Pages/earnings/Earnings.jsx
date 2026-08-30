@@ -145,7 +145,9 @@ export default function Earnings(props) {
                                         <button
                                             key={p.key}
                                             type="button"
-                                            onClick={() => handleEarnings(p.key)}
+                                            onClick={() =>
+                                                handleEarnings(p.key)
+                                            }
                                             disabled={busy}
                                             aria-pressed={active}
                                             className={[
@@ -185,8 +187,8 @@ export default function Earnings(props) {
                     {/* The total, and the two facts that qualify it, as one object. */}
                     <div
                         className={`grid grid-cols-1 md:grid-cols-[1.6fr_1fr_1fr] gap-px bg-white/12 border-[3px] border-black rounded-box overflow-hidden transition-opacity duration-300 ${
- isChanging ? "opacity-60" : "opacity-100"
- }`}
+                            isChanging ? "opacity-60" : "opacity-100"
+                        }`}
                     >
                         <div className="bg-[#15161C] p-5 md:p-7">
                             <p className={`${TYPE.eyebrow} text-white/55`}>
@@ -203,7 +205,10 @@ export default function Earnings(props) {
                             )}
                         </div>
 
-                        <Fact label="Active streams" value={lists?.length || 0} />
+                        <Fact
+                            label="Active streams"
+                            value={lists?.length || 0}
+                        />
                         <Fact
                             label="Currency"
                             value={currency.toUpperCase()}
@@ -265,7 +270,23 @@ export default function Earnings(props) {
                         />
                         <PaidTask auth={auth} earnType={earnType} />
                         <TopEarnBills earnType={earnType} />
-                        <TopSupporters earnType={earnType} />
+
+                        {/* 🚨 SEVEN CARDS IN A THREE-COLUMN GRID LEAVES AN ORPHAN,
+                            and it was the supporters card sitting alone with
+                            two empty columns beside it — which reads as a
+                            missing card rather than as the end of the section.
+                            It spans the remainder at BOTH breakpoints (2-up at
+                            md, 3-up at xl), so the row is always full.
+
+                            ⚠️ It is also the honest place for it: the six cards
+                            above answer "which of my products earned most",
+                            and this one answers "who bought" — a different
+                            question, and a list rather than a ranking of
+                            modules. Full width says so. */}
+                        <TopSupporters
+                            earnType={earnType}
+                            className="md:col-span-2 xl:col-span-3"
+                        />
                     </div>
                 </div>
             </main>

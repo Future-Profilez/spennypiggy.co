@@ -181,6 +181,10 @@ class CompetitorSheet
 
             return [
                 'key' => $row['key'],
+                // Opens a band in the rendered table; null on every row but the
+                // first of one. It groups, it never reorders — see the note in
+                // config/comparison_matrix.php.
+                'group' => $row['group'] ?? null,
                 'label' => $row['label'],
                 'ours' => $ourValue,
                 // A sheet may give a literal string (the 18+ row's "Yes, with

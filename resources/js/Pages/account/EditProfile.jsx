@@ -13,6 +13,7 @@ import axios from "axios";
 import { Switch } from "@headlessui/react";
 import { Link } from "@inertiajs/react";
 import ManagePasskey from "@/Components/ManagePasskey";
+import BioLinkCard from "@/Components/bio/BioLinkCard";
 import CoverBannerPicker from "@/Components/CoverBannerPicker";
 import BadgePicker, {
     PrideBadgePicker,
@@ -1015,6 +1016,17 @@ export default function EditProfile({
                                                     : ""}
                                             </div>
                                         </div>
+                                    </li>
+
+                                    {/* 🚨 BESIDE THE PROFILE URL ON PURPOSE. A creator
+                                        reading this row is deciding which link to hand
+                                        out; the bio page is the other answer, and it was
+                                        reachable from one settings row that never showed
+                                        the address. Moved here off `/{username}` on
+                                        30 Aug 2026 — that route is the PUBLIC profile.
+                                        The card renders nothing without a username. */}
+                                    <li className="mb-4">
+                                        <BioLinkCard username={username} />
                                     </li>
 
                                     <li className="mb-4">

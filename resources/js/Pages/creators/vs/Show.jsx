@@ -1,22 +1,26 @@
-import { Head, Link } from "@inertiajs/react";
-import Guest from "@/Layouts/GuestLayout";
-import AdPage from "../components/AdPage";
-import FeatureMatrix from "../components/FeatureMatrix";
-import FeeBlock from "../components/FeeBlock";
-import FeeSnapshot from "../components/FeeSnapshot";
-import RiskBlock from "../components/RiskBlock";
-import WhyTheFee from "../components/WhyTheFee";
+import { Head, Link } from '@inertiajs/react';
+import Guest from '@/Layouts/GuestLayout';
+import AdPage from '../components/AdPage';
+import FeatureMatrix from '../components/FeatureMatrix';
+import FeeBlock from '../components/FeeBlock';
+import FeeSnapshot from '../components/FeeSnapshot';
+import HoldsUpBlock, { HOLDS_UP } from '../components/HoldsUpBlock';
+import ThreeProgrammes, {
+    THREE_PROGRAMMES,
+} from '../components/ThreeProgrammes';
+import RiskBlock from '../components/RiskBlock';
+import WhyTheFee from '../components/WhyTheFee';
 import {
     ACCENT,
     Eyebrow,
     SectionHeadSplit,
     StartSelling,
     StatCell,
-} from "../components/Ledger";
+} from '../components/Ledger';
 import {
     PRICE_FORMATTED,
     SUBSCRIPTION_COPY,
-} from "@/constants/creatorSubscription";
+} from '@/constants/creatorSubscription';
 
 /**
  * The comparison template — one page for every /creators/vs/{slug}.
@@ -78,6 +82,18 @@ export default function Show({
     threeTierLine,
 }) {
     const accent = ACCENT.safe;
+
+    /*
+     * The heading's own figure. ⚠️ Read from the SAME payload the fee block
+     * prices from, never typed — `example_price` is what `ComparisonFeePayload`
+     * worked the whole comparison from, so the heading cannot name a sum the
+     * table below it does not use.
+     */
+    const money20 = new Intl.NumberFormat('en-GB', {
+        style: 'currency',
+        currency: fees.currency || 'GBP',
+        maximumFractionDigits: 0,
+    }).format(fees.example_price);
     const promise = `${SUBSCRIPTION_COPY.promise} · ${PRICE_FORMATTED} + VAT / month after · cancel anytime`;
 
     // The newest date on the sheet — what "Checked …" under the matrix means.
@@ -150,6 +166,22 @@ export default function Show({
                     <StartSelling promise={promise} />
 
                     {/*
+                     * 🚨 §3b's SECONDARY CTA — "See the full table →", anchored
+                     * to the matrix. It was in the spec's fixed-copy table and
+                     * had never been built, so the one thing a reader arriving
+                     * from a "throne alternative" search wants — the row-by-row
+                     * table — sat 4,500px below the fold with nothing offering
+                     * it.
+                     */}
+                    <a
+                        href="#feature-by-feature"
+                        className="mt-6 inline-block font-gulfs text-[12px] uppercase tracking-[0.18em] text-white underline decoration-2 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
+                        style={{ textDecorationColor: accent }}
+                    >
+                        See the full table →
+                    </a>
+
+                    {/*
                      * The four stat tiles. ⚠️ The fourth is deliberate and is
                      * the spec's own point: no competitor on any of these pages
                      * offers live chat, so it sits above the fold on every one.
@@ -218,7 +250,10 @@ export default function Show({
                             accent={accent}
                             lead="Percentages next to percentages, flat fees next to flat fees, every line for both of us. Ours are read live from our checkout, so they can never drift from what a supporter is charged."
                         >
-                            What a payment{" "}
+                            {/* 🚨 §3b fixes this heading, £20 included. The
+                                figure is the spec's, not a formatting choice —
+                                it names the example the whole block works. */}
+                            What a {money20} payment{' '}
                             <span className="text-gradient-wishlist">
                                 really costs
                             </span>
@@ -251,7 +286,7 @@ export default function Show({
                         {competitor.example?.note && (
                             <figure
                                 className="mt-8 pl-5 md:pl-6 lg:w-[calc((100%-11*1.5rem)/12*9+8*1.5rem)]"
-                                style={{ borderLeft: "3px solid #FF007F" }}
+                                style={{ borderLeft: '3px solid #FF007F' }}
                             >
                                 <figcaption className="font-mono text-[11px] uppercase tracking-[0.14em] text-gray-400">
                                     Worked example · {competitor.name}
@@ -264,13 +299,23 @@ export default function Show({
                     </section>
 
                     {/* ── Component A ──────────────────────────────────── */}
-                    <section className="mt-14 md:mt-16">
+                    <section id="feature-by-feature" className="mt-14 md:mt-16">
                         <SectionHeadSplit
                             eyebrow="Feature by feature"
                             accent={accent}
+                            /*
+                             * 🚨 FIXED COPY. Spec v4.3 §3b lists this line word
+                             * for word under "the words the developer types
+                             * once". It was briefly replaced with the platform
+                             * pitch to get that argument in front of its own
+                             * proof — the pitch belongs on this page, but not by
+                             * overwriting a line the client specified. It lives
+                             * in `WhyTheFee` and in the two blocks §3b names,
+                             * which is where the spec puts it.
+                             */
                             lead={`Every row below is from ${competitor.name}’s own pages, with a link. Where they do not say, we say “Not stated” rather than guess.`}
                         >
-                            What each one{" "}
+                            What each one{' '}
                             <span className="text-gradient-wishlist">does</span>
                         </SectionHeadSplit>
 
@@ -313,7 +358,7 @@ export default function Show({
                             accent={accent}
                             lead="Three rails, one flat fee, and what the difference pays for — including the parts nobody else on this page offers."
                         >
-                            Why our fee is{" "}
+                            Why our fee is{' '}
                             <span className="text-gradient-wishlist">
                                 what it is
                             </span>
@@ -324,6 +369,31 @@ export default function Show({
                         </div>
                     </section>
 
+                    {/*
+                     * ── Why every payment here holds up ─────────────────
+                     *
+                     * 🚨 §3a: "reuse the 'Keeping all of it is no use if the
+                     * account closes' block from /creators/keep-100 verbatim",
+                     * directly after Component C. It had never been built on a
+                     * vs page. The words come from `HoldsUpBlock`, which
+                     * `/creators/keep-100` now imports too — one definition, so
+                     * "verbatim" survives the next edit to either page.
+                     */}
+                    <section className="mt-14 md:mt-16">
+                        <SectionHeadSplit
+                            eyebrow={HOLDS_UP.eyebrow}
+                            accent={accent}
+                            lead={HOLDS_UP.lead}
+                        >
+                            Keeping all of it is no use{' '}
+                            <span className="text-gradient-wishlist">
+                                if the account closes
+                            </span>
+                        </SectionHeadSplit>
+
+                        <HoldsUpBlock className="mt-10" />
+                    </section>
+
                     {/* ── Where they are better (mandatory) ────────────── */}
                     <section className="mt-14 md:mt-16">
                         <SectionHeadSplit
@@ -331,7 +401,7 @@ export default function Show({
                             accent={accent}
                             lead="We would rather you chose with the whole picture. These are the things they do better than us, in our own words."
                         >
-                            Where {competitor.name} is{" "}
+                            Where {competitor.name} is{' '}
                             <span className="text-gradient-wishlist">
                                 better
                             </span>
@@ -356,7 +426,7 @@ export default function Show({
                             accent={accent}
                             lead="Nothing to cancel first, and nothing to pay until you have made a sale. Keep the other page for whatever it is still good at."
                         >
-                            Moving from{" "}
+                            Moving from{' '}
                             <span className="text-gradient-wishlist">
                                 {competitor.name}
                             </span>
@@ -390,7 +460,7 @@ export default function Show({
                                         className="block font-gulfs text-3xl uppercase leading-none md:text-4xl"
                                         style={{ color: accent }}
                                     >
-                                        {String(i + 1).padStart(2, "0")}
+                                        {String(i + 1).padStart(2, '0')}
                                     </span>
                                     <p className="mt-4 text-[15px] leading-[1.6] text-gray-200">
                                         {step}
@@ -400,10 +470,36 @@ export default function Show({
                         </ol>
                     </section>
 
+                    {/*
+                     * ── Three programmes that stack ─────────────────────
+                     *
+                     * 🚨 §3a: "Three programmes that stack block reused
+                     * unchanged", between "Moving from [Competitor]" and the
+                     * final CTA. Never built on a vs page — so the page argued
+                     * that our fee runs higher and then omitted the three
+                     * things that hand a share of it back, which is half the
+                     * answer to the client's own "how small it is for the extra
+                     * benefits" direction.
+                     */}
+                    <section className="mt-14 md:mt-16">
+                        <SectionHeadSplit
+                            eyebrow={THREE_PROGRAMMES.eyebrow}
+                            accent={ACCENT.bonus}
+                            lead={THREE_PROGRAMMES.lead}
+                        >
+                            Three programmes{' '}
+                            <span className="text-gradient-wishlist">
+                                that stack
+                            </span>
+                        </SectionHeadSplit>
+
+                        <ThreeProgrammes className="mt-10" />
+                    </section>
+
                     {/* ── Close ───────────────────────────────────────── */}
                     <section className="mt-14 border-t-2 border-white/15 pt-10 md:mt-16 md:pt-12">
                         <h2 className="font-gulfs text-4xl uppercase leading-[0.9] tracking-tight text-white md:text-[64px]">
-                            Keep the price{" "}
+                            Keep the price{' '}
                             <span className="text-gradient-wishlist">
                                 you list.
                             </span>

@@ -1,5 +1,7 @@
 import { Link } from "@inertiajs/react";
+import { useEffect, useState } from "react";
 import { FaArrowRight, FaClock } from "react-icons/fa";
+import { safeGet, safeSet } from "@/lib/safeStorage";
 
 /**
  * The creator's own Growth Bonus position, on their dashboard (brief §6).
@@ -31,6 +33,29 @@ import { FaArrowRight, FaClock } from "react-icons/fa";
  * every colour ground.
  */
 export default function GrowthBonusTracker({ data }) {
+    /*
+     * 🚨 CROSSING A MILESTONE IS THE ONE HAPPY MOMENT IN THIS WHOLE FEATURE, AND
+     * IT USED TO BE A PROGRESS BAR MOVING A FEW PIXELS. The server says which
+     * rung was unlocked in the last few days; the browser records which one it
+     * has already celebrated, so the moment survives a reload once and does not
+     * fire on every visit for a week.
+     *
+     * ⚠️ `safeStorage`, never bare localStorage — reading the property itself
+     * THROWS when a browser refuses site data, and this component renders on the
+     * creator's own dashboard.
+     */
+    const celebrate = data?.just_unlocked ?? null;
+    const seenKey = celebrate ? `sp_gb_seen_${celebrate.gmv}` : null;
+    const [showBurst, setShowBurst] = useState(false);
+
+    useEffect(() => {
+        if (!seenKey) return;
+        if (safeGet(seenKey)) return;
+
+        setShowBurst(true);
+        safeSet(seenKey, "1");
+    }, [seenKey]);
+
     if (!data) return null;
 
     const sym = data.currency_symbol ?? "£";
@@ -76,16 +101,23 @@ export default function GrowthBonusTracker({ data }) {
                 {/* ⚠️ The countdown is the whole reason this state is urgent, so
                     it is stated in days rather than as a date a creator has to
                     do arithmetic on. It is floored at 0 server-side. */}
-                {typeof data.days_left === "number" && (
-                    <p className="mt-3 inline-flex items-center gap-1.5 rounded-box-xs bg-black/[0.12] px-3 py-1.5 text-[12px] font-black uppercase tracking-wider text-black">
-                        <FaClock className="shrink-0" />
-                        {data.days_left === 0
-                            ? "Last day"
-                            : `${data.days_left} day${data.days_left === 1 ? "" : "s"} left`}
-                    </p>
-                )}
-
-                <Cta />
+                {/* 🚨 ONE ROW OWNS BOTH CONTROLS AND THEIR SPACING. They used to
+                    be two separate elements carrying their own `mt-3` / `mt-4`
+                    and their own heights (28px against 40px), so they sat on
+                    different baselines and the gap between them changed
+                    depending on which one wrapped. A row that owns the gap
+                    cannot drift; matching `min-h` is what puts them on one line. */}
+                <Actions>
+                    {typeof data.days_left === "number" && (
+                        <span className="inline-flex min-h-[40px] items-center gap-1.5 rounded-box-sm bg-black/[0.12] px-4 text-[12px] font-black uppercase tracking-wider text-black">
+                            <FaClock className="shrink-0" />
+                            {data.days_left === 0
+                                ? "Last day"
+                                : `${data.days_left} day${data.days_left === 1 ? "" : "s"} left`}
+                        </span>
+                    )}
+                    <Cta />
+                </Actions>
             </Shell>
         );
     }
@@ -95,7 +127,17 @@ export default function GrowthBonusTracker({ data }) {
     const expired = data.status === "expired";
 
     return (
-        <Shell ground={expired ? "#0d0a16" : "#05EFB8"} ink={expired ? "text-white" : "text-black"}>
+        <Shell
+            ground={expired ? "#0d0a16" : "#05EFB8"}
+            ink={expired ? "text-white" : "text-black"}
+        >
+            {showBurst && !expired && (
+                <Celebration
+                    amount={money(celebrate.amount)}
+                    milestone={money(celebrate.gmv)}
+                />
+            )}
+
             <Eyebrow tone={expired ? "dark" : "light"}>Growth Bonus</Eyebrow>
 
             <h3
@@ -130,14 +172,85 @@ export default function GrowthBonusTracker({ data }) {
                     {data.unconverted_rows} sale
                     {data.unconverted_rows === 1 ? "" : "s"} could not be
                     converted to {sym === "£" ? "GBP" : "your currency"} and{" "}
-                    {data.unconverted_rows === 1 ? "is" : "are"} not counted yet.
+                    {data.unconverted_rows === 1 ? "is" : "are"} not counted
+                    yet.
                 </p>
             )}
 
-            {expired ? null : <Cta />}
+            {expired ? null : (
+                <Actions>
+                    <Cta />
+                </Actions>
+            )}
         </Shell>
     );
 }
+
+/**
+ * The unlock moment.
+ *
+ * ⚠️ An ENTRANCE animation, which the house rules allow — what is banned is
+ * scale on hover or press. It runs once, and `prefers-reduced-motion` removes
+ * the movement entirely rather than slowing it: a burst of flying confetti is
+ * exactly what that setting is asking us not to do. The message still reads.
+ *
+ * ⚠️ Drawn with `aria-hidden` pieces over a real sentence, so a screen reader
+ * gets the news and not a description of the decoration.
+ */
+const Celebration = ({ amount, milestone }) => (
+    <div className="relative mb-4 overflow-hidden rounded-box-sm border-black bg-black px-4 py-4">
+        <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+        >
+            {CONFETTI.map((c, i) => (
+                <span
+                    key={i}
+                    className="gb-confetti absolute block h-2 w-2 rounded-box-xs motion-reduce:hidden"
+                    style={{
+                        left: `${c.x}%`,
+                        backgroundColor: c.c,
+                        animationDelay: `${c.d}ms`,
+                    }}
+                />
+            ))}
+        </div>
+
+        <p className="relative text-[11px] font-black uppercase tracking-widest text-[#05EFB8]">
+            Milestone unlocked
+        </p>
+        <p className="relative mt-1 font-gulfs text-2xl uppercase leading-tight text-white md:text-3xl">
+            You just unlocked {amount}
+        </p>
+        <p className="relative mt-1 text-[13px] leading-[1.5] text-white/65">
+            You passed {milestone} in qualifying earnings. It will be paid with
+            the sales that qualified you.
+        </p>
+
+        <style>{`
+            @keyframes gb-fall {
+                0%   { transform: translateY(-14px) rotate(0deg); opacity: 0; }
+                15%  { opacity: 1; }
+                100% { transform: translateY(150px) rotate(220deg); opacity: 0; }
+            }
+            .gb-confetti { top: 0; animation: gb-fall 2.4s ease-in forwards; }
+            @media (prefers-reduced-motion: reduce) { .gb-confetti { animation: none; } }
+        `}</style>
+    </div>
+);
+
+/* Fixed positions rather than random: a re-render must not reshuffle them
+   mid-animation, and a seeded look is calmer than a scatter. */
+const CONFETTI = [
+    { x: 8, c: "#05EFB8", d: 0 },
+    { x: 21, c: "#E6EA7B", d: 220 },
+    { x: 34, c: "#FF007F", d: 90 },
+    { x: 47, c: "#8C52FF", d: 380 },
+    { x: 60, c: "#05EFB8", d: 160 },
+    { x: 73, c: "#E6EA7B", d: 460 },
+    { x: 86, c: "#FF007F", d: 300 },
+    { x: 94, c: "#8C52FF", d: 60 },
+];
 
 const Shell = ({ ground, ink = "text-black", children }) => (
     <div
@@ -192,10 +305,20 @@ const Stats = ({ items, dark = false }) => (
     </div>
 );
 
+/**
+ * ⚠️ The row below owns the top margin, never the button. A control that
+ * carries its own `mt` cannot be put beside anything else without the two
+ * spacings fighting — which is exactly what the countdown pill and this button
+ * were doing.
+ */
+const Actions = ({ children }) => (
+    <div className="mt-4 flex flex-wrap items-center gap-2">{children}</div>
+);
+
 const Cta = () => (
     <Link
         href="/growth-bonus"
-        className="mt-4 inline-flex min-h-[40px] items-center gap-2 rounded-box-sm border-black bg-white px-4 py-2 font-gulfs text-[13px] uppercase tracking-wider text-black transition-colors duration-200 hover:bg-black/[0.04]"
+        className="inline-flex min-h-[40px] items-center gap-2 rounded-box-sm border-black bg-white px-4 font-gulfs text-[13px] uppercase tracking-wider text-black transition-colors duration-200 hover:bg-black/[0.04]"
     >
         See the milestones
         <FaArrowRight className="shrink-0" />

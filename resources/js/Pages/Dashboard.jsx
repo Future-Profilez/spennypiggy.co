@@ -64,7 +64,6 @@ import {
 } from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import ProfileSteps from "./Profile/ProfileSteps";
-import BioLinkCard from "@/Components/bio/BioLinkCard";
 import CreatorPushCard from "@/Components/push/CreatorPushCard";
 import CreatorJourneyCard from "@/Components/CreatorJourneyCard";
 import DiscoveryStatsPanel from "@/Components/discovery/DiscoveryStatsPanel";
@@ -1373,23 +1372,13 @@ export default function Dashboard(props) {
                                                 />
                                             )}
 
-                                            {/* 🚨 THE ONLY DISCOVERABLE ROUTE TO THE BIO PAGE.
-                                                `/bio-links` was reachable from ONE place in the whole
-                                                app — a row inside Account Settings — while
-                                                `/creators/link-in-bio` now holds a top-level header
-                                                nav slot advertising the feature to creators who have
-                                                not signed up yet. The people who HAVE could not find
-                                                it. See the component's own note.
-
-                                                Beside "My listings" on purpose: the two answer the
-                                                same errand — everything I sell, and the one link
-                                                that sells it. */}
-                                            {IsloggedIn && (
-                                                <BioLinkCard
-                                                    username={user?.username}
-                                                    className="mt-3"
-                                                />
-                                            )}
+                                            {/* ⚠️ THE LINK-IN-BIO CARD LIVED HERE UNTIL 30 Aug 2026.
+                                                It moved to Account Settings (Creator Studio) and the
+                                                Edit Profile popup: this route is also the PUBLIC
+                                                profile, and a creator's own admin controls belong
+                                                where the rest of them are. Both new homes are on the
+                                                creator's own path, so the feature is no less findable
+                                                than it was. See `Components/bio/BioLinkCard.jsx`. */}
 
                                             {/* 🚨 THE ONLY WAY TO SEND ONE. The push
                                                 service, its table, its rate limit, its

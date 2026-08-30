@@ -339,7 +339,7 @@ class BirthdayDiscoveryTest extends TestCase
      * deliberately one per creator, and its key carries the creator, the stage
      * and the BIRTHDAY DATE.
      *
-     * 🚨 The date, not the year (26 Aug 2026). `birthday_day`/`birthday_month` are
+     * 🚨 The date, not the year (30 Aug 2026). `birthday_day`/`birthday_month` are
      * derived from `date_of_birth`, so a creator correcting a mistyped date found
      * the corrected one already claimed by the wrong one's reminders — and every
      * supporter of that creator heard nothing for the rest of the year. A creator
@@ -539,7 +539,7 @@ class BirthdayDiscoveryTest extends TestCase
     // ══════════════════════════════════════════════════════════════════════
 
     /**
-     * 🚨 REVERSED 26 Aug 2026 (client decision). Both flags shipped defaulting
+     * 🚨 REVERSED 30 Aug 2026 (client decision). Both flags shipped defaulting
      * FALSE and this test pinned that; they now default TRUE, so the feature is on
      * in every environment that does not explicitly turn it off and there is no env
      * var to remember.

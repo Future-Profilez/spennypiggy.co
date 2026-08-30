@@ -1,17 +1,17 @@
-import { Head, Link } from "@inertiajs/react";
-import Guest from "@/Layouts/GuestLayout";
-import AdPage from "../components/AdPage";
-import RiskBlock from "../components/RiskBlock";
+import { Head, Link } from '@inertiajs/react';
+import Guest from '@/Layouts/GuestLayout';
+import AdPage from '../components/AdPage';
+import RiskBlock from '../components/RiskBlock';
 import {
     ACCENT,
     Eyebrow,
     SectionHead,
     StartSelling,
-} from "../components/Ledger";
+} from '../components/Ledger';
 import {
     PRICE_FORMATTED,
     SUBSCRIPTION_COPY,
-} from "@/constants/creatorSubscription";
+} from '@/constants/creatorSubscription';
 
 /**
  * /creators/compare — the index of every published comparison.
@@ -28,7 +28,7 @@ import {
  */
 export default function Index({ wishtenderLive = false, comparisons }) {
     const accent = ACCENT.safe;
-    const title = "Compare Spenny Piggy — fees and features, side by side";
+    const title = 'Compare Spenny Piggy — fees and features, side by side';
     const promise = `${SUBSCRIPTION_COPY.promise} · ${PRICE_FORMATTED} + VAT / month after · cancel anytime`;
 
     return (

@@ -76,6 +76,72 @@ records it → mail delivers" found and fixed these. The rules below are now loa
   `deliverables`, so every row was written with `user_id = NULL`).
 - Tests: `tests/Feature/PurchaseFlowGapFixesTest.php` (9).
 
+## 🚨 PRESSING BACK ON STRIPE READ AS A FAILED CHECKOUT (30 Aug 2026, spennypiggy.co)
+
+The route is **`/handle/{uuid}/{status}`** and `handleMandatorySubscription` declared only
+`$uuid`, so Laravel discarded the segment and **Stripe's answer was thrown away**:
+`success_url` and `cancel_url` differ by that one word and nothing else, so a creator who
+pressed Back came straight down the COMPLETION path.
+
+- 🚨 **A SETUP-MODE SESSION ALWAYS REPORTS `payment_status = no_payment_required`** —
+  nothing is ever charged in setup mode — so the guard that gates completion could not tell
+  a cancelled session from a finished one. `completeSetupCheckout` then found no card and
+  logged at ERROR: **four production alerts in two minutes from one creator tapping back**
+  (JAVASCRIPT-REACT-AG).
+- 🚨 **Worse than the noise: they were told *"We could not save your card. Please try
+  again."*** — the platform reporting a failure for something the person chose to do.
+  A cancel is not a fault and must never read as one.
+- ⚠️ **The row is deliberately left `initiated`.** The card was never saved, so a later
+  retry, the webhook and `subscriptions:reconcile-checkouts` must all still be able to
+  complete it.
+- Tests: `tests/Feature/SubscriptionCheckoutCancelTest.php` (3), verified failing against
+  the old controller.
+
+## 🚨 TWO OF THE FOUR FLASH KEYS RENDERED NOWHERE (30 Aug 2026, spennypiggy.co)
+
+`HandleInertiaRequests::share` pulls `success`, `error`, `warning` AND `info`;
+`BrandToaster`'s bridge read only the first two. So `->with('info', …)` and
+`->with('warning', …)` were **stored and thrown away** — the same silent failure that
+component was written to close, one layer further in. **Fourteen server call sites** were
+writing into them.
+
+⚠️ A key the server shares and nothing renders is worse than no key at all: the controller
+author has every reason to believe the message arrived. All four are bridged now, through
+`useAlerts()`'s existing `warningAlert` / `infoAlert`.
+
+## 🚨 A LARGE UPLOAD DOES NOT GO TO uploadcare.com (30 Aug 2026, spennypiggy.co)
+
+Uploadcare switches to a **MULTIPART** upload above its size threshold and hands the
+browser presigned URLs on **`uploadcare.s3-accelerate.amazonaws.com`** — one request per
+part — so `connect-src`'s `https://*.uploadcare.com` never matched and every part was
+refused. Seen live as 40 CSP reports from one creator uploading a screen recording from
+an iPhone (JAVASCRIPT-REACT-AF): the intro video, a shop reward file, any long post media.
+
+- ⚠️ **The EXACT host, never `*.amazonaws.com`** — that wildcard authorises every S3
+  bucket on the internet from our own pages.
+- 🚨 **It costs nothing today because the policy is report-only.** The day
+  `SECURITY_CSP_ENFORCE` goes true this line is the difference between creators being able
+  to upload video and not, with nothing in any log but a CSP report nobody reads during a
+  deploy. **Re-read the live report stream before enforcing, not after.**
+
+## 🚨 A BACKGROUND PROBE MUST NOT ALERT ON A HALF-TYPED FIELD (30 Aug 2026, spennypiggy.co)
+
+`POST /webauthn/check` is fired from the login form **while the person is still typing**.
+`$request->validate()` throws a `ValidationException`, which implements `Throwable`, so the
+controller's `catch (\Exception)` — written for a real fault — caught it, answered **500**
+and logged at ERROR. One person typing an address on an iPhone produced three production
+alerts (JAVASCRIPT-REACT-AE). **Same class as the `ProfileController::updateProfile`
+swallow; grep for `catch (\Throwable`/`catch (\Exception` around a `validate()` call.**
+
+- The endpoint's question is *"does this address have a passkey"*, and for an address that
+  is not an address the answer is simply **no** — it answers 200 with `user_exists: false`
+  rather than erroring. A probe fired on every keystroke must be quiet by design.
+- 🚨 **The response no longer echoes `$e->getMessage()`.** The route is unauthenticated, so
+  returning an internal failure message describes our own database and query shape to
+  anybody who can post to it. It returns a fixed string and `report()`s the exception.
+- Tests: `tests/Feature/WebAuthnCheckProbeTest.php` (4), verified failing against the old
+  controller.
+
 ## 🚨 The buyer could pay and not REACH it — hub pass (25 Aug 2026)
 
 Second pass over the same flow. The first fixed *recording*; this fixes
@@ -238,7 +304,7 @@ Developer Master Plan, 19 Aug 2026, §E. Extends the existing system — nothing
 - **`EmailService::sendCategoryEmail()` now takes `string|array`** and `sendMarketingEmail()` takes an optional third `$alsoRequire`. Both route through the private `categoriesAllow()` — the ONE place consent is decided. An unknown column is **refused**, not ignored: a mistyped category that fell through would send consent-free mail that looks exactly like consent-checked mail.
 - 🚨 **Fixed while here: `sendMarketingEmail` read `! $user->marketing_emails_enabled` with no `?? true`**, so a row predating the column (NULL) read as opted-OUT and was silently skipped — the exact fault this file's own rule warns about, in the platform's largest fan-out.
 - **Both birthday footers now carry TWO links**: the narrowest possible opt-out (`category=birthday_emails_enabled` — stops both birthday sends, nothing else) and "Choose what you hear from us" → the no-login centre. *Stop this one* and *choose what I do want* are different intentions, and a footer offering only the first is what makes people opt out of everything.
-- 🚨 **THE SHARED LAYOUT USED TO ADD A SECOND, WRONGER PAIR UNDERNEATH — fixed 26 Aug 2026.**
+- 🚨 **THE SHARED LAYOUT USED TO ADD A SECOND, WRONGER PAIR UNDERNEATH — fixed 30 Aug 2026.**
   `email/default-2.blade.php` rendered its own "Manage preferences · Unsubscribe" row
   unconditionally, so **all ten mails that draw their own footer shipped FOUR links leading
   to two destinations**, and the layout's two were the wrong two:
@@ -312,7 +378,7 @@ Multi-method checkout (July 2026 client spec): supporters pay by **card/wallet (
 - **Status columns must allow `processing`** (bank/SEPA/ACH in-flight): migration `2026_07_13_000003` widened `piggy_pot_contributions.status` (was a tight `enum('pending','paid','refunded','disputed')` → `varchar(20)`) and added `processing` to the `payments.status` enum — a bank pot payment set `status='processing'` and MySQL threw "Data truncated for column 'status'", surfacing to the buyer as "Something went wrong while verifying the payment." The migration is **MySQL-guarded** (`DB::getDriverName() !== 'mysql'` early-return) so the raw `ALTER … MODIFY` doesn't break the sqlite test DB. `shop_payments`/`tip_goals_payments`/`task_purchases`/`wish_item_subscriptions` status columns are already varchar and fine.
 - New transactions only; historical rows keep `fee_profile` NULL (= card pricing).
 
-## 🚨 The charge currency is the CREATOR's, and it was stuck on GBP (26 Aug 2026, spennypiggy.co)
+## 🚨 The charge currency is the CREATOR's, and it was stuck on GBP (30 Aug 2026, spennypiggy.co)
 
 **Every payment is charged in the creator's own currency** — the rule is written at
 `Auth\CheckoutController:156` (*"Client Requirement: Always charge in Creator's Currency"*)
@@ -739,8 +805,24 @@ Developer Master Plan", 19 Aug 2026 (`../docs/client/19 Aug/`).
   rebuild and a release. `DISCOVERY_ANALYTICS_LIVE` (env, default **false**) is the only
   env var this adds. Four flips are already scheduled — analytics (Discovery Phase 2),
   `more_creators` (Mon 31 Aug), `birthday` (Phase 4), `tips` (when Bridge lands).
+- 🚨 **"0 eligible creator(s)" USUALLY MEANS "NOT THIS WEEK", NOT "NOBODY QUALIFIES"
+  (30 Aug 2026).** Reported from production as *"a creator has a DOB, birthday in 4–5
+  days, why is nothing on the Discover page"*. Nothing was wrong with that creator.
+  - **`/discover/birthdays` shows the CURRENT Monday–Sunday week ONLY** —
+    `BirthdayDiscoveryController` calls `weekStart(now())`. It was asked on **Sunday
+    30 Aug**, the last day of the 24–30 Aug week, so a birthday 4–5 days out (2–4 Sep)
+    was in the NEXT week and could not appear however eligible the creator was.
+  - ⚠️ **The reminder stages are EXACTLY 7, 1 and 0 days out — not "within 7 days".**
+    A birthday 4 days away matches no stage, so `birthday:remind` answering
+    "0 eligible" for all three is the correct answer, not evidence of a failing gate.
+    🚨 **This was misread once already**, and the wrong conclusion (that the creator's
+    opt-in must be off) was drawn from it — check the week before checking a gate.
+  - **`birthday:diagnose {username}` now reports the week explicitly**: today, the week
+    the page is showing, the creator's next birthday and its week, and — when they
+    differ — the date they will start appearing. Two tests pin it, one of them the exact
+    production case. Nothing else about the feature changed.
 - 🚨 **BIRTHDAY SENDING NOW DEFAULTS **ON** — `env(..., true)`, no env var to set
-  (26 Aug 2026, client decision).** `DISCOVERY_BIRTHDAY_REMINDERS` and
+  (30 Aug 2026, client decision).** `DISCOVERY_BIRTHDAY_REMINDERS` and
   `DISCOVERY_BIRTHDAYS_THIS_WEEK` shipped defaulting **false**, so `birthday:remind`
   (09:30) and `birthday:weekly` (09:45) ran every day and reported *"WOULD be sent.
   Nothing sent."* — a complete feature that had never delivered anything. Both now default
@@ -768,7 +850,7 @@ Developer Master Plan", 19 Aug 2026 (`../docs/client/19 Aug/`).
     `birthday_discovery_opt_in`, which **defaults false** and whose promo-card nudge only
     shipped 24 Aug. A thin first week is a data state, not a broken capability — **check
     the opt-in count before reading silence as a fault.**
-- ✅ **SIX KEYS FLIPPED TO LIVE ON 26 Aug 2026**, each traced to the code that
+- ✅ **SIX KEYS FLIPPED TO LIVE ON 30 Aug 2026**, each traced to the code that
   **RENDERS** it — never to a service method that merely exists. That is the standard
   `hidden_gems` was flipped under, and it is the one that matters here: `CollectionService`
   has answered ten collections since Phase 5, and a collection nothing draws is not a live
@@ -1541,7 +1623,7 @@ Monday "Birthdays This Week" campaign) and `/discover/birthdays`.
   — **the week only, no creator id** — so supporting eight of that week's creators still
   produces one e-mail. The per-creator REMINDER is deliberately the opposite: one per
   creator, keyed `{creatorId}|{stage}|{year}`.
-- 🚨 **THE REMINDER KEYS ON THE BIRTHDAY DATE, NOT THE YEAR — fixed 26 Aug 2026.**
+- 🚨 **THE REMINDER KEYS ON THE BIRTHDAY DATE, NOT THE YEAR — fixed 30 Aug 2026.**
   The key was `{creatorId}|{stage}|{year}`, and `birthday_day`/`birthday_month` are
   **derived from `date_of_birth`**, so a creator correcting a date they mistyped at
   signup is an ordinary flow. Their corrected birthday arrived already claimed by the
@@ -1553,7 +1635,7 @@ Monday "Birthdays This Week" campaign) and `/discover/birthdays`.
   a MOVED date is a new send, which it should be: the old e-mail named a day that
   turned out to be wrong.
 - 🚨 **A FAILED SEND GIVES ITS CLAIM BACK — `NotificationDispatcher::releaseClaim()`
-  (26 Aug 2026).** `claim()` is taken BEFORE the send on purpose (claiming afterwards
+  (30 Aug 2026).** `claim()` is taken BEFORE the send on purpose (claiming afterwards
   leaves a window in which a crash re-sends), so a send that then threw left a row
   saying "delivered" behind a mail nobody got, and every later run skipped that person
   on the strength of it. **For `birthday:weekly` that broke the recovery its own
@@ -2450,7 +2532,7 @@ fourth was a JSX edit, which is why there was nothing stopping a fifth.
   glyphs, so the receipt card's `£0.00` climbed into the dashed rule above it at 250px.
   A one-line display figure wants `leading-[1]`.
 - 🚨 **£0.00 IS THE ABSENCE OF A CHARGE, SO IT IS NOT THE CARD'S DISPLAY ELEMENT**
-  (26 Aug 2026). `ReceiptCard` set it at 40/50/64px — larger than the HEADLINE on every
+  (30 Aug 2026). `ReceiptCard` set it at 40/50/64px — larger than the HEADLINE on every
   other card in the deck — and a nothing rendered as the loudest figure on screen reads
   as a price. It is now the TOTAL LINE of the receipt it belongs to (24/26/30px, beside
   its own "Due today" label), and the display slot went to the sentence that makes the
@@ -3909,7 +3991,7 @@ the 33 creators who signed up in the previous 90 days, **3 had a handle on file*
 - ⚠️ **The write cannot throw.** It runs after the user row exists and one line before
   `Auth::login()`; failing a signup over it would turn an optional field into the thing that
   broke registration. Catch `\Throwable`, log, carry on — same house pattern as `VisitTracker`.
-- ✅ **FIXED 26 Aug 2026 — `CreatorVerification.jsx`'s `hasAnySocialMedia` was
+- ✅ **FIXED 30 Aug 2026 — `CreatorVerification.jsx`'s `hasAnySocialMedia` was
   `Object.values(slinks).some(v => v !== null && v !== "")`**, which walks EVERY column
   on the row — `id`, `user_id`, `status`, `source`, the timestamps — so a `social_links`
   row with **all fourteen platforms blank answered TRUE**. The creator saw that step
@@ -3933,7 +4015,7 @@ the 33 creators who signed up in the previous 90 days, **3 had a handle on file*
     note left at the call site explains the bug by quoting the old expression, so a raw
     scan finds the very string it is checking has gone.
 - 🚨 **NO CREATOR COULD SUBMIT FOR REVIEW — `$user->socialLinks` IS NOT A RELATION** (fixed
-  26 Aug 2026). The relation is `social_links()`, and Laravel resolves an unknown property to
+  30 Aug 2026). The relation is `social_links()`, and Laravel resolves an unknown property to
   **NULL rather than erroring**, so `missingForReview()`'s handle check was false for
   everybody: every creator who pressed *Submit for review* was told *"Add a social handle
   before submitting for review"* with their handle rendered on the page behind the message,
@@ -3944,7 +4026,7 @@ the 33 creators who signed up in the previous 90 days, **3 had a handle on file*
   answers exactly this question. ⚠️ The client-side gate never agreed with it (see the bullet
   above), which is why the button was enabled and the server refused. Pinned by
   `tests/Feature/SubmitProfileForReviewTest.php` (4) — verified failing against the bug first.
-- 🚨 **TIKTOK WAS MISSING FROM THE PROFILE'S SOCIAL ICONS** (fixed 26 Aug 2026).
+- 🚨 **TIKTOK WAS MISSING FROM THE PROFILE'S SOCIAL ICONS** (fixed 30 Aug 2026).
   `Components/Profile/CoverIdentity.jsx` is the ONLY place the handles are rendered as links,
   and its `SOCIALS` map carried instagram/twitter/youtube/twitch/discord/reddit/facebook/tumblr
   — **not TikTok**, one of the three platforms verification is performed against. A creator
@@ -3993,7 +4075,7 @@ found five of the eight and reported the suite green, which it was not.
 - Tests: `tests/Feature/SignupSocialHandleTest.php` (14),
   `tests/javascript/signupSocialHandle.test.jsx` (10).
 
-## Growth Bonus — where a creator and a visitor MEET it (26 Aug 2026)
+## Growth Bonus — where a creator and a visitor MEET it (30 Aug 2026)
 
 Backend + rules live in the root `../CLAUDE.md`. This is the three surfaces, and the one
 rule they all share.
@@ -4011,12 +4093,12 @@ rule they all share.
   as £100 whatever their VAT status — which means part of the figure may be passed to HMRC.
   "Earn" is fine; **"you keep", "take-home" and "your balance" are banned**, and terms clause
   2.5 says so publicly. ⚠️ Do not reintroduce "customer spend" either (the base was gross until
-  26 Aug 2026, which is why older comments in these files insist on "sales" over "earnings" —
+  30 Aug 2026, which is why older comments in these files insist on "sales" over "earnings" —
   that rule is dead). ⚠️ `FounderProgressTracker` renders inches away on the same dashboard
   reporting a figure NET of VAT, so the two legitimately differ for a VAT-registered creator —
   keep the defined term or they read as the same number.
 - ⚠️ **Payout copy says "on the same payout as the earnings that qualified you", NEVER "the
-  following Friday"** (client, 26 Aug 2026). Each transaction waits its own 7 days before a
+  following Friday"** (client, 30 Aug 2026). Each transaction waits its own 7 days before a
   Friday run, so the bonus lands 7–13 days after the milestone depending on the weekday it
   was crossed — a named day is wrong for most creators.
 - **The three surfaces:**
@@ -4193,6 +4275,19 @@ read, and none is flagged `verify`.
   ⚠️ **The prop defaults to `false`**, so a caller that forgets it drops a link rather than
   shipping a broken one; the sentence beside it names WishTender and stands on its own.
   Publishing the sheet restores the link with no edit to the component.
+- 🚨 **THE SPLIT ONLY DRAWS WHEN THERE IS SOMETHING TO SPLIT AGAINST.**
+  `/creators/wishlist` and `vs/Generic` share `FeeBlock` and pass
+  `competitorFees={[]}` on purpose — they are not comparisons — so the
+  unconditional grid gave them a heading ("What a gift wishlist charges") over an
+  EMPTY column half the page wide, with our own rails squeezed into the other
+  half for no reason. `hasTheirs` now gates the grid, both headings and the right
+  column, and our rails go back to three across at full width.
+- **`vs/Generic.jsx` is on the spine too (30 Aug 2026).** It was the last layout
+  left on the old pattern — and it is what `link-in-bio` renders, which is
+  PUBLISHED, so two live comparison pages were in two different design languages.
+  It now matches `Show`/`CaseStudy` exactly: measured 64 / 42×5 all ending on the
+  same line / 64, where it read 64 / 42 / **48** / **48** / 42 / 42 / 64 with
+  `FeeBlock` and `WhyTheFee` drawing their own heads.
 - **Sitemap:** `/creators/vs/throne` added **by name** in `routes/web.php`'s
   `/dynamic-sitemap-pages`, per the rule already written there — vs pages are never listed as
   a group, because submitting a draft's URL teaches Search Console the path is dead.
@@ -4210,6 +4305,105 @@ read, and none is flagged `verify`.
   lists no unpublished comparison. ⚠️ The last two assert against the LIVE config rather than a
   fixture: the fixtures prove the guard works, these prove nothing has been shipped past it.
   Verified failing by planting `/creators/vs/linktree` in the sitemap.
+
+## 🚨 THE SPEC'S FIXED COPY HAD DRIFTED — FIVE WAYS (30 Aug 2026)
+
+Client asked whether everything they want conveyed is clearly on the page. Audited the
+rendered vs template against spec v4.3 **§3b — "Fixed copy on every vs page, the words the
+developer types once"** — a table the client wrote line by line. **Five of them were wrong**,
+and nothing anywhere errors when a specified line is missing: the page just quietly says less
+than it was asked to.
+
+| §3b requires | Was | Cause |
+|---|---|---|
+| Matrix intro, verbatim | replaced with the platform pitch | **this session's readability pass** |
+| Fee heading `WHAT A £20 PAYMENT REALLY COSTS` | "What a payment really costs" | **this session** — the £20 was dropped |
+| Secondary CTA `See the full table →` | missing | never built |
+| Holds-up block, reused verbatim from `/creators/keep-100` | missing | never built |
+| Bonuses block `THREE PROGRAMMES THAT STACK`, reused unchanged | missing | never built |
+
+- 🚨 **A READABILITY PASS IS NOT A LICENCE TO REWRITE CLIENT COPY.** The pitch the spec
+  states in its own §1 — *"the other platforms each do one thing; Spenny Piggy is bringing
+  all of them into one site … and the fee reflects that heavier infrastructure, with live
+  chat on top"* — genuinely was the least visible thing on the page, sitting only in
+  `WhyTheFee`'s body prose ~6,600px down. Putting it in the matrix lead fixed that and broke
+  a line the client had specified. **The spec gives that argument its own homes** — the two
+  missing blocks — which is where it belongs.
+- **The two reused blocks are ONE DEFINITION EACH**, lifted into
+  `creators/components/HoldsUpBlock.jsx` and `ThreeProgrammes.jsx`, and `/creators/keep-100`
+  and `/creators` now IMPORT them. §3a's words are "verbatim" and "unchanged"; a pasted
+  second copy is the thing that stops being either. ⚠️ The head is drawn by the CALLER —
+  the copy is fixed, the head STYLE is the page's own (stacked `SectionHead` there,
+  `SectionHeadSplit` on the vs spine). Same rule as `headless` on the other three.
+- ⚠️ **`Index.jsx` has SEVERAL `<LedgerFrame className="mt-10">`.** A scripted edit anchored
+  on the first one cut from 8,412 to 20,078 — a different section entirely, taking the
+  bonuses heading with it. Anchor inside the section (search from its own heading), and
+  re-grep after the write.
+- **Calculations verified against the spec, to the penny.** Throne's worked example is the
+  client's own arithmetic — `$21.95` subtotal (9.75% service fee) · `3.9% + $0.30 = $1.16`
+  processing · gifter pays `$23.11` · creator credited `$20.00` · `$18.00` after the
+  under-$30 withdrawal fee — and the config matches it word for word, with the table's two
+  numeric cells derived from the same figures rather than typed beside them. **Our own
+  column is computed live** and was checked against the engine that charges a real
+  supporter: `calculateStripeDirectChargeFlow(20, GBP, card)` → supporter £27.45, creator
+  £20.00; bank → £25.30 / £20.00 — identical to what the page prints.
+- Tests: three new in `ComparisonPageTest` (22 total) — the §3b strings, the two reused
+  blocks still being IMPORTED by their original pages, and the Throne example's six figures.
+  ⚠️ The copy scan reads the SOURCE and blanks comments first: this is an Inertia component
+  PHPUnit cannot mount, which is exactly why nothing caught the drift, and every call site
+  now quotes the spec in a comment beside it. ⚠️ Verified failing — and the FIRST attempt to
+  verify was wrong: the string appears twice (comment + markup) and the break was applied to
+  the comment, so the test correctly stayed green. Break the markup.
+
+## Readability pass — the page was aligned and still unreadable (30 Aug 2026)
+
+Client: *"design kuch achha nahi lag raha, alignment/structure sahi nahi — pages achhe se
+readable hone chahiye, user ko clearly samajh aaye ki kya bata rahe hain."*
+
+🚨 **THE MEASUREMENTS SAID IT WAS FINE, AND THEY WERE ANSWERING THE WRONG QUESTION.** Every
+heading sat on the spine, every right edge agreed, 0 overflow at four widths — and the page
+was still 9,201px of 1,885 words with the weight in the wrong places: "The money" 1,737px /
+417 words, "Feature by feature" 1,476px, "Why the fee" 412 words. Alignment is measurable;
+whether a reader can find the answer is not, and only a screenshot shows it.
+
+Four structural fixes, **no section removed and no claim reworded** — the spec fixes the
+sections and the copy is the client's:
+
+- 🚨 **THE 21-ROW MATRIX IS BANDED.** Drawn flat it was 21 identical rows a reader scrolls
+  past, with the one row they came for indistinguishable from the twenty they did not.
+  `config/comparison_matrix.php` carries a `group` key on the FIRST row of each band —
+  *What you can sell* · *Your money* · *If a payment is questioned* · *The rest* — and
+  `FeatureMatrix` opens a band when it sees one. **The fixed row ORDER is untouched**: the
+  four bands fall on boundaries the list already had, so the "21 rows in one order on every
+  page" guarantee still holds. Rendered in both the table and the mobile cards.
+  - 🚨 **`first:` INSIDE A TABLE IS PER-ROW, NOT PER-TABLE.** The band `<th>` is the ONLY
+    child of its own `<tr>`, so `first:pt-0` matched **every** band — measured
+    `padding-top: 0px` on all four, and each label collided with the row above it. The
+    grouping looked broken in exactly the way it was meant to fix.
+- 🚨 **"What it pays for" WAS ONE 100-WORD SENTENCE LISTING NINE THINGS** behind commas and
+  dashes — the densest block on the page, making the argument the whole page turns on.
+  Nobody reads a nine-item list written as prose. It is two lists now, **not a word of the
+  claim changed**. ⚠️ The two halves stay separate: the first is what every competitor also
+  sells, the second is what none of them do, and merging them loses the distinction that IS
+  the argument. The second carries mint bullets.
+  - ⚠️ **`Block`'s body is a `<div>`, not a `<p>`** — a `<ul>` inside a paragraph is invalid
+    DOM, and the browser silently closes the paragraph before the list and reopens one
+    after, so the block renders as three elements with paragraph spacing between them.
+    React reports it as a `validateDOMNesting` warning that is easy to scroll past; the
+    layout drift is not.
+- ⚠️ **"Why the fee" is `md:columns-2`, not a 2×2 grid.** A grid's row height is its taller
+  cell, so the short "What you are charged" left ~180px of dead space before the next row —
+  a hole in the middle of the page's densest section.
+- ⚠️ **The three pricing lines moved BELOW the whole split**, full width. They describe our
+  pricing as a whole and belong to neither column; inside the left one they also made it the
+  taller half on one page and the shorter on another, leaving a ragged gap beside the centre
+  rule either way.
+
+⚠️ **NOT fixed, and recorded rather than quietly accepted:** the page still makes its
+argument three times (snapshot → fee block → why the fee) and is ~9.6k tall. That is the
+spec's own section list, and cutting one is a client decision, not a polish call. The fee
+split's two halves also end at different heights — three rails against eight sourced fee
+rows — which is the asymmetry the comparison is *about*, so it was left alone.
 
 ## The comparison pages show a cost DIFFERENCE, and it needs no exchange rate (29 Aug 2026)
 

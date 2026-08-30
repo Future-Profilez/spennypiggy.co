@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Eyebrow } from './Ledger';
 
 /**
@@ -34,14 +35,14 @@ export default function FeatureMatrix({
     return (
         <section>
             {/*
-              * ⚠️ `headless` lets the PAGE draw the head instead, through the
-              * shared `SectionHeadSplit`. It exists because this component used
-              * to hand-roll its own `md:text-5xl` h2 — as did `FeeBlock` and
-              * `WhyTheFee` — so five sections on one page all shouted at the
-              * same size with no relationship to their importance, and none of
-              * them sat on the page's twelve-column spine. Default false: the
-              * other `/creators/*` pages that mount these are untouched.
-              */}
+             * ⚠️ `headless` lets the PAGE draw the head instead, through the
+             * shared `SectionHeadSplit`. It exists because this component used
+             * to hand-roll its own `md:text-5xl` h2 — as did `FeeBlock` and
+             * `WhyTheFee` — so five sections on one page all shouted at the
+             * same size with no relationship to their importance, and none of
+             * them sat on the page's twelve-column spine. Default false: the
+             * other `/creators/*` pages that mount these are untouched.
+             */}
             {!headless && (
                 <>
                     <Eyebrow accent={accent}>Feature by feature</Eyebrow>
@@ -77,23 +78,54 @@ export default function FeatureMatrix({
                     </thead>
                     <tbody>
                         {rows.map((row) => (
-                            <tr
-                                key={row.key}
-                                className="border-b border-white/10 align-top"
-                            >
-                                <td className="py-4 pr-6 text-base leading-[1.5] text-gray-200">
-                                    {row.label}
-                                </td>
-                                <td className="py-4 pr-6 text-base text-white">
-                                    {row.ours}
-                                </td>
-                                <td className="py-4 text-base text-gray-300">
-                                    <Cell
-                                        value={row.theirs}
-                                        sourceUrl={row.sourceUrl}
-                                    />
-                                </td>
-                            </tr>
+                            <Fragment key={row.key}>
+                                {/*
+                                 * 🚨 A BAND, NOT A REORDER. Twenty-one identical
+                                 * rows was 1,476px of wall — the reader scrolls
+                                 * past it rather than reads it, and the one row
+                                 * they came for is indistinguishable from the
+                                 * twenty they did not. The bands fall on
+                                 * boundaries the fixed order already had, so the
+                                 * shared row sequence is untouched.
+                                 */}
+                                {row.group && (
+                                    <tr>
+                                        <th
+                                            colSpan={3}
+                                            scope="colgroup"
+                                            /*
+                                             * 🚨 NO `first:pt-0` HERE. Each of
+                                             * these `<th>`s is the ONLY child of
+                                             * its own `<tr>`, so `:first-child`
+                                             * matches EVERY band, not the first
+                                             * one — measured `padding-top: 0px` on
+                                             * all four, and the labels collided
+                                             * with the row above them. `first:` is
+                                             * per-row inside a table, never per
+                                             * table.
+                                             */
+                                            className="pb-3 pt-10 text-left font-mono text-[11px] font-normal uppercase tracking-[0.16em]"
+                                            style={{ color: accent }}
+                                        >
+                                            {row.group}
+                                        </th>
+                                    </tr>
+                                )}
+                                <tr className="border-b border-white/10 align-top">
+                                    <td className="py-4 pr-6 text-base leading-[1.5] text-gray-200">
+                                        {row.label}
+                                    </td>
+                                    <td className="py-4 pr-6 text-base text-white">
+                                        {row.ours}
+                                    </td>
+                                    <td className="py-4 text-base text-gray-300">
+                                        <Cell
+                                            value={row.theirs}
+                                            sourceUrl={row.sourceUrl}
+                                        />
+                                    </td>
+                                </tr>
+                            </Fragment>
                         ))}
                     </tbody>
                 </table>
@@ -102,43 +134,50 @@ export default function FeatureMatrix({
             {/* Mobile: one card per row. */}
             <div className="mt-8 grid gap-3 md:hidden">
                 {rows.map((row) => (
-                    <div
-                        key={row.key}
-                        className="rounded-box-sm border border-white/15 px-4 py-4"
-                    >
-                        <p className="text-[15px] leading-[1.45] text-gray-200">
-                            {row.label}
-                        </p>
+                    <Fragment key={row.key}>
+                        {row.group && (
+                            <p
+                                className="mt-5 font-mono text-[11px] uppercase tracking-[0.16em] first:mt-0"
+                                style={{ color: accent }}
+                            >
+                                {row.group}
+                            </p>
+                        )}
+                        <div className="rounded-box-sm border border-white/15 px-4 py-4">
+                            <p className="text-[15px] leading-[1.45] text-gray-200">
+                                {row.label}
+                            </p>
 
-                        <dl className="mt-3 grid grid-cols-2 gap-3">
-                            <div>
-                                <dt className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#05EFB8]">
-                                    Spenny Piggy
-                                </dt>
-                                <dd className="mt-1 text-[15px] text-white">
-                                    {row.ours}
-                                </dd>
-                            </div>
-                            <div>
-                                <dt className="font-mono text-[11px] uppercase tracking-[0.12em] text-gray-400">
-                                    {competitor}
-                                </dt>
-                                <dd className="mt-1 text-[15px] text-gray-300">
-                                    <Cell
-                                        value={row.theirs}
-                                        sourceUrl={row.sourceUrl}
-                                    />
-                                </dd>
-                            </div>
-                        </dl>
-                    </div>
+                            <dl className="mt-3 grid grid-cols-2 gap-3">
+                                <div>
+                                    <dt className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#05EFB8]">
+                                        Spenny Piggy
+                                    </dt>
+                                    <dd className="mt-1 text-[15px] text-white">
+                                        {row.ours}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt className="font-mono text-[11px] uppercase tracking-[0.12em] text-gray-400">
+                                        {competitor}
+                                    </dt>
+                                    <dd className="mt-1 text-[15px] text-gray-300">
+                                        <Cell
+                                            value={row.theirs}
+                                            sourceUrl={row.sourceUrl}
+                                        />
+                                    </dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </Fragment>
                 ))}
             </div>
 
             {checkedOn && (
                 <p className="mt-6 font-mono text-[12px] leading-[1.5] text-gray-500">
-                    Checked {checkedOn}. If anything here is out of date, tell us
-                    on chat and we will correct it.
+                    Checked {checkedOn}. If anything here is out of date, tell
+                    us on chat and we will correct it.
                 </p>
             )}
         </section>

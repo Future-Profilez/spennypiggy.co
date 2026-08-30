@@ -1,4 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
+import HoldsUpBlock, { HOLDS_UP } from './components/HoldsUpBlock';
 import Guest from '@/Layouts/GuestLayout';
 import AdPage from './components/AdPage';
 import {
@@ -74,9 +75,9 @@ export default function Keep100() {
 
                             <p className="mb-9 mt-7 max-w-lg text-base leading-relaxed text-gray-300 md:text-xl">
                                 There is no revenue cut. Supporters cover the
-                                platform fee at checkout and see their full total
-                                before they pay, so the number you set is the
-                                number that reaches your bank.
+                                platform fee at checkout and see their full
+                                total before they pay, so the number you set is
+                                the number that reaches your bank.
                             </p>
 
                             <StartSelling promise={promise} />
@@ -157,9 +158,9 @@ export default function Keep100() {
                     {/* And it holds up */}
                     <div className="mt-20 md:mt-28">
                         <SectionHead
-                            eyebrow="And it holds up"
+                            eyebrow={HOLDS_UP.eyebrow}
                             accent={ACCENT.safe}
-                            lead="Every payment here is tied to a platform feature and carries the delivery record a card issuer asks for. That is what keeps payouts arriving."
+                            lead={HOLDS_UP.lead}
                         >
                             Keeping all of it is no use{' '}
                             <span className="text-gradient-wishlist">
@@ -167,30 +168,11 @@ export default function Keep100() {
                             </span>
                         </SectionHead>
 
-                        <ul className="mt-10 grid gap-3 md:grid-cols-2">
-                            {[
-                                'Payments tied to platform features',
-                                'Dispute evidence gathered for you',
-                                'Delivery records on every transaction',
-                                'Weekly payouts, VAT released alongside',
-                            ].map((item) => (
-                                <li
-                                    key={item}
-                                    className="rounded-box border-2 border-white/15 bg-white/[0.04] px-5 py-4 text-base text-white md:text-lg"
-                                >
-                                    {item}
-                                </li>
-                            ))}
-                        </ul>
-
-                        <Link
-                            href="/creators/stripe-safe"
-                            className="mt-6 inline-flex items-center gap-2 font-gulfs text-[12px] uppercase tracking-[0.18em] text-white underline decoration-2 underline-offset-4 hover:opacity-70 min-h-[44px]"
-                            style={{ textDecorationColor: ACCENT.safe }}
-                        >
-                            Why accounts stay safe
-                            <ArrowRight size={14} />
-                        </Link>
+                        {/* ⚠️ The body lives in `components/HoldsUpBlock` so the
+                            vs pages can reuse it VERBATIM, which is what spec
+                            v4.3 §3a asks for. Two copies of this paragraph are
+                            two paragraphs that drift. */}
+                        <HoldsUpBlock className="mt-10" />
                     </div>
 
                     {/* Close */}

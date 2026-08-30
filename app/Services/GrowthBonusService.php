@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Mail\GrowthBonusMilestoneReached;
+use App\Mail\GrowthBonusOutcome;
 use App\Models\FinancialTransaction;
 use App\Models\GrowthBonusProfile;
 use App\Models\GrowthBonusReward;
@@ -42,6 +43,15 @@ use Illuminate\Support\Facades\Log;
  */
 class GrowthBonusService
 {
+    /**
+     * How many days before the activation deadline a creator is warned.
+     *
+     * ⚠️ Seven, not three: the threshold is a SALES target, and a creator needs
+     * long enough to actually sell something. A warning that arrives too late to
+     * act on is worse than none, because it is the platform watching them miss.
+     */
+    private const WARN_DAYS_BEFORE_DEADLINE = 7;
+
     public function enabled(): bool
     {
         return (bool) config('growth_bonus.enabled', false);
@@ -300,6 +310,8 @@ class GrowthBonusService
                     'status' => GrowthBonusProfile::STATUS_MISSED,
                     'missed_reason' => 'seats_full',
                 ])->save();
+
+                $this->notifyOutcome($profile, 'seats_full');
             }
 
             return;
@@ -310,6 +322,26 @@ class GrowthBonusService
                 'status' => GrowthBonusProfile::STATUS_MISSED,
                 'missed_reason' => 'earnings_below_threshold',
             ])->save();
+
+            $this->notifyOutcome($profile, 'window_closed');
+
+            return;
+        }
+
+        /*
+         * A warning while there is still time to act on it. Without this the
+         * only message a creator who never activates ever receives is the one
+         * saying it is over — and the harshest rule in the programme (miss the
+         * 30 days and you are out permanently, however well you sell later)
+         * arrives as a surprise.
+         */
+        $daysLeft = (int) now()->startOfDay()->diffInDays($profile->activation_deadline->copy()->startOfDay(), false);
+
+        if ($daysLeft > 0 && $daysLeft <= self::WARN_DAYS_BEFORE_DEADLINE) {
+            $this->notifyOutcome($profile, 'window_closing', [
+                'days_left' => $daysLeft,
+                'remaining' => max(0, round($threshold - ($gmv['total'] + (float) $profile->gmv_adjustment), 2)),
+            ]);
         }
     }
 
@@ -415,6 +447,102 @@ class GrowthBonusService
                     'reversed_at' => now(),
                 ])->save();
             }
+        }
+    }
+
+    /**
+     * The outcomes that are NOT a milestone: the window closing, the window
+     * closed, and every place having gone.
+     *
+     * 🚨 THESE DID NOT EXIST UNTIL 28 Aug 2026, AND THEIR ABSENCE WAS THE WORST
+     * GAP IN THE FEATURE. A creator who reached the target and lost the last
+     * place to somebody else was told nothing at all — they would find out only
+     * by opening the bonus page themselves. The one creator with the strongest
+     * claim on an explanation was the one the platform stayed silent with.
+     *
+     * ⚠️ `window_closing` is the only one that arrives while the creator can
+     * still act. It carries how long is left and how much more they need, so it
+     * is a task rather than a countdown.
+     *
+     * 🚨 Claimed per creator per OUTCOME, so the daily evaluator cannot repeat
+     * one, and the claim is released on failure so a later run retries. Same
+     * contract as `notifyMilestone` — see its docblock for why the claim is
+     * taken before the queue push.
+     *
+     * ⚠️ NOTHING HERE MAY THROW: it runs inside the evaluation pass, and a
+     * failure to explain an outcome must never stop the outcome being recorded
+     * or block the other creators in the run.
+     */
+    private function notifyOutcome(GrowthBonusProfile $profile, string $outcome, array $extra = []): void
+    {
+        $type = 'growth_bonus_outcome';
+        $dedupKey = $profile->creator_id.'|'.$outcome;
+
+        if (! NotificationDispatcher::claim($profile->creator_id, $type, $dedupKey)) {
+            return;
+        }
+
+        try {
+            $creator = $profile->creator;
+
+            if (! $creator) {
+                NotificationDispatcher::releaseClaim($profile->creator_id, $type, $dedupKey);
+
+                return;
+            }
+
+            $symbol = config('growth_bonus.display.currency_symbol', '£');
+            $target = $symbol.number_format($this->activationThreshold(), 0);
+
+            [$title, $body] = match ($outcome) {
+                'seats_full' => [
+                    'All Growth Bonus places have gone',
+                    'You reached '.$target.' in time, but every place was taken. Keep an eye out — more bonus programmes are coming.',
+                ],
+                'window_closed' => [
+                    'Your Growth Bonus window has closed',
+                    'The '.(int) config('growth_bonus.activation.window_days', 30).'-day window ended before you reached '.$target.'. Everything else on your account works as normal.',
+                ],
+                'window_closing' => [
+                    $symbol.number_format($extra['remaining'] ?? 0, 0).' to unlock your Growth Bonus',
+                    'You have '.($extra['days_left'] ?? 0).' day'.(($extra['days_left'] ?? 0) === 1 ? '' : 's').' left to reach '.$target.' in qualifying earnings.',
+                ],
+                default => ['', ''],
+            };
+
+            if ($title === '') {
+                NotificationDispatcher::releaseClaim($profile->creator_id, $type, $dedupKey);
+
+                return;
+            }
+
+            NotificationDispatcher::queue(
+                $creator,
+                $type,
+                [
+                    'title' => $title,
+                    'body' => $body,
+                    'url' => '/growth-bonus',
+                    'module' => 'growth_bonus',
+                    'mailable' => GrowthBonusOutcome::class,
+                    'mailable_args' => [
+                        'creator' => $creator,
+                        'outcome' => $outcome,
+                        'headline' => $title,
+                        'message' => $body,
+                    ],
+                ],
+                NotificationDispatcher::ALL_CHANNELS,
+                marketing: false,
+            );
+        } catch (\Throwable $e) {
+            NotificationDispatcher::releaseClaim($profile->creator_id, $type, $dedupKey);
+
+            Log::warning('Growth Bonus outcome notification could not be queued', [
+                'creator_id' => $profile->creator_id,
+                'outcome' => $outcome,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

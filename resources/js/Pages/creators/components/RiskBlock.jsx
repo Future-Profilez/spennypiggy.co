@@ -1,4 +1,4 @@
-import { Link } from "@inertiajs/react";
+import { Link } from '@inertiajs/react';
 
 /**
  * Component D — the risk block.
@@ -26,31 +26,31 @@ import { Link } from "@inertiajs/react";
  * than by a background: nothing on this site casts a shadow.
  */
 
-const HEADING = "Before you compare fees, read this.";
+const HEADING = 'Before you compare fees, read this.';
 
 /** The one link on this block that points at a sheet which may be a draft. */
-const WISHTENDER_HREF = "/creators/vs/wishtender";
+const WISHTENDER_HREF = '/creators/vs/wishtender';
 
 const LINES = [
     {
-        lead: "Banks can freeze an account over payments with nothing behind them.",
-        body: "Money arriving with no record of where it came from or what it was for is exactly what an anti-money-laundering review looks for. One report is enough to freeze everything — including what you have already earned.",
+        lead: 'Banks can freeze an account over payments with nothing behind them.',
+        body: 'Money arriving with no record of where it came from or what it was for is exactly what an anti-money-laundering review looks for. One report is enough to freeze everything — including what you have already earned.',
     },
     {
-        lead: "Tips are taxable.",
-        body: "HMRC and the IRS treat money from supporters as income, whatever it is called at checkout. Both now receive seller data directly from digital platforms. Undeclared, it does not go away; it stacks up into a bill.",
+        lead: 'Tips are taxable.',
+        body: 'HMRC and the IRS treat money from supporters as income, whatever it is called at checkout. Both now receive seller data directly from digital platforms. Undeclared, it does not go away; it stacks up into a bill.',
     },
     {
-        lead: "Platforms that permit 18+ content carry a higher risk rating with banks and payment providers.",
-        body: "That risk sits on every creator using them, whatever you personally post. WishTender had a no-nudity rule and still lost its payment provider in 2024.",
-        link: { href: WISHTENDER_HREF, label: "What happened to WishTender" },
+        lead: 'Platforms that permit 18+ content carry a higher risk rating with banks and payment providers.',
+        body: 'That risk sits on every creator using them, whatever you personally post. WishTender had a no-nudity rule and still lost its payment provider in 2024.',
+        link: { href: WISHTENDER_HREF, label: 'What happened to WishTender' },
     },
     {
-        lead: "Routing your SFW earnings through an SFW-only platform lowers that risk.",
-        body: "Every Spenny Piggy payment is a sale of content, with a delivery record, reviewed by a person before payout and paid from a registered business (US-based, UK-managed). That is what a bank wants to see and what makes the income simple to declare.",
+        lead: 'Routing your SFW earnings through an SFW-only platform lowers that risk.',
+        body: 'Every Spenny Piggy payment is a sale of content, with a delivery record, reviewed by a person before payout and paid from a registered business (US-based, UK-managed). That is what a bank wants to see and what makes the income simple to declare.',
         link: {
-            href: "/creators/stripe-safe",
-            label: "How payments work here",
+            href: '/creators/stripe-safe',
+            label: 'How payments work here',
         },
     },
 ];
@@ -70,7 +70,7 @@ const LINES = [
  * its own; nothing is lost while the sheet is a draft, and publishing the sheet
  * restores the link with no edit here.
  */
-export default function RiskBlock({ className = "", wishtenderLive = false }) {
+export default function RiskBlock({ className = '', wishtenderLive = false }) {
     return (
         <section
             className={`rounded-box border-black bg-[#111113] px-6 py-8 md:px-10 md:py-11 ${className}`}
@@ -85,7 +85,7 @@ export default function RiskBlock({ className = "", wishtenderLive = false }) {
                         <p className="text-base leading-[1.55] text-white md:text-lg">
                             <strong className="font-semibold">
                                 {line.lead}
-                            </strong>{" "}
+                            </strong>{' '}
                             <span className="text-gray-300">{line.body}</span>
                         </p>
 

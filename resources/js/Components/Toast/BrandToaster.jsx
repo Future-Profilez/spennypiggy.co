@@ -61,19 +61,29 @@ const useIsDesktop = () => {
  *
  * ⚠️ Keyed on the message text, so an Inertia visit that re-renders with the
  * same flash does not fire it again, while a genuinely new message always does.
+ *
+ * 🚨 ALL FOUR SHARED KEYS, NOT TWO. `HandleInertiaRequests::share` pulls
+ * `success`, `error`, `warning` AND `info`, and this bridge read only the first
+ * two — so `->with('info', …)` and `->with('warning', …)` were the same silent
+ * failure this component was written to close, just one layer further in.
+ * Fourteen server call sites were writing into them. A key the server shares and
+ * nothing renders is worse than no key: the controller author has every reason
+ * to believe the message arrived.
  */
 function useFlashToasts() {
     const { flash } = usePage().props;
-    const { errorAlert, successAlert } = useAlerts();
+    const { errorAlert, successAlert, warningAlert, infoAlert } = useAlerts();
     const lastRef = useRef('');
 
     useEffect(() => {
         const error = flash?.error;
         const success = flash?.success;
+        const warning = flash?.warning;
+        const info = flash?.info;
 
-        if (!error && !success) return;
+        if (!error && !success && !warning && !info) return;
 
-        const signature = `${error ?? ''}|${success ?? ''}`;
+        const signature = `${error ?? ''}|${success ?? ''}|${warning ?? ''}|${info ?? ''}`;
 
         if (signature === lastRef.current) return;
 
@@ -81,7 +91,18 @@ function useFlashToasts() {
 
         if (error) errorAlert(error);
         if (success) successAlert(success);
-    }, [flash?.error, flash?.success, errorAlert, successAlert]);
+        if (warning) warningAlert(warning);
+        if (info) infoAlert(info);
+    }, [
+        flash?.error,
+        flash?.success,
+        flash?.warning,
+        flash?.info,
+        errorAlert,
+        successAlert,
+        warningAlert,
+        infoAlert,
+    ]);
 }
 
 /**

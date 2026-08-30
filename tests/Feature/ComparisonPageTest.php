@@ -231,6 +231,109 @@ class ComparisonPageTest extends TestCase
         }
     }
 
+    /**
+     * 🚨 SPEC v4.3 §3b IS "THE WORDS THE DEVELOPER TYPES ONCE" — FIXED COPY.
+     *
+     * Every string below is specified verbatim by the client. They drifted
+     * silently and in both directions: two were REWRITTEN in a readability pass
+     * (the matrix intro was replaced with the platform pitch; the fee heading
+     * lost its "£20"), and three blocks §3b lists were NEVER BUILT at all — the
+     * secondary CTA, the holds-up block and the bonuses block. Nothing errors
+     * when a specified line is missing; the page just quietly says less than the
+     * client asked it to.
+     *
+     * ⚠️ It scans the SOURCE, not a rendered page: this is an Inertia component
+     * and PHPUnit cannot mount it, which is exactly why nothing caught the
+     * drift. ⚠️ Comments are blanked first — the notes at each call site quote
+     * the spec, so a raw scan would find the string it is checking has gone.
+     */
+    public function test_the_fixed_copy_from_the_spec_is_on_the_vs_template(): void
+    {
+        $source = file_get_contents(
+            resource_path('js/Pages/creators/vs/Show.jsx')
+        );
+        $source = preg_replace('#/\*.*?\*/#s', '', $source);
+        $source = preg_replace('#\{/\*.*?\*/\}#s', '', $source);
+
+        $fixed = [
+            // §3b, in the order the spec lists them
+            'See the full table' => 'the secondary CTA anchoring to the matrix',
+            'Every row below is from' => 'the matrix intro, verbatim',
+            'Not stated” rather than guess' => 'the matrix intro, verbatim',
+            // The heading names the example sum. ⚠️ Asserted through the
+            // DERIVED variable, never the literal "£20": the figure is read from
+            // the payload the fee block prices from, so the heading cannot name
+            // a sum the table below it does not use.
+            'money20' => 'the fee heading keeps its example figure',
+            'Keeping all of it is no use' => 'the holds-up block',
+            'Three programmes' => 'the bonuses block',
+            'We would rather you chose with the whole picture' => 'the "to be fair" intro',
+            'Keep the price' => 'the final heading',
+            'Listing is free. You are not charged anything until' => 'the final sub-line',
+        ];
+
+        foreach ($fixed as $needle => $what) {
+            $this->assertStringContainsString(
+                $needle,
+                $source,
+                "vs/Show.jsx no longer carries $what — spec v4.3 §3b fixes that copy."
+            );
+        }
+    }
+
+    /**
+     * 🚨 THE TWO REUSED BLOCKS HAVE ONE DEFINITION EACH.
+     *
+     * §3a says the holds-up block is reused "verbatim" and the bonuses block
+     * "unchanged". A second copy pasted into the vs template is a copy that
+     * stops being either the first time somebody edits one page — so the words
+     * live in a component and every page imports it. This asserts the ORIGINAL
+     * pages still do, which is the half a copy-paste would silently undo.
+     */
+    public function test_the_reused_blocks_are_imported_not_copied(): void
+    {
+        $pairs = [
+            'js/Pages/creators/Keep100.jsx' => 'HoldsUpBlock',
+            'js/Pages/creators/Index.jsx' => 'ThreeProgrammes',
+            'js/Pages/creators/vs/Show.jsx' => 'HoldsUpBlock',
+        ];
+
+        foreach ($pairs as $file => $component) {
+            $this->assertMatchesRegularExpression(
+                '/^import '.$component.'[,\s]/m',
+                file_get_contents(resource_path($file)),
+                "$file must import $component rather than carry its own copy."
+            );
+        }
+    }
+
+    /**
+     * 🚨 THE WORKED EXAMPLE IS THE CLIENT'S OWN ARITHMETIC, TO THE PENNY.
+     *
+     * Spec v4.3, Throne sheet: "$20 Cash Gift. Subtotal shown to the fan $21.95
+     * (9.75% service fee included). Processing at checkout 3.9% + $0.30 = $1.16.
+     * Gifter pays $23.11 … credited $20.00. Withdraw that on its own and the
+     * under-$30 fee applies: $18.00 lands."
+     *
+     * Those five figures are what the page prints and what the side-by-side
+     * table's competitor column is derived from, so a typo in any one of them
+     * misstates a named competitor's fees on a public page.
+     */
+    public function test_the_throne_worked_example_matches_the_spec(): void
+    {
+        $example = config('comparisons.throne.example');
+
+        foreach (['$21.95', '3.9% + $0.30', '$1.16', '$23.11', '$20.00', '$18.00'] as $figure) {
+            $this->assertStringContainsString($figure, $example['note']);
+        }
+
+        // The table's two numeric cells are the same sourced figures, not a
+        // second set typed beside them.
+        $this->assertSame(23.11, (float) $example['theirs']['supporter_pays_amount']);
+        $this->assertSame(20.00, (float) $example['theirs']['creator_receives_amount']);
+        $this->assertStringContainsString('23.11', $example['theirs']['supporter_pays']);
+    }
+
     /** The index answers, and lists only what is published. */
     public function test_the_compare_index_renders(): void
     {

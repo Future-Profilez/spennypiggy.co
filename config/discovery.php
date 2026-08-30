@@ -79,7 +79,7 @@ return [
          * scheduled daily and no-ops (with a log line) while this is false.
          * Named exactly as the brief names it.
          *
-         * 🚨 DEFAULT TRUE SINCE 26 Aug 2026 (client decision). The feature is
+         * 🚨 DEFAULT TRUE SINCE 30 Aug 2026 (client decision). The feature is
          * ON in every environment that does not explicitly turn it off — there
          * is no env var to set, and none is wanted. `DISCOVERY_BIRTHDAY_REMINDERS`
          * still overrides, so `=false` is the kill switch if it ever has to stop.
@@ -95,7 +95,7 @@ return [
          * one copy per person. `birthday:weekly` is scheduled Mondays and
          * no-ops while this is false.
          *
-         * 🚨 DEFAULT TRUE SINCE 26 Aug 2026 (client decision), same as the
+         * 🚨 DEFAULT TRUE SINCE 30 Aug 2026 (client decision), same as the
          * reminders above. This is the platform's LARGEST fan-out — every account
          * with an address — so `DISCOVERY_BIRTHDAYS_THIS_WEEK=false` remains the
          * way to stop it without a deploy.
@@ -179,7 +179,7 @@ return [
         'public_wishes' => 'live',
         'promo_placements' => 'live',
         /*
-         * ✅ LIVE 26 Aug 2026 — Phase 3 and the Discover rebuild between them put
+         * ✅ LIVE 30 Aug 2026 — Phase 3 and the Discover rebuild between them put
          * all three of these on a surface a visitor actually sees. Verified by
          * following each claim to the code that renders it, not to a service
          * method that exists: a collection nothing draws is not a live capability,
@@ -213,7 +213,7 @@ return [
          */
         'hidden_gems' => 'live',
         /*
-         * ✅ LIVE 26 Aug 2026 — Discover draws its own "Trending creators" rail
+         * ✅ LIVE 30 Aug 2026 — Discover draws its own "Trending creators" rail
          * (Pages/discover/Discover.jsx), ranked by DiscoveryService::rankedCreatorIds
          * on real signals; the `trending` collection also renders on Discover search.
          */
@@ -225,7 +225,7 @@ return [
         // Block 2 — We'll Promote You
         'sitewide_promotion' => 'live',
         /*
-         * ✅ LIVE 26 Aug 2026. It was COMING SOON for one reason only — the two
+         * ✅ LIVE 30 Aug 2026. It was COMING SOON for one reason only — the two
          * sending flags defaulted false, so `birthday:remind` and `birthday:weekly`
          * ran daily and reported "WOULD be sent. Nothing sent." Both now default
          * TRUE (client decision, see the `birthday` block above), so that reason is
@@ -259,7 +259,7 @@ return [
         'creator_push' => 'live',
         'deeper_reminders' => 'coming_soon',
         /*
-         * ✅ LIVE 26 Aug 2026 — `reactivation:notify` is scheduled daily at 10:15
+         * ✅ LIVE 30 Aug 2026 — `reactivation:notify` is scheduled daily at 10:15
          * (Console/Kernel.php, not flag-gated) and `ReactivationReminder` builds every
          * creator link through DiscoverySources::profileUrl(..., 'personalised'), so
          * the re-engagement mail is literally Discovery-linked. That tagging is what
@@ -268,7 +268,7 @@ return [
         'reengagement' => 'live',
         'content_recommendations' => 'coming_soon',
         /*
-         * ✅ LIVE 26 Aug 2026 — `CreatorContentObserver` (registered in
+         * ✅ LIVE 30 Aug 2026 — `CreatorContentObserver` (registered in
          * AppServiceProvider) has `WishItem` in its MAP and calls
          * CreatorEventNotifier::notifyFollowers when a wish goes live, gated on the
          * moderation flags so a held item never notifies.

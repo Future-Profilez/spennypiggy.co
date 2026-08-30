@@ -115,7 +115,7 @@ export default function FeeSnapshot({ fees, competitor, example, accent }) {
      */
     const theirRatio = payRatio(
         example.theirs.supporter_pays_amount,
-        example.theirs.creator_receives_amount
+        example.theirs.creator_receives_amount,
     );
 
     const columns = [
@@ -234,31 +234,29 @@ export default function FeeSnapshot({ fees, competitor, example, accent }) {
                     />
 
                     {/*
-                      * 🚨 THE ROW THAT MAKES THE TWO COLUMNS COMPARABLE. Every
-                      * other figure on this table is in its own platform's
-                      * currency; this one is a RATIO, so it is the only line a
-                      * reader can honestly read across. It is also the client's
-                      * "difference in cost", stated without an exchange rate.
-                      */}
+                     * 🚨 THE ROW THAT MAKES THE TWO COLUMNS COMPARABLE. Every
+                     * other figure on this table is in its own platform's
+                     * currency; this one is a RATIO, so it is the only line a
+                     * reader can honestly read across. It is also the client's
+                     * "difference in cost", stated without an exchange rate.
+                     */}
                     {comparable && (
                         <Row
                             label={`Per ${unit} you receive`}
                             columns={columns}
-                            cell={(col) =>
-                                col.ratio ? money(col.ratio) : '—'
-                            }
+                            cell={(col) => (col.ratio ? money(col.ratio) : '—')}
                         />
                     )}
 
                     {/*
-                      * ⚠️ `merge` COLLAPSES ADJACENT CELLS THAT SAY THE SAME
-                      * THING. Our two rails carry one identical sentence, and
-                      * printing it twice side by side halved its weight and read
-                      * as a copy-paste slip. One statement for us, one for them,
-                      * is also the shape of the argument. It merges on VALUE, so
-                      * a rail whose terms ever differed would separate again on
-                      * its own rather than quietly hiding the difference.
-                      */}
+                     * ⚠️ `merge` COLLAPSES ADJACENT CELLS THAT SAY THE SAME
+                     * THING. Our two rails carry one identical sentence, and
+                     * printing it twice side by side halved its weight and read
+                     * as a copy-paste slip. One statement for us, one for them,
+                     * is also the shape of the argument. It merges on VALUE, so
+                     * a rail whose terms ever differed would separate again on
+                     * its own rather than quietly hiding the difference.
+                     */}
                     <Row
                         label="Attached to it"
                         columns={columns}
@@ -298,14 +296,14 @@ export default function FeeSnapshot({ fees, competitor, example, accent }) {
                                 value={col.supporter}
                             />
                             {/*
-                              * 🚨 MINT IS OURS. On the table the column rule
-                              * carries which side each column is; here the card's
-                              * left edge does. Setting the competitor's figure in
-                              * mint too would put our colour on their claim and
-                              * undo the one thing telling the two apart —
-                              * measured on a phone, that is the only encoding
-                              * left once the columns are stacked.
-                              */}
+                             * 🚨 MINT IS OURS. On the table the column rule
+                             * carries which side each column is; here the card's
+                             * left edge does. Setting the competitor's figure in
+                             * mint too would put our colour on their claim and
+                             * undo the one thing telling the two apart —
+                             * measured on a phone, that is the only encoding
+                             * left once the columns are stacked.
+                             */}
                             <StackedLine
                                 label="You receive"
                                 value={col.creator}
@@ -330,18 +328,18 @@ export default function FeeSnapshot({ fees, competitor, example, accent }) {
             </div>
 
             {/*
-              * 🚨 THE CLIENT'S SECOND HALF — "and how small it is for the extra
-              * benefits we provide." The figure is derived from the ratio gap
-              * applied to this page's own example sale, so it moves with the
-              * live rates like everything else here.
-              *
-              * ⚠️ IT SAYS "MORE", NOT "ONLY". The page's own rule is that the
-              * strongest wording permitted is factual — naming the gap and then
-              * naming what it buys lets the reader draw the conclusion, which is
-              * the argument these pages are built to win. Talking the number
-              * down in our own voice is what makes a comparison page read as an
-              * advert.
-              */}
+             * 🚨 THE CLIENT'S SECOND HALF — "and how small it is for the extra
+             * benefits we provide." The figure is derived from the ratio gap
+             * applied to this page's own example sale, so it moves with the
+             * live rates like everything else here.
+             *
+             * ⚠️ IT SAYS "MORE", NOT "ONLY". The page's own rule is that the
+             * strongest wording permitted is factual — naming the gap and then
+             * naming what it buys lets the reader draw the conclusion, which is
+             * the argument these pages are built to win. Talking the number
+             * down in our own voice is what makes a comparison page read as an
+             * advert.
+             */}
             {gaps.length > 0 && (
                 <div
                     className="mt-7 pl-5 md:pl-6"
@@ -361,19 +359,50 @@ export default function FeeSnapshot({ fees, competitor, example, accent }) {
                                 {gap.rail}
                             </span>
                         ))}
-                        {' — '}and for it you get a delivery record on every
-                        sale, dispute evidence gathered for you, a person
-                        reviewing each payment before it is paid out, weekly
-                        payouts from a registered business, and real people on
-                        live chat.{' '}
-                        <a
-                            href="#the-money"
-                            className="underline underline-offset-4 transition-opacity duration-200 hover:opacity-70"
-                        >
-                            Every fee line is below
-                        </a>
-                        .
+                        {' — '}and this is what the difference buys:
                     </p>
+
+                    {/*
+                     * 🚨 A LIST, NOT A FIVE-ITEM RUN-ON SENTENCE. This is the
+                     * second half of the client's direction — "how small it is
+                     * FOR THE EXTRA BENEFITS WE PROVIDE" — and written as one
+                     * comma-separated sentence the benefits were the part a
+                     * reader skimmed, which leaves only the number that says we
+                     * cost more. Exactly the fault "What it pays for" had.
+                     *
+                     * ⚠️ Five items, no more. This is the headline of the
+                     * argument; the full account is `WhyTheFee` further down,
+                     * and repeating all of it here would make the block longer
+                     * than the table it is explaining.
+                     */}
+                    <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
+                        {[
+                            'A delivery record on every sale',
+                            'Dispute evidence gathered for you',
+                            'A person reviewing each payment before payout',
+                            'Weekly payouts from a registered business',
+                            'Real people on live chat',
+                        ].map((item) => (
+                            <li
+                                key={item}
+                                className="flex gap-2.5 text-[14px] leading-[1.5] text-gray-300"
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className="mt-[8px] h-[5px] w-[5px] shrink-0 rounded-full"
+                                    style={{ backgroundColor: '#05EFB8' }}
+                                />
+                                {item}
+                            </li>
+                        ))}
+                    </ul>
+
+                    <a
+                        href="#the-money"
+                        className="mt-3 inline-block text-[14px] text-gray-300 underline underline-offset-4 transition-opacity duration-200 hover:opacity-70"
+                    >
+                        Every fee line is below
+                    </a>
                 </div>
             )}
 
@@ -395,7 +424,14 @@ export default function FeeSnapshot({ fees, competitor, example, accent }) {
  * column and one line in another, and centring those would leave the short cells
  * floating in the middle of a tall row with nothing to sit on.
  */
-function Row({ label, columns, cell, filled = false, small = false, merge = false }) {
+function Row({
+    label,
+    columns,
+    cell,
+    filled = false,
+    small = false,
+    merge = false,
+}) {
     const pad = small ? 'py-4' : 'py-3.5';
 
     // Adjacent columns whose cell reads the same become one cell. Without

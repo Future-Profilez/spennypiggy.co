@@ -1,17 +1,17 @@
-import { Head, Link } from "@inertiajs/react";
-import Guest from "@/Layouts/GuestLayout";
-import AdPage from "../components/AdPage";
-import RiskBlock from "../components/RiskBlock";
+import { Head, Link } from '@inertiajs/react';
+import Guest from '@/Layouts/GuestLayout';
+import AdPage from '../components/AdPage';
+import RiskBlock from '../components/RiskBlock';
 import {
     ACCENT,
     Eyebrow,
     SectionHeadSplit,
     StartSelling,
-} from "../components/Ledger";
+} from '../components/Ledger';
 import {
     PRICE_FORMATTED,
     SUBSCRIPTION_COPY,
-} from "@/constants/creatorSubscription";
+} from '@/constants/creatorSubscription';
 
 /**
  * The case-study page — a platform that closed.
@@ -117,7 +117,7 @@ export default function CaseStudy({ wishtenderLive = false, competitor }) {
                             accent={accent}
                             lead={`Every line below carries a link to where it was reported. Nothing here is our account of it.`}
                         >
-                            What{" "}
+                            What{' '}
                             <span className="text-gradient-wishlist">
                                 happened
                             </span>
@@ -183,7 +183,7 @@ export default function CaseStudy({ wishtenderLive = false, competitor }) {
                                 accent={accent}
                                 lead="What a platform closing costs the people selling on it — the part that is never on a pricing page."
                             >
-                                What it meant for{" "}
+                                What it meant for{' '}
                                 <span className="text-gradient-wishlist">
                                     creators
                                 </span>
@@ -209,7 +209,7 @@ export default function CaseStudy({ wishtenderLive = false, competitor }) {
                             accent={accent}
                             lead="Row by row, how the same job is done here — and what is in place so the same thing does not happen to your income."
                         >
-                            What we do{" "}
+                            What we do{' '}
                             <span className="text-gradient-wishlist">
                                 differently
                             </span>
@@ -289,7 +289,7 @@ export default function CaseStudy({ wishtenderLive = false, competitor }) {
                             accent={accent}
                             lead="We would rather you chose with the whole picture. These are the things it did better than us, in our own words."
                         >
-                            Where {competitor.name} was{" "}
+                            Where {competitor.name} was{' '}
                             <span className="text-gradient-wishlist">
                                 better
                             </span>
@@ -314,7 +314,7 @@ export default function CaseStudy({ wishtenderLive = false, competitor }) {
                             accent={accent}
                             lead="Nothing to cancel first, and nothing to pay until you have made a sale."
                         >
-                            If you were on{" "}
+                            If you were on{' '}
                             <span className="text-gradient-wishlist">
                                 {competitor.name}
                             </span>
@@ -340,7 +340,7 @@ export default function CaseStudy({ wishtenderLive = false, competitor }) {
                                         className="block font-gulfs text-3xl uppercase leading-none md:text-4xl"
                                         style={{ color: accent }}
                                     >
-                                        {String(i + 1).padStart(2, "0")}
+                                        {String(i + 1).padStart(2, '0')}
                                     </span>
                                     <p className="mt-4 text-[15px] leading-[1.6] text-gray-200">
                                         {step}
@@ -352,7 +352,7 @@ export default function CaseStudy({ wishtenderLive = false, competitor }) {
 
                     <section className="mt-14 border-t-2 border-white/15 pt-10 md:mt-16 md:pt-12">
                         <h2 className="font-gulfs text-4xl uppercase leading-[0.9] tracking-tight text-white md:text-[64px]">
-                            Keep the price{" "}
+                            Keep the price{' '}
                             <span className="text-gradient-wishlist">
                                 you list.
                             </span>

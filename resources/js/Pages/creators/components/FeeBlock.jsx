@@ -1,4 +1,4 @@
-import { Eyebrow } from "./Ledger";
+import { Eyebrow } from './Ledger';
 
 /**
  * Component B — "What a £20 payment really costs".
@@ -37,10 +37,17 @@ export default function FeeBlock({
     const money = (n) =>
         n === null || n === undefined
             ? null
-            : new Intl.NumberFormat("en-GB", {
-                  style: "currency",
-                  currency: fees.currency || "GBP",
+            : new Intl.NumberFormat('en-GB', {
+                  style: 'currency',
+                  currency: fees.currency || 'GBP',
               }).format(n);
+
+    /*
+     * A page that passes no competitor fee rows is not making a comparison —
+     * `/creators/wishlist` shares this block for its own fee table and passes
+     * `competitorFees={[]}` deliberately.
+     */
+    const hasTheirs = (competitorFees ?? []).length > 0;
 
     return (
         <section>
@@ -87,17 +94,41 @@ export default function FeeBlock({
              * across. Three cards in half the width was the same cramping in a
              * smaller box.
              */}
-            <div className="mt-9 lg:grid lg:grid-cols-2 lg:gap-x-10">
-                <div className="lg:pr-2">
-                    <h3 className="mb-5 flex items-center gap-3 font-gulfs text-xl uppercase tracking-[0.08em] text-white md:text-2xl">
-                        <span
-                            className="h-[3px] w-8 shrink-0 rounded-full"
-                            style={{ backgroundColor: "#05EFB8" }}
-                        />
-                        What we charge
-                    </h3>
+            {/*
+             * ⚠️ THE SPLIT ONLY EXISTS WHEN THERE IS SOMETHING TO SPLIT
+             * AGAINST. `/creators/wishlist` is not a comparison — it passes
+             * `competitorFees={[]}` on purpose — so with the grid applied
+             * unconditionally its right half drew a heading ("What a gift
+             * wishlist charges") over an empty column half the page wide, and
+             * squeezed the left half to 50% for no reason. Both headings go
+             * with it: contrasting nothing, "What we charge" is a label on the
+             * only thing on screen.
+             */}
+            <div
+                className={
+                    hasTheirs
+                        ? 'mt-9 lg:grid lg:grid-cols-2 lg:gap-x-10'
+                        : 'mt-9'
+                }
+            >
+                <div className={hasTheirs ? 'lg:pr-2' : undefined}>
+                    {hasTheirs && (
+                        <h3 className="mb-5 flex items-center gap-3 font-gulfs text-xl uppercase tracking-[0.08em] text-white md:text-2xl">
+                            <span
+                                className="h-[3px] w-8 shrink-0 rounded-full"
+                                style={{ backgroundColor: '#05EFB8' }}
+                            />
+                            What we charge
+                        </h3>
+                    )}
 
-                    <div className="grid gap-3">
+                    <div
+                        className={
+                            hasTheirs
+                                ? 'grid gap-3'
+                                : 'grid gap-3 md:grid-cols-3'
+                        }
+                    >
                         {fees.rails.map((rail) => (
                             <div
                                 key={rail.key}
@@ -155,12 +186,12 @@ export default function FeeBlock({
 
                                 {rail.supporter_pays !== null && (
                                     <p className="mt-5 border-t border-white/15 pt-4 text-[15px] leading-[1.5] text-gray-300">
-                                        Supporter pays{" "}
+                                        Supporter pays{' '}
                                         <strong className="text-white">
                                             {money(rail.supporter_pays)}
                                         </strong>
                                         <br />
-                                        You receive{" "}
+                                        You receive{' '}
                                         <strong className="text-[#05EFB8]">
                                             {money(rail.creator_receives)}
                                         </strong>
@@ -169,18 +200,6 @@ export default function FeeBlock({
                             </div>
                         ))}
                     </div>
-
-                    <p className="mt-5 text-[15px] leading-[1.55] text-gray-300">
-                        {fees.lines.flat_fee}
-                    </p>
-                    <p className="mt-2 text-[15px] leading-[1.55] text-gray-300">
-                        {fees.lines.creator}
-                    </p>
-                    {threeTierLine && (
-                        <p className="mt-2 text-[15px] leading-[1.55] text-gray-300">
-                            {threeTierLine}
-                        </p>
-                    )}
                 </div>
 
                 {/* ── Their half ─────────────────────────────────────────
@@ -192,70 +211,95 @@ export default function FeeBlock({
                  * `border-white/15` is Tailwind's real colour-only utility and
                  * composes with a side.
                  */}
-                <div className="mt-12 border-t border-white/15 pt-10 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
-                    <h3 className="mb-5 flex items-center gap-3 font-gulfs text-xl uppercase tracking-[0.08em] text-white md:text-2xl">
-                        <span className="h-[3px] w-8 shrink-0 rounded-full bg-white/30" />
-                        What {competitor} charges
-                    </h3>
+                {hasTheirs && (
+                    <div className="mt-12 border-t border-white/15 pt-10 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
+                        <h3 className="mb-5 flex items-center gap-3 font-gulfs text-xl uppercase tracking-[0.08em] text-white md:text-2xl">
+                            <span className="h-[3px] w-8 shrink-0 rounded-full bg-white/30" />
+                            What {competitor} charges
+                        </h3>
 
-                    {/*
-                     * 🚨 ONE FRAME, ROWS SHARING HAIRLINES — not a card per fee. This
-                     * was five to eight separate bordered boxes stacked down the page,
-                     * each with its label on one line and its value on the next, so the
-                     * competitor's whole fee structure read as a pile of unrelated
-                     * notices and used barely half the width it had. It is one thing —
-                     * what this platform charges — made of parts, which is the same
-                     * argument (and the same `divide-y` device) as `Ledger.jsx`'s
-                     * `LedgerFrame`: adjacent borders double up, a shared rule does not.
-                     *
-                     * ⚠️ Label LEFT, value RIGHT at `md:`. Every row's value used to
-                     * begin at the frame's left edge under its own label, which left a
-                     * ragged column of one-line headings above full-width paragraphs.
-                     * Splitting them puts the eight labels on one spine a reader can
-                     * scan, and gives the values the width they were wasting.
-                     */}
-                    <div className="overflow-hidden rounded-box border border-white/15">
-                        <div className="divide-y divide-white/10">
-                            {competitorFees.map((row) => (
-                                <div
-                                    key={row.label}
-                                    className="px-5 py-5 md:px-6"
-                                >
-                                    <div>
-                                        <h4 className="font-mono text-[11px] uppercase leading-[1.4] tracking-[0.12em] text-gray-400">
-                                            {row.label}
-                                        </h4>
+                        {/*
+                         * 🚨 ONE FRAME, ROWS SHARING HAIRLINES — not a card per fee. This
+                         * was five to eight separate bordered boxes stacked down the page,
+                         * each with its label on one line and its value on the next, so the
+                         * competitor's whole fee structure read as a pile of unrelated
+                         * notices and used barely half the width it had. It is one thing —
+                         * what this platform charges — made of parts, which is the same
+                         * argument (and the same `divide-y` device) as `Ledger.jsx`'s
+                         * `LedgerFrame`: adjacent borders double up, a shared rule does not.
+                         *
+                         * ⚠️ Label LEFT, value RIGHT at `md:`. Every row's value used to
+                         * begin at the frame's left edge under its own label, which left a
+                         * ragged column of one-line headings above full-width paragraphs.
+                         * Splitting them puts the eight labels on one spine a reader can
+                         * scan, and gives the values the width they were wasting.
+                         */}
+                        <div className="overflow-hidden rounded-box border border-white/15">
+                            <div className="divide-y divide-white/10">
+                                {competitorFees.map((row) => (
+                                    <div
+                                        key={row.label}
+                                        className="px-5 py-5 md:px-6"
+                                    >
+                                        <div>
+                                            <h4 className="font-mono text-[11px] uppercase leading-[1.4] tracking-[0.12em] text-gray-400">
+                                                {row.label}
+                                            </h4>
 
-                                        {row.notOnPricingPage && (
-                                            <span className="mt-2 inline-block rounded-box-xs bg-white/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-300">
-                                                Not on their pricing page
-                                            </span>
-                                        )}
+                                            {row.notOnPricingPage && (
+                                                <span className="mt-2 inline-block rounded-box-xs bg-white/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-300">
+                                                    Not on their pricing page
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="mt-3">
+                                            <p className="text-[15px] leading-[1.55] text-gray-200">
+                                                {row.value}
+                                            </p>
+
+                                            <a
+                                                href={row.sourceUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer nofollow"
+                                                className="mt-3 inline-block font-mono text-[11px] uppercase tracking-[0.12em] text-gray-400 underline underline-offset-4 transition-opacity duration-200 hover:opacity-70"
+                                            >
+                                                Source
+                                                {row.checkedOn
+                                                    ? ` · checked ${row.checkedOn}`
+                                                    : ''}{' '}
+                                                →
+                                            </a>
+                                        </div>
                                     </div>
-
-                                    <div className="mt-3">
-                                        <p className="text-[15px] leading-[1.55] text-gray-200">
-                                            {row.value}
-                                        </p>
-
-                                        <a
-                                            href={row.sourceUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer nofollow"
-                                            className="mt-3 inline-block font-mono text-[11px] uppercase tracking-[0.12em] text-gray-400 underline underline-offset-4 transition-opacity duration-200 hover:opacity-70"
-                                        >
-                                            Source
-                                            {row.checkedOn
-                                                ? ` · checked ${row.checkedOn}`
-                                                : ""}{" "}
-                                            →
-                                        </a>
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
+            </div>
+
+            {/*
+             * ⚠️ THESE THREE LINES SIT UNDER THE WHOLE SPLIT, NOT INSIDE OUR
+             * HALF. They describe our pricing as a whole — the flat fee, that
+             * you receive the price you list on every rail, how the three rails
+             * relate — so they belong to neither column. Inside the left one
+             * they also made it the taller half on a comparison page and the
+             * shorter one on Throne's, leaving a ragged gap beside the centre
+             * rule either way.
+             */}
+            <div className="mt-8 grid gap-2 border-t border-white/15 pt-6">
+                <p className="text-[15px] leading-[1.55] text-gray-300">
+                    {fees.lines.flat_fee}
+                </p>
+                <p className="text-[15px] leading-[1.55] text-gray-300">
+                    {fees.lines.creator}
+                </p>
+                {threeTierLine && (
+                    <p className="text-[15px] leading-[1.55] text-gray-300">
+                        {threeTierLine}
+                    </p>
+                )}
             </div>
         </section>
     );

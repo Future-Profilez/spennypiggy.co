@@ -4934,11 +4934,36 @@ class StripeController extends Controller
      * @param  string  $uuid  Subscription UUID
      * @return mixed
      */
-    public function handleMandatorySubscription(Request $request, $uuid)
+    public function handleMandatorySubscription(Request $request, $uuid, $status = null)
     {
         $sub = MonthlyCharge::whereUuid($uuid)->first();
         if (! $sub) {
             return to_route('home')->with('error', 'Insufficient data!');
+        }
+
+        /*
+         * 🚨 THE ROUTE IS `/handle/{uuid}/{status}` AND THIS METHOD USED TO DECLARE
+         * ONLY `$uuid`, SO STRIPE'S ANSWER WAS THROWN AWAY.
+         *
+         * `success_url` and `cancel_url` differ by that one segment and nothing else,
+         * so a creator who pressed Back on Stripe's page came straight down the
+         * COMPLETION path. A setup-mode session always reports
+         * `payment_status = no_payment_required` — nothing is ever charged in setup
+         * mode — so the guard below let a cancelled session through, and
+         * `completeSetupCheckout` then found no card and logged at ERROR
+         * (JAVASCRIPT-REACT-AG: four events in two minutes, one creator tapping back).
+         *
+         * Worse than the noise: they were then told **"We could not save your card.
+         * Please try again."** — the platform reporting a failure for something they
+         * chose to do. Cancelling is not a fault and must not read as one.
+         *
+         * ⚠️ The row is deliberately LEFT `initiated`: the card was never saved, and
+         * a later retry, the webhook or `subscriptions:reconcile-checkouts` must all
+         * still be able to complete it.
+         */
+        if ($status === 'cancel') {
+            return to_route('activate-subscription')
+                ->with('info', 'No card was saved. You can add one whenever you are ready.');
         }
         if ($sub->status !== 'initiated') {
             return to_route('user.show', ['username' => $sub->user->username])->with('success', 'Subscription already processed!');

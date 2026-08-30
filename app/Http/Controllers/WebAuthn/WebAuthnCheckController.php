@@ -6,17 +6,39 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Jenssegers\Agent\Agent;
 
 class WebAuthnCheckController extends Controller
 {
     public function check(Request $request)
     {
-        try {
-            $request->validate([
-                'email' => 'required|email|string',
-            ]);
+        /*
+         * A HALF-TYPED EMAIL IS NOT AN ERROR ON THIS ENDPOINT.
+         *
+         * This is a BACKGROUND PROBE fired from the login form while the person is
+         * still typing, and `$request->validate()` throws a ValidationException -
+         * which implements Throwable, so the catch below (written for a real fault)
+         * caught it, answered **500** and logged at ERROR level. One person typing
+         * their address on an iPhone produced three production alerts
+         * (JAVASCRIPT-REACT-AE). Same class as the ProfileController swallow.
+         *
+         * The endpoint's question is "does this address have a passkey", and for an
+         * address that is not an address the answer is simply no. Answer it, quietly.
+         */
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|string',
+        ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'has_passkey' => false,
+                'has_any_passkey' => false,
+                'user_exists' => false,
+            ]);
+        }
+
+        try {
             $user = User::where('email', $request->email)->first();
 
             if (! $user) {
@@ -78,12 +100,22 @@ class WebAuthnCheckController extends Controller
                 'user_id' => $user->id,
             ]);
         } catch (\Exception $e) {
-            Log::error('WebAuthn check error: '.$e->getMessage());
+            report($e);
 
+            Log::error('WebAuthn check error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            /*
+             * ⚠️ The exception MESSAGE is not returned to the caller. This endpoint is
+             * unauthenticated and takes an email address, so echoing an internal
+             * failure back describes our own database and query shape to anybody who
+             * can post to it.
+             */
             return response()->json([
                 'has_passkey' => false,
                 'has_any_passkey' => false,
-                'error' => $e->getMessage(),
+                'error' => 'Passkey check unavailable.',
             ], 500);
         }
     }
