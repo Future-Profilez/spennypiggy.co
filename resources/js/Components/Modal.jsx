@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import useHideBottomBar from "@/hooks/useHideBottomBar";
 import { Dialog, Transition } from '@headlessui/react';
 
 export default function Modal({ children, show = false, maxWidth = '2xl', closeable = true, onClose = () => {} }) {
@@ -7,6 +8,14 @@ export default function Modal({ children, show = false, maxWidth = '2xl', closea
             onClose();
         }
     };
+
+    /*
+     * 🚨 The bottom bar is z 999999 and this Dialog is z-50, so on a phone the
+     * bar painted over the foot of the panel — which on every form this hosts
+     * (FeatureSuggestionModal, DeleteUserForm, ConfirmDestructive…) is the
+     * submit row. Same mechanism Popup and Sheet use; see the hook.
+     */
+    useHideBottomBar(show);
 
     const maxWidthClass = {
         sm: 'sm:max-w-sm',
@@ -24,6 +33,7 @@ export default function Modal({ children, show = false, maxWidth = '2xl', closea
                 // Safe-area padding: installed as a PWA this dialog reaches the
                 // physical screen edges, so a plain py-6 puts the panel under the
                 // status bar / home indicator.
+                // bottom-bar-safe: useHideBottomBar(show) hides the bar while open
                 className="popupmodal fixed inset-0 flex overflow-y-auto px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-0 items-center z-50 transform transition-all"
                 onClose={close}
             >

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Http\Middleware\EnsureIdentityVerifiedForListings;
 use App\Models\MonthlyCharge;
+use App\Models\SocialLinks;
 use App\Models\User;
 use App\Services\CreatorJourneyService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -155,11 +156,17 @@ class IdentityBeforeListingTest extends TestCase
         // Profile has to be finished first, or the journey correctly stops there and
         // the assertion says nothing about the ordering under test.
         $creator = $this->creator([
+            'avatar' => 'uuid',
             'avatar_approved' => 1,
+            'bio' => 'Hello',
             'bio_approved' => 1,
+            // `profile` is "uploaded"; approval is the `review` step (31 Aug 2026).
+            'profile_status_lock' => 2,
             'stripe_details_submitted' => 0,
             'identity_status' => 0,
         ]);
+
+        SocialLinks::create(['user_id' => $creator->id, 'uuid' => (string) Str::uuid(), 'instagram' => 'spenny']);
 
         // A card on file comes before Connect (4 Aug 2026) — without it the journey
         // correctly stops on `subscription` and this says nothing about the ordering

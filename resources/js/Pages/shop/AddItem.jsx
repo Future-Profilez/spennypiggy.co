@@ -1221,7 +1221,7 @@ export default function AddItem(props) {
                         </div>
                     </div>
 
-                    {/* Footer Controls */}
+                    {/* Footer Controls — bottom-bar-safe: inside Modal, which hides the bar while open */}
                     <div className="flex-shrink-0 bg-white border-t border-gray-100 p-4 sticky bottom-0 z-20">
                         <div className="max-w-2xl mx-auto flex gap-4">
                             {step > 1 && (

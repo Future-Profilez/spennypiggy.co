@@ -14,6 +14,7 @@ use App\Services\BioPageService;
 use App\Services\Discovery\AttributionService;
 use App\Services\PiggyPotStatusService;
 use App\Services\UserProfileService;
+use App\Support\BioAppearance;
 use App\Support\BioSellableItems;
 use App\Support\DiscoverySources;
 use Illuminate\Http\Request;
@@ -92,11 +93,40 @@ class BioPageController extends Controller
 
         $isOwner = Auth::check() && (string) Auth::id() === (string) $user->id;
 
-        $this->bioService->recordView(
-            $user,
-            Auth::id(),
-            $request->ip().'|'.$request->userAgent()
-        );
+        /*
+         * The editor's live preview: the OWNER may override theme/layout via
+         * query params, so a pick is seen on the REAL page before it is saved.
+         * 🚨 Owner only — for a visitor the params are ignored: a shared link
+         * must not restyle a creator's page, and the public CDN-cache branch
+         * below caches per URL, so honouring them would mint a cache variant
+         * per guessed value. Invalid values fall back to the stored ones.
+         */
+        $previewTheme = null;
+        $previewLayout = null;
+        $isPreview = false;
+
+        if ($isOwner) {
+            $requestedTheme = $request->query('preview_theme');
+            $requestedLayout = $request->query('preview_layout');
+
+            if (in_array($requestedTheme, BioAppearance::THEMES, true)) {
+                $previewTheme = $requestedTheme;
+                $isPreview = true;
+            }
+            if (in_array($requestedLayout, BioAppearance::LAYOUTS, true)) {
+                $previewLayout = $requestedLayout;
+                $isPreview = true;
+            }
+        }
+
+        // A preview reload per theme click must not inflate the view counter.
+        if (! $isPreview) {
+            $this->bioService->recordView(
+                $user,
+                Auth::id(),
+                $request->ip().'|'.$request->userAgent()
+            );
+        }
 
         // 🚨 Attribution starts HERE, not at the checkout. A sale from this page is
         // the CREATOR's own traffic and must be recorded as such — see rememberSource().
@@ -124,6 +154,15 @@ class BioPageController extends Controller
                 fn (array $card) => ($card['listing_uuid'] ?? null) !== $featured['uuid'],
             ));
         }
+
+        /*
+         * ⚠️ ONE query, not three. `getUserWithRelations()` selects a cached
+         * COLUMN WHITELIST, so none of these three is on $user however the row
+         * reads — the documented missing-column class. This is a public page,
+         * so they are fetched together rather than one lookup per field.
+         */
+        $columns = User::whereKey($user->id)
+            ->first(['bio_theme', 'bio_item_layout', 'bio_page_views']);
 
         $response = Inertia::render('Bio/Show', [
             'creator' => [
@@ -161,11 +200,31 @@ class BioPageController extends Controller
             // The QR encodes this exact URL, built server-side so it can never
             // disagree with the address the visitor is on.
             'bioUrl' => route('bio.show', ['username' => $user->username]),
+            // The creator's saved look — a preset KEY, resolved to colours in
+            // constants/bioThemes.js. An unknown or NULL key draws the default,
+            // so a stale value can never blank the page.
+            // ⚠️ Read off $columns, NOT $user — see the query above.
+            'theme' => $previewTheme ?? $columns->bio_theme ?? null,
+            'itemLayout' => $previewLayout ?? $columns->bio_item_layout ?? null,
             // Owner-only: a visitor has no business reading a creator's reach.
             'stats' => $isOwner ? [
-                'views' => (int) (User::whereKey($user->id)->value('bio_page_views') ?? 0),
+                'views' => (int) ($columns->bio_page_views ?? 0),
             ] : null,
         ]);
+
+        /*
+         * The bio editor frames THIS render, and nothing else may.
+         * `SecurityHeaders` sends `X-Frame-Options: DENY` and
+         * `frame-ancestors 'none'` on every response unless one is already set,
+         * so an owner-only preview render is the single exception — and it
+         * returns before the shared-cache branch below, which must never apply
+         * to a signed-in owner's response anyway.
+         */
+        if ($isPreview) {
+            return $response->toResponse($request)->withHeaders([
+                'X-Frame-Options' => 'SAMEORIGIN',
+            ]);
+        }
 
         // 🚨 A RESPONSE THAT SETS A COOKIE IS NEVER SHARED-CACHEABLE. `sp_disc` is a
         // per-visitor map of creator => source; a CDN holding a response with that

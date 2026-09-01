@@ -87,7 +87,9 @@ export default function CreatorJourneyCard() {
                 {/* Position is what turns a nag into progress: it says there is an end. */}
                 <div
                     className={`mb-3 inline-block -rotate-1 rounded-box-sm border-[3px] border-black px-4 py-1.5 ${
-                        waiting ? "bg-white" : "bg-gradient-to-r from-[#FF007F] to-[#FF8E25]"
+                        waiting
+                            ? "bg-white"
+                            : "bg-gradient-to-r from-[#FF007F] to-[#FF8E25]"
                     }`}
                 >
                     <h3
@@ -95,7 +97,9 @@ export default function CreatorJourneyCard() {
                             waiting ? "text-black" : "text-white"
                         }`}
                     >
-                        {waiting ? "⏳ With us" : `Step ${journey.position} of ${journey.total}`}
+                        {waiting
+                            ? "⏳ With us"
+                            : `Step ${journey.position} of ${journey.total}`}
                     </h3>
                 </div>
 
@@ -108,8 +112,10 @@ export default function CreatorJourneyCard() {
             </div>
 
             {/* Nothing to click while the work is ours — offering a button here would be
-                asking them to redo what they have already submitted. */}
-            {waiting ? null : step === "first_listing" ? (
+                asking them to redo what they have already submitted. The one exception is
+                a step whose "waiting" copy carries a route (an ID check the creator may have
+                walked away from): the server decides that, not this card. */}
+            {waiting && !journey.route ? null : step === "first_listing" ? (
                 <ThreeWays onPick={go} />
             ) : step === "first_sale" && profileUrl ? (
                 <ShareButton
@@ -144,7 +150,11 @@ function ThreeWays({ onPick }) {
             title: "Sell a file",
             body: "A photo set, audio track, PDF, or video. Fastest to set up.",
             recommended: true,
-            go: () => onPick("shop", { type: "add" }),
+            // `?add=digital` / `?add=physical` are the intents `Dashboard.jsx` reads once on
+            // render and hands to AddItem, which opens the matching form. `shop?type=add` used
+            // to land here — ShopPage maps `add` to the PRODUCTS LIST tab, so both buttons
+            // delivered a list with no form, and both went to the same place.
+            go: () => onPick("dashboard", { add: "digital" }),
         },
         {
             emoji: "📝",
@@ -156,7 +166,7 @@ function ThreeWays({ onPick }) {
             emoji: "📦",
             title: "Sell physical",
             body: "A print, merch, or physical goods. We collect shipping details.",
-            go: () => onPick("shop", { type: "add" }),
+            go: () => onPick("dashboard", { add: "physical" }),
         },
     ];
 

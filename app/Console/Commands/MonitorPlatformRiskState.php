@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Helpers;
 use App\Mail\PlatformRiskAlert;
-use App\Models\Admin;
 use App\Models\AuditLog;
 use App\Models\CreatorMetric;
 use App\Models\EarlyFraudWarning;
@@ -12,6 +11,7 @@ use App\Models\Payment;
 use App\Models\PlatformRiskState;
 use App\Models\RiskSetting;
 use App\Models\SecurityEvent;
+use App\Support\AlertRouter;
 use App\Support\PlatformGmvTrigger;
 use App\Support\SecurityEventLog;
 use Illuminate\Console\Command;
@@ -408,27 +408,26 @@ class MonitorPlatformRiskState extends Command
     {
         try {
 
-            $allRecipients = [
-                'naveen@internetbusinesssolutionsindia.com',
-            ];
+            /*
+             * 🚨 This built its own recipient list and had three faults in it: a
+             * personal address hardcoded into the class, `noreply@spennypiggy.co`
+             * plus `mail.from.address` (the platform mailing ITSELF at an inbox
+             * nobody reads), and every row of `admins` regardless of role or
+             * whether the account was disabled — so a read-only auditor and a
+             * blocked admin were both paged about the platform's risk state.
+             *
+             * Routed now: System -> Alert Routing in the admin panel. Role
+             * expansion excludes disabled and deleted accounts.
+             */
+            $allRecipients = AlertRouter::recipients('platform_risk_state');
 
-            if (app()->environment('production')) {
-                $allRecipients[] = 'noreply@spennypiggy.co';
+            if (empty($allRecipients)) {
+                Log::info('Platform risk alert not sent: the channel has no recipients.', [
+                    'state' => $state,
+                ]);
 
-                $adminRecipients = Admin::query()
-                    ->whereNotNull('email')
-                    ->pluck('email')
-                    ->toArray();
-
-                $allRecipients = array_merge($allRecipients, $adminRecipients);
-
-                $fallbackEmail = config('mail.from.address');
-                if ($fallbackEmail) {
-                    $allRecipients[] = $fallbackEmail;
-                }
+                return;
             }
-
-            $allRecipients = array_values(array_unique(array_filter($allRecipients)));
 
             foreach ($allRecipients as $email) {
                 Mail::to($email)->send(new PlatformRiskAlert($state, $reasons, $metrics, $headline));

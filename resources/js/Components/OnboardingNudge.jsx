@@ -46,18 +46,20 @@ export default function OnboardingNudge() {
     // While the work is with an admin there is nowhere to send them, so the bar states the
     // position and offers no action. Asking for a click here would be asking them to redo
     // something they have already submitted.
+    // ⚠️ Unless the server sent a route with the waiting copy — an ID check the creator
+    // may have abandoned still needs a way back in, and the server decides that.
     const waiting = journey.awaiting_review === true;
-    const href = waiting
-        ? null
-        : journey.route
-            ? route(journey.route, journey.params ?? {})
-            : route("dashboard");
+    const href = journey.route
+        ? route(journey.route, journey.params ?? {})
+        : waiting
+          ? null
+          : route("dashboard");
 
     const Body = (
         <span className="flex min-w-0 items-center gap-2 text-white">
             <span className="text-base leading-none">🐷</span>
             <span className="truncate text-sm font-bold">{journey.title}</span>
-            {! waiting && (
+            {journey.cta && (!waiting || journey.route) && (
                 <span className="hidden shrink-0 text-sm underline sm:inline">
                     {journey.cta}
                 </span>
@@ -66,7 +68,13 @@ export default function OnboardingNudge() {
     );
 
     return (
-        <div className={waiting ? "bg-neutral-800 text-white" : "bg-green-500 text-white"}>
+        <div
+            className={
+                waiting
+                    ? "bg-neutral-800 text-white"
+                    : "bg-green-500 text-white"
+            }
+        >
             <div className="containerbox mx-auto flex items-center justify-between gap-3 px-4 py-2">
                 {href ? <Link href={href}>{Body}</Link> : Body}
                 <button

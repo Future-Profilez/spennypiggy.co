@@ -155,16 +155,4 @@ return [
         'redirect' => rtrim((string) env('APP_URL'), '/').'/auth/google/callback',
     ],
 
-    // Who gets the `diagnostics:run` alert. Comma-separated. Previously two personal addresses
-    // were hardcoded in the command, so changing the on-call list meant a code deploy.
-    // The old pair stays as the DEFAULT on purpose: dropping it would have silently stopped
-    // alerting on every environment where the new variable is not set yet.
-    // Read via config() so it survives config:cache.
-    'diagnostics' => [
-        'alert_emails' => env(
-            'DIAGNOSTICS_ALERT_EMAILS',
-            'naveen@internetbusinesssolutionsindia.com,prem@futureprofilez.com'
-        ),
-    ],
-
 ];

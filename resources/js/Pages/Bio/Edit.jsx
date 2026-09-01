@@ -1,6 +1,13 @@
 import { Head, router, useForm } from "@inertiajs/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Eye, X } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import {
+    BIO_DEFAULT_LAYOUT,
+    BIO_DEFAULT_THEME,
+    BIO_THEMES,
+    bioTheme,
+} from "@/constants/bioThemes";
 
 /**
  * The creator's editor for their own `/{username}/bio` page.
@@ -41,6 +48,7 @@ export default function BioEdit({
     maxItems = 12,
     externalCount = 0,
     stats = null,
+    appearance = null,
 }) {
     const [copied, setCopied] = useState(false);
 
@@ -121,7 +129,8 @@ export default function BioEdit({
 
                         {stats ? (
                             <p className="mt-3 font-poppins text-[12px] leading-[1.5] text-black/50">
-                                {stats.views} {stats.views === 1 ? "view" : "views"} so far
+                                {stats.views}{" "}
+                                {stats.views === 1 ? "view" : "views"} so far
                             </p>
                         ) : null}
                     </section>
@@ -136,6 +145,11 @@ export default function BioEdit({
                         items={items}
                         catalogue={catalogue}
                         maxItems={maxItems}
+                    />
+
+                    <AppearanceSection
+                        appearance={appearance}
+                        bioUrl={bioUrl}
                     />
 
                     {/* 🚨 TWO GROUPS, BECAUSE THE PAGE HAS TWO GROUPS. A social
@@ -181,7 +195,595 @@ export default function BioEdit({
  * the full ordered list and the neighbours are resolved against that same list,
  * so the array posted to the server stays complete — see `LinkRow`.
  */
-function LinkGroupSection({ title, note, links, ordered, allOrder, empty, children }) {
+/**
+ * The page's look — a curated theme set plus a list/grid choice for the
+ * sellable cards. Answers the last open clause of the link-in-bio ad page's
+ * section 6: "choose what it looks like".
+ *
+ * 🚨 PRESETS ONLY, NO COLOUR PICKER. Every theme's text/ground pairs were
+ * contrast-checked at design time (tests/javascript/bioThemes.test.js) — a free
+ * picker cannot promise that, and pink-on-pink failing AA is the documented
+ * house example. The server refuses any key outside App\Support\BioAppearance.
+ *
+ * ⚠️ TWO FLOWS, ONE STATE. At md+ the controls sit beside an inline preview of
+ * the real page. On a PHONE there is no room for both: the controls own the
+ * screen, and an IN-FLOW "Preview your page" button under the swatches opens a
+ * full-screen sheet carrying the same preview PLUS a compact theme/layout strip
+ * — so the creator switches looks while seeing the whole page.
+ *
+ * 🚨 NOTHING ON THIS SCREEN FLOATS (client direction, 31 Aug 2026). A fixed
+ * pill was tried and rejected: the bottom bar is `z-index: 999999` and the
+ * Intercom launcher higher still, so anything fixed near the foot of a phone
+ * screen ends up under one of them — the same class of cut-off the creator
+ * subscription flow was reported for. Buttons live in the flow, and the sheet
+ * PADS for the bar rather than pretending it is not there.
+ *
+ * ⚠️ Saves POST the pair the creator changed; the server writes only what was
+ * sent (`sometimes`). The DEFAULT is stored as null.
+ *
+ * ⚠️ Literal path, not route() — the ziggy trap documented at the top of this
+ * file.
+ */
+function AppearanceSection({ appearance, bioUrl }) {
+    const [theme, setTheme] = useState(appearance?.theme || BIO_DEFAULT_THEME);
+    const [layout, setLayout] = useState(
+        appearance?.item_layout || BIO_DEFAULT_LAYOUT,
+    );
+    const [saving, setSaving] = useState(false);
+    const [sheetOpen, setSheetOpen] = useState(false);
+
+    const save = (nextTheme, nextLayout) => {
+        setSaving(true);
+        router.post(
+            "/bio-links/appearance",
+            {
+                theme: nextTheme === BIO_DEFAULT_THEME ? null : nextTheme,
+                item_layout:
+                    nextLayout === BIO_DEFAULT_LAYOUT ? null : nextLayout,
+            },
+            {
+                preserveScroll: true,
+                /*
+                 * 🚨 `preserveState`, and it is not optional here. Inertia
+                 * defaults it to FALSE on a POST, which remounts this component
+                 * — the preview's device toggle, the open sheet and every other
+                 * open control on this editor would reset on every swatch tap.
+                 * The pick is already applied optimistically and the server
+                 * answers with the same value, so nothing needs re-reading.
+                 */
+                preserveState: true,
+                onFinish: () => setSaving(false),
+            },
+        );
+    };
+
+    const pickTheme = (key) => {
+        setTheme(key);
+        save(key, layout);
+    };
+
+    const pickLayout = (key) => {
+        setLayout(key);
+        save(theme, key);
+    };
+
+    const controls = (
+        <>
+            <p className="font-gulfs text-[10px] uppercase tracking-[0.18em] text-black/45">
+                Theme
+            </p>
+
+            <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-3 lg:grid-cols-5">
+                {Object.keys(BIO_THEMES).map((key) => (
+                    <ThemeSwatch
+                        key={key}
+                        themeKey={key}
+                        selected={theme === key}
+                        onPick={pickTheme}
+                    />
+                ))}
+            </div>
+
+            <p className="mt-4 font-gulfs text-[10px] uppercase tracking-[0.18em] text-black/45">
+                Items you sell
+            </p>
+
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:max-w-[320px]">
+                <LayoutSwatch
+                    layoutKey="list"
+                    label="List"
+                    selected={layout === "list"}
+                    onPick={pickLayout}
+                />
+                <LayoutSwatch
+                    layoutKey="grid"
+                    label="Grid"
+                    selected={layout === "grid"}
+                    onPick={pickLayout}
+                />
+            </div>
+        </>
+    );
+
+    return (
+        <section className="mt-6">
+            <div className="flex items-baseline justify-between gap-3">
+                <h2 className="font-gulfs text-[15px] uppercase tracking-tight text-black">
+                    Appearance
+                </h2>
+                {saving ? (
+                    <span className="font-poppins text-[11px] text-black/45">
+                        Saving…
+                    </span>
+                ) : null}
+            </div>
+            <p className="mt-1 font-poppins text-[12.5px] leading-[1.5] text-black/55">
+                How your public page looks. Changes are live as soon as you pick
+                one.
+            </p>
+
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <div className="min-w-0 rounded-box border-2 border-[#000] bg-white p-4">
+                    {controls}
+
+                    {/* On a phone the preview is the sheet; the pill opens it. */}
+                    <button
+                        type="button"
+                        onClick={() => setSheetOpen(true)}
+                        className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-box-sm border border-[#000] bg-[#FF007F] px-4 font-gulfs text-[11px] uppercase tracking-[0.14em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 md:hidden"
+                    >
+                        <Eye size={15} strokeWidth={2.5} aria-hidden="true" />
+                        Preview your page
+                    </button>
+
+                    <a
+                        href={bioUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-4 ml-2 inline-flex min-h-[44px] items-center rounded-box-sm border border-[#000] px-3 font-gulfs text-[11px] uppercase tracking-[0.14em] text-black transition-opacity duration-200 hover:opacity-70 md:ml-0"
+                    >
+                        Open your real page
+                    </a>
+                </div>
+
+                {/* md+: the real page beside the controls. */}
+                <div className="hidden min-w-0 rounded-box border-2 border-[#000] bg-white p-3 md:block md:self-start">
+                    <PreviewFrame theme={theme} layout={layout} bioUrl={bioUrl} />
+                    <p className="mt-2 font-poppins text-[10.5px] leading-[1.5] text-black/45">
+                        Your real page in the selected look — scroll to see all
+                        of it. It saves the moment you pick.
+                    </p>
+                </div>
+            </div>
+
+            {sheetOpen ? (
+                <PreviewSheet
+                    theme={theme}
+                    layout={layout}
+                    bioUrl={bioUrl}
+                    saving={saving}
+                    onPickTheme={pickTheme}
+                    onPickLayout={pickLayout}
+                    onClose={() => setSheetOpen(false)}
+                />
+            ) : null}
+        </section>
+    );
+}
+
+/**
+ * The phone's preview — a full-screen sheet: the real page filling the screen,
+ * a device toggle, and a compact theme/layout strip along the foot so a look
+ * can be switched while the whole page is in view.
+ *
+ * 🚨 THE STRIP IS AT THE TOP, UNDER THE HEADER BAR, NOT AT THE FOOT. The
+ * bottom bar (`z-index: 999999`) and the Intercom launcher both sit over the
+ * foot of the screen, and a strip placed there was cut in half on a real
+ * phone. Nothing floats over the top edge, so that is where the controls go.
+ * The sheet also pads its bottom by the bar's height (`--sp-bottombar-h`, the
+ * one definition) plus the safe-area inset, so the last of the page is never
+ * hidden under the bar either.
+ *
+ * ⚠️ `z-[1000]` clears the fixed header (100); the bar stays visible beneath
+ * on purpose — hiding navigation inside a preview is the wrong trade. Body
+ * scroll is locked while open and Escape closes it. The frame gets the full
+ * remaining height (`fill`).
+ */
+function PreviewSheet({
+    theme,
+    layout,
+    bioUrl,
+    saving,
+    onPickTheme,
+    onPickLayout,
+    onClose,
+}) {
+    useEffect(() => {
+        const previous = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+
+        const onKey = (e) => {
+            if (e.key === "Escape") onClose();
+        };
+        window.addEventListener("keydown", onKey);
+
+        return () => {
+            document.body.style.overflow = previous;
+            window.removeEventListener("keydown", onKey);
+        };
+    }, [onClose]);
+
+    return (
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Preview of your bio page"
+            className="fixed inset-0 z-[1000] flex flex-col bg-[#FFF6EC] md:hidden"
+            style={{
+                paddingTop: "env(safe-area-inset-top, 0px)",
+                paddingBottom:
+                    "calc(var(--sp-bottombar-h, 69px) + env(safe-area-inset-bottom, 0px))",
+            }}
+        >
+            <div
+                className="flex shrink-0 items-center justify-between gap-2 bg-white px-3 py-2"
+                style={{ borderBottom: "2px solid #000" }}
+            >
+                <p className="font-gulfs text-[11px] uppercase tracking-[0.18em] text-black">
+                    Live preview
+                    {saving ? (
+                        <span className="ml-2 font-poppins normal-case tracking-normal text-black/45">
+                            Saving…
+                        </span>
+                    ) : null}
+                </p>
+
+                <button
+                    type="button"
+                    onClick={onClose}
+                    autoFocus
+                    aria-label="Close preview"
+                    className="flex h-10 w-10 items-center justify-center rounded-box-xs border border-[#000] bg-white text-black transition-opacity duration-200 hover:opacity-70"
+                >
+                    <X size={18} strokeWidth={2.5} />
+                </button>
+            </div>
+
+            {/*
+                The strip: the same swatches as the editor, compact, in one
+                horizontal row — the creator's thumb stays on the strip while the
+                page above answers each tap.
+            */}
+            <div
+                className="shrink-0 bg-white px-3 pb-2 pt-2"
+                style={{ borderBottom: "2px solid #000" }}
+            >
+                <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
+                    {Object.keys(BIO_THEMES).map((key) => (
+                        <div key={key} className="w-[84px] shrink-0">
+                            <ThemeSwatch
+                                themeKey={key}
+                                selected={theme === key}
+                                onPick={onPickTheme}
+                            />
+                        </div>
+                    ))}
+                    <div
+                        className="mx-1 w-px shrink-0 self-stretch bg-black/20"
+                        aria-hidden="true"
+                    />
+                    <div className="w-[84px] shrink-0">
+                        <LayoutSwatch
+                            layoutKey="list"
+                            label="List"
+                            selected={layout === "list"}
+                            onPick={onPickLayout}
+                        />
+                    </div>
+                    <div className="w-[84px] shrink-0">
+                        <LayoutSwatch
+                            layoutKey="grid"
+                            label="Grid"
+                            selected={layout === "grid"}
+                            onPick={onPickLayout}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col px-3 pb-2 pt-2">
+                <PreviewFrame theme={theme} layout={layout} bioUrl={bioUrl} fill />
+            </div>
+
+        </div>
+    );
+}
+
+// `height` is only the STARTING guess for the virtual document; the real
+// height is measured off the loaded page (same origin) so a creator with
+// twenty items does not see their page cut off — see `measureDoc`.
+const PREVIEW_DEVICES = {
+    mobile: { label: "Mobile", width: 390, height: 1400 },
+    desktop: { label: "Desktop", width: 1280, height: 1200 },
+};
+
+/**
+ * The live preview — the creator's REAL bio page, in an iframe, restyled by
+ * the pick before it is saved. Shared by the inline md+ panel and the phone
+ * sheet.
+ *
+ * 🚨 IT IS THE REAL PAGE, NOT A MOCK. `?preview_theme=&preview_layout=` are
+ * honoured by BioPageController for the OWNER only, so the frame shows the
+ * creator's own items, links and photos exactly as a visitor will see them —
+ * a replica component here would drift from Show.jsx the first time that file
+ * changed. The bio page mounts no app layout, so the frame is cheap.
+ *
+ * ⚠️ Mobile and desktop are the SAME page at two real widths, scaled to fit
+ * the box — media-query behaviour inside an iframe keys off the IFRAME's
+ * width (the documented width-sweep device), which is what makes the toggle
+ * honest.
+ */
+function PreviewFrame({ theme, layout, bioUrl, fill = false }) {
+    const [device, setDevice] = useState("mobile");
+    const [frameWidth, setFrameWidth] = useState(0);
+    const [docHeight, setDocHeight] = useState(null);
+    const boxRef = useRef(null);
+    const frameRef = useRef(null);
+    const observerRef = useRef(null);
+
+    useEffect(() => {
+        // ⚠️ clientWidth, not offsetWidth: this box scrolls, so offsetWidth
+        // includes the scrollbar gutter and the frame would be scaled a few
+        // pixels wider than the space it is actually shown in.
+        const measure = () => {
+            if (boxRef.current) setFrameWidth(boxRef.current.clientWidth);
+        };
+        measure();
+        window.addEventListener("resize", measure);
+
+        return () => window.removeEventListener("resize", measure);
+    }, []);
+
+    // ⚠️ Forget the measured height when the frame is replaced, or a tall
+    // mobile page keeps its height for a beat after switching to Desktop.
+    useEffect(() => {
+        setDocHeight(null);
+
+        return () => observerRef.current?.disconnect();
+    }, [device, theme, layout]);
+
+    const d = PREVIEW_DEVICES[device];
+    const scale = frameWidth > 0 ? Math.min(frameWidth / d.width, 1) : 1;
+    const height = docHeight || d.height;
+
+    /*
+     * 🚨 THE PAGE IS AS TALL AS IT IS. A fixed frame height truncates a creator
+     * with twenty items — and `scrolling="no"` makes the cut SILENT, so the
+     * preview would be wrong for exactly the creators who sell most. The frame
+     * is same-origin, so its real height can be read.
+     *
+     * ⚠️ Measured on load AND on every later resize: the bio page is a React
+     * app, so the document at `load` is usually the shell rather than the
+     * finished page. Wrapped — a document that is blocked or already gone must
+     * fall back to the starting guess, never throw inside the editor.
+     */
+    const measureDoc = () => {
+        try {
+            const doc = frameRef.current?.contentDocument;
+            const body = doc?.body;
+
+            if (!body) return;
+
+            const read = () => {
+                const h = Math.max(
+                    body.scrollHeight,
+                    doc.documentElement?.scrollHeight || 0,
+                );
+
+                if (h > 0) setDocHeight(h);
+            };
+
+            read();
+
+            // One observer at a time: a new frame is mounted per pick, and the
+            // old one's document is gone.
+            observerRef.current?.disconnect();
+            observerRef.current = new ResizeObserver(read);
+            observerRef.current.observe(body);
+        } catch {
+            // Cross-origin or a torn-down document: keep the fallback height.
+        }
+    };
+
+    const src =
+        bioUrl +
+        (bioUrl.includes("?") ? "&" : "?") +
+        "preview_theme=" +
+        encodeURIComponent(theme) +
+        "&preview_layout=" +
+        encodeURIComponent(layout);
+
+    const scaledW = Math.round(d.width * scale);
+    const scaledH = Math.round(height * scale);
+
+    return (
+        <div className={fill ? "flex min-h-0 flex-1 flex-col" : ""}>
+            <div className="flex shrink-0 items-center justify-between gap-2">
+                <p className="font-gulfs text-[10px] uppercase tracking-[0.18em] text-black/45">
+                    {fill ? "Shown as" : "Live preview"}
+                </p>
+
+                <div className="flex gap-1">
+                    {Object.entries(PREVIEW_DEVICES).map(([key, dev]) => (
+                        <button
+                            key={key}
+                            type="button"
+                            onClick={() => setDevice(key)}
+                            aria-pressed={device === key}
+                            className={[
+                                "rounded-box-xs border px-2 py-1 font-gulfs text-[9px] uppercase tracking-[0.14em]",
+                                "transition-[filter] duration-200 hover:brightness-[1.05] active:brightness-95",
+                                device === key
+                                    ? "border-[#000] bg-[#FF007F] text-black"
+                                    : "border-[#000] bg-white text-black/60",
+                            ].join(" ")}
+                        >
+                            {dev.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/*
+                The WRAPPER scrolls and the frame is inert (pointer-events none):
+                a creator pans the whole page by touch without a tap inside it
+                navigating the frame off to a checkout.
+
+                🚨 A `transform: scale()` CHANGES NOTHING ABOUT LAYOUT. The
+                iframe still occupied its full 390/1280px in the flow, and a grid
+                item's `min-width: auto` let that widen the column past the
+                viewport — on a phone the whole editor bled off the right edge.
+                The frame is therefore ABSOLUTE inside a box sized to its SCALED
+                dimensions, so what the layout sees is exactly what is drawn.
+            */}
+            <div
+                ref={boxRef}
+                className={[
+                    "mt-2 w-full max-w-full overflow-y-auto overflow-x-hidden overscroll-contain rounded-box-sm border border-[#000] bg-[#FFF6EC]",
+                    fill ? "min-h-0 flex-1" : "max-h-[640px]",
+                ].join(" ")}
+            >
+                <div
+                    className="relative mx-auto overflow-hidden"
+                    style={{ width: `${scaledW}px`, height: `${scaledH}px` }}
+                >
+                    {frameWidth > 0 ? (
+                        <iframe
+                            // A NEW element per pick rather than re-pointing `src`:
+                            // navigating an existing iframe pushes an entry into
+                            // the PARENT's history, so five theme taps would cost
+                            // the creator five presses of Back to leave the editor.
+                            key={src + device}
+                            ref={frameRef}
+                            onLoad={measureDoc}
+                            src={src}
+                            title="Preview of your bio page"
+                            style={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                width: `${d.width}px`,
+                                height: `${height}px`,
+                                transform: `scale(${scale})`,
+                                transformOrigin: "top left",
+                                border: "0",
+                                pointerEvents: "none",
+                            }}
+                            scrolling="no"
+                            loading="lazy"
+                        />
+                    ) : null}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ThemeSwatch({ themeKey, selected, onPick }) {
+    const t = bioTheme(themeKey);
+
+    return (
+        <button
+            type="button"
+            onClick={() => onPick(themeKey)}
+            aria-pressed={selected}
+            className={[
+                "w-full overflow-hidden rounded-box-sm border-2 text-left",
+                "transition-[filter] duration-200 hover:brightness-[1.04] active:brightness-95",
+                selected ? "border-[#FF007F]" : "border-[#000]",
+            ].join(" ")}
+        >
+            {/* A mini page: ground, a white card, a CTA bar in the theme's own accent. */}
+            <span
+                aria-hidden="true"
+                className="block h-[52px] w-full p-1.5"
+                style={{ backgroundColor: t.ground }}
+            >
+                <span className="block h-[14px] w-full rounded-[4px] border border-[#000] bg-white" />
+                <span className="mt-1 block h-[14px] w-full rounded-[4px] border border-[#000] bg-white" />
+                <span
+                    className="mt-1 block h-[8px] w-3/5 rounded-[3px] border border-[#000]"
+                    style={{ backgroundColor: t.cta }}
+                />
+            </span>
+            <span
+                className={[
+                    "block border-t px-2 py-1 font-gulfs text-[9px] uppercase tracking-[0.14em]",
+                    selected
+                        ? "border-[#FF007F] bg-[#FF007F] text-black"
+                        : "border-[#000] bg-white text-black/70",
+                ].join(" ")}
+            >
+                {t.label}
+            </span>
+        </button>
+    );
+}
+
+function LayoutSwatch({ layoutKey, label, selected, onPick }) {
+    return (
+        <button
+            type="button"
+            onClick={() => onPick(layoutKey)}
+            aria-pressed={selected}
+            className={[
+                "w-full overflow-hidden rounded-box-sm border-2 text-left",
+                "transition-[filter] duration-200 hover:brightness-[1.04] active:brightness-95",
+                selected ? "border-[#FF007F]" : "border-[#000]",
+            ].join(" ")}
+        >
+            <span
+                aria-hidden="true"
+                className="block h-[52px] w-full bg-[#FFF6EC] p-1.5"
+            >
+                {layoutKey === "list" ? (
+                    <>
+                        <span className="block h-[13px] w-full rounded-[4px] border border-[#000] bg-white" />
+                        <span className="mt-1 block h-[13px] w-full rounded-[4px] border border-[#000] bg-white" />
+                        <span className="mt-1 block h-[13px] w-full rounded-[4px] border border-[#000] bg-white" />
+                    </>
+                ) : (
+                    <span className="grid h-full grid-cols-2 gap-1">
+                        <span className="block rounded-[4px] border border-[#000] bg-white" />
+                        <span className="block rounded-[4px] border border-[#000] bg-white" />
+                        <span className="block rounded-[4px] border border-[#000] bg-white" />
+                        <span className="block rounded-[4px] border border-[#000] bg-white" />
+                    </span>
+                )}
+            </span>
+            <span
+                className={[
+                    "block border-t px-2 py-1 font-gulfs text-[9px] uppercase tracking-[0.14em]",
+                    selected
+                        ? "border-[#FF007F] bg-[#FF007F] text-black"
+                        : "border-[#000] bg-white text-black/70",
+                ].join(" ")}
+            >
+                {label}
+            </span>
+        </button>
+    );
+}
+
+function LinkGroupSection({
+    title,
+    note,
+    links,
+    ordered,
+    allOrder,
+    empty,
+    children,
+}) {
     return (
         <section className="mt-6">
             <h2 className="font-gulfs text-[13px] uppercase tracking-[0.18em] text-black/70">
@@ -197,7 +799,9 @@ function LinkGroupSection({ title, note, links, ordered, allOrder, empty, childr
                 <div className="mt-3 flex flex-col gap-3">
                     {links.map((link, i) => (
                         <LinkRow
-                            key={link.uuid || `${link.kind}-${link.target_type}`}
+                            key={
+                                link.uuid || `${link.kind}-${link.target_type}`
+                            }
                             link={link}
                             index={ordered.indexOf(link)}
                             prevIndex={
@@ -268,7 +872,11 @@ function ItemsSection({ items, catalogue, maxItems }) {
                 takes them straight to its checkout.
             </p>
 
-            <AddItem available={available} atLimit={atLimit} maxItems={maxItems} />
+            <AddItem
+                available={available}
+                atLimit={atLimit}
+                maxItems={maxItems}
+            />
 
             {/* 🚨 ONE SURFACE WITH HAIRLINES BETWEEN ROWS — the same shape
                 `Bio/Show.jsx`'s `ItemList` draws, on the same `#FFF6EC` ground,
@@ -639,8 +1247,8 @@ function AddLink({ platforms, atLimit }) {
 
             {atLimit ? (
                 <p className="mt-3 font-poppins text-[13px] leading-[1.6] text-black/60">
-                    You have added the maximum number of links. Remove one to add
-                    another.
+                    You have added the maximum number of links. Remove one to
+                    add another.
                 </p>
             ) : (
                 <form onSubmit={submit} className="mt-3 flex flex-col gap-3">
@@ -664,7 +1272,9 @@ function AddLink({ platforms, atLimit }) {
                                         key={p.key}
                                         type="button"
                                         aria-pressed={on}
-                                        onClick={() => setData("platform", p.key)}
+                                        onClick={() =>
+                                            setData("platform", p.key)
+                                        }
                                         className={`min-h-[44px] rounded-box-sm border-2 px-4 font-gulfs text-[12px] uppercase tracking-[0.14em] transition-[filter,background-color] duration-200 ${
                                             on
                                                 ? "border-[#000] bg-[#FF007F] text-black hover:brightness-110 active:brightness-95"
@@ -712,7 +1322,9 @@ function AddLink({ platforms, atLimit }) {
                             </span>
                         ) : null}
 
-                        {errors.handle ? <FieldError>{errors.handle}</FieldError> : null}
+                        {errors.handle ? (
+                            <FieldError>{errors.handle}</FieldError>
+                        ) : null}
                     </label>
 
                     <label className="block">
@@ -727,7 +1339,9 @@ function AddLink({ platforms, atLimit }) {
                             placeholder={current?.label || ""}
                             className="mt-1 min-h-[48px] w-full rounded-box-sm border-2 border-[#000] bg-white px-3 font-poppins text-[14px] text-black"
                         />
-                        {errors.label ? <FieldError>{errors.label}</FieldError> : null}
+                        {errors.label ? (
+                            <FieldError>{errors.label}</FieldError>
+                        ) : null}
                     </label>
 
                     <button
@@ -805,8 +1419,12 @@ function LinkRow({ link, index, prevIndex, nextIndex, order }) {
                         {link.label}
                     </p>
                     <p className="mt-0.5 font-poppins text-[12px] leading-[1.5] text-black/50">
-                        {link.kind === "external" ? "Off Spenny Piggy" : "On your page"}
-                        {link.click_count > 0 ? ` · ${link.click_count} clicks` : ""}
+                        {link.kind === "external"
+                            ? "Off Spenny Piggy"
+                            : "On your page"}
+                        {link.click_count > 0
+                            ? ` · ${link.click_count} clicks`
+                            : ""}
                     </p>
                 </div>
 
@@ -868,7 +1486,9 @@ function RowAction({ onClick, disabled, tone, children }) {
             className={[
                 "min-h-[40px] rounded-box-xs border-2 px-3 font-gulfs text-[11px] uppercase tracking-[0.14em]",
                 "transition-opacity duration-200 hover:opacity-70 disabled:opacity-40",
-                tone === "danger" ? "border-[#EF4444] text-[#EF4444]" : "border-[#000] text-black",
+                tone === "danger"
+                    ? "border-[#EF4444] text-[#EF4444]"
+                    : "border-[#000] text-black",
             ].join(" ")}
         >
             {children}

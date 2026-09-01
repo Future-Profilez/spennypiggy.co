@@ -121,6 +121,41 @@ class GrowthBonusPanelPayload
         // A reversed reward is not owed, so it is not earned.
         $live = $rewards->where('status', '!=', GrowthBonusReward::STATUS_REVERSED);
 
+        /*
+         * 🚨 EARNED IS A UNION OF RUNGS, NOT A SUM OF ROWS. `qualifying_gmv` is
+         * computed LIVE while a reward ROW is only ever minted by the evaluator,
+         * so a creator at £385 read "Bonus earned £25" — one rung's worth — with
+         * two rungs (£100 and £250) plainly behind them on the same card. The
+         * money had been earned by the terms (qualification is on transaction
+         * date, clause 2.3); only the bookkeeping was behind.
+         *
+         * ⚠️ A UNION, deliberately, not "whichever is larger" and not the ladder
+         * alone. Both directions are real:
+         *   · a rung crossed and not yet minted has no row — the ladder supplies it;
+         *   · a PAID reward whose GMV later fell back on a refund keeps its row
+         *     (paid rewards are never auto-clawed back, they get `needs_review`),
+         *     and the ladder would no longer count that rung at all.
+         *
+         * ⚠️ Where a row exists its OWN `amount` wins — reward rows snapshot the
+         * ladder at creation, so a later config change must never rewrite what a
+         * creator was already told they had earned.
+         *
+         * ⚠️ Keyed on the rung, so a rung can never be counted twice.
+         */
+        $earnedByRung = [];
+
+        foreach ($live as $reward) {
+            $earnedByRung[(string) round((float) $reward->milestone_gmv, 2)] = (float) $reward->amount;
+        }
+
+        foreach ($ladder as $rung) {
+            $key = (string) round((float) $rung['gmv'], 2);
+
+            if ($gmv >= (float) $rung['gmv'] && ! array_key_exists($key, $earnedByRung)) {
+                $earnedByRung[$key] = (float) $rung['amount'];
+            }
+        }
+
         $next = collect($ladder)->first(fn ($rung) => $gmv < (float) $rung['gmv']);
         $target = $next ? (float) $next['gmv'] : null;
 
@@ -159,7 +194,7 @@ class GrowthBonusPanelPayload
             'awaiting_evaluation' => $ledger !== null
                 && round($computed, 2) !== round((float) $profile->qualifying_gmv, 2),
 
-            'earned_total' => (float) $live->sum('amount'),
+            'earned_total' => round(array_sum($earnedByRung), 2),
             'paid_total' => (float) $rewards->where('status', GrowthBonusReward::STATUS_PAID)->sum('amount'),
 
             'next_milestone' => $target,
@@ -168,6 +203,15 @@ class GrowthBonusPanelPayload
             'progress_pct' => $pct,
 
             'activation_gmv' => (float) config('growth_bonus.activation.threshold_gmv', 100),
+            /*
+             * 🚨 THE ACTIVATION RUNG'S OWN REWARD, NOT `next_reward`. Once a
+             * creator crosses £100, `next_reward` has already moved on to the
+             * rung above — so a card confirming the milestone they just reached
+             * would name the wrong prize. It reads correctly today only because
+             * rungs 1 and 2 both happen to pay £25; change either figure and
+             * the coincidence goes, silently.
+             */
+            'first_reward' => isset($ladder[0]['amount']) ? (float) $ladder[0]['amount'] : null,
             'activation_deadline' => $profile->activation_deadline?->toDateString(),
             // Whole days left in the window, floored at 0 — a negative countdown
             // on a deadline that has passed reads as a bug.

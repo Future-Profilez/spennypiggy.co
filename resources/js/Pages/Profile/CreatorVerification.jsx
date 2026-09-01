@@ -5,7 +5,10 @@ import EditProfile from "../account/EditProfile";
 import Social from "../Auth/Social";
 import { parseIdentityError } from "@/utils/identityError";
 
-import { PRICE_FORMATTED, SUBSCRIPTION_COPY } from "@/constants/creatorSubscription";
+import {
+    PRICE_FORMATTED,
+    SUBSCRIPTION_COPY,
+} from "@/constants/creatorSubscription";
 // One status vocabulary for the whole checklist, so a step never says "Approved"
 // in one shape and "Verified" in another. Mint = done, amber = in review,
 // red = needs a fix, gray = not started / locked.
@@ -94,9 +97,9 @@ function MilestoneRail({ milestones, activeIndex }) {
 // A step that needs the creator's hands: full card, what we check, the editor,
 // and — when it came back rejected — the reason plus the same editor as the
 // "fix it now" path, so a rejection is never a dead end.
-function ActionCard({ step }) {
+function ActionCard({ step, selfCheck }) {
     const isRejected = step.state === "rejected";
- // No offset on these cards. A checklist is a stack of near-identical rows, and
+    // No offset on these cards. A checklist is a stack of near-identical rows, and
     // giving every one the same heavy drop makes the list read as noise rather than as
     // steps — the border already separates them. Rejection stays distinguished by colour,
     // which is the only difference that matters here.
@@ -111,12 +114,16 @@ function ActionCard({ step }) {
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-gray-900 font-bold">{step.title}</h3>
- <span className="text-[12px] font-bold text-black/60">
+                        <h3 className="text-gray-900 font-bold">
+                            {step.title}
+                        </h3>
+                        <span className="text-[12px] font-bold text-black/60">
                             ~{step.mins} min
                         </span>
                         {isRejected && (
-                            <StatusChip state="rejected">Needs a fix</StatusChip>
+                            <StatusChip state="rejected">
+                                Needs a fix
+                            </StatusChip>
                         )}
                     </div>
                     <p className="text-gray-600 text-[14px] mt-0.5">
@@ -127,7 +134,7 @@ function ActionCard({ step }) {
 
             {isRejected && (
                 <div className="mt-3 bg-white border-2 border-red-500 rounded-box-sm p-3">
- <p className="text-[12px] font-bold uppercase tracking-widest text-red-600 mb-1">
+                    <p className="text-[12px] font-bold uppercase tracking-widest text-red-600 mb-1">
                         Why it came back
                     </p>
                     <p className="text-sm text-gray-800">
@@ -137,7 +144,9 @@ function ActionCard({ step }) {
 
                     {step.note && (
                         <p className="mt-2 text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-box-sm p-2">
-                            <span className="font-bold">Note from our team: </span>
+                            <span className="font-bold">
+                                Note from our team:{" "}
+                            </span>
                             {step.note}
                         </p>
                     )}
@@ -162,9 +171,30 @@ function ActionCard({ step }) {
                 </div>
             )}
 
+            {/*
+                The advisor's note, before anyone decides. Amber, never red —
+                red on this card means a person said no, and this is the system
+                saying "this will slow you down". Blocking findings name the
+                consequence; attention findings just ask for a look.
+            */}
+            {selfCheck?.length > 0 && step.state !== "done" && (
+                <div className="mt-3 bg-[#FFF6D6] border-2 border-black rounded-box-sm p-3">
+                    <p className="text-[12px] font-bold uppercase tracking-widest text-black mb-1">
+                        {selfCheck.some((f) => f.severity === "blocking")
+                            ? "Fix this before you submit"
+                            : "Worth a look before review"}
+                    </p>
+                    {selfCheck.map((f, i) => (
+                        <p key={i} className="text-sm text-black/80 mt-1">
+                            {f.message}
+                        </p>
+                    ))}
+                </div>
+            )}
+
             {step.hint?.length > 0 && (
                 <div className="mt-3 bg-gray-50 border border-gray-200 rounded-box-sm p-3">
- <p className="text-[12px] font-bold uppercase tracking-widest text-black/60 mb-1.5">
+                    <p className="text-[12px] font-bold uppercase tracking-widest text-black/60 mb-1.5">
                         What we check
                     </p>
                     <ul className="space-y-1">
@@ -173,7 +203,7 @@ function ActionCard({ step }) {
                                 key={i}
                                 className="flex items-start gap-2 text-[13px] text-gray-600"
                             >
- <span className="text-black/60 mt-0.5">•</span>
+                                <span className="text-black/60 mt-0.5">•</span>
                                 <span>{h}</span>
                             </li>
                         ))}
@@ -196,12 +226,12 @@ function StepRow({ step }) {
             ? "bg-mint text-black"
             : step.state === "pending"
               ? "bg-amber-400 text-black"
- : "bg-gray-100 text-black/60";
+              : "bg-gray-100 text-black/60";
     return (
         <div className="flex items-center justify-between gap-3 border-2 border-gray-200 rounded-box-sm px-3 py-2.5 mb-2 bg-white">
             <div className="flex items-center gap-2.5 min-w-0">
                 <span
- className={`grid place-items-center w-6 h-6 shrink-0 rounded-full text-[12px] font-bold ${iconCls}`}
+                    className={`grid place-items-center w-6 h-6 shrink-0 rounded-full text-[12px] font-bold ${iconCls}`}
                 >
                     {icon}
                 </span>
@@ -210,7 +240,7 @@ function StepRow({ step }) {
                         {step.title}
                     </p>
                     {step.note && (
- <p className="text-[12px] text-black/60 leading-snug">
+                        <p className="text-[12px] text-black/60 leading-snug">
                             {step.note}
                         </p>
                     )}
@@ -223,7 +253,7 @@ function StepRow({ step }) {
 
 function SectionHeading({ children }) {
     return (
- <p className="text-[12px] font-bold uppercase tracking-widest text-black/60 mt-5 mb-2">
+        <p className="text-[12px] font-bold uppercase tracking-widest text-black/60 mt-5 mb-2">
             {children}
         </p>
     );
@@ -235,6 +265,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         user: initialUser,
         global_currency,
         slinks: initialSlinks,
+        profile_self_check,
     } = usePage().props;
 
     // Use local state so background polling doesn't trigger a full page re-render
@@ -274,7 +305,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const profileRejectReason =
         creatorUser?.profile_reject_reason || user?.profile_reject_reason;
     const hasBasicDetails =
-        hasAnySocialMedia && creatorUser?.avatar && creatorUser?.bio && hasSubscription;
+        hasAnySocialMedia &&
+        creatorUser?.avatar &&
+        creatorUser?.bio &&
+        hasSubscription;
     const isSubmittedForReview = profileStatusLock == 1;
     const canSubmitForReview =
         profileStatusLock != 1 &&
@@ -378,17 +412,40 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         !creatorUser?.avatar && "photo",
         !creatorUser?.bio && "bio",
         !hasSubscription && "payment method",
-        (isSocialRejected || avatarStatus == 2 || bioStatus == 2) && "fixes for rejected items",
+        (isSocialRejected || avatarStatus == 2 || bioStatus == 2) &&
+            "fixes for rejected items",
     ].filter(Boolean);
     const listItems = (items) =>
         items.length > 1
             ? `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`
             : items[0];
 
+    /*
+     * What the review console's advisor would flag about this profile, shown to
+     * the creator while it is still theirs to fix (31 Aug 2026). Server-built
+     * (App\Support\ProfileSelfCheck) from the same lists the admin screen reads,
+     * so the two cannot disagree.
+     *
+     * ⚠️ ADVICE, NEVER A VERDICT. Copy below says "hold up your review" — it
+     * must never say rejected, because an admin can still decide either way.
+     */
+    const SELF_CHECK_STEP = { bio: "bio", avatar: "avatar", socials: "social" };
+    const selfCheckByStep = {};
+    const selfCheckOrphans = [];
+    (profile_self_check || []).forEach((f) => {
+        const key = SELF_CHECK_STEP[f.asset];
+        if (key) {
+            (selfCheckByStep[key] = selfCheckByStep[key] || []).push(f);
+        } else {
+            // A finding with no checklist step of its own (the cover banner).
+            selfCheckOrphans.push(f);
+        }
+    });
+
     const editorBtn =
         "inline-block bg-gray-100 hover:bg-gray-200 border-2 border-black rounded-box-sm px-4 py-2.5 text-sm font-bold text-black transition-colors";
     const primaryBtn =
- "inline-block bg-[#FF007F] text-white border-2 border-black rounded-box-sm px-4 py-2.5 text-sm font-bold active:translate-x-0.5 active:translate-y-0.5 transition-all";
+        "inline-block bg-[#FF007F] text-white border-2 border-black rounded-box-sm px-4 py-2.5 text-sm font-bold active:translate-x-0.5 active:translate-y-0.5 transition-all";
 
     /*
      * ⚠️ Kept for the SUBMIT step only. It used to sit on every asset, which
@@ -418,13 +475,17 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 : isSocialRejected
                   ? "rejected"
                   : hasAnySocialMedia
-                    ? (profileStatusLock == 1 ? "pending" : "done")
+                    ? profileStatusLock == 1
+                        ? "pending"
+                        : "done"
                     : "todo",
             approvedState: isSocialApproved ? 1 : 0,
             reason: slinks?.reason,
             action: (
                 <Social
-                    buttontext={isSocialRejected ? "Update handles" : "Add socials"}
+                    buttontext={
+                        isSocialRejected ? "Update handles" : "Add socials"
+                    }
                     classes={editorBtn}
                     links={slinks}
                 />
@@ -435,7 +496,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             label: "Photo",
             title: "Upload a profile photo",
             mins: 1,
-            description: "A clear photo of you — this is the first thing fans see.",
+            description:
+                "A clear photo of you — this is the first thing fans see.",
             hint: [
                 "A clear photo of you, face visible",
                 "No nudity or explicit content",
@@ -447,12 +509,18 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     : avatarStatus == 2
                       ? "rejected"
                       : creatorUser?.avatar
-                        ? (profileStatusLock == 1 ? "pending" : "done")
+                        ? profileStatusLock == 1
+                            ? "pending"
+                            : "done"
                         : "todo",
             approvedState: avatarStatus == 1 ? 1 : 0,
             action: (
                 <EditProfile
-                    text={avatarStatus == 2 ? "Upload a new photo" : "Upload photo"}
+                    text={
+                        avatarStatus == 2
+                            ? "Upload a new photo"
+                            : "Upload photo"
+                    }
                     updateProfileSteps={updateProfileSteps}
                     user={user}
                     classes={editorBtn}
@@ -477,7 +545,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     : bioStatus == 2
                       ? "rejected"
                       : creatorUser?.bio
-                        ? (profileStatusLock == 1 ? "pending" : "done")
+                        ? profileStatusLock == 1
+                            ? "pending"
+                            : "done"
                         : "todo",
             approvedState: bioStatus == 1 ? 1 : 0,
             reason: creatorUser?.edit_bio_reason || user?.edit_bio_reason,
@@ -496,8 +566,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             label: "Payment method",
             title: "Add your card",
             mins: 1,
-            description:
-                `${SUBSCRIPTION_COPY.promise} — then ${PRICE_FORMATTED} + VAT a month. Needed before we can verify you.`,
+            description: `${SUBSCRIPTION_COPY.promise} — then ${PRICE_FORMATTED} + VAT a month. Needed before we can verify you.`,
             hint: [
                 SUBSCRIPTION_COPY.reassurance,
                 "Cancel any time from your account settings",
@@ -611,7 +680,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             locked: creatorUser?.stripe_details_submitted != 1,
             lockReason: "Unlocks once your payouts are connected.",
             action: (
-                <Link className={primaryBtn} href="/stripe/identity-verification">
+                <Link
+                    className={primaryBtn}
+                    href="/stripe/identity-verification"
+                >
                     {identityError
                         ? "Try verification again"
                         : creatorUser?.identity_status == 2
@@ -645,6 +717,27 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         (s) => s.state === "rejected" || (s.state === "todo" && !s.locked),
     );
     const upcoming = steps.filter((s) => s.state === "todo" && s.locked);
+
+    /*
+     * 🚨 A finding must reach the creator even when its step is NOT rendered as
+     * an action card. A submitted profile's bio step is `pending` and renders as
+     * a collapsed "In review" row — which is exactly the creator this screen was
+     * built for (they submitted the wording that will hold them up). Anything
+     * without a visible card lands in the panel at the top instead.
+     */
+    const needsYouKeys = new Set(needsYou.map((s) => s.key));
+    const stepStateByKey = Object.fromEntries(
+        steps.map((s) => [s.key, s.state]),
+    );
+    const topFindings = [
+        ...selfCheckOrphans,
+        ...Object.entries(selfCheckByStep)
+            .filter(
+                ([key]) =>
+                    !needsYouKeys.has(key) && stepStateByKey[key] !== "done",
+            )
+            .flatMap(([, findings]) => findings),
+    ];
     const rejectedCount = needsYou.filter((s) => s.state === "rejected").length;
 
     return (
@@ -680,10 +773,12 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     <p className="text-[13px] font-bold uppercase tracking-wide text-[#FF007F]">
                         Your profile was not approved
                     </p>
-                    <p className="mt-1 text-sm text-black">{profileRejectReason}</p>
+                    <p className="mt-1 text-sm text-black">
+                        {profileRejectReason}
+                    </p>
                     <p className="mt-2 text-sm text-black/70">
-                        Fix the point above, then submit again — you do not have to
-                        redo anything else.
+                        Fix the point above, then submit again — you do not have
+                        to redo anything else.
                     </p>
                 </div>
             ) : null}
@@ -695,8 +790,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         Your profile is being verified
                     </p>
                     <p className="mt-1 text-sm text-black/80">
-                        Our team is checking it now. You will get an email as soon
-                        as it is decided — there is nothing else to do.
+                        Our team is checking it now. You will get an email as
+                        soon as it is decided — there is nothing else to do.
                     </p>
                 </div>
             ) : null}
@@ -709,6 +804,28 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                       : `${doneCount} of ${steps.length} done — the rest is with our team.`}
             </p>
 
+            {/*
+                Findings whose step has no visible action card below — a pending
+                (submitted) step's collapsed row, or an asset with no step of its
+                own (the cover banner). Amber, and it names the fix — the creator
+                can edit and resubmit instead of waiting for the rejection.
+            */}
+            {topFindings.length > 0 && (
+                <div className="mb-4 rounded-box-sm border-2 border-black bg-[#FFF6D6] p-4">
+                    <p className="text-[13px] font-bold uppercase tracking-wide text-black">
+                        {topFindings.some((f) => f.severity === "blocking")
+                            ? "This is likely to hold up your review"
+                            : "Worth a look before review"}
+                    </p>
+                    {topFindings.map((f, i) => (
+                        <p key={i} className="mt-1 text-sm text-black/80">
+                            <span className="font-bold">{f.label}: </span>
+                            {f.message}
+                        </p>
+                    ))}
+                </div>
+            )}
+
             <MilestoneRail milestones={steps} activeIndex={activeMilestone} />
 
             {onboardingComplete ? (
@@ -717,8 +834,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     <div>
                         <p className="font-bold text-black">You’re all set!</p>
                         <p className="text-gray-700 text-sm mt-0.5">
-                            Your creator account is fully verified. Start posting
-                            content and earning.
+                            Your creator account is fully verified. Start
+                            posting content and earning.
                         </p>
                     </div>
                 </div>
@@ -729,8 +846,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             <span className="text-lg">⚠️</span>
                             <p className="text-sm font-bold text-red-700">
                                 {rejectedCount} step
-                                {rejectedCount > 1 ? "s need" : " needs"} a quick
-                                fix — the reason is on the card
+                                {rejectedCount > 1 ? "s need" : " needs"} a
+                                quick fix — the reason is on the card
                                 {rejectedCount > 1 ? "s" : ""} below.
                             </p>
                         </div>
@@ -744,7 +861,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                     : "Do this next"}
                             </SectionHeading>
                             {needsYou.map((s) => (
-                                <ActionCard key={s.key} step={s} />
+                                <ActionCard
+                                    key={s.key}
+                                    step={s}
+                                    selfCheck={selfCheckByStep[s.key]}
+                                />
                             ))}
                         </>
                     )}

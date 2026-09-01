@@ -58,7 +58,19 @@ class SecurityHeaders
         }
 
         $response->headers->set('X-Content-Type-Options', 'nosniff');
-        $response->headers->set('X-Frame-Options', 'DENY');
+
+        /*
+         * ⚠️ DENY unless the response already says SAMEORIGIN. The ONE page that
+         * frames itself is the bio editor's live preview (BioPageController sets
+         * SAMEORIGIN on an owner-only preview render). Same guard shape as the
+         * Referrer-Policy rule below: a value a controller set on purpose is
+         * never overwritten here. `frame-ancestors` follows it so the two
+         * headers cannot disagree.
+         */
+        if (! $response->headers->has('X-Frame-Options')) {
+            $response->headers->set('X-Frame-Options', 'DENY');
+        }
+        $frameSelf = $response->headers->get('X-Frame-Options') === 'SAMEORIGIN';
 
         /*
          * 🚨 NEVER OVERWRITE A REFERRER-POLICY THE RESPONSE ALREADY CARRIES.
@@ -142,7 +154,7 @@ class SecurityHeaders
 
             $response->headers->set(
                 $enforce ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only',
-                $this->contentSecurityPolicy($nonce)
+                $this->contentSecurityPolicy($nonce, $frameSelf)
             );
         }
 
@@ -156,7 +168,7 @@ class SecurityHeaders
      * When you add a third-party script, add its host here in the same change —
      * a missing host is invisible until a real user hits it.
      */
-    private function contentSecurityPolicy(string $nonce): string
+    private function contentSecurityPolicy(string $nonce, bool $frameSelf = false): string
     {
         // See assetOrigin(): on Vapor the app's own bundle is NOT same-origin.
         $asset = $this->assetOrigin();
@@ -226,7 +238,7 @@ class SecurityHeaders
          * ccTLD list (~190 entries) would push a already-4KB header past what some
          * proxies will forward, to authorise hosts nobody has ever reached.
          */
-        $googleAds = 'https://www.googleadservices.com https://googleads.g.doubleclick.net https://ad.doubleclick.net https://stats.g.doubleclick.net https://*.doubleclick.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://www.google.com https://google.com https://www.google.co.uk https://www.google.ie https://www.google.com.br https://www.google.nl';
+        $googleAds = 'https://www.googleadservices.com https://googleads.g.doubleclick.net https://ad.doubleclick.net https://stats.g.doubleclick.net https://*.doubleclick.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://www.google.com https://google.com https://www.google.co.uk https://www.google.ie https://www.google.com.br https://www.google.nl https://www.google.com.np';
 
         /*
          * ⚠️ Termly's consent API is on its OWN regional subdomain
@@ -241,9 +253,9 @@ class SecurityHeaders
             "base-uri 'self'",
             "object-src 'none'",
 
-            // Clickjacking. Mirrors X-Frame-Options: DENY above — nothing in this
-            // app frames itself, and the two headers must not disagree.
-            "frame-ancestors 'none'",
+            // Clickjacking. Mirrors X-Frame-Options above — the two headers must
+            // not disagree. 'self' only for the bio editor's own preview frame.
+            $frameSelf ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
 
             // Stripe Checkout and the Billing portal are reached by redirect, but
             // a form POST to them is listed so a future hosted-form flow does not

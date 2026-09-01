@@ -41,6 +41,12 @@ const CHECKS = [
      * always looks fine on its own page and wrong beside the next one.
      */
     ['no shadows, only borders', 'check-no-shadows.mjs'],
+    /*
+     * The phone's bottom bar is z 999999. Anything pinned to the foot of the
+     * screen below that number is under it — and the thing at the foot of a
+     * panel is nearly always its button. Three found live in one day.
+     */
+    ['nothing under the bottom bar', 'check-bottom-bar.mjs'],
 ];
 
 let failed = 0;

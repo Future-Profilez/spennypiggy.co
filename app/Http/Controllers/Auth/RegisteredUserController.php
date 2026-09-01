@@ -350,11 +350,12 @@ class RegisteredUserController extends Controller
         // hand-typed copy up front collected worse data at the point where it
         // cost the most sign-ups. The old rules also required a street address
         // of at least 20 characters, which a genuine short address fails.
-        if ($request->role == 0) {
-            $request->validate([
-                'country' => 'required|string',
-            ]);
-        }
+        // ⚠️ Both roles since 31 Aug 2026. Creators were never asked, so `users.country`
+        // stayed NULL until Stripe Connect and every read of it before then (shipping
+        // zones, the AE business-type check) got `undefined`.
+        $request->validate([
+            'country' => 'required|string',
+        ]);
 
         if ($request->role == 1) {
             $request->validate([

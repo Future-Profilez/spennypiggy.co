@@ -59,6 +59,9 @@ class AnalyticsFunnelEventsTest extends TestCase
             'email' => 'newcreator@gmail.com',
             'password' => 'Str0ng-Passw0rd!',
             'password_confirmation' => 'Str0ng-Passw0rd!',
+            // Required for creators since 31 Aug 2026.
+            'country' => 'GB',
+            'country_code' => 'GB',
             'role' => 1,
             'creator_email_receipt_ack' => true,
             'gender' => 'they',
@@ -89,6 +92,9 @@ class AnalyticsFunnelEventsTest extends TestCase
             'email' => 'onceonly@gmail.com',
             'password' => 'Str0ng-Passw0rd!',
             'password_confirmation' => 'Str0ng-Passw0rd!',
+            // Required for creators since 31 Aug 2026.
+            'country' => 'GB',
+            'country_code' => 'GB',
             'role' => 1,
             'creator_email_receipt_ack' => true,
             'gender' => 'they',

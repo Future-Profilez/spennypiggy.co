@@ -131,7 +131,7 @@ export default function ActivateSubscription(props) {
             {/* One column, one decision. The page previously nested four bordered
                 panels inside each other and repeated the price in four places —
                 when every element is emphasised, none of them is. */}
-            <div className="bg-[#A2E4B8] min-h-dvh py-10 md:py-16 pb-40 lg:pb-16">
+            <div className="bg-[#A2E4B8] min-h-dvh py-10 md:py-16">
                 <div className="mx-auto w-full max-w-3xl px-4">
 
                     <p className="text-[12px] font-black uppercase tracking-[0.22em] text-black/60">
@@ -209,8 +209,15 @@ export default function ActivateSubscription(props) {
                                     </p>
                                 )}
 
-                                {/* Desktop CTA — mobile has the thumb-reachable bar. */}
-                                <div className="mt-5 hidden lg:block">
+                                {/* 🚨 ONE CTA, IN THE FLOW, AT EVERY WIDTH (31 Aug 2026,
+                                    client direction). The phone used to get a
+                                    `fixed bottom-0 z-40` bar instead — and the app's
+                                    bottom nav is `z-index: 999999`, so on every
+                                    signed-in phone the bar sat UNDER the nav with its
+                                    button cut off. A control near the foot of a phone
+                                    screen lives in the flow; see the bio editor's
+                                    preview sheet for the same rule. */}
+                                <div className="mt-5">
                                     <LoaderButton
                                         onClick={buttonAction}
                                         disabled={loading}
@@ -251,22 +258,6 @@ export default function ActivateSubscription(props) {
                 </div>
             </div>
 
-            {/* Mobile sticky CTA — thumb-reachable, clear of iOS safe area */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t-[3px] border-black px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-                <div className="flex items-center gap-3 max-w-xl mx-auto">
-                    <div className="flex-shrink-0">
-                        <p className="text-[12px] font-bold uppercase tracking-widest text-black/60 leading-none mb-1">{freeRun ? 'Today' : 'Due today'}</p>
-                        <p className="text-xl font-black text-black leading-none tabular-nums">{dueToday}</p>
-                    </div>
-                    <LoaderButton
-                        onClick={buttonAction}
-                        disabled={loading}
-                        className={`flex-1 min-h-[52px] !rounded-box-sm bg-[#FF007F] text-black font-black py-3 border-[3px] border-black active:translate-x-[2px] active:translate-y-[2px] transition-all uppercase tracking-widest text-base ${loading ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
-                    >
-                        {loading ? 'Processing…' : buttonLabel}
-                    </LoaderButton>
-                </div>
-            </div>
         </Authenticated>
     )
 }

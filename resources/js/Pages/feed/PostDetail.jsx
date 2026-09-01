@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, Fragment } from "react";
+import useHideBottomBar from "@/hooks/useHideBottomBar";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import { Link, usePage, router } from "@inertiajs/react";
 import { toast } from "react-hot-toast";
@@ -66,6 +67,8 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
     const [lcount, setlcount] = useState(post?.likes_count || 0);
     const [ccount, setccount] = useState(post?.comments_count || 0);
     const [lightboxIndex, setLightboxIndex] = useState(-1);
+    // z-[9999] is still under the z-999999 bottom bar; hide it while the lightbox is open.
+    useHideBottomBar(lightboxIndex >= 0);
     const commentsRef = useRef(null);
     const [isPinned, setIsPinned] = useState(post?.is_pinned || false);
     const [editing, setEditing] = useState(false);
@@ -538,6 +541,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                     role="dialog"
                     aria-modal="true"
                     aria-label="Post image"
+                    // bottom-bar-safe: useHideBottomBar(lightboxIndex >= 0) hides the bar while open
                     className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 p-4 md:p-8"
                     onClick={() => setLightboxIndex(-1)}
                 >

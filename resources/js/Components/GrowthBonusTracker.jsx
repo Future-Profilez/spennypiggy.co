@@ -81,12 +81,36 @@ export default function GrowthBonusTracker({ data }) {
 
     // ── In the activation window ──
     if (data.status === "pending") {
+        /*
+         * 🚨 THE HEADLINE MUST NOT NAME A TARGET THE CREATOR HAS ALREADY PASSED.
+         * `qualifying_gmv` is computed LIVE on every render; `status` only moves
+         * when the evaluator runs (the queued job, or the daily 09:20 sweep). In
+         * the gap between the two, this card read "Earn £100 to unlock £25" to a
+         * creator sitting at £108 — directly above a "To go" of £141.53, which is
+         * the distance to the NEXT rung. One card, two rungs, contradicting
+         * itself, on the screen whose whole job is to say where they stand.
+         *
+         * ⚠️ `awaiting_evaluation` ALONE IS NOT THE TEST — it is true whenever the
+         * live figure has moved past the stored one, including well below the
+         * threshold. The crossing is what changes what the headline may claim.
+         */
+        const crossed = Number(data.qualifying_gmv) >= Number(data.activation_gmv);
+
         return (
             <Shell ground="#8C52FF">
                 <Eyebrow>Growth Bonus</Eyebrow>
                 <h3 className="font-gulfs text-lg uppercase leading-tight text-black md:text-2xl">
-                    Earn {money(data.activation_gmv)} to unlock{" "}
-                    {money(data.next_reward ?? 0)}
+                    {crossed ? (
+                        <>
+                            {money(data.activation_gmv)} reached — confirming your{" "}
+                            {money(data.first_reward ?? data.next_reward ?? 0)}
+                        </>
+                    ) : (
+                        <>
+                            Earn {money(data.activation_gmv)} to unlock{" "}
+                            {money(data.next_reward ?? 0)}
+                        </>
+                    )}
                 </h3>
 
                 <Meter pct={data.progress_pct} />

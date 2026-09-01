@@ -34,6 +34,7 @@ use App\Models\AppService;
 use App\Models\Deliverable;
 use App\Models\Shop;
 use App\Models\User;
+use App\Support\AlertRouter;
 use App\Support\MarketingConsent;
 use Illuminate\Contracts\Mail\Mailable;
 use Illuminate\Support\Facades\Log;
@@ -563,12 +564,21 @@ class EmailService
     public static function sendIntroApprovingMailAdmin($intro)
     {
         try {
-            $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
-            if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
-                Mail::to('prem@futureprofilez.com')->send(new SendAdminIntroMail($intro));
-            } elseif ($appUrl == 'https://spennypiggy.co') {
-                Mail::to('jack@spennypiggy.co')->send(new SendAdminIntroMail($intro));
+            /*
+             * 🚨 These were two hardcoded addresses behind an APP_URL match, so
+             * changing who reviews intro videos was a code deploy — and any host
+             * whose URL was not one of the four literals (a preview, a renamed
+             * dev domain) silently sent to nobody at all.
+             */
+            $recipients = AlertRouter::recipients('creator_intro_submitted');
+
+            if (empty($recipients)) {
+                Log::info('EmailService::sendIntroApprovingMailAdmin - channel has no recipients, not sent');
+
+                return;
             }
+
+            Mail::to($recipients)->send(new SendAdminIntroMail($intro));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -612,9 +622,14 @@ class EmailService
     public static function featureSuggestion($data)
     {
         try {
-            $emails = app()->environment('production')
-                ? (array) config('alerts.production', [])
-                : (array) config('alerts.non_production', []);
+            $emails = AlertRouter::recipients('feature_suggestions');
+
+            if (empty($emails)) {
+                Log::info('EmailService::featureSuggestion - channel has no recipients, not sent');
+
+                return;
+            }
+
             Mail::to($emails)->send(new FeatureSuggestionMail($data));
 
             Log::info('EmailService::featureSuggestion - Email sent successfully', [

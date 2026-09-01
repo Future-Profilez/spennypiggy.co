@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\FinancialTransaction;
 use App\Models\Post;
 use App\Models\User;
+use App\Support\ProfileAssetVisibility;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
@@ -57,11 +58,34 @@ class CreatorJourneyService
             'route' => 'account',
             'params' => ['edit' => 'profile'],
         ],
+        'social' => [
+            'title' => 'Add a social handle',
+            'body' => 'One account you actually post on. It is how the review team checks you are who your page says.',
+            'cta' => 'Add a social handle',
+            // The socials editor lives on the creator's own profile (CreatorVerification),
+            // and `dashboard` redirects there with the query string intact.
+            'route' => 'dashboard',
+            'params' => [],
+        ],
         'subscription' => [
             'title' => 'Add your card',
             'body' => 'Takes a minute, and you are not charged until your first sale.',
             'cta' => 'Add your card',
             'route' => 'activate-subscription',
+            'params' => [],
+        ],
+        'review' => [
+            'title' => 'Submit your profile for review',
+            'body' => 'Photo, bio, handle and card are in — send it to the team. Payouts unlock once it is approved.',
+            'cta' => 'Submit for review',
+            // 🚨 THIS STEP IS WHAT WAS MISSING (31 Aug 2026). `ProfileController::
+            // updateProfileLockStatus` is the only thing that puts a creator in the review
+            // queue (`profile_status_lock` 0 → 1), and it is a manual click. The journey
+            // used to treat "photo and bio uploaded" as "under review", so a creator who
+            // did both and stopped read "Nothing to do — we check every photo and bio"
+            // while sitting in no queue at all. Measured on the live DB: that was the
+            // stall for most of the August ad-campaign signups.
+            'route' => 'update.profile.lock.status',
             'params' => [],
         ],
         'stripe' => [
@@ -118,20 +142,51 @@ class CreatorJourneyService
      * them a reason for the wait rather than silence.
      */
     public const REVIEW_COPY = [
-        'profile' => [
+        'review' => [
             'title' => 'Your profile is being reviewed',
-            'body' => 'Nothing to do — we check every photo and bio before it goes live. This is usually quick.',
+            'body' => 'Nothing to do — the team checks every photo, bio and handle before a page goes live. This is usually quick.',
             'cta' => null,
             'route' => null,
             'params' => [],
         ],
+        // ⚠️ Status 2 is written when the Stripe session is CREATED, not when a document is
+        // submitted, and Stripe emits no event for a closed tab — so "waiting" here can
+        // also mean "walked away". The copy therefore keeps a way back in; the identity
+        // page itself offers "Start again" for exactly this case.
         'identity' => [
             'title' => 'Your ID check is being processed',
-            'body' => 'Nothing to do — we are waiting on the result. You will be told either way.',
+            'body' => 'Stripe usually answers within minutes and we will tell you either way. Did not finish the passport check? Pick it up again.',
+            'cta' => 'Resume ID check',
+            'route' => 'stripe.identity.verification',
+            'params' => [],
+        ],
+    ];
+
+    /**
+     * A step the creator cannot move on their own — a person has said no, and the next
+     * move is a conversation, not a click. Rendered instead of the task copy, never nudged.
+     */
+    public const BLOCKED_COPY = [
+        // 3 = flagged by Stripe's fraud signals. Retrying is another billable check with
+        // the same answer; support can look at the actual reason.
+        'identity' => [
+            'title' => 'We could not verify your ID',
+            'body' => 'Your identity check did not pass the security review. Message support from the chat bubble and we will sort it out with you.',
             'cta' => null,
             'route' => null,
             'params' => [],
         ],
+    ];
+
+    /**
+     * A rejected profile submission. The stored reason is what the reviewer wrote for the
+     * creator, so it is the body — a generic "needs changes" would send them hunting.
+     */
+    public const REJECTED_REVIEW_COPY = [
+        'title' => 'Your profile needs a change before it can go live',
+        'cta' => 'Fix and resubmit',
+        'route' => 'dashboard',
+        'params' => [],
     ];
 
     /**
@@ -184,9 +239,14 @@ class CreatorJourneyService
         $query = User::query()
             ->where('role', 1)
             ->where('suspended_account', 0)
-            // ⚠️ `profile_status_lock = 1` is a PUNISHMENT, not a review state — it delists
-            // everything the creator sells. Coaching them to finish setting up is the wrong
-            // message entirely. Same exclusion as the admin drip.
+            // ⚠️ `profile_status_lock = 1` is "submitted, with the review team" — written by
+            // `ProfileController::updateProfileLockStatus`, cleared back to 0 by an admin
+            // rejection (with `profile_reject_reason`) or to 2 by an approval. While it is
+            // set the creator has done their part, and `nextStep()` reports `awaiting_review`
+            // for the `review` step; mailing them "finish setting up" would be asking for work
+            // already handed in. For an already-approved creator the same value is also a
+            // demotion that delists everything they sell — either way, not a coaching moment.
+            // Same exclusion as the admin drip.
             ->where('profile_status_lock', '!=', 1)
             // Never mail an address nobody has confirmed: a guaranteed bounce against our
             // sending reputation. The verification reminder is the right message for them.
@@ -221,6 +281,12 @@ class CreatorJourneyService
         }
 
         if (empty($creator->journey_step_at)) {
+            return null;
+        }
+
+        // A step a person has said no to is not "stuck"; chasing it is asking the creator
+        // to retry a check that will answer the same way.
+        if ($this->isBlocked($creator, $step)) {
             return null;
         }
 
@@ -275,7 +341,7 @@ class CreatorJourneyService
 
         $waiting = $this->isAwaitingReview($creator, $step);
 
-        return ['key' => $step] + ($waiting ? self::REVIEW_COPY[$step] : self::STEPS[$step]) + [
+        return ['key' => $step] + $this->copyFor($creator, $step, $waiting) + [
             'position' => array_search($step, array_keys(self::STEPS), true) + 1,
             'total' => count(self::STEPS),
 
@@ -290,6 +356,38 @@ class CreatorJourneyService
             // them the next move, not the other way round.
             'awaiting_review' => $waiting,
         ];
+    }
+
+    /**
+     * Which wording a step renders with: the task, the "with us" copy, the blocked copy, or
+     * — for a rejected profile submission — the reviewer's own reason.
+     *
+     * @return array{title: string, body: string, cta: ?string, route: ?string, params: array}
+     */
+    private function copyFor(User $creator, string $step, bool $waiting): array
+    {
+        if ($waiting && $this->isBlocked($creator, $step)) {
+            return self::BLOCKED_COPY[$step];
+        }
+
+        if ($waiting) {
+            return self::REVIEW_COPY[$step];
+        }
+
+        if ($step === 'review' && filled($creator->profile_reject_reason)) {
+            return self::REJECTED_REVIEW_COPY + ['body' => (string) $creator->profile_reject_reason];
+        }
+
+        return self::STEPS[$step];
+    }
+
+    /**
+     * The step is stopped by a decision the creator cannot reverse themselves.
+     * Reported through `awaiting_review` so every "do not nudge" rule already covers it.
+     */
+    public function isBlocked(User $creator, string $step): bool
+    {
+        return $step === 'identity' && (int) ($creator->identity_status ?? 0) === 3;
     }
 
     /**
@@ -332,13 +430,13 @@ class CreatorJourneyService
     public function isAwaitingReview(User $creator, string $step): bool
     {
         return match ($step) {
-            // Submitted something on both halves, and at least one is still unapproved.
-            'profile' => (! empty($creator->avatar) || ! empty($creator->bio))
-                && ! $this->isDone($creator, 'profile')
-                && empty($this->missingProfileParts($creator)),
+            // 1 = submitted by the creator, not yet decided. 🚨 Keyed on the LOCK, never on
+            // "photo and bio are filled in" — uploading both puts nobody in a queue.
+            'review' => (int) ($creator->profile_status_lock ?? 0) === 1,
 
-            // 2 = submitted, awaiting Stripe's answer (0 failed, 1 verified, 3 flagged).
-            'identity' => (int) ($creator->identity_status ?? 0) === 2,
+            // 2 = session opened, waiting on Stripe's answer (0 failed, 1 verified).
+            // 3 = flagged: also "not the creator's move", see isBlocked().
+            'identity' => in_array((int) ($creator->identity_status ?? 0), [2, 3], true),
 
             default => false,
         };
@@ -380,9 +478,18 @@ class CreatorJourneyService
     public function isDone(User $creator, string $step): bool
     {
         return match ($step) {
-            // Both halves are reviewed by an admin, so this is "approved", not "uploaded".
-            'profile' => (int) ($creator->avatar_approved ?? 0) === 1
-                && (int) ($creator->bio_approved ?? 0) === 1,
+            // 🚨 "Uploaded", NOT "approved". Approval is what the `review` step waits on;
+            // reading the approved flags here made a creator with both halves filled in
+            // look stuck on a step they had finished. `avatar_approved` and `bio_approved`
+            // also flip independently of `profile_status_lock` (a creator at lock 1 can
+            // carry an approved avatar — ProfileAssetVisibility), so they were never a
+            // reliable proxy for "the page is live" either.
+            'profile' => empty($this->missingProfileParts($creator)),
+
+            'social' => ProfileAssetVisibility::hasAnyHandle($creator->social_links),
+
+            // 2 = approved and live. Only an admin writes it.
+            'review' => (int) ($creator->profile_status_lock ?? 0) === 2,
 
             'identity' => (int) ($creator->identity_status ?? 0) === 1,
 

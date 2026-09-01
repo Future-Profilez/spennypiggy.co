@@ -1052,6 +1052,20 @@ class UserProfileService
     /**
      * Get user's total earnings with caching
      */
+    /**
+     * The ONE eviction for the earnings cache.
+     *
+     * 🚨 Static, because every caller is a model event in `AppServiceProvider`
+     * firing inside a checkout or a webhook — resolving the service out of the
+     * container there is work to delete one key. `$cacheKey` below and this
+     * method must always name the same thing; bump them together.
+     */
+    public static function forgetEarnings(int $userId): void
+    {
+        Cache::forget('user_earnings_v2_'.$userId);
+        Cache::forget('user_supporters_count_v2_'.$userId);
+    }
+
     public function getUserEarnings(int $userId): array
     {
         $cacheKey = 'user_earnings_v2_'.$userId;

@@ -1154,6 +1154,12 @@ Route::withoutMiddleware([])->group(function () {
             // sheet that still has a `verify` row — so "published" and "checked"
             // can no longer drift apart the way the by-name rule above assumes.
             ['url' => '/creators/vs/throne', 'priority' => '0.7', 'changefreq' => 'monthly'],
+            // Published 31 Aug 2026. Sourced to WishTender's own posts; no fee
+            // table and no `verify` row, which the publish guard enforces.
+            ['url' => '/creators/vs/wishtender', 'priority' => '0.7', 'changefreq' => 'monthly'],
+            // Published 31 Aug 2026 once all five fee rows were cleared against
+            // Linktree's own pages. See the sheet's docblock.
+            ['url' => '/creators/vs/linktree', 'priority' => '0.7', 'changefreq' => 'monthly'],
         ];
 
         $content = '<?xml version="1.0" encoding="UTF-8"?>'."\n";

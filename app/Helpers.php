@@ -17,6 +17,7 @@ use App\Services\Discovery\AttributionService;
 use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\RewardService;
 use App\Services\Risk\EffectiveLimitsService;
+use App\Support\AlertRouter;
 use App\Support\NotificationRecorder;
 use App\Support\PushReachability;
 use App\Support\RiskMessages;
@@ -54,62 +55,22 @@ class Helpers
      *
      * @return array<int, string>
      */
-    public static function getAdminEmails(): array
+    public static function getAdminEmails(string $channel = 'dispute_alerts'): array
     {
-        $configured = config('app.admin_emails') ?? config('services.admin_emails');
-        $configured = is_array($configured) ? $configured : [];
-
-        if (empty($configured)) {
-            // Recipients live in config/alerts.php, mirrored in the admin app under the
-            // same env variable names — both apps send internal alerts.
-            $configured = app()->environment('production')
-                ? (array) config('alerts.production', [])
-                : (array) config('alerts.non_production', []);
-        }
-
         /*
-         * Also notify everyone who actually signs into the admin panel.
+         * Kept as the name ~a dozen call sites already use; the routing itself
+         * moved to App\Support\AlertRouter (channels in config/alerts.php,
+         * recipients in the `alert_routes` table, edited from the admin panel).
          *
-         * These alerts are delivered by MagicBell keyed on the recipient's email,
-         * and the admin panel's bell subscribes as the logged-in admin's own
-         * address. With only the configured env list, a fraud or dispute alert
-         * reached a shared mailbox but never appeared in the panel of the person
-         * looking at it — which is where they are meant to act on it.
+         * ⚠️ The default channel is `dispute_alerts` because that is what the
+         * historical callers were: a bare call means "the people who handle a
+         * payment problem". Pass the channel explicitly in new code.
          *
-         * Only roles that can act on the alert are included. A CSM or a read-only
-         * auditor cannot refund a payment or answer a dispute, so adding them
-         * turns a time-critical alert into noise for people who must ignore it.
-         *
-         * Disabled admins are excluded: an account we have just blocked from
-         * signing in should not keep receiving security alerts.
-         *
-         * ⚠️ Role IDs live in admin.spennypiggy.co's Admin model and are read
-         * here out of the SHARED database. If they change there, change them
-         * here — the two apps share data, not code.
+         * The old behaviour — config list plus every actionable admin account —
+         * is now the CHANNEL's own default (roles 1/3/4 in the catalogue) plus
+         * AlertRouter's fallback to config/alerts.php, so nothing was lost.
          */
-        $rolesThatCanAct = [
-            1, // Super Admin
-            3, // Finance
-            4, // Support
-        ];
-
-        try {
-            $adminAccounts = Admin::query()
-                ->whereNull('deleted_at')
-                ->whereNull('disabled_at')
-                ->whereIn('role', $rolesThatCanAct)
-                ->pluck('email')
-                ->all();
-        } catch (\Throwable $e) {
-            // An alert must never fail because of the recipient lookup — but a
-            // silent shrink to the static list on schema drift must be visible.
-            \Log::warning('getAdminEmails: admin lookup failed, falling back to configured list', [
-                'error' => $e->getMessage(),
-            ]);
-            $adminAccounts = [];
-        }
-
-        return array_values(array_unique(array_filter(array_merge($configured, $adminAccounts))));
+        return AlertRouter::recipients($channel);
     }
 
     /**

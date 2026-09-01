@@ -1,6 +1,7 @@
 import HelpLink from "@/Components/Help/HelpLink";
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { usePage } from "@inertiajs/react";
+import useHideBottomBar from "@/hooks/useHideBottomBar";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import LazyVideo from "../../Components/LazyVideo";
 import { useVideoPoster } from "../../utils/videoPoster";
@@ -513,6 +514,7 @@ export default function PurchasesHub({
                 background: "linear-gradient(160deg, #fdf6ff 0%, #f0f4ff 40%, #fff5fb 100%)",
             }}>
             {/* Subtle decorative orbs */}
+            {/* bottom-bar-safe: decorative, pointer-events-none — nothing to tap */}
             <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
                 <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full opacity-20" style={{ background: `radial-gradient(circle, ${ACCENT}44 0%, transparent 70%)` }} />
                 <div className="absolute top-1/3 -left-32 w-[400px] h-[400px] rounded-full opacity-15" style={{ background: `radial-gradient(circle, ${ACCENT2}44 0%, transparent 70%)` }} />
@@ -656,6 +658,9 @@ function FilterChip({ active, onClick, label, color = "#71717A", Icon }) {
 
 /* ---------------- Dialogs ---------------- */
 function Backdrop({ children, onClose, reduce }) {
+    // The sheet rises from the foot of the screen (`items-end`), straight into
+    // the bottom bar. Hide the bar while it is open.
+    useHideBottomBar(true);
     useEffect(() => {
         const onKey = (e) => e.key === "Escape" && onClose();
         window.addEventListener("keydown", onKey);
@@ -664,6 +669,7 @@ function Backdrop({ children, onClose, reduce }) {
         return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
     }, [onClose]);
     return (
+        // bottom-bar-safe: useHideBottomBar(true) in Backdrop hides the bar while open
         <motion.div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-6"
             initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }} onClick={onClose}
@@ -783,6 +789,8 @@ function Lightbox({ items, index, onIndex, onClose, reduce }) {
         return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
     }, [go, onClose]);
 
+    useHideBottomBar(Boolean(item));
+
     if (!item) return null;
     const c = cat(item.source_type);
     const multi = items.length > 1;
@@ -796,6 +804,7 @@ function Lightbox({ items, index, onIndex, onClose, reduce }) {
     };
 
     return (
+        // bottom-bar-safe: useHideBottomBar(Boolean(item)) hides the bar while open
         <motion.div
             className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex flex-col"
             initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}

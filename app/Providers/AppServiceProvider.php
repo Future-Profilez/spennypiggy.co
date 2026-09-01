@@ -3,12 +3,14 @@
 namespace App\Providers;
 
 use App\Channels\MagicBellChannel;
+use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\Deliverable;
 use App\Models\Dispute;
 use App\Models\Follow;
 use App\Models\GifterCardVerification;
 use App\Models\Membership;
+use App\Models\MembershipPayment;
 use App\Models\MonthlyCharge;
 use App\Models\Payment;
 use App\Models\PiggyPot;
@@ -19,10 +21,12 @@ use App\Models\PostLike;
 use App\Models\Shop;
 use App\Models\ShopPayment;
 use App\Models\SocialLinks;
+use App\Models\StripePaymentDetail;
 use App\Models\Subscription;
 use App\Models\SubscriptionEvent;
 use App\Models\Task;
 use App\Models\TipGoal;
+use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\UserCategory;
 use App\Models\UserIntro;
@@ -34,6 +38,7 @@ use App\Observers\DeliverableObserver;
 use App\Services\BioPageService;
 use App\Services\ResourcePreloadService;
 use App\Services\Ssr\TimeoutGateway;
+use App\Services\UserProfileService;
 use App\Support\Testing\OfflineStripeHttpClient;
 use Illuminate\Contracts\Validation\UncompromisedVerifier;
 use Illuminate\Http\Client\Factory as HttpFactory;
@@ -305,6 +310,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $this->registerBioCacheBusting();
+        $this->registerEarningsCacheBusting();
     }
 
     /**
@@ -348,6 +354,69 @@ class AppServiceProvider extends ServiceProvider
 
                     if ($ownerId > 0) {
                         BioPageService::forgetCachesForUserId($ownerId);
+                    }
+                }, report: false);
+            };
+
+            $model::saved($forget);
+            $model::deleted($forget);
+        }
+    }
+
+    /**
+     * Drop the profile's `TOTAL EARNED` cache the moment a payment row lands.
+     *
+     * 🚨 `UserProfileService::getUserEarnings()` IS CACHED 600s AND NOTHING WAS
+     * CLEARING IT FOR MOST MODULES. `ActivityObserver::clearEarningsCache()` was
+     * written for exactly this and handles all six payment models — but
+     * `TipGoalsPayment`, `BillPayment`, `MembershipPayment` and
+     * `StripePaymentDetail` are all COMMENTED OUT of `$activityLogModels` (and
+     * absent from `EventServiceProvider`'s list too), so the observer is never
+     * attached to them and four of that method's six branches are unreachable.
+     * A creator watched a tip land and their own profile went on reporting the
+     * figure from before it, for up to ten minutes, with nothing wrong anywhere.
+     *
+     * ⚠️ THIS IS DELIBERATELY NOT "un-comment those models". Attaching
+     * `ActivityObserver` also switches on full activity LOGGING for every
+     * payment write, which is a different feature with a different cost — those
+     * lines were commented out on purpose. This hooks the one thing that is
+     * wrong.
+     *
+     * ⚠️ Owner resolution differs per model and two of them need a relation
+     * (`BillPayment` and `MembershipPayment` reach the creator through the
+     * listing). One extra query on a payment save is acceptable; a stale figure
+     * on the creator's own page is not.
+     *
+     * ⚠️ `saved`, not `created`: a webhook flipping a row to `paid` minutes
+     * after it was written is exactly when the total changes.
+     *
+     * 🚨 Nothing here may throw — every one of these rows is written inside a
+     * checkout or a Stripe webhook, and a cache key must never be why a payment
+     * fails to record. Same house pattern as the bio busting above.
+     */
+    private function registerEarningsCacheBusting(): void
+    {
+        // The six models `getUserEarnings()` actually sums. Keep in step with it.
+        $owners = [
+            TipGoalsPayment::class => fn ($row) => $row->creator_id,
+            StripePaymentDetail::class => fn ($row) => $row->owner_id,
+            BillPayment::class => fn ($row) => $row->bill?->user_id,
+            MembershipPayment::class => fn ($row) => $row->membership?->user_id,
+            WishItemSubscription::class => fn ($row) => $row->wish_item?->user_id,
+            ShopPayment::class => fn ($row) => $row->shop?->user_id,
+        ];
+
+        foreach ($owners as $model => $resolve) {
+            if (! class_exists($model)) {
+                continue;
+            }
+
+            $forget = function ($row) use ($resolve) {
+                rescue(function () use ($row, $resolve) {
+                    $creatorId = (int) ($resolve($row) ?? 0);
+
+                    if ($creatorId > 0) {
+                        UserProfileService::forgetEarnings($creatorId);
                     }
                 }, report: false);
             };

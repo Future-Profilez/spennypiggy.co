@@ -9,6 +9,7 @@ use Illuminate\Auth\Events\Lockout;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -31,7 +32,7 @@ class SecurityLoginObservationTest extends TestCase
         Mail::fake();
         Cache::flush();
         RateLimiter::clear('nobody@example.com|127.0.0.1');
-        config(['alerts.non_production' => ['ops@example.test']]);
+        config(['alerts.fallback' => ['ops@example.test']]);
 
         // ⚠️ `login_logs` is created by a migration in the ADMIN app — the two
         // apps share one database and no code, so this app's suite has no copy
@@ -80,7 +81,7 @@ class SecurityLoginObservationTest extends TestCase
     {
         $this->post('/verify/login', ['email' => 'ghost@example.com', 'password' => 'whatever']);
 
-        $row = \Illuminate\Support\Facades\DB::table('login_logs')->where('email', 'ghost@example.com')->first();
+        $row = DB::table('login_logs')->where('email', 'ghost@example.com')->first();
 
         $this->assertNotNull($row);
         $this->assertSame('Invalid credentials', $row->failure_reason);

@@ -264,6 +264,67 @@ export default function Opportunities({
                         </div>
                     </div>
 
+                    {/* 🚨 ACT FIRST, THEN MEASURE (31 Aug 2026). "What to do next"
+                        used to sit seventh of nine on this page, under four blocks of
+                        readings — so a creator with no sales yet met six £0 figures
+                        before reaching the only block that told them to DO anything.
+                        That was survivable while the creator dashboard carried its own
+                        copy of these two blocks; that module was removed the same day
+                        (it had no role on a route that is also the public profile), so
+                        this is now the ONLY surface carrying them. Actions first, then
+                        the time-sensitive alerts, then every reading. Do not move them
+                        back down without giving them another home. */}
+                    {/* Suggested actions */}
+                    <section className="mt-8">
+                        <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-gray-900">
+                            <TrendingUp size={18} className="text-[#FF007F]" /> What to do next
+                        </h2>
+
+                        {actions.length === 0 ? (
+                            <p className="rounded-box-sm border border-gray-200 bg-white p-4 text-sm text-gray-600">
+                                Nothing to suggest yet — this fills up once you have a few sales.
+                            </p>
+                        ) : (
+                            <div className="grid gap-3 md:grid-cols-2">
+                                {actions.map((a) => (
+                                    <div
+                                        key={a.key}
+                                        className="flex flex-col rounded-box-sm border border-gray-200 bg-white p-4  "
+                                    >
+                                        <h3 className="font-bold text-gray-900">{a.title}</h3>
+                                        <p className="mt-1 flex-1 text-sm text-gray-600">{a.detail}</p>
+                                        {a.hint && <p className="mt-2 text-xs italic text-black/60">{a.hint}</p>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+
+                    {/* Alerts */}
+                    {alerts.length > 0 && (
+                        <div className="mt-6 space-y-2.5">
+                            {alerts.map((a) => {
+                                const warn = a.severity === 'warning';
+                                return (
+                                    <div
+                                        key={a.key}
+                                        className={`flex gap-3 rounded-box-sm border-l-4 bg-white p-4 ${
+                                            warn ? 'border-amber-400' : 'border-[#FF007F]'
+                                        }`}
+                                    >
+                                        <div className={warn ? 'text-amber-500' : 'text-[#FF007F]'}>
+                                            {warn ? <AlertTriangle size={18} /> : <Sparkles size={18} />}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-gray-900">{a.title}</div>
+                                            <p className="mt-0.5 text-sm text-gray-600">{a.detail}</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
                     {/* Tier distribution — where your supporters sit on the platform ladder. */}
                     {hasSupporters && tierPresent.length > 0 && (
                         <div className="mt-4 rounded-box border border-gray-200 bg-white p-5 md:p-6">
@@ -376,30 +437,6 @@ export default function Opportunities({
                         </div>
                     )}
 
-                    {/* Alerts */}
-                    {alerts.length > 0 && (
-                        <div className="mt-6 space-y-2.5">
-                            {alerts.map((a) => {
-                                const warn = a.severity === 'warning';
-                                return (
-                                    <div
-                                        key={a.key}
-                                        className={`flex gap-3 rounded-box-sm border-l-4 bg-white p-4 ${
-                                            warn ? 'border-amber-400' : 'border-[#FF007F]'
-                                        }`}
-                                    >
-                                        <div className={warn ? 'text-amber-500' : 'text-[#FF007F]'}>
-                                            {warn ? <AlertTriangle size={18} /> : <Sparkles size={18} />}
-                                        </div>
-                                        <div>
-                                            <div className="font-bold text-gray-900">{a.title}</div>
-                                            <p className="mt-0.5 text-sm text-gray-600">{a.detail}</p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
 
                     {/*
                         Abandoned checkouts — the only demand-side signal on this page.
@@ -515,31 +552,6 @@ export default function Opportunities({
                         </section>
                     )}
 
-                    {/* Suggested actions */}
-                    <section className="mt-8">
-                        <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-gray-900">
-                            <TrendingUp size={18} className="text-[#FF007F]" /> What to do next
-                        </h2>
-
-                        {actions.length === 0 ? (
-                            <p className="rounded-box-sm border border-gray-200 bg-white p-4 text-sm text-gray-600">
-                                Nothing to suggest yet — this fills up once you have a few sales.
-                            </p>
-                        ) : (
-                            <div className="grid gap-3 md:grid-cols-2">
-                                {actions.map((a) => (
-                                    <div
-                                        key={a.key}
-                                        className="flex flex-col rounded-box-sm border border-gray-200 bg-white p-4  "
-                                    >
-                                        <h3 className="font-bold text-gray-900">{a.title}</h3>
-                                        <p className="mt-1 flex-1 text-sm text-gray-600">{a.detail}</p>
-                                        {a.hint && <p className="mt-2 text-xs italic text-black/60">{a.hint}</p>}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </section>
 
                     {/* Retention */}
                     {hasSupporters && (

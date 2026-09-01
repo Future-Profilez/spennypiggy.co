@@ -8,6 +8,7 @@ use App\Models\FinancialTransaction;
 use App\Models\User;
 use App\Services\NotificationDispatcher;
 use App\Services\SupporterLapseService;
+use App\Support\AlertRouter;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -65,7 +66,7 @@ class WhaleRetentionAlerts extends Command
             return self::SUCCESS;
         }
 
-        $adminEmails = Helpers::getAdminEmails();
+        $adminEmails = AlertRouter::recipients('whale_retention');
         $sent = 0;
 
         foreach ($atRisk as $row) {

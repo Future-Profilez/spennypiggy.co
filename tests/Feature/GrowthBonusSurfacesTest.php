@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\FinancialTransaction;
 use App\Models\GrowthBonusProfile;
 use App\Models\GrowthBonusReward;
 use App\Models\User;
 use App\Services\PromoBannerService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 /**
@@ -42,6 +44,34 @@ class GrowthBonusSurfacesTest extends TestCase
             'stripe_details_submitted' => 1,
             'account_id' => 'acct_'.uniqid(),
         ], $overrides));
+    }
+
+    /**
+     * ⚠️ REAL LEDGER INCOME, not a `qualifying_gmv` written onto the profile.
+     * The page computes the figure LIVE from `financial_transactions`, so a
+     * fixture that only sets the snapshot column asserts the behaviour this
+     * feature deliberately stopped having.
+     */
+    private function income(User $creator, float $listed, ?string $date = null): void
+    {
+        $gross = round($listed * 1.3055, 2);
+
+        FinancialTransaction::create([
+            'user_id' => $creator->id,
+            'supporter_id' => null,
+            'source_type' => 'App\Models\ShopPayment',
+            'source_id' => random_int(100000, 999999),
+            'type' => 'income',
+            'gross_amount' => $gross,
+            'platform_fee' => round($gross - $listed, 2),
+            'stripe_fee' => 0,
+            'vat_amount' => 0,
+            'net_amount' => $listed,
+            'currency' => 'GBP',
+            'status' => 'completed',
+            'description' => 'test sale',
+            'transaction_date' => Carbon::parse($date ?? '2026-09-03'),
+        ]);
     }
 
     // ── The public page ──────────────────────────────────────────────────
@@ -81,6 +111,10 @@ class GrowthBonusSurfacesTest extends TestCase
 
     public function test_a_creator_sees_their_own_position(): void
     {
+        // ⚠️ The suite runs the queue SYNC, so the ledger hook's job would run
+        // the evaluator and try to create the profile this test writes by hand.
+        Queue::fake();
+
         $creator = $this->creator();
         $profile = GrowthBonusProfile::create([
             'creator_id' => $creator->id,
@@ -92,6 +126,8 @@ class GrowthBonusSurfacesTest extends TestCase
             'qualifying_gmv' => 300,
             'current_milestone' => 250,
         ]);
+
+        $this->income($creator, 300);
 
         GrowthBonusReward::create([
             'profile_id' => $profile->id,
@@ -106,7 +142,10 @@ class GrowthBonusSurfacesTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->where('progress.status', 'active')
             ->where('progress.qualifying_gmv', fn ($v) => (float) $v === 300.0)
-            ->where('progress.earned_total', fn ($v) => (float) $v === 25.0)
+            // 🚨 £300 is past rung 1 (£100, already paid) AND rung 2 (£250),
+            // so £50 is earned even though only one reward ROW exists — the
+            // evaluator mints rows, the creator's position does not wait for it.
+            ->where('progress.earned_total', fn ($v) => (float) $v === 50.0)
             ->where('progress.paid_total', fn ($v) => (float) $v === 25.0)
             // Next rung is £500, so £200 to go.
             ->where('progress.next_milestone', fn ($v) => (float) $v === 500.0)

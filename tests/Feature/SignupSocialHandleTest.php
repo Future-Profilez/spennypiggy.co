@@ -50,6 +50,34 @@ class SignupSocialHandleTest extends TestCase
     }
 
     /**
+     * 🚨 `users.country` WAS NULL FOR EVERY CREATOR until 31 Aug 2026 — the form never
+     * asked (`CredentialsStep` hid the picker behind `!isCreator`) and the server only
+     * required it for supporters. Shipping zones, the Connect business type and the
+     * checkout country match all read it.
+     */
+    public function test_a_creator_signup_records_the_iso_country(): void
+    {
+        $this->post(route('register'), $this->signupPayload([
+            'social_platform' => 'instagram',
+            'social_handle' => 'testperson',
+        ]));
+
+        $this->assertSame('GB', $this->registered()?->country);
+    }
+
+    public function test_a_creator_cannot_sign_up_without_a_country(): void
+    {
+        $this->post(route('register'), $this->signupPayload([
+            'social_platform' => 'instagram',
+            'social_handle' => 'testperson',
+            'country' => null,
+            'country_code' => null,
+        ]))->assertSessionHasErrors('country');
+
+        $this->assertNull($this->registered());
+    }
+
+    /**
      * 🚨 REQUIRED FOR A CREATOR (client decision, 25 Aug 2026).
      *
      * Not new friction — a creator already could not go live without an APPROVED

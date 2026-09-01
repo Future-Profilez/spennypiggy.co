@@ -32,7 +32,11 @@ export default function Authenticated(props){
      */
     return <>
         {auth?.is_emulated && (
-            <div className="bg-purple-600 w-full text-white px-4 sm:px-12 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-wrap gap-2 justify-between items-center fixed bottom-0 z-[100] border-b border-purple-400/30">
+            <div
+                // ⚠️ Sits ABOVE the bottom bar on a phone, offset by the bar's own
+                // height. It was `bottom-0` under a bar of z 999999, so an admin
+                // emulating a creator on a phone had no visible "stop" control.
+                className="bg-purple-600 w-full text-white px-4 sm:px-12 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-wrap gap-2 justify-between items-center fixed bottom-0 [body:has(.retro-bottom-bar)_&]:bottom-[calc(var(--sp-bottombar-h)+var(--sp-bottombar-inset))] z-[100] border-b border-purple-400/30">
                 <div className="flex min-w-0 items-center gap-2 text-[13px] sm:text-sm">
                     <div className="truncate">✨ Logged in as: <b>{auth?.user?.name} (@{auth?.user?.username})</b></div>
                 </div>

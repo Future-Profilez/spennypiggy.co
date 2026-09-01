@@ -78,6 +78,7 @@ export default function Sheet({
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
+                    {/* bottom-bar-safe: Sheet sets body.sheet-open while open */}
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" />
                 </Transition.Child>
 
@@ -87,6 +88,7 @@ export default function Sheet({
                     with a preview column, a validation notice and a footer CTA
                     all competing for a box two-thirds the height of the screen,
                     with its own scrollbar inside the page's. */}
+                {/* bottom-bar-safe: Sheet sets body.sheet-open while open */}
                 <div className="fixed inset-0 flex items-stretch justify-center">
                     <Transition.Child
                         as={Fragment}

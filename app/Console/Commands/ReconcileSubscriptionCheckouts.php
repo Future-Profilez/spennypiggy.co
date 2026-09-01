@@ -62,7 +62,26 @@ class ReconcileSubscriptionCheckouts extends Command
             ->limit($max)
             ->get();
 
+        $haveCard = $this->creatorsWithCardOnFile($rows->pluck('user_id')->all());
+
         foreach ($rows as $sub) {
+            // 🚨 This creator already finished a LATER checkout, so this row can
+            // never be anything but abandoned. Deciding it here — before the
+            // Stripe call — is what stops the two faults below:
+            //
+            //  · the reminder. It is keyed on the checkout, so a creator who
+            //    abandoned twice and succeeded on the third attempt was told
+            //    twice that their card was not saved, minutes after it was.
+            //  · the recovery. `completeSetupCheckout` claims on `initiated`
+            //    alone and does not know about the live row, so an old session
+            //    Stripe still calls `complete` would open a SECOND card-on-file
+            //    row and make the older card the customer's default.
+            if (isset($haveCard[$sub->user_id])) {
+                $closed += $this->close($checkout, $sub, 'superseded_by_card_on_file', $dryRun);
+
+                continue;
+            }
+
             [$session, $gone] = $this->session($sub);
 
             if ($session === null) {
@@ -252,6 +271,37 @@ class ReconcileSubscriptionCheckouts extends Command
 
             return 0;
         }
+    }
+
+    /**
+     * The creators in this batch who already have a card recorded.
+     *
+     * ⚠️ Anything that is not `initiated` and not `expired` counts — `trialing`,
+     * `paid` and `past_due` are all "the card is on file". An allowlist of the
+     * statuses that exist today would silently stop matching the first time a
+     * new one is added, and the failure mode is a creator being told their card
+     * was not saved, which is the exact bug this closes.
+     *
+     * @param  array<int, int>  $userIds
+     * @return array<int, true>
+     */
+    private function creatorsWithCardOnFile(array $userIds): array
+    {
+        if (! $userIds) {
+            return [];
+        }
+
+        return MonthlyCharge::query()
+            ->whereIn('user_id', $userIds)
+            ->whereNotIn('status', [
+                SubscriptionCheckoutService::STATUS_STARTED,
+                SubscriptionCheckoutService::STATUS_DEAD,
+            ])
+            ->distinct()
+            ->pluck('user_id')
+            ->flip()
+            ->map(fn () => true)
+            ->all();
     }
 
     /** @return array<int, string> */

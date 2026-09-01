@@ -4,6 +4,7 @@ import CreatorDashboardTabs from "@/Components/CreatorDashboardTabs";
 import LoadingScreen from "@/includes/LoadingScreen";
 import axios from "axios";
 import { useEffect, useState } from "react";
+import useHideBottomBar from "@/hooks/useHideBottomBar";
 import Avatar from "../../Components/Avatar";
 import DashboardHero from "@/Components/Dashboard/DashboardHero";
 import { FiShoppingBag, FiFileText, FiDollarSign, FiCalendar, FiDownload } from "react-icons/fi";
@@ -21,6 +22,10 @@ export default function MySubscriptions(props) {
     });
 
     const [cancelModal, setCancelModal] = useState(false);
+
+    // Centred at z-50 under a z-999999 bar: hide the bar while it is open.
+
+    useHideBottomBar(Boolean(cancelModal));
 
     const [selectedSubscription, setSelectedSubscription] = useState(null);
 
@@ -695,6 +700,7 @@ export default function MySubscriptions(props) {
             )}
 
             {cancelModal && (
+                // bottom-bar-safe: useHideBottomBar(Boolean(cancelModal)) hides the bar while open
                 <div
                     className="
                     fixed inset-0 z-50

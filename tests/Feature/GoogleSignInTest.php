@@ -97,7 +97,19 @@ class GoogleSignInTest extends TestCase
             // ⚠️ Required for a creator since 25 Aug 2026 — see SignupSocialHandleTest.
             'social_platform' => 'instagram',
             'social_handle' => 'creatorhandle',
+            // ⚠️ Required for BOTH roles since 31 Aug 2026 — creators were never asked, so
+            // `users.country` was NULL until Stripe Connect.
+            'country' => 'United Kingdom',
+            'country_code' => 'GB',
         ], $overrides);
+    }
+
+    /** A creator's country feeds shipping zones and the Connect business type; it is not optional. */
+    public function test_a_creator_still_has_to_supply_a_country(): void
+    {
+        $this->withSession($this->googleSession())
+            ->post('/register', $this->form(['country' => null, 'country_code' => null]))
+            ->assertSessionHasErrors('country');
     }
 
     public function test_a_google_signup_creates_an_account_without_a_password(): void
@@ -210,6 +222,8 @@ class GoogleSignInTest extends TestCase
             ->post('/register', $this->form([
                 'role' => 0,
                 'creator_email_receipt_ack' => false,
+                'country' => null,
+                'country_code' => null,
             ]))
             ->assertSessionHasErrors('country');
     }

@@ -89,6 +89,7 @@ export default function Popup(props) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
+            {/* bottom-bar-safe: Popup sets body.sheet-open while open (see the effect above) */}
             <div className="fixed inset-0 bg-black/50" />
           </Transition.Child>
 
@@ -97,6 +98,7 @@ export default function Popup(props) {
               wrapper — owns the scroll. Nothing used this flag before, and its
               half-implemented version left a full-height panel inside a padded,
               centred, separately-scrolling box. */}
+          {/* bottom-bar-safe: Popup sets body.sheet-open while open (see the effect above) */}
           <div
             className={`fixed inset-0 overflow-hidden ${
               fullscreen ? '' : 'md:overflow-y-auto'

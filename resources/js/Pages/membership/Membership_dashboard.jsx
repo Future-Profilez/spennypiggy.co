@@ -2,6 +2,7 @@ import { Head, Link } from "@inertiajs/react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import { useEffect, useState, useRef } from "react";
+import useHideBottomBar from "@/hooks/useHideBottomBar";
 import Avatar from "../../Components/Avatar";
 import CreatorDashboardTabs from "@/Components/CreatorDashboardTabs";
 import DashboardHero from "@/Components/Dashboard/DashboardHero";
@@ -372,9 +373,12 @@ export default function Membership_dashboard(props) {
 
     // Payment Details Modal
     const PaymentDetailsModal = ({ payment, onClose }) => {
+        // z-[10000] is still under the z-999999 bottom bar.
+        useHideBottomBar(Boolean(payment));
         if (!payment) return null;
 
         return (
+            // bottom-bar-safe: useHideBottomBar(Boolean(payment)) hides the bar while open
             <div
                 className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
                 onClick={onClose}

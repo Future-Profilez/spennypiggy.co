@@ -28,6 +28,7 @@ import {
 } from "react-icons/fa6";
 import VerifiedBadge from "@/Components/VerifiedBadge";
 import { BIO_TIP_COPY } from "@/constants/bioTip";
+import { bioThemeVars } from "@/constants/bioThemes";
 import {
     STABLECOIN_COPY,
     STABLECOIN_TIPS_ANNOUNCED,
@@ -127,6 +128,8 @@ export default function BioShow({
     bioUrl,
     isOwner = false,
     stats = null,
+    theme = null,
+    itemLayout = null,
 }) {
     const [showQr, setShowQr] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -217,7 +220,10 @@ export default function BioShow({
                 band across the top of the page on desktop. Padding does not
                 collapse.
             */}
-            <div className="min-h-dvh bg-[#FFF6EC] pb-16 md:pt-5">
+            <div
+                className="min-h-dvh bg-[color:var(--bio-ground)] pb-16 md:pt-5"
+                style={bioThemeVars(theme)}
+            >
                 <main className="mx-auto w-full max-w-[520px]">
                     <Notice message={notice} isError={noticeIsError} />
 
@@ -244,7 +250,11 @@ export default function BioShow({
                         journey the brief exists to remove.
                     */}
                     {items.length > 0 ? (
-                        <ItemList items={items} isOwner={isOwner} />
+                        <ItemList
+                            items={items}
+                            isOwner={isOwner}
+                            layout={itemLayout}
+                        />
                     ) : null}
 
                     {internal.length > 0 ? (
@@ -255,7 +265,9 @@ export default function BioShow({
                         />
                     ) : null}
 
-                    {STABLECOIN_TIPS_ANNOUNCED ? <Stablecoin tip={tip} /> : null}
+                    {STABLECOIN_TIPS_ANNOUNCED ? (
+                        <Stablecoin tip={tip} />
+                    ) : null}
 
                     {nothingToSell ? (
                         <Empty creator={creator} isOwner={isOwner} />
@@ -423,7 +435,7 @@ function Header({ creator, social = [], isOwner }) {
                 */
                 <div
                     className={[
-                        "w-full bg-[#FFF6EC]",
+                        "w-full bg-[color:var(--bio-ground)]",
                         "h-[200px] [mask-image:linear-gradient(to_bottom,#000_0%,#000_58%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,#000_0%,#000_58%,transparent_100%)]",
                         "md:h-[142px] md:border-b md:border-[#000] md:[mask-image:none] md:[-webkit-mask-image:none]",
                     ].join(" ")}
@@ -461,7 +473,7 @@ function Header({ creator, social = [], isOwner }) {
                 ) : (
                     <span
                         className={[
-                            "mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-box-sm border border-[#000] bg-[#FF007F] font-gulfs text-[32px] uppercase leading-none text-black",
+                            "mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-box-sm border border-[#000] bg-[color:var(--bio-cta)] text-[color:var(--bio-cta-ink)] font-gulfs text-[32px] uppercase leading-none",
                             hasCover ? "-mt-[70px] md:-mt-[46px]" : "",
                         ].join(" ")}
                     >
@@ -489,7 +501,7 @@ function Header({ creator, social = [], isOwner }) {
                     is the tick reading as part of the name rather than as a
                     footnote to it).
                 */}
-                <h1 className="mt-3.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 font-gulfs text-[24px] uppercase leading-[1.05] tracking-tight text-black">
+                <h1 className="mt-3.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 font-gulfs text-[24px] uppercase leading-[1.05] tracking-tight text-[color:var(--bio-ink)] md:text-black">
                     <span className="min-w-0 break-words">
                         {creator.name || creator.username}
                     </span>
@@ -500,12 +512,12 @@ function Header({ creator, social = [], isOwner }) {
                     />
                 </h1>
 
-                <p className="mt-1.5 font-poppins text-[13.5px] leading-[1.3] text-black/45">
+                <p className="mt-1.5 font-poppins text-[13.5px] leading-[1.3] text-[color:var(--bio-ink45)] md:text-black/45">
                     @{creator.username}
                 </p>
 
                 {creator.bio ? (
-                    <p className="mx-auto mt-2.5 max-w-[38ch] font-poppins text-[13.5px] leading-[1.6] text-black/70">
+                    <p className="mx-auto mt-2.5 max-w-[38ch] font-poppins text-[13.5px] leading-[1.6] text-[color:var(--bio-ink70)] md:text-black/70">
                         {creator.bio}
                     </p>
                 ) : null}
@@ -560,7 +572,7 @@ function Featured({ item }) {
             ) : null}
 
             <div className="p-4">
-                <span className="inline-block rounded-box-xs border border-[#000] bg-[#FF007F] px-2 py-1 font-gulfs text-[10px] uppercase tracking-[0.18em] text-black">
+                <span className="inline-block rounded-box-xs border border-[#000] bg-[color:var(--bio-cta)] text-[color:var(--bio-cta-ink)] px-2 py-1 font-gulfs text-[10px] uppercase tracking-[0.18em]">
                     Open now
                 </span>
 
@@ -633,7 +645,11 @@ function ItemMark({ type }) {
     const Mark = ITEM_MARKS[type] || Sparkles;
 
     return (
-        <Mark aria-hidden="true" className="h-[26px] w-[26px] text-black/70" strokeWidth={2} />
+        <Mark
+            aria-hidden="true"
+            className="h-[26px] w-[26px] text-black/70"
+            strokeWidth={2}
+        />
     );
 }
 
@@ -665,10 +681,38 @@ const money = (value, currency) =>
  * length, in any language; `gulfs` caps mangles a long one and cannot render
  * accents at all. Display caps stay for OUR words — section rules and buttons.
  */
-function ItemList({ items, isOwner }) {
+function ItemList({ items, isOwner, layout }) {
+    /*
+        The GRID is the creator's own choice (`bio_item_layout = grid`), never
+        the default — the row layout above is the one the client references
+        argued for, and the grid exists for a creator with picture-led listings
+        who wants a storefront. Same contract either way: counting redirect,
+        LISTED price, no checkout here.
+    */
+    if (layout === "grid") {
+        const odd = items.length % 2 === 1;
+
+        return (
+            <section className="mt-8 px-4">
+                <Eyebrow label="Buy from me" accent="var(--bio-accent)" />
+
+                <div className="grid grid-cols-2 gap-2">
+                    {items.map((item, index) => (
+                        <ItemTile
+                            key={item.uuid}
+                            item={item}
+                            isOwner={isOwner}
+                            wide={odd && index === items.length - 1}
+                        />
+                    ))}
+                </div>
+            </section>
+        );
+    }
+
     return (
         <section className="mt-8 px-4">
-            <Eyebrow label="Buy from me" accent="#FF007F" />
+            <Eyebrow label="Buy from me" accent="var(--bio-accent)" />
 
             {/*
                 🚨 ONE SURFACE, ROWS ABUTTING, hairline INSIDE it. The block used
@@ -749,7 +793,9 @@ function ItemRow({ item, isOwner, first }) {
                     */
                     <span
                         className="flex h-full w-full items-center justify-center"
-                        style={{ backgroundColor: ITEM_TINTS[item.type] || "#FFF6EC" }}
+                        style={{
+                            backgroundColor: ITEM_TINTS[item.type] || "#FFF6EC",
+                        }}
                     >
                         <ItemMark type={item.type} />
                     </span>
@@ -818,11 +864,119 @@ function ItemRow({ item, isOwner, first }) {
                     "font-gulfs text-[10.5px] uppercase tracking-[0.14em]",
                     hidden
                         ? "border border-black/25 bg-black/[0.04] text-black/40"
-                        : "border border-[#000] bg-[#FF007F] text-black",
+                        : "border border-[#000] bg-[color:var(--bio-cta)] text-[color:var(--bio-cta-ink)]",
                 ].join(" ")}
             >
                 {hidden ? "Hidden" : item.cta}
             </span>
+        </a>
+    );
+}
+
+/**
+ * The grid tile — one sellable listing as a card: picture on top, title, the
+ * LISTED price, and the same CTA pill the row uses.
+ *
+ * ⚠️ Same contract as ItemRow, restated because a second renderer is exactly
+ * where a rule quietly stops holding: the href is the counting redirect
+ * `/bio/buy/{uuid}` (a plain <a>, the destination is a 302 out of this tree),
+ * the price is formatted and never calculated, and "Sign in to buy" is a
+ * warning, not the gate. An odd count spans the last tile (LinkGroup's rule).
+ */
+function ItemTile({ item, isOwner, wide }) {
+    const hidden = isOwner && !item.is_active;
+    const priced = item.price !== null && item.price !== undefined;
+    const hasProgress = item.percent !== null && item.percent !== undefined;
+
+    return (
+        <a
+            href={item.url}
+            className={[
+                "group flex flex-col overflow-hidden rounded-box border border-[#000] bg-white",
+                "transition-[background-color] duration-200",
+                wide ? "col-span-2" : "",
+                hidden
+                    ? "text-black/35"
+                    : "text-black hover:bg-[#FFF3F8] active:bg-[#FFE7F2]",
+            ].join(" ")}
+        >
+            <div
+                className={[
+                    "w-full shrink-0 overflow-hidden border-b border-[#000] bg-[#FFF6EC]",
+                    wide ? "h-[140px]" : "h-[112px]",
+                ].join(" ")}
+            >
+                {item.image ? (
+                    <img
+                        src={item.image}
+                        alt=""
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-[filter] duration-500 group-hover:brightness-[1.08]"
+                    />
+                ) : (
+                    <span
+                        className="flex h-full w-full items-center justify-center"
+                        style={{
+                            backgroundColor: ITEM_TINTS[item.type] || "#FFF6EC",
+                        }}
+                    >
+                        <ItemMark type={item.type} />
+                    </span>
+                )}
+            </div>
+
+            <div className="flex flex-1 flex-col p-3">
+                <span className="font-gulfs text-[9px] uppercase tracking-[0.18em] text-black/35">
+                    {item.type_label}
+                </span>
+
+                <p className="mt-1 line-clamp-2 font-poppins text-[13.5px] font-semibold leading-[1.3] first-letter:uppercase">
+                    {item.title}
+                </p>
+
+                {priced ? (
+                    <p className="mt-0.5 font-poppins text-[13.5px] font-bold leading-[1.3] tabular-nums text-black">
+                        {money(item.price, item.currency)}
+                        {item.price_note ? (
+                            <span className="font-normal text-black/45">
+                                {" "}
+                                {item.price_note}
+                            </span>
+                        ) : null}
+                    </p>
+                ) : null}
+
+                {hasProgress ? (
+                    <div className="mt-2 h-2.5 w-full overflow-hidden rounded-box-xs border border-[#000] bg-white">
+                        <div
+                            className="h-full bg-[#A2E4B8]"
+                            style={{ width: `${item.percent}%` }}
+                        />
+                    </div>
+                ) : null}
+
+                {item.requires_account ? (
+                    <span className="mt-1 font-poppins text-[10.5px] leading-[1.4] text-black/35">
+                        Sign in to buy
+                    </span>
+                ) : null}
+
+                {/* mt-auto on the WRAPPER pins the pill to the tile's foot,
+                    so a one-line title and a two-line one end level. */}
+                <div className="mt-auto pt-3">
+                    <span
+                        className={[
+                            "flex items-center justify-center rounded-box-sm px-3 py-2.5",
+                            "font-gulfs text-[10.5px] uppercase tracking-[0.14em]",
+                            hidden
+                                ? "border border-black/25 bg-black/[0.04] text-black/40"
+                                : "border border-[#000] bg-[color:var(--bio-cta)] text-[color:var(--bio-cta-ink)]",
+                        ].join(" ")}
+                    >
+                        {hidden ? "Hidden" : item.cta}
+                    </span>
+                </div>
+            </div>
         </a>
     );
 }
@@ -958,7 +1112,9 @@ function LinkRow({ link, isOwner, wide }) {
         "sm:min-h-[62px] sm:gap-3 sm:px-3.5 sm:py-3",
         "transition-[filter] duration-200",
         wide ? "col-span-2" : "",
-        hidden ? "text-black/40" : "text-black hover:brightness-[1.06] active:brightness-95",
+        hidden
+            ? "text-black/40"
+            : "text-black hover:brightness-[1.06] active:brightness-95",
     ].join(" ");
 
     const body = (
@@ -970,7 +1126,10 @@ function LinkRow({ link, isOwner, wide }) {
                     hidden ? "bg-white text-black/30" : "bg-white text-black",
                 ].join(" ")}
             >
-                <Mark className="h-[15px] w-[15px] sm:h-[16px] sm:w-[16px]" strokeWidth={2.25} />
+                <Mark
+                    className="h-[15px] w-[15px] sm:h-[16px] sm:w-[16px]"
+                    strokeWidth={2.25}
+                />
             </span>
 
             {/*
@@ -1033,12 +1192,12 @@ function LinkRow({ link, isOwner, wide }) {
 function Eyebrow({ label, accent }) {
     return (
         <div className="mb-3 flex items-center gap-3">
-            <span className="font-gulfs text-[11px] uppercase tracking-[0.22em] text-black/45">
+            <span className="font-gulfs text-[11px] uppercase tracking-[0.22em] text-[color:var(--bio-ink45)]">
                 {label}
             </span>
             <span
                 className="h-px flex-1"
-                style={{ backgroundColor: accent || "rgba(0,0,0,0.15)" }}
+                style={{ backgroundColor: accent || "var(--bio-rule)" }}
             />
         </div>
     );
@@ -1097,7 +1256,9 @@ function SocialChips({ links, isOwner }) {
                         href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-label={hidden ? `${link.label} (hidden)` : link.label}
+                        aria-label={
+                            hidden ? `${link.label} (hidden)` : link.label
+                        }
                         title={link.label}
                         className={[
                             "flex h-10 w-10 items-center justify-center rounded-full",
@@ -1107,7 +1268,10 @@ function SocialChips({ links, isOwner }) {
                                 : "border border-[#000] bg-white text-black hover:bg-[#FF007F] active:brightness-95",
                         ].join(" ")}
                     >
-                        <Mark aria-hidden="true" className="h-[17px] w-[17px]" />
+                        <Mark
+                            aria-hidden="true"
+                            className="h-[17px] w-[17px]"
+                        />
                     </a>
                 );
             })}
@@ -1156,15 +1320,15 @@ function Stablecoin({ tip }) {
     */
     if (!live) {
         return (
-            <section className="mx-4 mt-8 flex items-center gap-3 rounded-box-sm border border-dashed border-black/40 px-4 py-3.5">
-                <span className="min-w-0 flex-1 font-poppins text-[12.5px] leading-[1.45] text-black/45">
-                    <span className="font-semibold text-black/70">
+            <section className="mx-4 mt-8 flex items-center gap-3 rounded-box-sm border border-dashed border-[color:var(--bio-ink40)] px-4 py-3.5">
+                <span className="min-w-0 flex-1 font-poppins text-[12.5px] leading-[1.45] text-[color:var(--bio-ink45)]">
+                    <span className="font-semibold text-[color:var(--bio-ink70)]">
                         {STABLECOIN_COPY.card.title}
                     </span>{" "}
                     — {STABLECOIN_COPY.railNote}
                 </span>
 
-                <span className="shrink-0 rounded-box-xs bg-black/[0.07] px-2 py-1 font-gulfs text-[9px] uppercase tracking-[0.16em] text-black/50">
+                <span className="shrink-0 rounded-box-xs bg-[color:var(--bio-chip)] px-2 py-1 font-gulfs text-[9px] uppercase tracking-[0.16em] text-[color:var(--bio-ink50)]">
                     {STABLECOIN_COPY.card.detail}
                 </span>
             </section>
@@ -1231,8 +1395,7 @@ function TipAmounts({ tip, live }) {
     // ⚠️ Client-side range checking is a COURTESY, never the rule.
     // `BioTipService::amountError()` refuses the same values on the server, and
     // that is the one that decides.
-    const outOfRange =
-        chosen > 0 && (chosen < tip.min || chosen > tip.max);
+    const outOfRange = chosen > 0 && (chosen < tip.min || chosen > tip.max);
 
     useEffect(() => {
         if (!live || chosen <= 0 || outOfRange) {
@@ -1425,7 +1588,10 @@ function TipAmounts({ tip, live }) {
                         <div className="flex justify-between gap-3 text-black/50">
                             <dt>Approximately</dt>
                             <dd className="tabular-nums">
-                                {money(quote.display.total, quote.display.currency)}
+                                {money(
+                                    quote.display.total,
+                                    quote.display.currency,
+                                )}
                             </dd>
                         </div>
                     ) : null}
@@ -1467,7 +1633,9 @@ function Tools({ bioUrl, showQr, setShowQr, copied, copyLink, share }) {
                 <ToolButton onClick={share} primary>
                     Share
                 </ToolButton>
-                <ToolButton onClick={copyLink}>{copied ? "Copied" : "Copy link"}</ToolButton>
+                <ToolButton onClick={copyLink}>
+                    {copied ? "Copied" : "Copy link"}
+                </ToolButton>
                 <ToolButton onClick={() => setShowQr((v) => !v)}>
                     {showQr ? "Hide QR" : "QR code"}
                 </ToolButton>
@@ -1511,7 +1679,7 @@ function ToolButton({ onClick, primary, children }) {
                 // ⚠️ Black on pink, never white — 5.56:1 against white's 3.78:1.
                 "border border-[#000]",
                 primary
-                    ? "bg-[#FF007F] text-black"
+                    ? "bg-[color:var(--bio-cta)] text-[color:var(--bio-cta-ink)]"
                     : "bg-white text-black hover:bg-[#FFF3F8]",
             ].join(" ")}
         >
@@ -1548,7 +1716,8 @@ function OwnerBar({ stats, featuredClicks }) {
                     {stats ? (
                         <>
                             <span className="font-semibold text-black">
-                                {stats.views} {stats.views === 1 ? "view" : "views"}
+                                {stats.views}{" "}
+                                {stats.views === 1 ? "view" : "views"}
                             </span>{" "}
                             so far
                         </>
@@ -1562,7 +1731,8 @@ function OwnerBar({ stats, featuredClicks }) {
                         <>
                             {stats ? " · " : null}
                             <span className="font-semibold text-black">
-                                {featuredClicks} {featuredClicks === 1 ? "tap" : "taps"}
+                                {featuredClicks}{" "}
+                                {featuredClicks === 1 ? "tap" : "taps"}
                             </span>{" "}
                             on your pinned tile
                         </>
@@ -1588,12 +1758,12 @@ function OwnerBar({ stats, featuredClicks }) {
  */
 function Empty({ creator, isOwner }) {
     return (
-        <section className="mx-4 mt-8 rounded-box border border-dashed border-black/40 px-5 py-9 text-center">
-            <p className="font-gulfs text-[15px] uppercase leading-[1.2] text-black/55">
+        <section className="mx-4 mt-8 rounded-box border border-dashed border-[color:var(--bio-ink40)] px-5 py-9 text-center">
+            <p className="font-gulfs text-[15px] uppercase leading-[1.2] text-[color:var(--bio-ink55)]">
                 {isOwner ? "Nothing to buy here yet" : "Nothing on sale yet"}
             </p>
 
-            <p className="mx-auto mt-2 max-w-[34ch] font-poppins text-[13px] leading-[1.55] text-black/55">
+            <p className="mx-auto mt-2 max-w-[34ch] font-poppins text-[13px] leading-[1.55] text-[color:var(--bio-ink55)]">
                 {isOwner
                     ? "Add a wish, a pot or a shop item and it shows up here as a card people can buy from."
                     : "Check back soon — or see what they are posting."}
@@ -1601,7 +1771,7 @@ function Empty({ creator, isOwner }) {
 
             <Link
                 href={isOwner ? route("bio.edit") : creator.profile_url}
-                className="mt-3 inline-block font-gulfs text-[12px] uppercase tracking-[0.14em] text-[#FF007F] underline decoration-2 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
+                className="mt-3 inline-block font-gulfs text-[12px] uppercase tracking-[0.14em] text-[color:var(--bio-link)] underline decoration-2 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
             >
                 {isOwner ? "Choose what to sell" : "See their profile"}
             </Link>
@@ -1619,11 +1789,11 @@ function Footer({ creator }) {
             */}
             <Link
                 href={creator.profile_url}
-                className="inline-flex min-h-[44px] items-center px-4 font-gulfs text-[12px] uppercase tracking-[0.16em] text-black/60 underline decoration-2 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
+                className="inline-flex min-h-[44px] items-center px-4 font-gulfs text-[12px] uppercase tracking-[0.16em] text-[color:var(--bio-ink60)] underline decoration-2 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
             >
                 Full profile
             </Link>
-            <p className="mt-3.5 font-gulfs text-[10px] uppercase tracking-[0.24em] text-black/30">
+            <p className="mt-3.5 font-gulfs text-[10px] uppercase tracking-[0.24em] text-[color:var(--bio-ink30)]">
                 Spenny Piggy
             </p>
         </footer>

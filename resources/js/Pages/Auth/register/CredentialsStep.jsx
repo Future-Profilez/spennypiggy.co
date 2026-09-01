@@ -126,7 +126,9 @@ export default function CredentialsStep({
                         </div>
                         <button
                             type="button"
-                            onClick={() => router.post(route("auth.google.cancel"))}
+                            onClick={() =>
+                                router.post(route("auth.google.cancel"))
+                            }
                             className="text-xs font-bold text-red-600 hover:underline shrink-0"
                         >
                             Cancel
@@ -218,20 +220,26 @@ export default function CredentialsStep({
                     </>
                 )}
 
-                {!isCreator && (
-                    <Field
-                        id="country"
-                        label="Country"
-                        status={fieldStatus("country")}
-                        error={fieldError("country")}
-                        hint="Sets your currency. Billing address is collected at your first purchase."
-                    >
-                        <Countries
-                            send={onCountry}
-                            selectClassName={fieldShell(fieldStatus("country"))}
-                        />
-                    </Field>
-                )}
+                {/* 🚨 ASKED OF CREATORS TOO. This was `!isCreator` until 31 Aug 2026, so
+                    `users.country` was NULL for every creator until Stripe Connect — and
+                    `shop_shipping_infos` domestic zones, the AE business-type check and
+                    the shipping-country match all read it. */}
+                <Field
+                    id="country"
+                    label="Country"
+                    status={fieldStatus("country")}
+                    error={fieldError("country")}
+                    hint={
+                        isCreator
+                            ? "Where you are based. Sets your currency and where your payouts are set up."
+                            : "Sets your currency. Billing address is collected at your first purchase."
+                    }
+                >
+                    <Countries
+                        send={onCountry}
+                        selectClassName={fieldShell(fieldStatus("country"))}
+                    />
+                </Field>
 
                 {/* 🚨 THE CREATOR'S EMAIL IS PUBLISHED TO EVERY SUPPORTER THEY SELL
                     TO, and this is the screen where they choose it. It used to be
@@ -261,15 +269,15 @@ export default function CredentialsStep({
                         </p>
 
                         <p className="mt-2 text-[13.5px] leading-[1.6] text-black/80">
-                            Spenny Piggy is the merchant of record, so this address
-                            is on the transaction record every supporter keeps — and
-                            on every refund and dispute they raise. Supporters can
-                            see it and reply to it.
+                            Spenny Piggy is the merchant of record, so this
+                            address is on the transaction record every supporter
+                            keeps — and on every refund and dispute they raise.
+                            Supporters can see it and reply to it.
                         </p>
 
                         <p className="mt-2 text-[13.5px] font-semibold leading-[1.6] text-black">
-                            Use an address you are happy to hand out. Most creators
-                            set up one just for this.
+                            Use an address you are happy to hand out. Most
+                            creators set up one just for this.
                         </p>
 
                         <label
@@ -281,14 +289,19 @@ export default function CredentialsStep({
                                 name="credentials_receipt_ack"
                                 type="checkbox"
                                 checked={receiptAck}
-                                onChange={(e) => onReceiptAck?.(e.target.checked)}
+                                onChange={(e) =>
+                                    onReceiptAck?.(e.target.checked)
+                                }
                                 className="mt-0.5 h-6 w-6 shrink-0 cursor-pointer rounded border-2 border-black/25"
                                 /* `input[type="checkbox"]` carries a global
                                    `text-[#FF007F]` in resources/css/index.css, which
                                    is the checked fill under @tailwindcss/forms — so a
                                    supporter's violet form drew pink ticks. Inline
                                    `color` is the only thing that reliably wins. */
-                                style={{ accentColor: accent.hex, color: accent.hex }}
+                                style={{
+                                    accentColor: accent.hex,
+                                    color: accent.hex,
+                                }}
                             />
                             <span className="text-[13.5px] font-semibold leading-relaxed text-black">
                                 I understand this email appears on supporter

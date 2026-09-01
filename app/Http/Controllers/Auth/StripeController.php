@@ -618,8 +618,13 @@ class StripeController extends Controller
         }
 
         return Inertia::render('stripe/Stripe', [
+            // ⚠️ A page prop named `auth` REPLACES the shared one, not merges with it.
+            // The full model is needed here (`creator_email_receipt_acknowledged_at`
+            // is not in the shared payload), so the shared `journey` is re-attached or
+            // the OnboardingNudge bar goes blank on this one page.
             'auth' => [
                 'user' => $user,
+                'journey' => app(CreatorJourneyService::class)->nextStep($user),
             ],
             'mor_consent_given' => $morConsentGiven,
             'mor_consent_details' => $morConsentDetails,
@@ -729,8 +734,13 @@ class StripeController extends Controller
         $morConsentGiven = MorConsent::userHasGivenConsent($user->id);
 
         return Inertia::render('stripe/Stripe', [
+            // ⚠️ A page prop named `auth` REPLACES the shared one, not merges with it.
+            // The full model is needed here (`creator_email_receipt_acknowledged_at`
+            // is not in the shared payload), so the shared `journey` is re-attached or
+            // the OnboardingNudge bar goes blank on this one page.
             'auth' => [
                 'user' => $user,
+                'journey' => app(CreatorJourneyService::class)->nextStep($user),
             ],
             'user' => $user,
             'mor_consent_given' => $morConsentGiven,
@@ -885,7 +895,11 @@ class StripeController extends Controller
                         }
                     }
 
-                    $businessType = ($user->country === 'AE') ? 'company' : 'individual';
+                    // ⚠️ `$country` is what the creator just picked; `$user->country` is written
+                    // from it a few lines below and is NULL for every creator who signed up on the
+                    // website (the form never asked). Reading the column here made every UAE
+                    // creator an `individual`.
+                    $businessType = ($country === 'AE') ? 'company' : 'individual';
 
                     $payload = [
                         'country' => $country,
@@ -5100,11 +5114,53 @@ class StripeController extends Controller
     public function createVerificationSession()
     {
         try {
-            Stripe::setApiKey(config('services.stripe.secret'));
             /** @var User $user */
             $user = Auth::user();
             if (! $user) {
                 return response()->json(['error' => 'User not found.'], 404);
+            }
+
+            /*
+             * 🚨 THE SAME GATE `CheckStripeIdentityVerification` APPLIES TO THE PAGE.
+             *
+             * This endpoint used to sit under "Public routes (no middleware)" with only
+             * the `$user` check above, so any signed-in account — a gifter included —
+             * could POST it in a loop and open Stripe Identity sessions on the
+             * platform's account. Identity was moved BEHIND Connect precisely because
+             * the check is billable (EnsureIdentityVerifiedForListings), and a gate on
+             * the page is worth nothing if the action it fronts has none.
+             */
+            if ((int) $user->role !== 1
+                || (int) $user->profile_status_lock !== 2
+                || (int) $user->stripe_details_submitted !== 1) {
+                return response()->json(['error' => 'Identity verification opens once your profile is approved and your payouts are connected.'], 403);
+            }
+
+            if ((int) $user->identity_status === 1) {
+                return response()->json(['error' => 'Your identity is already verified.'], 409);
+            }
+
+            // 3 = flagged by the security review. Another session is another billable
+            // check with the same answer; support has to look at it.
+            if ((int) $user->identity_status === 3) {
+                return response()->json(['error' => 'Your identity check did not pass our security review. Please contact support.'], 409);
+            }
+
+            Stripe::setApiKey(config('services.stripe.secret'));
+
+            // A session Stripe is still working on must not be duplicated: the
+            // creator finished uploading and is waiting on the webhook. A session
+            // still at `requires_input` is an abandoned tab (Stripe sends no event
+            // for that), and a fresh one is the way back in.
+            if ((int) $user->identity_status === 2 && filled($user->stripe_user_id)) {
+                try {
+                    $existing = VerificationSession::retrieve($user->stripe_user_id);
+                    if (in_array($existing->status, ['processing', 'verified'], true)) {
+                        return response()->json(['error' => 'Your identity check is already being processed. We will tell you as soon as there is a result.'], 409);
+                    }
+                } catch (Exception $e) {
+                    // Unknown session id — fall through and open a new one.
+                }
             }
             // Create Passport-Only Stripe Identity Verification Session
             $session = VerificationSession::create([
@@ -5146,8 +5202,9 @@ class StripeController extends Controller
                 $user->identity_status = 2;
             }
 
-            // Skip verification in dev environment
-            if (env('APP_ENV') !== 'production') {
+            // Skip verification outside production. ⚠️ `app()->environment()`, not a raw
+            // `env()` read — with config cached, `env()` outside config/ returns null.
+            if (! app()->isProduction()) {
                 $user->identity_status = 1;
             }
 

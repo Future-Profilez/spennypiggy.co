@@ -117,6 +117,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'identity_admin_status' => 'integer',
+        'identity_status' => 'integer',
         'identity_admin_reviewed_at' => 'datetime',
         'stripe_connected_at' => 'datetime',
         'content_posting_paused_at' => 'datetime',

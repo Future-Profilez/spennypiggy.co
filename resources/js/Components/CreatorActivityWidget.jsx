@@ -42,8 +42,15 @@ const GATE_PLATE = {
     error: ["bg-black text-white", "Status unavailable"],
 };
 
-const CARD =
-    "rounded-box border-[3px] border-black bg-white p-5 md:p-6 mt-6 lg:mt-0";
+// ⚠️ NO TOP MARGIN. This card is a child of the About tab's `gap-4`
+// column, and the `mt-6 lg:mt-0` it used to carry ADDED to that gap —
+// 40px above this one card and 16px above every other, below `lg`
+// only. Spacing between siblings belongs to the parent that lays them
+// out, never to one child. (`border-[3px]` renders at 2px: this
+// project redefines `.border-black` as a `border: 2px solid` shorthand,
+// which overwrites the width. Left as-is so the frame matches the cards
+// around it, which ask for 2px directly.)
+const CARD = "rounded-box border-[3px] border-black bg-white p-5 md:p-6";
 
 const BTN_PRIMARY =
     "inline-flex min-h-[48px] items-center justify-center rounded-box-sm border-2 border-black bg-[#FF007F] px-6 text-xs font-black uppercase tracking-[0.14em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 motion-reduce:transition-none";

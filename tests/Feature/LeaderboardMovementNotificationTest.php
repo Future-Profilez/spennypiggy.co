@@ -9,6 +9,7 @@ use App\Models\LeaderboardSnapshot;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -196,5 +197,50 @@ class LeaderboardMovementNotificationTest extends TestCase
             ->assertSuccessful();
 
         Queue::assertPushed(SendEngagementNotification::class, 1);
+    }
+
+    /**
+     * 🚨 A CREATOR WHO SLIPPED USED TO TAKE THE WHOLE RUN DOWN.
+     *
+     * `leaderboard_snapshots.rank` is `unsignedInteger`, and in MySQL an UNSIGNED minus
+     * an UNSIGNED is UNSIGNED — so for anybody whose rank got WORSE the subtraction
+     * underflows and MySQL answers 1690 "BIGINT UNSIGNED value is out of range" before
+     * the `>= minPlaces` filter can exclude them. One slipping creator meant nobody who
+     * climbed was told (JAVASCRIPT-REACT-AK).
+     *
+     * ⚠️ SQLITE HAS NO UNSIGNED TYPES, so this test can NEVER reproduce the crash and
+     * asserting on behaviour here would pass against the bug. It asserts the CAST is in
+     * the SQL the command actually issues — the only thing that is true on both engines.
+     */
+    public function test_the_rank_difference_is_cast_to_signed(): void
+    {
+        $climber = User::factory()->create(['role' => 1]);
+        $slipper = User::factory()->create(['role' => 1]);
+
+        $this->track($climber, then: 9, now: 2);
+        $this->track($slipper, then: 2, now: 9);
+
+        $statements = [];
+
+        DB::listen(function ($q) use (&$statements) {
+            $statements[] = $q->sql;
+        });
+
+        $this->artisan('leaderboard:notify-movement')->assertExitCode(0);
+
+        $movers = array_values(array_filter(
+            $statements,
+            fn ($sql) => str_contains($sql, 'leaderboard_snapshots') && str_contains($sql, 'prv')
+        ));
+
+        $this->assertNotEmpty($movers, 'The movers query did not run at all.');
+
+        foreach ($movers as $sql) {
+            $this->assertMatchesRegularExpression(
+                '/cast\s*\(\s*prv\.rank\s+as\s+signed\s*\)/i',
+                $sql,
+                'An unsigned subtraction underflows in MySQL for every creator who slipped.'
+            );
+        }
     }
 }

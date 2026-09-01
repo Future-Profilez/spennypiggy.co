@@ -107,11 +107,7 @@ class SecurityAlert
      */
     public static function recipients(): array
     {
-        $list = app()->environment('production')
-            ? (array) config('alerts.production', [])
-            : (array) config('alerts.non_production', []);
-
-        return array_values(array_unique(array_filter($list)));
+        return AlertRouter::recipients('security_events');
     }
 
     /**

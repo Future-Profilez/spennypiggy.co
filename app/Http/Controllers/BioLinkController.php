@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Rules\NoExpenseOrBrandName;
 use App\Services\BioPageService;
 use App\Services\CatalogueService;
+use App\Support\BioAppearance;
 use App\Support\BioLinkPlatforms;
 use App\Support\BioSellableItems;
 use Illuminate\Database\QueryException;
@@ -68,7 +69,70 @@ class BioLinkController extends Controller
             'stats' => [
                 'views' => (int) ($user->bio_page_views ?? 0),
             ],
+            // The creator's saved look. NULL = the default; the client maps an
+            // unknown key to the default too, so a removed preset can never
+            // blank the editor's picker.
+            'appearance' => [
+                'theme' => $user->bio_theme,
+                'item_layout' => $user->bio_item_layout,
+            ],
         ]);
+    }
+
+    /**
+     * Save the creator's chosen theme and item layout for their bio page.
+     *
+     * 🚨 THE VALUE IS A KEY INTO A CURATED SET, NEVER A COLOUR. `Rule::in`
+     * against App\Support\BioAppearance is the whole moderation story: there is
+     * nothing free-text here to scan, and no hex a creator can supply — every
+     * preset's contrast was checked at design time.
+     *
+     * ⚠️ `forceFill`, not $fillable — same pattern as `signup_landing_page` and
+     * `promo_code_id`: a column written by exactly one endpoint stays out of
+     * mass assignment so no other update path can carry it by accident.
+     *
+     * 🚨 ONLY A COLUMN THE REQUEST ACTUALLY SENT IS WRITTEN. Both are nullable,
+     * so `$data['theme'] ?? null` cannot tell "reset me to the default" from
+     * "I did not mention this field" — and a caller posting one of the two
+     * would silently reset the other. Same rule, for the same reason, as
+     * `EmailPreferenceController::applyPreferences`' `sometimes`. An explicit
+     * `null` IS a value here: it is how the editor stores "the default".
+     */
+    public function appearance(Request $request)
+    {
+        $user = $request->user();
+
+        if ((int) $user->role !== 1) {
+            return redirect()->route('dashboard');
+        }
+
+        $data = $request->validate([
+            'theme' => ['sometimes', 'nullable', 'string', Rule::in(BioAppearance::THEMES)],
+            'item_layout' => ['sometimes', 'nullable', 'string', Rule::in(BioAppearance::LAYOUTS)],
+        ]);
+
+        $changes = [];
+
+        if (array_key_exists('theme', $data)) {
+            $changes['bio_theme'] = $data['theme'];
+        }
+
+        if (array_key_exists('item_layout', $data)) {
+            $changes['bio_item_layout'] = $data['item_layout'];
+        }
+
+        if ($changes !== []) {
+            $user->forceFill($changes)->save();
+        }
+
+        /*
+         * ⚠️ NO FLASH MESSAGE. `BrandToaster` bridges `flash.success` to a toast
+         * app-wide, and this endpoint fires on every swatch tap — a creator
+         * trying five themes would stack five toasts over the preview they are
+         * trying to look at. The preview updating IS the confirmation, and the
+         * section prints "Saving…" while the request is in flight.
+         */
+        return back();
     }
 
     public function store(Request $request)

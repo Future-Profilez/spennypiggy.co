@@ -8,6 +8,7 @@ use App\Models\Membership;
 use App\Models\MonthlyCharge;
 use App\Models\PiggyPot;
 use App\Models\Shop;
+use App\Models\SocialLinks;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\WishItem;
@@ -244,8 +245,13 @@ class FirstListingNudgeTest extends TestCase
             'avatar_approved' => 1,
             'bio' => 'Hello',
             'bio_approved' => 1,
+            // Approved and live — the `review` step (31 Aug 2026) reads the lock.
+            'profile_status_lock' => 2,
             'identity_status' => 1,
         ]);
+
+        // A social handle is its own step now (31 Aug 2026).
+        SocialLinks::create(['user_id' => $creator->id, 'uuid' => (string) Str::uuid(), 'instagram' => 'spenny']);
 
         // A card on file is its own step and sits before Connect (4 Aug 2026).
         MonthlyCharge::create([

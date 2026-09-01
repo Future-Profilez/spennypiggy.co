@@ -29,7 +29,7 @@ use App\Support\Badges;
 use App\Support\DiscoveryPayload;
 use App\Support\DiscoverySources;
 use App\Support\GrowthBonusPanelPayload;
-use App\Support\OpportunityPanelPayload;
+use App\Support\ProfileSelfCheck;
 use App\Support\SubscriptionPayload;
 use App\TwitterAuthService;
 use Carbon\Carbon;
@@ -482,31 +482,20 @@ class AuthenticatedSessionController extends Controller
                 'discovery_panel' => $user->role == 1 && $isOwner
                     ? DiscoveryPayload::dashboardStatsFor($user->id)
                     : null,
-                // Enhanced Creator Earnings + Revenue Opportunity Centre — the
-                // compact module that renders directly BENEATH the Discovery
-                // panel above (Developer Master Plan, 19 Aug 2026, §C row 9:
-                // "sits alongside the SP Discovery panel so the dashboard tells
-                // one story: what SP brought you, what it's worth, what to do
-                // next").
+                // ⚠️ `opportunity_panel` WAS SENT FROM HERE UNTIL 31 Aug 2026.
                 //
-                // 🚨 OWNER ONLY, AND CREATORS ONLY — the same gate as the
-                // Discovery panel and for a stronger reason: this payload names
-                // the creator's own supporters and what each of them has spent.
-                // On a page that is ALSO the public profile, a missing gate here
-                // would publish a creator's customer list to anyone who opened
-                // their page. Null is "not your dashboard", never "no data".
+                // The dashboard module that read it was removed from the creator
+                // column (client direction — it had no role on a route that is
+                // also the public profile, and every block it drew already
+                // existed in more detail on `Creator/Financial/Opportunities`).
+                // A payload that names a creator's supporters and what each has
+                // spent must not be built, cached and shipped to the browser for
+                // a component that no longer reads it.
                 //
-                // ⚠️ Cached inside the payload class (300s, same TTL as the
-                // Discovery panel above it — two panels side by side that refresh
-                // on different clocks read as one of them being broken), and it
-                // swallows its own failures: an analytics roll-up must never be
-                // able to 500 a public profile.
-                'opportunity_panel' => $user->role == 1 && $isOwner
-                    ? OpportunityPanelPayload::forDashboard(
-                        $user,
-                        strtoupper(request()->cookie('currency', $user->default_currency ?? 'GBP'))
-                    )
-                    : null,
+                // ⚠️ `OpportunityPanelPayload` IS NOT DEAD — `CreatorFinancialController`
+                // still builds the full page from it and `EarningsIntelligenceTest`
+                // still pins it. Restoring the module is a re-add of this prop
+                // plus the component from git history.
                 /*
                  * Creator Growth Bonus (brief §6) — the creator's own position
                  * on the milestone ladder.
@@ -521,6 +510,23 @@ class AuthenticatedSessionController extends Controller
                  */
                 'growth_bonus_panel' => $user->role == 1 && $isOwner
                     ? GrowthBonusPanelPayload::forDashboard($user)
+                    : null,
+                // What the review console's advisor would flag about THIS profile,
+                // said to the creator while they can still fix it (31 Aug 2026).
+                // The admin app has told reviewers "Suggests reject — the bio
+                // contains \"gifting\"" for weeks; the creator heard it only as a
+                // rejection days later. Same lists (App\Support\ContentWording),
+                // same scan verdicts, so the two screens cannot disagree.
+                //
+                // 🚨 OWNER ONLY, CREATORS ONLY — this names the moderation scan's
+                // concern about their pending photo, on a route that is also the
+                // public profile. Null is "not your dashboard", never "all clear".
+                //
+                // ⚠️ ADVICE, NOT A VERDICT. The copy says "needs attention" /
+                // "will hold up your review"; an admin still decides, and can
+                // decide the other way. See ProfileSelfCheck's class docblock.
+                'profile_self_check' => $user->role == 1 && $isOwner
+                    ? ProfileSelfCheck::for($user, $user->social_links)
                     : null,
                 // Discovery Phase 3 — the "More creators to support" row at the
                 // foot of every public creator profile.

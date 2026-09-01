@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FinancialTransaction;
 use App\Models\MonthlyCharge;
 use App\Models\Post;
+use App\Models\SocialLinks;
 use App\Models\Task;
 use App\Models\User;
 use App\Services\CreatorJourneyService;
@@ -68,12 +69,19 @@ class CreatorJourneyTest extends TestCase
 
         $creator = $this->creator([
             'avatar' => in_array('profile', $done, true) ? 'uuid' : null,
-            'avatar_approved' => in_array('profile', $done, true) ? 1 : 0,
             'bio' => in_array('profile', $done, true) ? 'Hello' : null,
-            'bio_approved' => in_array('profile', $done, true) ? 1 : 0,
+            // Approval of the two halves is NOT what finishes `profile` — the `review`
+            // step (profile_status_lock = 2) is. Set here only so the row looks live.
+            'avatar_approved' => in_array('review', $done, true) ? 1 : 0,
+            'bio_approved' => in_array('review', $done, true) ? 1 : 0,
+            'profile_status_lock' => in_array('review', $done, true) ? 2 : 0,
             'identity_status' => in_array('identity', $done, true) ? 1 : 0,
             'stripe_details_submitted' => in_array('stripe', $done, true) ? 1 : 0,
         ]);
+
+        if (in_array('social', $done, true)) {
+            $this->handle($creator);
+        }
 
         if (in_array('subscription', $done, true)) {
             $this->cardOnFile($creator);
@@ -108,6 +116,11 @@ class CreatorJourneyTest extends TestCase
             'amount' => 8.99,
             'currency' => 'GBP',
         ]);
+    }
+
+    private function handle(User $creator): SocialLinks
+    {
+        return SocialLinks::create(['user_id' => $creator->id, 'uuid' => (string) Str::uuid(), 'instagram' => 'spenny']);
     }
 
     private function publishTask(User $creator, int $approved = 1): Task
@@ -167,18 +180,83 @@ class CreatorJourneyTest extends TestCase
     }
 
     /**
-     * ⚠️ The whole point of the feature: never ask for work already done.
+     * 🚨 THE STALL THIS EXISTS TO FIX (31 Aug 2026). Uploading a photo and a bio puts
+     * nobody in a queue — only Submit does. The journey used to read this state as
+     * "under review, nothing to do", and creators sat there indefinitely.
      */
-    public function test_a_submitted_but_unapproved_profile_is_awaiting_review_not_a_task(): void
+    public function test_an_uploaded_but_unsubmitted_profile_is_a_task_not_a_wait(): void
     {
         $creator = $this->creator(['avatar' => 'uuid', 'bio' => 'Hello', 'avatar_approved' => 0, 'bio_approved' => 0]);
 
         $next = $this->journey->nextStep($creator);
 
-        $this->assertSame('profile', $next['key']);
+        $this->assertNotSame('profile', $next['key'], 'photo and bio are in — that step is done');
+        $this->assertFalse($next['awaiting_review'], 'nothing has been handed in yet');
+        $this->assertNotNull($next['cta'], 'there is something for them to click');
+    }
+
+    /**
+     * ⚠️ The whole point of the feature: never ask for work already done.
+     */
+    public function test_a_submitted_profile_is_awaiting_review_not_a_task(): void
+    {
+        $creator = $this->creatorAt('review');
+        $creator->update(['profile_status_lock' => 1]);
+
+        $next = $this->journey->nextStep($creator->fresh());
+
+        $this->assertSame('review', $next['key']);
         $this->assertTrue($next['awaiting_review']);
-        $this->assertSame(CreatorJourneyService::REVIEW_COPY['profile']['title'], $next['title']);
+        $this->assertSame(CreatorJourneyService::REVIEW_COPY['review']['title'], $next['title']);
         $this->assertNull($next['cta'], 'there is nothing for them to click');
+    }
+
+    public function test_the_review_step_sends_them_to_the_submit_endpoint(): void
+    {
+        $next = $this->journey->nextStep($this->creatorAt('review'));
+
+        $this->assertSame('review', $next['key']);
+        $this->assertFalse($next['awaiting_review']);
+        $this->assertSame('update.profile.lock.status', $next['route']);
+    }
+
+    /** A rejection carries the reviewer's own words, not a generic "needs changes". */
+    public function test_a_rejected_submission_shows_the_reason_and_a_way_back(): void
+    {
+        $creator = $this->creatorAt('review');
+        $creator->update(['profile_status_lock' => 0, 'profile_reject_reason' => 'Bio mentions a brand name.']);
+
+        $next = $this->journey->nextStep($creator->fresh());
+
+        $this->assertSame('review', $next['key']);
+        $this->assertFalse($next['awaiting_review']);
+        $this->assertSame('Bio mentions a brand name.', $next['body']);
+        $this->assertSame(CreatorJourneyService::REJECTED_REVIEW_COPY['cta'], $next['cta']);
+    }
+
+    /** The social handle is a hard gate on submitting, so it is a step, not a surprise. */
+    public function test_a_missing_social_handle_is_its_own_step(): void
+    {
+        $creator = $this->creator(['avatar' => 'uuid', 'bio' => 'Hello']);
+
+        $this->assertSame('social', $this->journey->currentStep($creator));
+
+        $this->handle($creator);
+
+        $this->assertNotSame('social', $this->journey->currentStep($creator->fresh()));
+    }
+
+    /**
+     * ⚠️ Connect refuses anyone whose profile is not approved (StripeController::index).
+     * The journey must never send a creator there before `review` is done — that was the
+     * "Connect payouts → Your profile is not approved yet" bounce.
+     */
+    public function test_payouts_are_never_offered_before_the_profile_is_approved(): void
+    {
+        $creator = $this->creatorAt('stripe');
+        $creator->update(['profile_status_lock' => 1]);
+
+        $this->assertSame('review', $this->journey->currentStep($creator->fresh()));
     }
 
     public function test_a_half_finished_profile_is_still_the_creators_job(): void
@@ -193,9 +271,10 @@ class CreatorJourneyTest extends TestCase
         $this->assertSame(['bio'], $this->journey->missingProfileParts($creator));
     }
 
-    public function test_identity_submitted_to_stripe_is_awaiting_review(): void
+    public function test_identity_submitted_to_stripe_is_awaiting_review_but_keeps_a_way_back_in(): void
     {
-        // 2 = submitted, waiting on Stripe's answer.
+        // 2 = session opened, waiting on Stripe's answer — or a closed tab, which Stripe
+        // never reports. The copy waits AND carries a route.
         $creator = $this->creatorAt('identity');
         $creator->update(['identity_status' => 2]);
 
@@ -203,6 +282,24 @@ class CreatorJourneyTest extends TestCase
 
         $this->assertSame('identity', $next['key']);
         $this->assertTrue($next['awaiting_review']);
+        $this->assertSame('stripe.identity.verification', $next['route']);
+        $this->assertNotNull($next['cta']);
+    }
+
+    /** 3 = flagged. Not a task, not a wait — a conversation with support, and never nudged. */
+    public function test_a_flagged_identity_is_blocked_not_nagged(): void
+    {
+        $creator = $this->creatorAt('identity');
+        $creator->update(['identity_status' => 3, 'journey_step' => 'identity', 'journey_step_at' => now()->subDays(9)]);
+        $creator = $creator->fresh();
+
+        $next = $this->journey->nextStep($creator);
+
+        $this->assertSame('identity', $next['key']);
+        $this->assertTrue($next['awaiting_review']);
+        $this->assertSame(CreatorJourneyService::BLOCKED_COPY['identity']['title'], $next['title']);
+        $this->assertNull($next['route']);
+        $this->assertNull($this->journey->nudgeStageFor($creator));
     }
 
     /** ⚠️ Money that came back out is not a first sale. */

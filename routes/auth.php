@@ -233,7 +233,9 @@ Route::withoutMiddleware([VerifyCsrfToken::class])
 // referral code exists. Throttled to match.
 Route::get('/check-referral-code/{code}', [ReferAndEarnController::class, 'checkCreatorReferral'])
     ->middleware('throttle:40,1');
-Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])->name('stripe.identity.verify');
+// ⚠️ `stripe/identity/verify` used to be declared HERE, unauthenticated. It now sits in
+// the `auth`+`verified` group below with a throttle — the controller carries the same
+// role/lock/Connect gate the identity PAGE has. (31 Aug 2026)
 Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
 Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
 Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
@@ -1317,6 +1319,14 @@ Route::middleware('auth')->group(function () {
             ->middleware('throttle:30,1')
             ->name('bio.links.destroy');
 
+        // The page's look — a theme KEY from a curated set, never a colour.
+        // ⚠️ Single-segment under /bio-links, so no `{link}` route can read
+        // "appearance" as a uuid — those all carry a second segment. Checked by
+        // NoShadowedRoutesTest either way.
+        Route::post('/bio-links/appearance', [BioLinkController::class, 'appearance'])
+            ->middleware('throttle:30,1')
+            ->name('bio.appearance.save');
+
         /*
          * B stream — which of the creator's EARNING ITEMS appear on their bio
          * page, and in what order. A row here stores a type + an id, never a
@@ -1620,6 +1630,13 @@ Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('us
 Route::get('/founder/bonus', [FounderBonusController::class, 'index'])->middleware('ssr')->name('founder.bonus');
 Route::get('/founder/winners/all-time', [FounderBonusController::class, 'getAllTimeWinners'])->name('founder.winners.all-time');
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Opens a billable Stripe Identity session. Gated in the controller on role 1 +
+    // approved profile + Connect done (mirrors CheckStripeIdentityVerification), and
+    // throttled: a person needs one click, a loop needs thousands.
+    Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])
+        ->middleware('throttle:6,1')
+        ->name('stripe.identity.verify');
+
     Route::get('/founder/leaderboard', [FounderBonusController::class, 'getLeaderboard'])->name('founder.leaderboard');
     Route::get('/founder-program', [FounderBonusController::class, 'programInfo'])->name('founder.program');
     // Manual triggers — admin only (these mutate founder status / move money)

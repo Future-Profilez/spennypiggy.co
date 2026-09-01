@@ -585,8 +585,84 @@ class GrowthBonusNotificationTest extends TestCase
      * with the Total Earned card beside it — while the ledger both of them read
      * was already correct.
      */
+    /**
+     * 🚨 The card must not name a target the creator has already passed. The
+     * figure is live and the status is not, so between a sale and the evaluator
+     * the widget read "Earn £100 to unlock £25" to a creator at £108 — directly
+     * above a "To go" measured to the NEXT rung.
+     */
+    /**
+     * 🚨 "Bonus earned" summed the reward ROWS while the figure beside it was
+     * computed live, so a creator at £385 — two rungs behind them — read £25.
+     */
+    public function test_a_crossed_rung_counts_as_earned_before_its_row_exists(): void
+    {
+        $creator = $this->creator();
+        $this->income($creator, 120);
+        $this->evaluate($creator);
+
+        Queue::fake();
+        $this->income($creator, 265, '2026-09-08'); // £385 total: rungs 1 and 2
+
+        $shown = GrowthBonusPanelPayload::forDashboard($creator->fresh());
+        $ladder = config('growth_bonus.ladder');
+
+        $this->assertSame(1, GrowthBonusReward::where('creator_id', $creator->id)->count());
+        $this->assertSame(
+            (float) $ladder[0]['amount'] + (float) $ladder[1]['amount'],
+            $shown['earned_total'],
+        );
+        $this->assertSame(0.0, $shown['paid_total']);
+    }
+
+    /**
+     * ⚠️ The other direction: a PAID reward is never auto-clawed back, so its
+     * rung stays earned even after a refund drops the live figure below it.
+     */
+    public function test_a_paid_reward_stays_earned_when_gmv_falls_back(): void
+    {
+        $creator = $this->creator();
+        $this->income($creator, 120);
+        $this->evaluate($creator);
+
+        GrowthBonusReward::where('creator_id', $creator->id)
+            ->update(['status' => GrowthBonusReward::STATUS_PAID, 'paid_at' => now()]);
+
+        // The ladder alone would no longer count this rung.
+        $profile = GrowthBonusProfile::where('creator_id', $creator->id)->first();
+        $shown = GrowthBonusPanelPayload::shape($profile->fresh(), ['total' => 10.0, 'unconverted' => 0]);
+
+        $this->assertSame(10.0, $shown['qualifying_gmv']);
+        $this->assertSame((float) config('growth_bonus.ladder')[0]['amount'], $shown['earned_total']);
+    }
+
+    public function test_the_activation_reward_is_the_first_rung_not_the_next_one(): void
+    {
+        $creator = $this->creator();
+        $this->income($creator, 60);
+        $this->evaluate($creator);
+
+        // ⚠️ Faked only NOW: the profile row is the evaluator's to create, so a
+        // fake from the start leaves nothing for the dashboard to read at all.
+        Queue::fake();
+        $this->income($creator, 48, '2026-09-08');
+
+        $shown = GrowthBonusPanelPayload::forDashboard($creator->fresh());
+
+        $this->assertSame(GrowthBonusProfile::STATUS_PENDING, $shown['status']);
+        $this->assertGreaterThanOrEqual($shown['activation_gmv'], $shown['qualifying_gmv']);
+
+        $ladder = config('growth_bonus.ladder');
+        $this->assertSame((float) $ladder[0]['amount'], $shown['first_reward']);
+    }
+
     public function test_the_dashboard_figure_does_not_wait_for_the_evaluator(): void
     {
+        // ⚠️ The suite runs the queue SYNC, so the ledger hook's job would
+        // refresh the snapshot the instant the sale is written — which is the
+        // very lag this test exists to reproduce.
+        Queue::fake();
+
         $creator = $this->creator();
         $this->income($creator, 60);
         $this->evaluate($creator);
@@ -610,6 +686,10 @@ class GrowthBonusNotificationTest extends TestCase
      */
     public function test_rendering_the_dashboard_never_activates_or_claims_a_seat(): void
     {
+        // Same reason: without this the hook's job activates them, and the test
+        // could never tell a page render apart from an evaluation.
+        Queue::fake();
+
         $creator = $this->creator();
         $this->income($creator, 60);
         $this->evaluate($creator);

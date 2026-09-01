@@ -93,7 +93,7 @@ export default function CreatorPushCard({ className = "" }) {
 
     return (
         <>
-            <div className={`rounded-box border border-[#000] bg-white px-4 py-4 ${className}`}>
+            <div className={`rounded-box border-2 border-[#000] bg-white p-5 md:p-6 ${className}`}>
                 <div className="flex items-start gap-4">
                     {/* A lock screen with a notification banner on it. */}
                     <span
@@ -191,7 +191,7 @@ export default function CreatorPushCard({ className = "" }) {
                         <button
                             type="button"
                             onClick={() => setOpen(false)}
-                            className="rounded-box-sm border-2 border-black bg-white px-4 py-2 text-[13px] font-black uppercase tracking-wide text-black transition-colors duration-200 hover:bg-black/[0.04]"
+                            className="rounded-box-sm border-2 border-black bg-white px-4 py-2 text-[13px] font-black uppercase tracking-wide text-black transition-colors duration-200 hover:bg-[#F4F4F5]"
                         >
                             Cancel
                         </button>

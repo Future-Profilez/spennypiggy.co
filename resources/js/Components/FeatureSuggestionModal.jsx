@@ -184,7 +184,8 @@ export default function FeatureSuggestionModal({ show, onClose, auth }) {
                     </div>
                 </div>
 
-                {/* Action bar sticks to the bottom of the scrolling panel. */}
+                {/* Action bar sticks to the bottom of the scrolling panel.
+                    bottom-bar-safe: rendered inside Modal, which hides the bar while open */}
                 <div className="sticky bottom-0 bg-white border-t-2 border-t-black px-6 md:px-8 py-5 flex items-center justify-between gap-4">
                     <button
                         type="button"

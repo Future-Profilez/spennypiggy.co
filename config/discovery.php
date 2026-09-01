@@ -116,7 +116,7 @@ return [
          * is warming up, and the state has to answer to the real data rather
          * than to somebody remembering to flip a switch.
          */
-        'collection_min_creators' => (int) env('DISCOVERY_BIRTHDAY_MIN_CREATORS', 3),
+        'collection_min_creators' => (int) env('DISCOVERY_BIRTHDAY_MIN_CREATORS', 1),
 
         /*
          * Up to ten creators in the Monday email and on the collection page —

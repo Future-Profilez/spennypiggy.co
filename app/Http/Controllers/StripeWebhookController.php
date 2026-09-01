@@ -81,6 +81,7 @@ use App\Services\SubscriptionCheckoutService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\StripeControl as AppStripeControl;
+use App\Support\AlertRouter;
 use App\Support\IdentityFailureReason;
 use App\Support\NotificationContext;
 use App\Support\PayoutDestinationAudit;
@@ -6789,6 +6790,12 @@ class StripeWebhookController extends Controller
     //     }
     private function resolveAdminEmails(string $type = 'dispute'): array
     {
-        return Helpers::getAdminEmails();
+        /*
+         * 🚨 This parameter was accepted and IGNORED — every caller passed
+         * 'dispute' or 'fraud' and both got the identical list, so the two could
+         * not be aimed separately however anybody configured them. They are
+         * distinct channels now (System -> Alert Routing in the admin panel).
+         */
+        return AlertRouter::recipients($type === 'fraud' ? 'fraud_alerts' : 'dispute_alerts');
     }
 }

@@ -245,16 +245,4 @@ return [
 
     'debug_token' => env('LOG_DEBUG_TOKEN'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Central Admin Email List
-    |--------------------------------------------------------------------------
-    |
-    | Single source of truth for all admin notification recipients across the app.
-    | support@spennypiggy.co is intentionally restricted to production environments only.
-    |
-    */
-    'admin_emails' => env('APP_ENV') === 'production'
-        ? array_values(array_filter(array_map('trim', explode(',', env('ADMIN_EMAILS', 'support@spennypiggy.co,naveen@internetbusinesssolutionsindia.com')))))
-        : array_values(array_filter(array_map('trim', explode(',', env('ADMIN_EMAILS', 'naveen@internetbusinesssolutionsindia.com'))))),
 ];

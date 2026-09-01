@@ -73,6 +73,7 @@ export default function OnboardingOverlay() {
     if (!visible) return null;
 
     return (
+        // bottom-bar-safe: z-[99999999] sits above the bar and pads its own safe-area
         <div
             className="fixed inset-0 z-[99999999] flex flex-col overflow-hidden bg-[#FF007F] text-black"
             style={{

@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import useHideBottomBar from "@/hooks/useHideBottomBar";
 import { toast } from 'react-hot-toast';
 import { route } from 'ziggy-js';
 
@@ -27,6 +28,8 @@ function StatusModal({ suggestion, onClose }) {
         admin_notes: suggestion.admin_notes ?? '',
     });
 
+    useHideBottomBar(true);
+
     const submit = (e) => {
         e.preventDefault();
         patch(route('admin.feature-suggestions.update-status', suggestion.id), {
@@ -40,6 +43,7 @@ function StatusModal({ suggestion, onClose }) {
     };
 
     return (
+        // bottom-bar-safe: useHideBottomBar(true) hides the bar while mounted
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div className="bg-white rounded-box w-full max-w-md mx-4 overflow-hidden">
                 <div className="h-1 bg-gradient-to-r from-yellow-300 via-pink-500 to-purple-500" />

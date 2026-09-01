@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import useHideBottomBar from "@/hooks/useHideBottomBar";
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 import LoaderButton from "@/Components/LoaderButton";
@@ -112,6 +113,9 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess, s
         }
     }, [isOpen, email, !!publicKeyOptions, silent]);
 
+    // z-50 under a z-999999 bar: hide the bar while the prompt is on screen.
+    useHideBottomBar(isOpen && !silent);
+
     if (!isOpen) return null;
 
     const handleSetup = async () => {
@@ -168,6 +172,7 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess, s
     if (silent) return null;
 
     return (
+        // bottom-bar-safe: useHideBottomBar(isOpen && !silent) hides the bar while open
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/10 backdrop-blur-md px-6 ">
             <div className="bg-[#ffffff] border !border-2 border-black rounded-box p-4 md:p-8 max-w-[400px] w-full max-h-[85dvh] overflow-y-auto relative overflow-hidden">
                 {/* <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500 to-purple-500"></div> */}

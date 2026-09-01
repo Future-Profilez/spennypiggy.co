@@ -411,10 +411,10 @@ export default function Register() {
 
     const credentialsComplete = useMemo(() => {
         // A Google signup has no password to choose and its email is settled server-side, so the
-        // only thing this screen still gates is the supporter's country. Requiring a password
+        // only thing this screen still gates is the country (asked of both roles since 31 Aug 2026). Requiring a password
         // here would leave the button permanently disabled with nothing on screen to fix.
         if (googleProfile) {
-            return isCreator || !!data.country;
+            return !!data.country;
         }
 
         return (
@@ -422,7 +422,7 @@ export default function Register() {
             data.password.length > 7 &&
             !liveErrors.email &&
             !liveErrors.password &&
-            (isCreator || !!data.country) &&
+            !!data.country &&
             /* 🚨 A creator cannot leave this screen without acknowledging that the
                address they just typed is published to their supporters. The server
                already validates `creator_email_receipt_ack` as `accepted`, but that

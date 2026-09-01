@@ -62,12 +62,9 @@ import {
     MeasuringStrategy,
     defaultDropAnimation,
 } from "@dnd-kit/core";
-import PaymentUnActivated from "@/Components/PaymentUnActivated";
-import ProfileSteps from "./Profile/ProfileSteps";
 import CreatorPushCard from "@/Components/push/CreatorPushCard";
 import CreatorJourneyCard from "@/Components/CreatorJourneyCard";
 import DiscoveryStatsPanel from "@/Components/discovery/DiscoveryStatsPanel";
-import OpportunityPanel from "@/Components/earnings/OpportunityPanel";
 import MoreCreators from "@/Components/discovery/MoreCreators";
 import {
     DISCOVERY_DASHBOARD_LINES,
@@ -182,7 +179,6 @@ export default function Dashboard(props) {
         // view — it names their supporters and what each has spent, and this
         // page is also the public profile. Null is "not your dashboard", never
         // "no data yet": a creator with no sales gets a real payload of zeros.
-        opportunity_panel: opportunityPanel = null,
         growth_bonus_panel: growthBonusPanel = null,
         more_creators: moreCreators = [],
     } = props;
@@ -923,6 +919,7 @@ export default function Dashboard(props) {
                                                   </div>
                                                   {!wishOptions && (
                                                       <div
+                                                          // bottom-bar-safe: inside Popup, which hides the bar while open
                                                           className="sticky bottom-0 bg-[#FFF6EC] pt-4 flex justify-center"
                                                           style={{
                                                               paddingBottom:
@@ -949,7 +946,7 @@ export default function Dashboard(props) {
                                                                 tracking-wider
                                                                 text-black
                                                                 transition-colors
-                                                                hover:bg-black/[0.04]
+                                                                hover:bg-[#DDD3C6]
                                                                 "
                                                           >
                                                               Cancel
@@ -1288,6 +1285,20 @@ export default function Dashboard(props) {
                                                 </div>
                                             )}
 
+                                            {/* The setup checklist (socials · photo · bio · card · submit · payouts · ID)
+                                                sits HERE, on every tab, for the same reason the journey card above it
+                                                does. It used to render inside the About tab only, so a creator who
+                                                landed on /{username}/shop or /wishes had no checklist at all — and the
+                                                journey card's "Add a social handle" CTA lands on this very screen.
+                                                Self-gates on the viewer being the creator and the ID check unfinished. */}
+                                            {IsloggedIn &&
+                                                auth?.user?.role == 1 &&
+                                                auth?.user?.identity_status != 1 && (
+                                                    <div className="mb-3">
+                                                        <CreatorVerification IsloggedIn={IsloggedIn} />
+                                                    </div>
+                                                )}
+
                                             {IsloggedIn && (
                                                 <PendingChangesNotice
                                                     assets={
@@ -1299,134 +1310,6 @@ export default function Dashboard(props) {
 
                                             {IsloggedIn && (
                                                 <CreatorRiskBanner />
-                                            )}
-
-                                            {/* Discovery Phase 2 — what Spenny Piggy brought this
-                                                creator this month, above every other owner-only
-                                                card on their dashboard. The brief asks for it to be
-                                                prominent, and it sits outside the tab system on
-                                                purpose so it reads on every tab, not only About.
-
-                                                🚨 NEVER CONDITIONALLY UNMOUNTED ON THE NUMBERS. The
-                                                plan is explicit that the panel "stays visible at 0
-                                                … It is the pitch" — a creator with no Discovery
-                                                data yet sees three zeros and the explanatory line,
-                                                which is exactly what tells them the feature exists.
-                                                The only gate is `discovery_panel != null`, which
-                                                the controller sets for the OWNER of a role-1
-                                                profile and nobody else: a visitor must not read
-                                                this creator's numbers, and a supporter's dashboard
-                                                has none to read.
-
-                                                ⚠️ tone="light" because this page is white; the same
-                                                component renders dark on the marketing surfaces.
-                                                live because these are real Phase 1 figures — it is
-                                                NOT read off `discovery.analytics_live`, which
-                                                governs the mock numbers in marketing and stays
-                                                false until the client flips it. */}
-                                            {discoveryPanel && (
-                                                <DiscoveryStatsPanel
-                                                    className="mt-3"
-                                                    stats={discoveryPanel}
-                                                    live={true}
-                                                    tone="light"
-                                                    title={
-                                                        DISCOVERY_DASHBOARD_TITLE
-                                                    }
-                                                    lines={
-                                                        DISCOVERY_DASHBOARD_LINES
-                                                    }
-                                                />
-                                            )}
-
-                                            {/* Enhanced Creator Earnings + Revenue Opportunity Centre.
-                                                Client brief: Developer Master Plan, 19 Aug 2026, §C row 9 —
-                                                "sits alongside the SP Discovery panel so the dashboard tells
-                                                one story: what SP brought you, what it's worth, what to do
-                                                next". Hence directly beneath the panel above, in the same
-                                                owner-only column, outside the tab system so it reads on
-                                                every tab.
-
-                                                🚨 THIS REPLACED A PLAIN "Grow your income" LINK, and that is
-                                                the whole point of the row. The link was a door to the
-                                                numbers; the brief asks for the numbers themselves to be on
-                                                the dashboard. The module carries its own link through to the
-                                                full Opportunity Centre at the foot, so the old route in is
-                                                not lost — it is just no longer the only thing here.
-
-                                                🚨 NEVER CONDITIONALLY UNMOUNTED ON THE FIGURES, for the same
-                                                reason as the Discovery panel: a creator with no sales sees
-                                                zeros and the empty-state lines, which is what tells them the
-                                                capability exists. The only gate is `opportunity_panel != null`,
-                                                which the controller sets for the OWNER of a role-1 profile and
-                                                nobody else — this payload names their supporters and what each
-                                                has spent, and this page is also the PUBLIC profile.
-
-                                                ⚠️ Each of the brief's nine rows draws whether or not it is
-                                                ready; `config/earnings_intelligence.php` decides which ones
-                                                grey to "Coming soon". A row is never simply absent. */}
-                                            {opportunityPanel && (
-                                                <OpportunityPanel
-                                                    className="mt-3"
-                                                    panel={opportunityPanel}
-                                                />
-                                            )}
-
-                                            {/* ⚠️ THE LINK-IN-BIO CARD LIVED HERE UNTIL 30 Aug 2026.
-                                                It moved to Account Settings (Creator Studio) and the
-                                                Edit Profile popup: this route is also the PUBLIC
-                                                profile, and a creator's own admin controls belong
-                                                where the rest of them are. Both new homes are on the
-                                                creator's own path, so the feature is no less findable
-                                                than it was. See `Components/bio/BioLinkCard.jsx`. */}
-
-                                            {/* 🚨 THE ONLY WAY TO SEND ONE. The push
-                                                service, its table, its rate limit, its
-                                                moderation rules and both routes all
-                                                shipped — and `resources/js` referenced
-                                                none of them, so no creator could reach
-                                                the feature and `creator_push_messages`
-                                                sat at 0 rows. Same fault the bio page
-                                                had before the card above it.
-
-                                                Beside "Your link in bio" on purpose:
-                                                one is how new supporters find you, the
-                                                other is how the ones you already have
-                                                come back. The card self-gates — it
-                                                fetches its own allowance and renders
-                                                nothing for a non-creator. */}
-                                            {IsloggedIn && (
-                                                <CreatorPushCard className="mt-3" />
-                                            )}
-
-                                            {/* Owner-only. The six module tabs below show one type
-                                                at a time; this is the only route to the whole catalogue,
-                                                which is where a rejected or expired listing surfaces. */}
-                                            {IsloggedIn && (
-                                                <Link
-                                                    href={route(
-                                                        "catalogue.index",
-                                                    )}
-                                                    className="group mt-3 flex items-center gap-4 rounded-box border border-[#000] bg-white px-4 py-4 transition-colors duration-150 hover:bg-black/[0.04]"
-                                                >
-                                                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-box-sm border border-[#000] bg-[#05EFB8] text-2xl">
-                                                        🗂️
-                                                    </span>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="text-[18px] md:text-[22px] font-black uppercase tracking-tigher text-black">
-                                                            My listings
-                                                        </div>
-                                                        <div className="text-[13px] md:text-[15px] font-semibold text-gray-600 mt-0.5">
-                                                            Everything you sell
-                                                            in one place — and
-                                                            anything that is
-                                                            stuck.
-                                                        </div>
-                                                    </div>
-                                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#000] bg-[#FF007F] text-black text-lg font-black">
-                                                        ›
-                                                    </span>
-                                                </Link>
                                             )}
 
                                             <div className="userManageRt mt-4 mb-10">
@@ -1474,6 +1357,214 @@ export default function Dashboard(props) {
                                                                         >
                                                                             {/* About tab: single-column flow — intro, status, highlights, posts */}
                                                                             <div className="flex flex-col gap-4 about-sec self-start w-full">
+                                                                                {/* 🚨 THE CREATOR'S OWN READINGS AND SHORTCUTS LIVE HERE
+                                                                                    AS OF 31 Aug 2026 (client direction) — Discovery, the
+                                                                                    Revenue Opportunities link, "Tell your supporters" and
+                                                                                    "My listings". They used to sit in the owner column
+                                                                                    ABOVE the tab strip, where they were ~900px of
+                                                                                    owner-only material that every tab had to be scrolled
+                                                                                    past, including the module tabs a creator opens to
+                                                                                    check their own listings.
+
+                                                                                    ⚠️ WHAT STAYED OUTSIDE, AND WHY: the journey card,
+                                                                                    the pending-changes notice and the risk banner. Those
+                                                                                    are states that CHANGE WHAT THE CREATOR CAN DO — a
+                                                                                    held payout or a rejected asset must not be readable
+                                                                                    only from one tab. A reading can wait for About; a
+                                                                                    blocker cannot.
+
+                                                                                    ⚠️ Each block keeps its own owner gate (`IsloggedIn`
+                                                                                    here means "the creator is viewing their OWN profile",
+                                                                                    and `discovery_panel` is set for the owner alone), so
+                                                                                    a visitor on this same public tab sees none of it.
+
+                                                                                    ⚠️ ONE RHYTHM: the group is a `gap-4` column and no
+                                                                                    child carries its own top margin. Mixing `gap` with
+                                                                                    per-card `mt-3` gave 16px between some pairs and 28px
+                                                                                    between others — the kind of unevenness that reads as
+                                                                                    "unfinished" without being nameable. */}
+                                                                                <div className="flex flex-col gap-4">
+                                                                                {/* Discovery Phase 2 — what Spenny Piggy brought this
+                                                                                    creator this month, above every other owner-only
+                                                                                    card on their dashboard. The brief asks for it to be
+                                                                                    prominent.
+
+                                                                                    ⚠️ IT LIVES INSIDE THE ABOUT TAB AS OF 31 Aug 2026
+                                                                                    (client direction), having previously sat outside
+                                                                                    the tab system so it read on every tab. What that
+                                                                                    bought — the numbers visible from Wishes or Shop —
+                                                                                    cost the creator's own listings their place above
+                                                                                    the fold on every one of those tabs. About is where
+                                                                                    a creator reads about themselves, so this is where
+                                                                                    their own readings belong.
+
+                                                                                    🚨 NEVER CONDITIONALLY UNMOUNTED ON THE NUMBERS. The
+                                                                                    plan is explicit that the panel "stays visible at 0
+                                                                                    … It is the pitch" — a creator with no Discovery
+                                                                                    data yet sees three zeros and the explanatory line,
+                                                                                    which is exactly what tells them the feature exists.
+                                                                                    The only gate is `discovery_panel != null`, which
+                                                                                    the controller sets for the OWNER of a role-1
+                                                                                    profile and nobody else: a visitor must not read
+                                                                                    this creator's numbers, and a supporter's dashboard
+                                                                                    has none to read.
+
+                                                                                    ⚠️ tone="light" because this page is white; the same
+                                                                                    component renders dark on the marketing surfaces.
+                                                                                    live because these are real Phase 1 figures — it is
+                                                                                    NOT read off `discovery.analytics_live`, which
+                                                                                    governs the mock numbers in marketing and stays
+                                                                                    false until the client flips it. */}
+                                                                                {discoveryPanel && (
+                                                                                    <DiscoveryStatsPanel
+                                                                                        stats={discoveryPanel}
+                                                                                        live={true}
+                                                                                        tone="light"
+                                                                                        scale="compact"
+                                                                                        title={
+                                                                                            DISCOVERY_DASHBOARD_TITLE
+                                                                                        }
+                                                                                        lines={
+                                                                                            DISCOVERY_DASHBOARD_LINES
+                                                                                        }
+                                                                                    />
+                                                                                )}
+
+                                                                                {/* 🚨 THE REVENUE OPPORTUNITY MODULE WAS REMOVED FROM
+                                                                                    THIS COLUMN ON 31 Aug 2026 (client direction) — only
+                                                                                    this link to it remains.
+
+                                                                                    It drew "Do this next", "Alerts" and a four-tile
+                                                                                    balance here, 734px of owner-only analytics wedged
+                                                                                    between the Discovery panel and the creator's own
+                                                                                    listings, on a route that is ALSO their public
+                                                                                    profile. Every one of those blocks already existed
+                                                                                    on `Creator/Financial/Opportunities`, in more
+                                                                                    detail, so this column was a second, smaller copy
+                                                                                    of a whole page — and it pushed the thing a creator
+                                                                                    actually opens their profile to see below the fold.
+
+                                                                                    ⚠️ THE ACT-FIRST ORDER MOVED WITH IT. "What to do
+                                                                                    next" and the alerts were seventh and sixth of nine
+                                                                                    on that page; they are now first and second, because
+                                                                                    this dashboard copy is no longer covering for the
+                                                                                    order over there. See the note in that file.
+
+                                                                                    ⚠️ `opportunity_panel` IS NO LONGER SENT by
+                                                                                    `AuthenticatedSessionController` — a payload that
+                                                                                    names a creator's supporters and their spend was
+                                                                                    being built (and cached) on every owner profile load
+                                                                                    for a component that no longer reads it. The payload
+                                                                                    class itself is untouched and still feeds the full
+                                                                                    page; restoring the module is a re-add of the prop
+                                                                                    plus a re-add of the component from git history.
+
+                                                                                    ⚠️ Gated on `IsloggedIn`, which on this page means
+                                                                                    "the creator is viewing their OWN profile" — the same
+                                                                                    gate as "My listings" directly below, which this card
+                                                                                    deliberately matches so the two read as one pair. */}
+                                                                                {IsloggedIn && (
+                                                                                    <Link
+                                                                                        href={route(
+                                                                                            "financial.opportunities",
+                                                                                        )}
+                                                                                        /* 🚨 AN OPAQUE HOVER, NEVER `hover:bg-black/[0.04]`.
+                                                        That class does not TINT a white card — it
+                                                        REPLACES the background with a 96%
+                                                        transparent black, so the page shows
+                                                        through. This column sits on the mint
+                                                        ground, so the card washed GREEN on hover
+                                                        instead of darkening. Same value as "My
+                                                        listings" below, which is the pair this card
+                                                        belongs to. Reported against
+                                                        `MoreCreators` on 21 Aug 2026 and
+                                                        documented in CLAUDE.md. */
+                                                    className="group flex items-center gap-4 rounded-box border-2 border-[#000] bg-white px-5 py-5 transition-colors duration-150 hover:bg-[#F4F4F5]"
+                                                                                    >
+                                                                                        <span
+                                                                                            aria-hidden="true"
+                                                                                            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-box-sm border border-[#000] bg-[#05EFB8] text-2xl"
+                                                                                        >
+                                                                                            📈
+                                                                                        </span>
+                                                                                        <div className="min-w-0 flex-1">
+                                                                                            <div className="text-[18px] font-black uppercase text-black md:text-[22px]">
+                                                                                                Revenue opportunities
+                                                                                            </div>
+                                                                                            <div className="mt-0.5 text-[13px] font-semibold text-gray-600 md:text-[15px]">
+                                                                                                Who is buying, what they are worth, and
+                                                                                                what to do next.
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        {/* Black on pink, never white — 5.56:1 against
+                                                                                            white's 3.78:1. */}
+                                                                                        <span
+                                                                                            aria-hidden="true"
+                                                                                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#000] bg-[#FF007F] text-lg font-black text-black"
+                                                                                        >
+                                                                                            ›
+                                                                                        </span>
+                                                                                    </Link>
+                                                                                )}
+
+                                                                                {/* ⚠️ THE LINK-IN-BIO CARD LIVED HERE UNTIL 30 Aug 2026.
+                                                                                    It moved to Account Settings (Creator Studio) and the
+                                                                                    Edit Profile popup: this route is also the PUBLIC
+                                                                                    profile, and a creator's own admin controls belong
+                                                                                    where the rest of them are. Both new homes are on the
+                                                                                    creator's own path, so the feature is no less findable
+                                                                                    than it was. See `Components/bio/BioLinkCard.jsx`. */}
+
+                                                                                {/* 🚨 THE ONLY WAY TO SEND ONE. The push
+                                                                                    service, its table, its rate limit, its
+                                                                                    moderation rules and both routes all
+                                                                                    shipped — and `resources/js` referenced
+                                                                                    none of them, so no creator could reach
+                                                                                    the feature and `creator_push_messages`
+                                                                                    sat at 0 rows. Same fault the bio page
+                                                                                    had before the card above it.
+
+                                                                                    Beside "Your link in bio" on purpose:
+                                                                                    one is how new supporters find you, the
+                                                                                    other is how the ones you already have
+                                                                                    come back. The card self-gates — it
+                                                                                    fetches its own allowance and renders
+                                                                                    nothing for a non-creator. */}
+                                                                                {IsloggedIn && (
+                                                                                    <CreatorPushCard />
+                                                                                )}
+
+                                                                                {/* Owner-only. The six module tabs show one type
+                                                                                    at a time; this is the only route to the whole catalogue,
+                                                                                    which is where a rejected or expired listing surfaces. */}
+                                                                                {IsloggedIn && (
+                                                                                    <Link
+                                                                                        href={route(
+                                                                                            "catalogue.index",
+                                                                                        )}
+                                                                                        className="group flex items-center gap-4 rounded-box border-2 border-[#000] bg-white px-5 py-5 transition-colors duration-150 hover:bg-[#F4F4F5]"
+                                                                                    >
+                                                                                        <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-box-sm border border-[#000] bg-[#05EFB8] text-2xl">
+                                                                                            🗂️
+                                                                                        </span>
+                                                                                        <div className="min-w-0 flex-1">
+                                                                                            <div className="text-[18px] md:text-[22px] font-black uppercase tracking-tigher text-black">
+                                                                                                My listings
+                                                                                            </div>
+                                                                                            <div className="text-[13px] md:text-[15px] font-semibold text-gray-600 mt-0.5">
+                                                                                                Everything you sell
+                                                                                                in one place — and
+                                                                                                anything that is
+                                                                                                stuck.
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#000] bg-[#FF007F] text-black text-lg font-black">
+                                                                                            ›
+                                                                                        </span>
+                                                                                    </Link>
+                                                                                )}
+                                                                                </div>
+
                                                                                 {/* The creator's OWN founder progress — real numbers, so it
                                                                                     stays as an action card above the promo deck. The deck's
                                                                                     founder card is excluded while this renders (see the
@@ -1654,27 +1745,23 @@ export default function Dashboard(props) {
                                                                                     About me — it is the creator's payment status and was
                                                                                     unreadable buried here. Rendering it in both places
                                                                                     left the page saying the same thing twice. */}
-                                                                                {IsloggedIn &&
-                                                                                auth
-                                                                                    ?.user
-                                                                                    ?.role ==
-                                                                                    1 &&
-                                                                                auth
-                                                                                    ?.user
-                                                                                    ?.identity_status !==
-                                                                                    1 ? (
-                                                                                    <CreatorVerification
-                                                                                        IsloggedIn={
-                                                                                            IsloggedIn
-                                                                                        }
-                                                                                    />
-                                                                                ) : (
-                                                                                    ""
-                                                                                )}
 
                                                                                 {IsloggedIn && (
-                                                                                    <div className="w-full h-auto">
-                                                                                        <div>
+                                                                                    /* ⚠️ `empty:hidden` — these warnings render nothing most of
+                                                                                       the time, and an empty flex child still takes a `gap-4`
+                                                                                       slot, so a healthy account got a 32px seam here with
+                                                                                       nothing in it. The nested div that used to sit inside was
+                                                                                       doing nothing and would have kept this one from ever
+                                                                                       matching `:empty`.
+
+                                                                                       ⚠️ A PLAIN BLOCK COMMENT, NOT THE BRACED JSX FORM: inside
+                                                                                       a parenthesised branch the braced comment form is an OBJECT
+                                                                                       LITERAL and fails the whole build. And do not quote the
+                                                                                       closing token while explaining it — that ends the comment
+                                                                                       early and turns the rest into code. Both are in CLAUDE.md
+                                                                                       and both were hit here, in that order. Only esbuild catches
+                                                                                       them; no scanner does. */
+                                                                                    <div className="w-full h-auto empty:hidden">
                                                                                             <DashboardStripeMigrationWarning
                                                                                                 migrationStatus={
                                                                                                     migration_status
@@ -1975,7 +2062,6 @@ export default function Dashboard(props) {
                                                                                             ) : (
                                                                                                 ""
                                                                                             )}
-                                                                                        </div>
                                                                                     </div>
                                                                                 )}
                                                                                 {props.piggyPotTopSupporters &&
@@ -2012,34 +2098,6 @@ export default function Dashboard(props) {
                                                                                     )}
 
                                                                                 <div className="w-full">
-                                                                                    {IsloggedIn &&
-                                                                                    UserStripeConnected ==
-                                                                                        1 ? (
-                                                                                        <>
-                                                                                            <Suspense
-                                                                                                fallback={
-                                                                                                    <div className="mb-4">
-                                                                                                        Loading
-                                                                                                        steps...
-                                                                                                    </div>
-                                                                                                }
-                                                                                            >
-                                                                                                <ProfileSteps
-                                                                                                    sLinks={
-                                                                                                        sLinks
-                                                                                                    }
-                                                                                                    user={
-                                                                                                        user
-                                                                                                    }
-                                                                                                    IsloggedIn={
-                                                                                                        IsloggedIn
-                                                                                                    }
-                                                                                                />
-                                                                                            </Suspense>
-                                                                                        </>
-                                                                                    ) : (
-                                                                                        ""
-                                                                                    )}
 
                                                                                     {!IsloggedIn &&
                                                                                     UserStripeConnected ==
@@ -2099,10 +2157,19 @@ export default function Dashboard(props) {
                                                                         ""
                                                                     )}
 
-                                                                    {IsloggedIn ||
-                                                                    UserStripeConnected ==
-                                                                        1 ? (
-                                                                        <>
+                                                                    {/* 🚨 THE WHOLE MODULE AREA USED TO BE REPLACED BY A YELLOW
+                                                                        "WISHLIST NOT ACTIVATED YET" BANNER for any visitor when the
+                                                                        creator had not connected Stripe (`IsloggedIn ||
+                                                                        UserStripeConnected == 1`, else `PaymentUnActivated`). It read
+                                                                        to a supporter as a broken profile, and it hid every listing
+                                                                        the creator had already made — on a page that is the creator's
+                                                                        shop window. Removed 30 Aug 2026: the listings render normally
+                                                                        and a purchase is still refused server-side, where the refusal
+                                                                        names the real cause (`CreatorAvailabilityMessageService`) and
+                                                                        is recorded (`BlockedPaymentAlert::record`, `stripe_disabled`).
+                                                                        ⚠️ `IsloggedIn` here means "the creator is viewing their OWN
+                                                                        profile", not "somebody is signed in". */}
+                                                                    <>
                                                                             {page ===
                                                                             "wishes" ? (
                                                                                 <ErrorBoundary>
@@ -2853,12 +2920,6 @@ export default function Dashboard(props) {
                                                                                 ""
                                                                             )}
                                                                         </>
-                                                                    ) : (
-                                                                        <PaymentUnActivated
-                                                                            heading={`WishList not activated yet.`}
-                                                                            subheading={`Until this creator finishes setting up payments, they can't sell content here yet.`}
-                                                                        />
-                                                                    )}
                                                                 </>
                                                             </div>
                                                         </div>

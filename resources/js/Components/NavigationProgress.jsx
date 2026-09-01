@@ -76,7 +76,8 @@ export default function NavigationProgress() {
             aria-live="polite"
             aria-busy="true"
             aria-label="Loading"
-            /* Above the bottom bar (999999) AND the drawer (1000002): the tap
+            /* bottom-bar-safe: z above the bar, and pointer-events none.
+               Above the bottom bar (999999) AND the drawer (1000002): the tap
                that started this often came from one of them, so a veil under
                either would leave the control that was just pressed looking live.
 

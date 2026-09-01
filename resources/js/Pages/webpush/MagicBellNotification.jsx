@@ -422,6 +422,7 @@ const MagicBellNotification = () => {
         {(props) => (
           <>
             {props.isOpen && (
+              // bottom-bar-safe: dimming backdrop only; the panel is top-anchored
               <div
                 className="fixed inset-0 bg-black/5 z-[9998] cursor-default backdrop-blur-[1px]"
                 onClick={(e) => {

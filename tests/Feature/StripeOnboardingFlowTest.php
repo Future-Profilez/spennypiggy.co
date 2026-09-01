@@ -126,11 +126,13 @@ class StripeOnboardingFlowTest extends TestCase
             'bio_approved' => 0,
         ]);
 
-        $profile = collect(app(CreatorJourneyService::class)->stepStates($creator))
-            ->firstWhere('key', 'profile');
+        // `review` is the step that waits on an admin (31 Aug 2026); `profile` is
+        // "photo and bio uploaded" and is done by the creator alone.
+        $review = collect(app(CreatorJourneyService::class)->stepStates($creator))
+            ->firstWhere('key', 'review');
 
-        $this->assertFalse($profile['done']);
-        $this->assertTrue($profile['awaiting_review']);
+        $this->assertFalse($review['done']);
+        $this->assertTrue($review['awaiting_review']);
     }
 
     // ── The subscription gate ───────────────────────────────────────────────

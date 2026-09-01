@@ -46,7 +46,9 @@ class FinishYourSetup extends Mailable
 
         return match ($step) {
             'profile' => $second ? 'Your page is still missing a photo' : 'Finish your Spenny Piggy page',
+            'social' => $second ? 'Your page still has no social handle' : 'Add a social handle to your page',
             'subscription' => $second ? 'One step left before you can sell' : 'Add your card to finish setting up',
+            'review' => $second ? 'Your profile is still waiting to be submitted' : 'Send your profile for review',
             'stripe' => $second ? 'Your earnings have nowhere to go yet' : 'Connect your payouts',
             'identity' => $second ? 'Your identity check is still unfinished' : 'Finish your identity check',
             'first_post' => $second ? 'Your members are waiting for a post' : 'Write your first post',
@@ -66,7 +68,9 @@ class FinishYourSetup extends Mailable
     {
         return match ($step) {
             'profile' => 'Supporters decide whether to buy from a page that looks finished, and this is the fastest thing you can do today.',
+            'social' => 'The review team checks one account you post on to confirm the page is yours — it is the quickest thing standing between you and approval.',
             'subscription' => 'Nothing is charged until your first sale — this is only so we can bill you once you are earning.',
+            'review' => 'Everything the review needs is on your page. It is not in the queue until you press Submit — nothing is checked, and payouts stay locked, until you do.',
             'stripe' => 'Until your bank details are connected, anything you sell has nowhere to be paid out to.',
             'identity' => 'You started this check but it was never completed, so it is still open. Nothing on your page can be listed for sale until it is finished — it takes about two minutes with your passport.',
             'first_post' => 'Posts are what your members see after they buy, and one is enough to give a subscriber a reason to stay.',
@@ -154,7 +158,9 @@ class FinishYourSetup extends Mailable
     {
         return match ($this->step) {
             'profile' => '🎀',
+            'social' => '🔗',
             'subscription' => '💳',
+            'review' => '✅',
             'stripe' => '💸',
             'identity' => '🪪',
             'first_post' => '📝',

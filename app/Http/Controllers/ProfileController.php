@@ -45,8 +45,10 @@ use App\Models\UserVerificationStatus;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
+use App\Rules\NoExpenseOrBrandName;
 use App\Services\Ledger\LedgerRules;
 use App\Services\NotificationDeliveryService;
+use App\Services\NotificationDispatcher;
 use App\Services\RekognitionModeration;
 use App\Services\Risk\EffectiveLimitsService;
 use App\Services\Risk\RiskIdentityService;
@@ -55,6 +57,7 @@ use App\StripeControl;
 use App\Support\Badges;
 use App\Support\PresetCovers;
 use App\Support\ProfileAssetVisibility;
+use App\Support\ProfileSelfCheck;
 use App\Support\SecureMedia;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -218,7 +221,13 @@ class ProfileController extends Controller
                     'name' => ['string', 'max:255'],
                     'username' => ['string', 'lowercase', 'regex:/^[a-zA-Z0-9_\.]+$/', 'max:20', Rule::unique('users')->ignore($user->id)],
                     'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-                    'bio' => ['nullable', 'string', 'max:255'], // updated
+                    // 🚨 The bio had NO content rule at all until 31 Aug 2026 —
+                    // "gifting" sailed through this form and sat in the review
+                    // queue for days until an admin typed the refusal by hand.
+                    // Same rule every listing title already passes; a failure
+                    // lands as a normal field error (the ValidationException
+                    // rethrow below keeps it out of the generic catch).
+                    'bio' => ['nullable', 'string', 'max:255', new NoExpenseOrBrandName],
                     // Checked against App\Support\Badges, the ONE definition —
                     // this used to accept any array of any strings, into a
                     // column two SEO builders print into meta keywords.
@@ -539,6 +548,19 @@ class ProfileController extends Controller
                         'avatar'
                     );
                 } elseif ($avatarChanged && ! empty($user->avatar)) {
+                    // 🚨 A NEW image gets a FRESH verdict. The scan only ever
+                    // WRITES `users.moderation_reason` — a clean result writes
+                    // nothing — so a reason left by the previous photo would
+                    // outlive it and be read (by CreatorReviewAdvisor and
+                    // ProfileSelfCheck, both keyed on `moderation_asset`) as a
+                    // verdict on the photo that replaced it.
+                    if ($user->moderation_asset === 'avatar') {
+                        $user->forceFill([
+                            'moderation_asset' => null,
+                            'moderation_reason' => null,
+                        ])->save();
+                    }
+
                     CheckMediaModeration::dispatch(
                         User::class,
                         $user->id,
@@ -560,6 +582,14 @@ class ProfileController extends Controller
                         'cover'
                     );
                 } elseif ($coverChanged && ! empty($user->cover) && ! PresetCovers::isPreApproved($user->cover)) {
+                    // Same fresh-verdict rule as the avatar above.
+                    if ($user->moderation_asset === 'cover') {
+                        $user->forceFill([
+                            'moderation_asset' => null,
+                            'moderation_reason' => null,
+                        ])->save();
+                    }
+
                     CheckMediaModeration::dispatch(
                         User::class,
                         $user->id,
@@ -646,11 +676,80 @@ class ProfileController extends Controller
             $user->profile_reject_reason = null;
             $user->save();
 
+            $this->notifySelfCheckFindings($user);
+
             return back()->with('success', 'Your Verification Request Submit Successfully.');
         } catch (\Exception $e) {
             Log::error('Error updating profile lock status: '.$e->getMessage());
 
             return back()->with('error', 'Failed to update profile lock status. Please try again later.');
+        }
+    }
+
+    /**
+     * Tell a creator, at the moment they submit, what is likely to hold them up.
+     *
+     * 🚨 THE POINT IS THE TIMING. The review console has flagged these things to
+     * reviewers all along; the creator heard about them days later, as a
+     * rejection. Sending it now means they can fix it and resubmit today —
+     * `ProfileSelfCheck` only ever names things they can act on themselves.
+     *
+     * ⚠️ FIRES ON SUBMIT ONLY, so creators already sitting in the queue are not
+     * mailed about a submission they made before this existed. They still see
+     * every finding on their own profile steps.
+     *
+     * ⚠️ Bell + push, never email. This is a nudge about their own account, not
+     * a decision — a decision already has its own mail, and two messages about
+     * one submission reads as two separate problems.
+     *
+     * 🚨 NEVER THROWS. It runs inside the submit request, and a notification
+     * failure must not make a submitted profile look unsubmitted. Same house
+     * pattern as VisitTracker and BlockedPaymentAlert.
+     */
+    private function notifySelfCheckFindings(User $user): void
+    {
+        try {
+            $findings = ProfileSelfCheck::for($user, $user->social_links);
+
+            if (! $findings) {
+                return;
+            }
+
+            // ⚠️ Keyed on WHAT IS WRONG, not on the submission. A creator who
+            // resubmits without changing anything is not told the same thing
+            // twice; one who fixes the bio and still has a shortened link is,
+            // because that is a different sentence.
+            $key = 'findings:'.md5(implode('|', array_column($findings, 'message')));
+
+            if (! NotificationDispatcher::claim($user->id, 'profile_self_check', $key)) {
+                return;
+            }
+
+            $body = $findings[0]['message'];
+
+            if (count($findings) > 1) {
+                $body .= ' There '.(count($findings) === 2 ? 'is 1 other point' : 'are '.(count($findings) - 1).' other points')
+                    .' to look at on your profile.';
+            }
+
+            NotificationDispatcher::queue(
+                $user,
+                'profile_self_check',
+                [
+                    'title' => 'This may hold up your review',
+                    'body' => $body,
+                    'url' => '/'.$user->username,
+                    'module' => 'profile',
+                ],
+                [NotificationDispatcher::CHANNEL_BELL, NotificationDispatcher::CHANNEL_PUSH],
+                // Their own account's review state — a marketing opt-out must
+                // not silence it.
+                false
+            );
+        } catch (\Throwable $e) {
+            Log::warning('ProfileSelfCheck notification failed: '.$e->getMessage(), [
+                'user_id' => $user->id,
+            ]);
         }
     }
 

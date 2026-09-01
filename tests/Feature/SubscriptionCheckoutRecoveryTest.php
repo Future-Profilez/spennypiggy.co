@@ -9,6 +9,7 @@ use App\Services\NotificationDispatcher;
 use App\Services\SubscriptionActivationService;
 use App\Services\SubscriptionCheckoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 /**
@@ -250,6 +251,96 @@ class SubscriptionCheckoutRecoveryTest extends TestCase
             EngagementNotification::where('user_id', $user->id)
                 ->where('type', 'subscription_checkout')
                 ->count()
+        );
+    }
+
+    /**
+     * 🚨 A creator who abandoned twice and then succeeded was told TWICE that
+     * their card was not saved, minutes after it was — the reminder is keyed on
+     * the checkout, and the two dead rows knew nothing about the live one.
+     */
+    public function test_a_stale_checkout_is_closed_when_the_creator_already_has_a_card(): void
+    {
+        $user = $this->creator();
+
+        $this->startedCheckout($user, [
+            'status' => SubscriptionCheckoutService::STATUS_CARD_ON_FILE,
+            'stripe_payment_method' => 'pm_test123',
+        ]);
+
+        $stale = $this->startedCheckout($user);
+        $stale->forceFill(['created_at' => now()->subHours(2)])->save();
+
+        $this->artisan('subscription:reconcile-checkouts')
+            ->expectsOutputToContain('closed 1')
+            ->assertSuccessful();
+
+        $this->assertSame(
+            SubscriptionCheckoutService::STATUS_DEAD,
+            $stale->fresh()->status
+        );
+
+        $this->assertSame(
+            0,
+            EngagementNotification::where('user_id', $user->id)
+                ->where('type', 'subscription_checkout')
+                ->count()
+        );
+    }
+
+    /**
+     * ⚠️ "Card on file" is anything that is not `initiated` and not `expired`.
+     * `past_due` is a creator being chased for money they already owe us — the
+     * last person who should be told their card was never saved.
+     */
+    public function test_a_past_due_subscription_also_counts_as_a_card_on_file(): void
+    {
+        $user = $this->creator();
+
+        $this->startedCheckout($user, ['status' => 'past_due']);
+
+        $stale = $this->startedCheckout($user);
+        $stale->forceFill(['created_at' => now()->subHours(2)])->save();
+
+        $this->artisan('subscription:reconcile-checkouts --dry-run')
+            ->expectsOutputToContain('would close #'.$stale->id)
+            ->assertSuccessful();
+    }
+
+    /**
+     * The control. Without a card on file the guard must not fire, or it becomes
+     * a way of closing every unfinished checkout on the platform unasked.
+     *
+     * ⚠️ Another creator's `trialing` row must not answer for this one.
+     */
+    public function test_a_creator_with_no_card_is_still_swept_normally(): void
+    {
+        $somebodyElse = $this->creator();
+        $this->startedCheckout($somebodyElse, [
+            'status' => SubscriptionCheckoutService::STATUS_CARD_ON_FILE,
+        ]);
+
+        $user = $this->creator();
+        $stale = $this->startedCheckout($user);
+        $stale->forceFill(['created_at' => now()->subHours(2)])->save();
+
+        // ⚠️ Asserted on the REASON, not on the counts. Whether the sweep then
+        // closes this row is Stripe's answer about the session and is not what
+        // this test is about — what must not happen is the guard deciding it.
+        // ⚠️ Laravel mocks console output for `$this->artisan()`, and that mock
+        // makes `Artisan::output()` empty.
+        $this->withoutMockingConsoleOutput();
+
+        $this->assertSame(0, Artisan::call('subscription:reconcile-checkouts', ['--dry-run' => true]));
+
+        $output = Artisan::output();
+
+        $this->assertStringContainsString('Examined 1', $output);
+        $this->assertStringNotContainsString('superseded_by_card_on_file', $output);
+
+        $this->assertSame(
+            SubscriptionCheckoutService::STATUS_STARTED,
+            $stale->fresh()->status
         );
     }
 }

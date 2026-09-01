@@ -31,12 +31,25 @@
 |   · The page says plainly that Spenny Piggy is SFW-only, as a description of
 |     this platform and never as a judgement of the reader.
 |
+| ✅ PUBLISHED 31 Aug 2026, on the client's instruction. Every claim below is
+| sourced to WishTender's own posts and no fee row is flagged `verify`, which
+| `CompetitorSheet::assertValid()` now enforces rather than trusts.
+|
+| 🚨 THE SIX RULES ABOVE ARE NOT ADVISORY NOW THAT THIS IS LIVE. This page names a
+| closed business and its former payment provider on a public, indexable URL;
+| every one of them is what keeps that defensible. Re-read them before editing a
+| single line.
+|
+| ⚠️ Publishing it also restores the `RiskBlock` link that every other comparison
+| page carries — `/creators/vs/wishtender` was a 404 in production until now, so
+| that link was gated off (`wishtenderLive`). It comes back on its own.
+|
 | ⚠️ There is deliberately NO fee table. WishTender charges nobody anything now,
 | and a fee comparison against a closed business would be point-scoring.
 */
 
 return [
-    'published' => false,
+    'published' => true,
     'layout' => 'case_study',
 
     'name' => 'WishTender',

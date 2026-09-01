@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import useHideBottomBar from "@/hooks/useHideBottomBar";
 import axios from "axios";
 import { HelpCircle, X, ExternalLink, Loader2 } from "lucide-react";
 import ArticleBody from "./ArticleBody";
@@ -73,6 +74,10 @@ export default function HelpLink({
 
     useEffect(() => () => controllerRef.current?.abort(), []);
 
+    // The phone sheet rises from the foot of the screen, where the bottom bar
+    // (z 999999) sat over its last lines. Hide the bar while it is open.
+    useHideBottomBar(open);
+
     useEffect(() => {
         if (!open) return undefined;
         const onDown = (e) => {
@@ -110,6 +115,7 @@ export default function HelpLink({
             {open && (
                 // Bottom sheet on a phone, popover from `sm`. A popover anchored
                 // to an inline control is unreadable at 390px.
+                // bottom-bar-safe: useHideBottomBar(open) hides the bar while open
                 <div className="fixed inset-x-0 bottom-0 z-50 sm:absolute sm:inset-auto sm:left-0 sm:top-full sm:mt-2 sm:w-[min(28rem,90vw)]">
                     <div className="max-h-[75dvh] overflow-y-auto rounded-box border-[3px] border-black bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-4">
                         <div className="mb-2 flex items-start justify-between gap-3">

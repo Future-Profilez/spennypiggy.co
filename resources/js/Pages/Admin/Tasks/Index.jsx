@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import useHideBottomBar from "@/hooks/useHideBottomBar";
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Search, RefreshCw, Eye, CheckCircle, XCircle, Clock, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -20,8 +21,10 @@ const STATUS_CONFIG = {
 };
 
 function ProofModal({ proof, onClose }) {
+    useHideBottomBar(Boolean(proof));
     if (!proof) return null;
     return (
+        // bottom-bar-safe: useHideBottomBar(Boolean(proof)) hides the bar while open
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="bg-white rounded-box  p-6 max-w-2xl w-full max-h-[85dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-4">
@@ -66,7 +69,10 @@ function ResolveModal({ purchase, onClose, onDone }) {
         });
     };
 
+    useHideBottomBar(true);
+
     return (
+        // bottom-bar-safe: useHideBottomBar(true) hides the bar while mounted
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="bg-white rounded-box  p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
                 <h3 className="font-bold text-lg mb-2">Resolve Escalated Task</h3>

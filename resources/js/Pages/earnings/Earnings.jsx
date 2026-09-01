@@ -219,7 +219,7 @@ export default function Earnings(props) {
             </header>
 
             {/* ── Where it came from ─────────────────────────────────────── */}
-            <main className="bg-[#FAFAFA] min-h-dvh pt-10 pb-24">
+            <main className="bg-[#FAFAFA] min-h-dvh pt-10 !pb-16">
                 <div className="containerbox">
                     <SectionHead
                         eyebrow="By source"

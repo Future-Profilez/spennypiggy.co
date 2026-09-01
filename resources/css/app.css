@@ -1351,3 +1351,11 @@ lr-config {
         padding-bottom: 0;
     }
 }
+
+
+@media (max-width: 400px) {
+    .container, .containerbox {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+}

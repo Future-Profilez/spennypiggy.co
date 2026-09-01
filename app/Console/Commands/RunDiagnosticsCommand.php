@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\SystemDiagnosticsController;
 use App\Mail\DiagnosticsAlertMail;
 use App\Services\Diagnostics\CheckCatalog;
 use App\Services\Diagnostics\DiagnosticsRunner;
+use App\Support\AlertRouter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 
@@ -89,7 +90,7 @@ class RunDiagnosticsCommand extends Command
         $recipients = $this->recipients();
 
         if ($recipients === []) {
-            $this->warn('Issues found but no alert recipients are configured (services.diagnostics.alert_emails).');
+            $this->warn('Issues found but the diagnostics channel is switched off (System -> Alert Routing / ALERTS_ENABLED).');
 
             return $overallStatus === 'failed' ? self::FAILURE : self::SUCCESS;
         }
@@ -123,16 +124,12 @@ class RunDiagnosticsCommand extends Command
      */
     private function recipients(): array
     {
-        $configured = config('services.diagnostics.alert_emails');
-
-        if (is_string($configured)) {
-            $configured = explode(',', $configured);
-        }
-
-        return array_values(array_filter(
-            array_map('trim', (array) $configured),
-            static fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL) !== false
-        ));
+        /*
+         * This command used to own a private recipient list — a sixth answer to
+         * "who gets told". Gone; it is a routed channel now, and an unrouted
+         * host uses ALERT_FALLBACK_EMAILS like every other alert.
+         */
+        return AlertRouter::recipients('diagnostics');
     }
 
     /** Exposed for the scheduler/tests so the severity vocabulary stays in one place. */

@@ -45,6 +45,7 @@ export default function BottomNavigation({ activeTab = 'home' }) {
     };
 
     return (
+        // bottom-bar-safe: dead component — imported by nothing (see root CLAUDE.md, PWA section)
         <div className="fixed bottom-0 left-0 right-0 bottom-navigation bg-[#0B0B0F]/90 backdrop-blur-md border-t border-white/10 z-50 px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
             <div className="flex justify-around items-center max-w-md mx-auto">
                 {navItems.map((item) => (

@@ -150,6 +150,7 @@ export default function ItemStatusBadge({
                         leaveFrom="opacity-100"
                         leaveTo="opacity-0"
                     >
+                        {/* bottom-bar-safe: Dialog is z-[1000003], above the bar; backdrop only */}
                         <div className="fixed inset-0 bg-black/60" />
                     </Transition.Child>
 
@@ -157,6 +158,7 @@ export default function ItemStatusBadge({
                         The bottom of this app is occupied — nav bar plus the
                         Intercom launcher — so a sheet rising from it is the one
                         position guaranteed to be covered. */}
+                    {/* bottom-bar-safe: Dialog is z-[1000003], above the bar; panel is centred */}
                     <div className="fixed inset-0 flex items-center justify-center p-4">
                         <Transition.Child
                             as={Fragment}

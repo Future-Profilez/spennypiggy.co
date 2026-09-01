@@ -174,9 +174,20 @@ class JourneyNudgeTest extends TestCase
         Queue::assertPushed(SendEngagementNotification::class, 1);
     }
 
+    public function test_a_flagged_identity_is_never_nudged(): void
+    {
+        // 3 = Stripe's fraud signals said no. A reminder asks for a retry with the same answer.
+        Queue::fake();
+        $this->stuckCreator('identity', 5, ['identity_status' => 3]);
+
+        $this->artisan('creators:nudge-journey')->assertSuccessful();
+        Queue::assertNothingPushed();
+    }
+
     public function test_a_punished_creator_is_never_coached_to_publish(): void
     {
-        // profile_status_lock = 1 delists everything they sell.
+        // profile_status_lock = 1 is "submitted, with the review team" — and for an
+        // already-approved creator, a demotion that delists everything they sell.
         Queue::fake();
         $this->stuckCreator('identity', 5, ['profile_status_lock' => 1]);
 

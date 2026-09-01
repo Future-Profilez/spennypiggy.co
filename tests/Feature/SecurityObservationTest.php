@@ -4,11 +4,13 @@ namespace Tests\Feature;
 
 use App\Mail\SecurityEventAlert;
 use App\Models\SecurityEvent;
+use App\Models\User;
 use App\Support\ContentDownloadMonitor;
 use App\Support\FailedLoginMonitor;
 use App\Support\OtpFailureMonitor;
 use App\Support\PayoutDestinationAudit;
 use App\Support\SecurityAlert;
+use App\Support\SecurityEventLog;
 use App\Support\SecurityRedactor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -31,7 +33,7 @@ class SecurityObservationTest extends TestCase
         parent::setUp();
         Mail::fake();
         Cache::flush();
-        config(['alerts.non_production' => ['ops@example.test']]);
+        config(['alerts.fallback' => ['ops@example.test']]);
     }
 
     /** A single failed sign-in is recorded and says nothing. */
@@ -106,7 +108,7 @@ class SecurityObservationTest extends TestCase
     /** A payout destination change alerts every time, with no threshold. */
     public function test_a_payout_destination_change_alerts_and_masks_the_account_id(): void
     {
-        $user = \App\Models\User::factory()->create(['email' => 'creator@example.com']);
+        $user = User::factory()->create(['email' => 'creator@example.com']);
 
         PayoutDestinationAudit::recordAccountChange($user, 'acct_1AAAAAAAAAAAAAAA', 'acct_9ZZZZZZZZZZZZZZZ', 'test');
 
@@ -135,7 +137,7 @@ class SecurityObservationTest extends TestCase
      */
     public function test_a_first_stripe_connection_records_without_alerting(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
 
         PayoutDestinationAudit::recordAccountChange($user, null, 'acct_1NEWNEWNEWNEWNEW', 'test');
 
@@ -223,7 +225,7 @@ class SecurityObservationTest extends TestCase
     /** Secrets are stripped on the way INTO the table, not on the way out. */
     public function test_secrets_are_scrubbed_out_of_a_recorded_description(): void
     {
-        \App\Support\SecurityEventLog::record('test_event', [
+        SecurityEventLog::record('test_event', [
             'description' => 'failed with sk_live_ABCDEFGH1234567890 for buyer@example.com',
         ]);
 
@@ -235,7 +237,7 @@ class SecurityObservationTest extends TestCase
     /** A key whose NAME says "secret" is dropped whole, not pattern-matched. */
     public function test_a_secret_named_context_key_is_dropped(): void
     {
-        \App\Support\SecurityEventLog::record('test_event', [
+        SecurityEventLog::record('test_event', [
             'context' => ['password' => 'hunter2', 'otp_code' => '123456', 'ip' => '203.0.113.9'],
         ]);
 
@@ -278,7 +280,7 @@ class SecurityObservationTest extends TestCase
      */
     public function test_a_broken_alert_path_never_throws(): void
     {
-        config(['alerts.non_production' => [], 'alerts.production' => []]);
+        config(['alerts.fallback' => []]);
 
         FailedLoginMonitor::record('x@example.com', '203.0.113.60');
         FailedLoginMonitor::lockout('203.0.113.60', 'x@example.com');

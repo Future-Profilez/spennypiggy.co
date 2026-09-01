@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\GrowthBonusProfile;
-use App\Models\GrowthBonusReward;
 use App\Services\GrowthBonusService;
+use App\Support\GrowthBonusPanelPayload;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
@@ -45,7 +45,7 @@ class GrowthBonusController extends Controller
 
         return Inertia::render('GrowthBonus/Index', [
             'programme' => $this->programme(),
-            'progress' => $profile ? $this->progressFor($profile) : null,
+            'progress' => $profile ? GrowthBonusPanelPayload::forDashboard($user) : null,
             'isCreator' => $user ? (int) $user->role === 1 : false,
         ]);
     }
@@ -89,39 +89,19 @@ class GrowthBonusController extends Controller
         ];
     }
 
-    private function progressFor(GrowthBonusProfile $profile): array
-    {
-        $gmv = (float) $profile->qualifying_gmv + (float) $profile->gmv_adjustment;
+    /*
+     * 🚨 THERE IS NO `progressFor()` HERE ANY MORE, AND THERE MUST NOT BE ONE
+     * AGAIN. This controller carried its own hand-rolled copy of the creator's
+     * progress shape — it read `$profile->qualifying_gmv` (the evaluator's
+     * SNAPSHOT) while the dashboard widget beside it computed the same figure
+     * LIVE, so `/growth-bonus` simply did not move after a sale. Every key it
+     * built already existed in `GrowthBonusPanelPayload::shape()`; this file's
+     * own docblock claimed the page and the widget shared one shape, and they
+     * did not.
+     *
+     * ⚠️ `forDashboard()` is display-only and writes nothing — activation, seat
+     * claims and reward rows stay with the evaluator, so rendering this page can
+     * never claim one of the 150 places.
+     */
 
-        $earned = $profile->rewards
-            ->whereNotIn('status', [GrowthBonusReward::STATUS_REVERSED])
-            ->sum('amount');
-
-        $paid = $profile->rewards
-            ->where('status', GrowthBonusReward::STATUS_PAID)
-            ->sum('amount');
-
-        // The next rung the creator has not yet reached.
-        $next = collect($this->service->ladder())
-            ->first(fn ($rung) => $gmv < (float) $rung['gmv']);
-
-        return [
-            'status' => $profile->status,
-            'missed_reason' => $profile->missed_reason,
-            'qualifying_gmv' => round($gmv, 2),
-            'activation_deadline' => $profile->activation_deadline?->toDateString(),
-            'activated_at' => $profile->activated_at?->toDateString(),
-            'expires_at' => $profile->expires_at?->toDateString(),
-            'earned_total' => (float) $earned,
-            'paid_total' => (float) $paid,
-            'next_milestone' => $next ? (float) $next['gmv'] : null,
-            'next_reward' => $next ? (float) $next['amount'] : null,
-            'remaining_to_next' => $next ? max(0, round((float) $next['gmv'] - $gmv, 2)) : null,
-            'milestones' => $profile->rewards->map(fn ($r) => [
-                'gmv' => (float) $r->milestone_gmv,
-                'amount' => (float) $r->amount,
-                'status' => $r->status,
-            ])->values()->all(),
-        ];
-    }
 }

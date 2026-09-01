@@ -25,7 +25,14 @@ import { nextBand, rankTier } from "./rankTier";
  */
 function Shell({ children }) {
     return (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(env(safe-area-inset-bottom)+84px)] sm:pb-[calc(env(safe-area-inset-bottom)+20px)]">
+        /*
+            ⚠️ Lifted clear of the bottom bar by the bar's OWN height
+            (`--sp-bottombar-h` + `--sp-bottombar-inset`), never a typed number:
+            84px was 5px short of the bar at its tallest inset, and it applied
+            to guests too, who have no bar. `md:`, not `sm:` — the bar is
+            `md:hidden`, so at 640–767 it is still there.
+        */
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] [body:has(.retro-bottom-bar)_&]:pb-[calc(var(--sp-bottombar-h)+var(--sp-bottombar-inset)+12px)] md:pb-[calc(env(safe-area-inset-bottom)+20px)]">
             <div className="pointer-events-auto mx-auto flex max-w-3xl items-center gap-4 rounded-box border-black bg-white px-4 py-3">
                 {children}
             </div>

@@ -192,8 +192,24 @@ class NotifyLeaderboardMovement extends Command
             })
             ->where('cur.period', $period)
             ->whereDate('cur.captured_on', $latest)
-            ->whereRaw('prv.rank - cur.rank >= ?', [$minPlaces])
-            ->orderByRaw('prv.rank - cur.rank DESC')
+            /*
+             * 🚨 CAST TO SIGNED, OR A CREATOR WHO SLIPPED TAKES THE COMMAND DOWN.
+             *
+             * `leaderboard_snapshots.rank` is `unsignedInteger`, and in MySQL an
+             * UNSIGNED minus an UNSIGNED is UNSIGNED — so for anybody whose rank got
+             * WORSE (cur > prv) the subtraction underflows and MySQL answers
+             * **1690 "BIGINT UNSIGNED value is out of range"** rather than a negative
+             * number. The row is evaluated before the `>= $minPlaces` filter can
+             * exclude it, so one creator slipping kills the whole run and NOBODY who
+             * climbed is told (JAVASCRIPT-REACT-AK).
+             *
+             * ⚠️ SQLITE HAS NO UNSIGNED TYPES, so the test suite could never reproduce
+             * this and never will — the guard is the cast being here, not a test
+             * result. `CAST(x AS SIGNED)` is valid in both (SQLite reads the unknown
+             * type name as NUMERIC affinity), so the two engines agree.
+             */
+            ->whereRaw('CAST(prv.rank AS SIGNED) - CAST(cur.rank AS SIGNED) >= ?', [$minPlaces])
+            ->orderByRaw('CAST(prv.rank AS SIGNED) - CAST(cur.rank AS SIGNED) DESC')
             ->get(['cur.user_id', 'cur.rank as rank', 'prv.rank as previous']);
 
         return $rows->map(fn ($r) => [
