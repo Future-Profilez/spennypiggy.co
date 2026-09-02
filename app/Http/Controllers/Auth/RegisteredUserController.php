@@ -278,10 +278,12 @@ class RegisteredUserController extends Controller
              */
             'social_platform' => [
                 Rule::requiredIf(fn () => (int) $request->role === 1),
+                'nullable',
                 Rule::in(SocialHandle::platforms()),
             ],
             'social_handle' => [
                 Rule::requiredIf(fn () => (int) $request->role === 1),
+                'nullable',
                 'string',
                 'max:255',
             ],

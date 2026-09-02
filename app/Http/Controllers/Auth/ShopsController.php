@@ -695,13 +695,12 @@ class ShopsController extends Controller
             $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
             $slug = strtolower(str_replace(' ', '_', $shop->name));
+            // NOTE: no `default_price_data` here — that key is accepted by Stripe's product
+            // CREATE endpoint only. On update the price is minted separately below and the
+            // product is pointed at it with `default_price`.
             $productPayload = [
                 'name' => 'Total value of item including all fees',
                 'images' => [$shop->perma_link],
-                'default_price_data' => [
-                    'currency' => $currency,
-                    'unit_amount_decimal' => round($createpriceid * $multiplier, 2, PHP_ROUND_HALF_UP),
-                ],
                 'url' => env('APP_URL')."/shop/$slug/$shop->uuid",
                 'metadata' => [
                     'shop_item_name' => $shop->name,
@@ -730,8 +729,35 @@ class ShopsController extends Controller
                             'stripe_account' => $user->account_id,
                         ]);
                     } else {
-                        $stripe_client = StripeControl::updateSubscription($shop->stripe_product_id, $productPayload, $user->account_id);
-                        $shop->price_id = $stripe_client->default_price;
+                        $oldPriceId = $shop->price_id;
+
+                        $newPrice = StripeControl::createPrice([
+                            'currency' => $currency,
+                            'unit_amount_decimal' => round($createpriceid * $multiplier, 2, PHP_ROUND_HALF_UP),
+                            'product' => $shop->stripe_product_id,
+                        ], $user->account_id);
+
+                        $stripe_client = StripeControl::updateSubscription(
+                            $shop->stripe_product_id,
+                            $productPayload + ['default_price' => $newPrice->id],
+                            $user->account_id
+                        );
+
+                        $shop->price_id = $newPrice->id;
+
+                        if (! empty($oldPriceId) && $oldPriceId !== $newPrice->id) {
+                            try {
+                                $stripe->prices->update($oldPriceId, ['active' => false], [
+                                    'stripe_account' => $user->account_id,
+                                ]);
+                            } catch (Exception $e) {
+                                Log::warning('Could not deactivate old shop price', [
+                                    'old_price_id' => $oldPriceId,
+                                    'shop_id' => $shop->id,
+                                    'error' => $e->getMessage(),
+                                ]);
+                            }
+                        }
                     }
                     $shop->stripe_product_id = $stripe_client->id;
                     $shop->approved = 0;

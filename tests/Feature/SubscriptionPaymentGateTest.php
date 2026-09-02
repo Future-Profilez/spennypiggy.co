@@ -76,10 +76,15 @@ class SubscriptionPaymentGateTest extends TestCase
             // lists 'active' in its first allow-list but not in the fallback one
             // below it, so a dateless 'active' row falls through to 0. Harmless
             // today, and a trap for anyone who writes that status by hand.
+            // 🚨 RELATIVE TO NOW, NEVER A LITERAL DATE. This fixture carried
+            // '2026-08-01' → '2026-09-01' and started failing on 1 Sep 2026 —
+            // the subscription had genuinely expired, so the gate was right and
+            // the test was wrong. A suite that turns red on a calendar date is
+            // exactly what makes a green run stop meaning anything.
             'active' => [[
                 'status' => 'active',
-                'current_start_subscription_date' => '2026-08-01 00:00:00',
-                'current_end_subscription_date' => '2026-09-01 00:00:00',
+                'current_start_subscription_date' => now()->subMonth()->toDateTimeString(),
+                'current_end_subscription_date' => now()->addMonth()->toDateTimeString(),
             ]],
         ];
     }

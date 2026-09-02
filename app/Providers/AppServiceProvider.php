@@ -235,6 +235,14 @@ class AppServiceProvider extends ServiceProvider
          | breach check. Client Security Checklist §2 (Developer Master Plan,
          | 19 Aug 2026): min 12 + breached-list check, no forced rotation.
          |
+         | 🚨 THE FORM'S RULE LIST IS THE OTHER HALF OF THIS NUMBER, AND IT SAID 8
+         | (fixed 2 Sep 2026). `register/constants.js` PASSWORD_RULES advertised
+         | "8 characters or more", so a password that ticked every rule the person
+         | could see was refused by the server with "The password field must be at
+         | least 12 characters" — a dead end on a rule the form never stated.
+         | ⚠️ If this floor ever moves, MOVE BOTH: the rule list is the only thing
+         | the person registering ever sees, and nothing links the two files.
+         |
          | Length and a breach check, deliberately WITHOUT composition rules
          | (mixedCase/numbers/symbols). That is current NIST guidance and it is what
          | the checklist asks for: composition rules push people towards

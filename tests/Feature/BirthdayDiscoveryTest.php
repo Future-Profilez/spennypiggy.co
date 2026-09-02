@@ -642,7 +642,18 @@ class BirthdayDiscoveryTest extends TestCase
     public function test_the_weekly_campaign_waits_for_the_collection_minimum(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-03-09 09:45:00'));
-        config(['discovery.birthday.birthdays_this_week' => true]);
+        /*
+         * 🚨 THE MINIMUM IS SET HERE, NOT INHERITED FROM THE DEFAULT. This test
+         * was written when `collection_min_creators` defaulted to 3 and built
+         * two creators; the default was later lowered to 1, so two creators
+         * cleared the bar and the campaign correctly sent — the gate was right
+         * and the test was wrong. A test that proves a threshold by relying on
+         * whatever the default happens to be proves nothing the day it moves.
+         */
+        config([
+            'discovery.birthday.birthdays_this_week' => true,
+            'discovery.birthday.collection_min_creators' => 3,
+        ]);
         Mail::fake();
 
         $this->birthdayCreator(3, 10);
@@ -874,6 +885,9 @@ class BirthdayDiscoveryTest extends TestCase
     public function test_the_collection_page_renders_its_coming_soon_state_below_the_minimum(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-03-09 09:00:00'));
+        // 🚨 Set the threshold the test is about — see the weekly-campaign test
+        // above. One creator cleared a default that had since dropped to 1.
+        config(['discovery.birthday.collection_min_creators' => 3]);
 
         $this->birthdayCreator(3, 10);
 

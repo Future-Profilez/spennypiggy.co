@@ -14,6 +14,7 @@ use App\Models\FastStartBonusPayout;
 use App\Models\FinancialTransaction;
 use App\Models\FounderBonus;
 use App\Models\FounderBonusMonthly;
+use App\Models\GrowthBonusReward;
 use App\Models\MembershipPayment;
 use App\Models\PayoutRecord;
 use App\Models\PiggyPotContribution;
@@ -25,6 +26,7 @@ use App\Models\UkTaxSetting;
 use App\Models\User;
 use App\Services\CreatorOpportunityService;
 use App\Services\FinancialService;
+use App\Services\GrowthBonusService;
 use App\Services\Ledger\LedgerRules;
 use App\Services\NotificationDeliveryService;
 use App\Services\NotificationDispatcher;
@@ -840,7 +842,63 @@ class CreatorFinancialController extends Controller
             'payout_history' => $payoutHistory,
             'fast_start_bonus' => $fastStartBonus,
             'founder_bonus' => $founderBonus,
+            'growth_bonus_upcoming' => $this->growthBonusUpcoming($user),
         ]);
+    }
+
+    /**
+     * Growth Bonus money that is owed but has not been sent yet.
+     *
+     * 🚨 A SEPARATE BLOCK, DELIBERATELY NOT A `payout_records` ROW. Every row in
+     * that table is written AFTER money has moved and reads `paid`/`failed`/
+     * `zero_payout`; the finance screens and reports treat a row there as a
+     * payment that happened. Putting an approved-but-unsent bonus in it would mix
+     * promises with payments in the one table nobody may misread.
+     *
+     * Once the payout runs, `ProcessGrowthBonusPayouts` writes a real
+     * `PayoutRecord` and the bonus appears in payout history like anything else —
+     * so this block empties itself rather than needing to be cleared.
+     *
+     * ⚠️ THE DATE IS THE STORED ONE. `growth-bonus:announce` fixed it and told
+     * the creator; recomputing it here would let this screen and their inbox name
+     * different days.
+     *
+     * ⚠️ Never throws — an extra panel must not take down the finance dashboard.
+     * But it REPORTS: a fault here blanks a block about money the creator is
+     * owed, and "a caught exception is invisible unless a channel carries it".
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function growthBonusUpcoming(User $user): array
+    {
+        return rescue(function () use ($user) {
+            if (! app(GrowthBonusService::class)->enabled()) {
+                return [];
+            }
+
+            return GrowthBonusReward::query()
+                ->where('creator_id', $user->id)
+                ->whereIn('status', [
+                    GrowthBonusReward::STATUS_PENDING_VALIDATION,
+                    GrowthBonusReward::STATUS_APPROVED,
+                ])
+                ->whereNull('paid_at')
+                ->orderBy('milestone_gmv')
+                ->get()
+                ->map(fn ($r) => [
+                    'id' => (int) $r->id,
+                    'milestone_gmv' => (float) $r->milestone_gmv,
+                    'amount' => (float) $r->amount,
+                    'status' => (string) $r->status,
+                    'scheduled_payout_date' => $r->scheduled_payout_date?->toDateString(),
+                    // Derived sentence, never the stored code — see the payload.
+                    'hold_reason' => $r->payout_hold_reason
+                        ? app(GrowthBonusService::class)->holdMessage($r->payout_hold_reason)
+                        : null,
+                ])
+                ->values()
+                ->all();
+        }, [], report: true);
     }
 
     public function fastStartBonus(Request $request)

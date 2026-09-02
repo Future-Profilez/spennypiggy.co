@@ -61,7 +61,8 @@ export const STEPS = {
  * knowing why a step is missing.
  */
 export const stepsFor = (role, hasGoogle = false) => {
-    const steps = STEPS[Number(role) === ROLE_CREATOR ? ROLE_CREATOR : ROLE_SUPPORTER];
+    const steps =
+        STEPS[Number(role) === ROLE_CREATOR ? ROLE_CREATOR : ROLE_SUPPORTER];
 
     return hasGoogle && Number(role) === ROLE_CREATOR
         ? steps.filter((s) => s.key !== "credentials")
@@ -75,14 +76,14 @@ export const stepIndex = (role, key) =>
 export const ACCENT = {
     [ROLE_CREATOR]: {
         hex: "#FF007F",
- shadow: "",
+        shadow: "",
         text: "text-[#FF007F]",
         bg: "bg-[#FF007F]",
         ring: "focus-visible:ring-[#FF007F]",
     },
     [ROLE_SUPPORTER]: {
         hex: "#8C52FF",
- shadow: "",
+        shadow: "",
         text: "text-[#8C52FF]",
         bg: "bg-[#8C52FF]",
         ring: "focus-visible:ring-[#8C52FF]",
@@ -145,10 +146,29 @@ export const suggestUsernames = (name) => {
         .slice(0, 4);
 };
 
+/**
+ * 🚨 THE LENGTH HERE MUST MATCH `Password::min()` IN `AppServiceProvider`, AND IT
+ * DID NOT — this said 8 while the server enforced 12, so a password that ticked
+ * every rule on screen was refused with "The password field must be at least 12
+ * characters", naming a rule the form never drew. Nothing links the two files;
+ * move both or neither.
+ *
+ * ⚠️ The four composition rules below are ADVICE, not gates — the server checks
+ * length and the breach list only (NIST: composition rules push people towards
+ * `Password1!`). They stay because they are what a strength meter is for.
+ */
 export const PASSWORD_RULES = [
-    { key: "length", label: "8 characters or more", test: (v) => v.length > 7 },
+    {
+        key: "length",
+        label: "12 characters or more",
+        test: (v) => v.length >= 12,
+    },
     { key: "lower", label: "A lowercase letter", test: (v) => /[a-z]/.test(v) },
-    { key: "upper", label: "An uppercase letter", test: (v) => /[A-Z]/.test(v) },
+    {
+        key: "upper",
+        label: "An uppercase letter",
+        test: (v) => /[A-Z]/.test(v),
+    },
     { key: "number", label: "A number", test: (v) => /[0-9]/.test(v) },
     {
         key: "special",
@@ -185,7 +205,7 @@ export const canSubmitRegistration = ({
             : consents.ownDetails;
 
     return Boolean(
-        consents.terms && roleConsent && (!captchaRequired || captchaVerified)
+        consents.terms && roleConsent && (!captchaRequired || captchaVerified),
     );
 };
 

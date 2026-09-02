@@ -133,6 +133,23 @@ writing into them.
 author has every reason to believe the message arrived. All four are bridged now, through
 `useAlerts()`'s existing `warningAlert` / `infoAlert`.
 
+## 🚨 HOUSEKEEPING MUST NOT GATE THE HEALTH CHECK (2 Sep 2026, spennypiggy.co)
+
+`diagnostics:run --prune` is the SCHEDULED form (daily), and `--prune` ran **first** —
+so a transient `[2002] Cannot connect to MySQL using SSL` inside the prune threw before
+a single check had run. **The sweep that exists to report a database problem was killed
+by one**, and there were no diagnostics that night (JAVASCRIPT-REACT-AQ).
+
+- The prune is now `report()`ed and stepped over; the checks run regardless. Deleting
+  old rows is the least important thing that command does.
+- ⚠️ **`Schema::hasTable()` is what connects, and on MySQL it lists EVERY table in the
+  schema with sizes from `information_schema`** just to answer whether one exists —
+  which is why the failure surfaces on that query rather than a cheap one.
+- ⚠️ The connection blip itself is **not a code fault** and nothing here can prevent it.
+  What was ours is letting it decide whether the health check ran at all.
+- Tests: `tests/Feature/DiagnosticsPruneFailureTest.php` (2), verified failing against
+  the old command.
+
 ## 🚨 ALIASING A SOFT-DELETING MODEL BREAKS ITS OWN SCOPE (1 Sep 2026, spennypiggy.co)
 
 `SoftDeletingScope` qualifies with the **MODEL'S TABLE NAME**
@@ -4448,6 +4465,128 @@ hook queues one evaluation for that creator, delayed 20s.
   (15). ⚠️ Inertia's `where()` compares
   against the JSON-DECODED payload and a whole float (`1000.0`) comes back as an int — assert
   numerics through a closure, or the test fails for a reason unrelated to the value.
+
+## 🚨 Growth Bonus Phase 3 — approval now MOVES MONEY (2 Sep 2026, spennypiggy.co)
+
+Approving a bonus used to write a status and nothing else; the payment was made by hand
+and "Mark paid" recorded it. From here an approval is an instruction to pay, the creator
+is told, and a Friday command sends it. **Stripe has no undo once the transfer is out.**
+
+- 🚨 **THE ADMIN APP APPROVES; THIS APP ANNOUNCES AND PAYS.** The two share a database and
+  NOT a codebase, so the back office writes `status = approved` and `growth-bonus:announce`
+  (every 15 min) picks it up here. Dispatching a job from the admin side would put a class
+  its own worker cannot resolve onto the shared queue — and the money path stays in one
+  repository either way. **The admin app needed no code change**, only the mirrored casts.
+- 🚨 **THE DATE THE CREATOR IS TOLD AND THE DATE THE PAYER ACTS ON ARE ONE STORED COLUMN.**
+  `growth_bonus_rewards.scheduled_payout_date` (migration `2026_08_30_100000`) is written
+  ONCE by `GrowthBonusService::nextPayoutDate()` at announcement. **Never recompute "next
+  Friday"** in the mail, the widget, the finance page or the payer: an approval late on a
+  Thursday would be announced for one Friday and paid on another, which is a broken promise
+  about money, in writing, that nothing downstream would catch.
+  ⚠️ `min_days_notice` (1) keeps a bonus approved ON the payout day off that same run — the
+  command fires at a fixed time, so an approval at 16:00 on a Friday would otherwise name a
+  date already gone.
+- **`growth-bonus:pay` (Friday 10:45)** mirrors `ProcessFounderPayouts` exactly: transfer →
+  connected account, then payout, **both keyed `growth_bonus_{transfer,payout}_{reward id}`**
+  so a retry or a concurrent run returns the SAME Stripe objects. Stripe calls happen
+  OUTSIDE any DB transaction and the marks commit in their own small transaction right after
+  the money moves — the house rule on every payout path here.
+  ⚠️ 10:45 is after `payout:run-weekly` (10:07) and clear of `reserve:release` (10:30): on
+  Vapor every command due in one minute shares a cli-timeout budget.
+- 🚨 **A BONUS PAYOUT MUST NEVER CREATE AN INCOME LEDGER ROW.** Growth Bonus counts completed
+  income transactions, so a bonus recorded as income would feed its own qualifying earnings
+  and climb the ladder on its own. It writes a `PayoutRecord` — a payout record, not a sale.
+- 🚨 **THE `payout.failed` WEBHOOK PUTS THE REWARD BACK IN THE QUEUE**
+  (`revertFailedGrowthBonusPayout`). The row was marked `paid` when the money left; the bank
+  refusing it means the creator is owed again. ⚠️ **The Stripe ids are CLEARED with it** —
+  `growth-bonus:pay` skips any row carrying `stripe_payout_id`, so leaving them would make
+  the retry a permanent no-op. The date is cleared too, so `announce` tells the creator the
+  NEW day rather than leaving them holding one that has passed.
+- 🚨 **`growth_bonus_upcoming` IS A SEPARATE BLOCK ON THE FINANCE PAGE, DELIBERATELY NOT A
+  `payout_records` ROW.** Every row in that table is written AFTER money moved and reads
+  `paid`/`failed`/`zero_payout`; the finance screens and reports treat one as a payment that
+  happened. An approved-but-unsent bonus in there mixes promises with payments in the one
+  table nobody may misread. Once paid, a real `PayoutRecord` appears in history and the block
+  empties itself.
+- ⚠️ **The ladder is GBP; the creator is paid in their own currency**, converted through the
+  same frozen-rate table Founder uses — an unknown currency returns the amount UNCHANGED
+  rather than guessing, because a wrong rate pays a wrong amount.
+- ⚠️ **A creator who cannot receive is still ANNOUNCED, with no date.** Their bonus is
+  genuinely approved and genuinely owed; silence would leave them believing nothing had
+  happened. `announce`'s eligibility check is LOCAL and never calls Stripe — the payer finds
+  out for certain, and a Stripe round trip per row on a 15-minute sweep would answer a
+  question the payment already answers.
+- ⚠️ **`GrowthBonusApproved` is the ONE mail that names a date**, because by then the
+  decision is made. `GrowthBonusMilestoneReached` still must not — at crossing time the only
+  honest line is "on the same payout as the sales that qualified you". Both say **"send"**,
+  never "in your bank": the bank's timing is not ours to promise.
+- 🚨 **`config/growth_bonus.php`'s `payout.enabled` is a SAFE RETREAT, not a half-state.**
+  Off = approvals are recorded and announced with no date, and nothing is sent — exactly the
+  Phase 1 behaviour. ⚠️ Mirror the file in the admin app, same rule as `fee_profiles`.
+- ⚠️ **`SHOW INDEX` IS MySQL-ONLY** and the test database is sqlite, where it is a hard
+  syntax error that takes the whole suite down. The migration's `indexNames()` returns an
+  empty list off MySQL — those databases are built from these migrations, so the index cannot
+  already exist. Same trap as the `ALTER … MODIFY` in `2026_07_13_000003`.
+- ⚠️ **A dispatcher CLAIM lands in `engagement_notifications`, not `notification_logs`** —
+  the latter is written by the queued delivery, which `Queue::fake()` never runs. A test
+  asserting the wrong table fails for a reason unrelated to the code.
+- **Terms:** clause 6.1 was softened to describe the manual release. 🚩 **It now needs
+  re-wording** — and note the payout day is the next one after APPROVAL, which is not the
+  qualifying transaction's own run. That is a client decision about the terms, not a code
+  fix.
+- Tests: `tests/Feature/GrowthBonusPayoutTest.php` (14), including a two-language pin that
+  the finance page still reads `growth_bonus_upcoming`.
+
+## 🚨 A bonus is RE-VALIDATED on the day it is sent, and HELD if it no longer holds up (2 Sep 2026, BOTH apps)
+
+An approval can be weeks old. Between it and the transfer a supporter can charge back, a
+refund can land, or the account can be suspended — and the old engine paid anyway, or
+reversed the reward silently. Both were wrong in different directions.
+
+- 🚨 **`GrowthBonusService::holdReasonFor()` IS THE ONE RE-VALIDATION, AND THE PAYER ASKS IT
+  AGAIN ON THE DAY THE MONEY MOVES.** The last gate before a transfer must never trust a
+  check made earlier. Order is load-bearing: **suspension first**, then payability, then the
+  milestone — telling a suspended creator their milestone is short names the wrong problem.
+- ⚠️ **"Refunds and disputes removed" is NOT a second rule.** `computeGmv()` already removes
+  refunds proportionally and excludes anything not `completed`, which is what a disputed
+  transaction becomes (`SyncFinancialTransactions` maps it). The hold re-runs that definition;
+  it does not write another one.
+- 🚨 **A HOLD IS NOT A STATUS — it is `payout_hold_reason` + `held_at`** (migration
+  `2026_09_02_100000`). `status = approved` records that an ADMIN said yes; the hold records
+  that the PLATFORM is not sending it today. Collapsing them would make "approved" stop
+  meaning "a person approved this", and an admin could no longer tell whether their own
+  decision still stood. **Do not add a fifth status for this.**
+- 🚨 **THE REASON IS A CODE; THE SENTENCE IS DERIVED.** `holdMessage()` maps it for the
+  creator, `Admin\GrowthBonusController::HOLD_LABELS` for a reviewer — deliberately different
+  wordings for different readers, one stored fact. A stored English string cannot be reworded
+  or translated and invites writing a cause nobody verified (the moderation-queue rule).
+- 🚨 **`applyHold()` CLEARS `scheduled_payout_date`.** The creator was told a day; it is no
+  longer true, and every screen must stop naming it. `growth-bonus:announce` re-dates it once
+  the hold clears — its dedup key carries the date, so the new day is announced rather than
+  swallowed by the first claim. ⚠️ That is also why announce **skips held rows**: re-dating
+  one would promise a day while the reason still stands.
+- 🚨 **A HELD ROW STAYS SELECTABLE BY THE PAYER, AND IT CARRIES NO DATE.** A date-only filter
+  drops it out of every future run and the weekly retry silently does not exist — pinned by
+  `test_a_held_bonus_is_re_checked_the_following_week`.
+- 🚨 **THE EVALUATOR NO LONGER REVERSES AN APPROVED REWARD.** It used to, silently — and
+  since the payer only ever selects `approved`, the bonus vanished from every run with the
+  creator never told why. Approved → **held**; `pending_validation` (never approved, never
+  promised a day) → still reversed, and still restored when the rung is re-crossed.
+  ⚠️ The hold is applied in BOTH the evaluator (daily, so the creator learns within a day)
+  and the payer (the final gate).
+- ⚠️ **TOLD ONCE PER REASON, NOT EVERY FRIDAY** (client decision, 2 Sep 2026). The claim is
+  keyed on reward + reason, so a hold surviving eight weeks sends one message; the dashboard
+  carries the reason throughout. Repeating the same bad news weekly is how creators stop
+  reading the receipts and payout notices too. A hold for a DIFFERENT cause does announce.
+- ⚠️ **Amber, never red, on every surface.** Nothing was taken away and nobody refused — red
+  on this platform means a person said no. `GrowthBonusHeld` states the way out explicitly: a
+  hold with no route reads as a refusal.
+- **Admin app mirrors the casts read-only** (never `$fillable` — a back office clearing a hold
+  by mass assignment would release money the re-validation is withholding), shows an "On hold"
+  chip with the label and the date, and **the finance CSV carries the reason** — a report that
+  shows a held bonus as due describes money that never moved.
+- Tests: `tests/Feature/GrowthBonusPayoutTest.php` (22). ⚠️ Two were verified FAILING against
+  planted bugs first — the held-row selection and the suspension ordering.
 
 ## 🚨 The dashboard card carries THREE rules now (29 Aug 2026, spennypiggy.co)
 

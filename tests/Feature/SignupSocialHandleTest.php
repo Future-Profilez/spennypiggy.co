@@ -103,6 +103,24 @@ class SignupSocialHandleTest extends TestCase
         $this->assertDatabaseMissing('social_links', ['user_id' => $user->id]);
     }
 
+    /**
+     * 🚨 The gifter form posts the field as NULL, not as an absent key — Inertia sends
+     * every key in `useForm`'s data. A missing attribute skips `string`; a NULL one
+     * FAILS it, so a gifter was refused with "The social handle field must be a string."
+     * on a field their form never showed them. `nullable` is what separates the two.
+     */
+    public function test_a_gifter_posting_null_social_fields_is_not_refused(): void
+    {
+        $response = $this->post(route('register'), $this->signupPayload([
+            'role' => 0,
+            'social_platform' => null,
+            'social_handle' => null,
+        ]));
+
+        $response->assertSessionHasNoErrors();
+        $this->assertNotNull($this->registered());
+    }
+
     public function test_a_handle_is_stored_against_the_chosen_platform(): void
     {
         $this->post(route('register'), $this->signupPayload([

@@ -46,6 +46,7 @@ use App\Models\FastStartBonusPayout;
 use App\Models\FinancialTransaction;
 use App\Models\FounderBonus;
 use App\Models\FounderBonusMonthly;
+use App\Models\GrowthBonusReward;
 use App\Models\MembershipPayment;
 use App\Models\MonthlyCharge;
 use App\Models\Payment;
@@ -5881,6 +5882,35 @@ class StripeWebhookController extends Controller
                     $this->requeueFailedRunPayout($record);
                 }
 
+                /*
+                 * 🚨 A FAILED GROWTH BONUS PAYOUT MUST GO BACK IN THE QUEUE.
+                 * The row was marked `paid` when the money left; the bank
+                 * refusing it means the creator is owed again, and without this
+                 * the bonus reads as settled for ever while nothing arrived.
+                 *
+                 * ⚠️ The PAYOUT ids are cleared — `growth-bonus:pay` skips any
+                 * row carrying `stripe_payout_id`, so leaving them would make
+                 * the retry a permanent no-op. `stripe_transfer_id` is KEPT: a
+                 * bank-refused payout returns the money to the CONNECTED
+                 * account's balance, not the platform's, so the transfer leg is
+                 * already settled — the retry must re-issue only the payout, and
+                 * the payer skips the transfer when the id is present. Clearing
+                 * it would move the bonus from the platform a second time
+                 * (Stripe idempotency keys expire after 24h, and the retry runs
+                 * the following Friday).
+                 *
+                 * ⚠️ The date is cleared too, so `growth-bonus:announce` picks
+                 * the reward up again and tells the creator the NEW day rather
+                 * than leaving them holding one that has passed.
+                 */
+                if (
+                    $isTransition
+                    && in_array($status, ['failed', 'canceled'], true)
+                    && ($record->metadata['bonus_type'] ?? null) === 'growth_bonus'
+                ) {
+                    $this->revertFailedGrowthBonusPayout($record);
+                }
+
                 if ($isTransition && in_array($status, ['paid', 'failed'], true)) {
                     $record->loadMissing('creator');
                     $creator = $record->creator;
@@ -6178,6 +6208,57 @@ class StripeWebhookController extends Controller
      * canonical FinancialTransaction ledger), revert the negative-balance change this run
      * applied, move the creator into the run's skipped list, and notify creator + admin.
      */
+    /**
+     * Put a Growth Bonus reward back into the payable queue after the bank
+     * refused its payout.
+     *
+     * ⚠️ Never throws — it runs inside the Stripe webhook, which must answer 200
+     * or Stripe retries the whole event.
+     */
+    private function revertFailedGrowthBonusPayout(PayoutRecord $record): void
+    {
+        try {
+            $rewardId = (int) ($record->metadata['growth_bonus_reward_id'] ?? 0);
+
+            if ($rewardId <= 0) {
+                return;
+            }
+
+            $reward = GrowthBonusReward::find($rewardId);
+
+            if (! $reward) {
+                return;
+            }
+
+            $reward->forceFill([
+                'status' => GrowthBonusReward::STATUS_APPROVED,
+                'paid_at' => null,
+                'scheduled_payout_date' => null,
+                'stripe_payout_id' => null,
+                // stripe_transfer_id is deliberately KEPT - see the comment at
+                // the call site: the money already sits in the connected
+                // account, and the payer must not transfer it again.
+                'payout_record_uuid' => null,
+                'payout_reference' => null,
+                'payout_failure_message' => mb_substr(
+                    (string) ($record->failure_message ?: 'The payout was returned by the bank.'),
+                    0,
+                    500,
+                ),
+            ])->save();
+
+            Log::warning('Growth Bonus payout failed at the bank; reward requeued', [
+                'reward_id' => $rewardId,
+                'payout_record_id' => $record->id,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Could not requeue a failed Growth Bonus payout', [
+                'payout_record_id' => $record->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     private function requeueFailedRunPayout(PayoutRecord $record): void
     {
         try {

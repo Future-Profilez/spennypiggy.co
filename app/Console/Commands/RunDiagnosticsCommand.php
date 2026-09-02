@@ -23,9 +23,33 @@ class RunDiagnosticsCommand extends Command
 
     public function handle(): int
     {
+        /*
+         * 🚨 HOUSEKEEPING MUST NOT GATE THE HEALTH CHECK.
+         *
+         * `--prune` runs FIRST and this is scheduled as `diagnostics:run --prune`
+         * daily — so a transient database failure inside the prune threw before a
+         * single check had run, and **the sweep that exists to report a database
+         * problem was killed by one** (JAVASCRIPT-REACT-AQ: `[2002] Cannot connect to
+         * MySQL using SSL` at 00:03, and no diagnostics that night).
+         *
+         * Deleting old rows is the least important thing this command does. It is
+         * reported and stepped over; the checks below then run and say what is
+         * actually wrong — including, if it is still down, the database.
+         *
+         * ⚠️ `Schema::hasTable()` inside `prune()` is what connects, and on MySQL it
+         * lists EVERY table in the schema with sizes from `information_schema` just to
+         * answer whether one exists. That is why the failure surfaces here rather than
+         * on a cheaper query.
+         */
         if ($this->option('prune')) {
-            $deleted = DiagnosticsRunner::prune();
-            $this->info("Pruned {$deleted} diagnostic run(s) older than ".DiagnosticsRunner::RETENTION_DAYS.' days.');
+            try {
+                $deleted = DiagnosticsRunner::prune();
+                $this->info("Pruned {$deleted} diagnostic run(s) older than ".DiagnosticsRunner::RETENTION_DAYS.' days.');
+            } catch (\Throwable $e) {
+                report($e);
+                $this->warn('Could not prune old diagnostic runs: '.$e->getMessage());
+                $this->warn('Continuing — the checks below matter more than the tidy-up.');
+            }
         }
 
         $dryRun = (bool) $this->option('dry-run');

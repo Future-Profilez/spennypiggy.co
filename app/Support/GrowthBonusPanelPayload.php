@@ -257,9 +257,25 @@ class GrowthBonusPanelPayload
                 'amount' => (float) $r->amount,
                 'status' => $r->status,
                 'paid_at' => $r->paid_at?->toDateString(),
+                /*
+                 * ⚠️ THE STORED DATE WINS. Once a bonus is approved,
+                 * `scheduled_payout_date` is the day the creator was TOLD in an
+                 * email, so it must be the day every screen shows. Only an
+                 * un-approved reward falls back to the derived estimate.
+                 */
                 'expected_payout' => $r->status === GrowthBonusReward::STATUS_PAID
                     ? null
-                    : self::expectedPayout($r),
+                    : ($r->scheduled_payout_date?->toDateString() ?? self::expectedPayout($r)),
+                'scheduled_payout_date' => $r->scheduled_payout_date?->toDateString(),
+                /*
+                 * 🚨 THE REASON IS DERIVED FROM THE CODE, NEVER THE RAW CODE.
+                 * `milestone_not_covered` on a creator's own screen is jargon;
+                 * the one sentence comes from `holdMessage()`, so the email, the
+                 * push and every screen say the same thing about one hold.
+                 */
+                'hold_reason' => $r->payout_hold_reason
+                    ? app(GrowthBonusService::class)->holdMessage($r->payout_hold_reason)
+                    : null,
             ])->values()->all(),
         ];
     }

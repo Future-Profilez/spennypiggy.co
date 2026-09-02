@@ -208,7 +208,17 @@ class EngagementEngineTest extends TestCase
 
         $this->artisan('reactivation:notify --dry-run')->assertExitCode(0);
 
-        Queue::assertNothingPushed();
+        /*
+         * ⚠️ `assertNothingPushed()` HERE, NOT `assertNotPushed(...)` — and the
+         * difference matters. The FIXTURE writes an income `FinancialTransaction`,
+         * and that model's `created` hook queues `EvaluateGrowthBonusForCreator`
+         * (Growth Bonus Phase 3, 2 Sep 2026). So the queue is legitimately not
+         * empty by the time the command runs, and a bare "nothing pushed" fails
+         * on the fixture rather than on the command it is testing.
+         *
+         * The subject of this test is the reactivation send, so it names it.
+         */
+        Queue::assertNotPushed(SendEngagementNotification::class);
         $this->assertDatabaseCount('engagement_notifications', 0);
     }
 

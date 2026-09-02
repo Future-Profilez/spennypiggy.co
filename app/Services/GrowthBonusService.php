@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Mail\GrowthBonusApproved;
+use App\Mail\GrowthBonusHeld;
 use App\Mail\GrowthBonusMilestoneReached;
 use App\Mail\GrowthBonusOutcome;
 use App\Models\FinancialTransaction;
@@ -66,6 +68,207 @@ class GrowthBonusService
     public function maxSeats(): int
     {
         return (int) config('growth_bonus.limits.max_seats', 150);
+    }
+
+    /**
+     * The next payout day a bonus approved NOW can realistically ride.
+     *
+     * 🚨 COMPUTED ONCE AND STORED ON THE REWARD. The creator is told this date in
+     * an email; recomputing it later — in the payer, in the widget, in the mail —
+     * is how the promise and the payment come to name different days. Read
+     * `scheduled_payout_date` everywhere after this.
+     *
+     * ⚠️ `min_days_notice` keeps a bonus approved ON the payout day off that same
+     * day's run: the command fires at a fixed time, so an approval at 16:00 on a
+     * Friday would otherwise be announced for a date already gone.
+     */
+    public function nextPayoutDate(?Carbon $from = null): Carbon
+    {
+        $day = (int) config('growth_bonus.payout.payout_day', Carbon::FRIDAY);
+        $notice = (int) config('growth_bonus.payout.min_days_notice', 1);
+
+        $earliest = ($from ? $from->copy() : Carbon::now())
+            ->startOfDay()
+            ->addDays(max(0, $notice));
+
+        // `next()` always moves forward, so a date already ON the payout day
+        // needs the equality check or it is pushed a whole week out.
+        return (int) $earliest->dayOfWeekIso === $day
+            ? $earliest
+            : $earliest->next($day);
+    }
+
+    public function payoutEnabled(): bool
+    {
+        return $this->enabled() && (bool) config('growth_bonus.payout.enabled', false);
+    }
+
+    /**
+     * Is there any reason NOT to send this bonus right now? A code, or null.
+     *
+     * 🚨 THE ONE RE-VALIDATION, ASKED AGAIN ON THE DAY THE MONEY MOVES. An
+     * approval can be weeks old; since then a supporter can charge back, a refund
+     * can land, or the account can be suspended. The last check before money
+     * leaves must never trust a check made earlier.
+     *
+     * ⚠️ The milestone is re-tested against LIVE qualifying earnings.
+     * `computeGmv()` already removes refunds proportionally and excludes anything
+     * not `completed` — which is what a disputed transaction becomes — so
+     * "refunded and disputed removed" is the definition it already enforces
+     * rather than a second rule written here.
+     *
+     * ⚠️ Order matters: suspension first. A suspended account must not be told
+     * its milestone is short — that names the wrong problem.
+     */
+    public function holdReasonFor(GrowthBonusReward $reward): ?string
+    {
+        $creator = $reward->creator ?: User::find($reward->creator_id);
+
+        if (! $creator) {
+            return GrowthBonusReward::HOLD_CANNOT_RECEIVE;
+        }
+
+        if ((int) ($creator->suspended_account ?? 0) !== 0) {
+            return GrowthBonusReward::HOLD_ACCOUNT_SUSPENDED;
+        }
+
+        if (empty($creator->account_id)
+            || (int) ($creator->stripe_details_submitted ?? 0) !== 1
+            || ! empty($creator->payout_paused_at)) {
+            return GrowthBonusReward::HOLD_CANNOT_RECEIVE;
+        }
+
+        $profile = $reward->profile;
+
+        if (! $profile) {
+            return GrowthBonusReward::HOLD_CANNOT_RECEIVE;
+        }
+
+        $live = $this->computeGmv($creator, $profile->expires_at);
+        $gmv = (float) $live['total'] + (float) $profile->gmv_adjustment;
+
+        if ($gmv + 0.001 < (float) $reward->milestone_gmv) {
+            return GrowthBonusReward::HOLD_MILESTONE_NOT_COVERED;
+        }
+
+        return null;
+    }
+
+    /**
+     * What the CREATOR is told. Derived from the code — never stored.
+     *
+     * ⚠️ An unrecognised code says what IS known rather than inventing a cause,
+     * the same rule the blocked-payment feed follows.
+     */
+    public function holdMessage(?string $reason): string
+    {
+        return match ($reason) {
+            GrowthBonusReward::HOLD_MILESTONE_NOT_COVERED => 'Your bonus is on hold because a refunded or disputed payment has taken your qualifying earnings back below this milestone. It will be sent as soon as new sales cover it again.',
+            GrowthBonusReward::HOLD_ACCOUNT_SUSPENDED => 'Your bonus is on hold while your account is suspended.',
+            GrowthBonusReward::HOLD_CANNOT_RECEIVE => 'Your bonus is on hold because your payout account cannot receive it yet. Finish your Stripe setup and we will send it on the next payout day.',
+            default => 'Your bonus is on hold. We check it again every week.',
+        };
+    }
+
+    /**
+     * 🚨 THE DATE IS CLEARED WITH THE HOLD. The creator was told a day; that day
+     * is no longer true, and leaving it there means every screen keeps promising
+     * money that is not coming. `growth-bonus:announce` re-dates it once the hold
+     * clears and tells them the NEW day — its dedup key carries the date, so that
+     * second message is not swallowed by the first one's claim.
+     *
+     * ⚠️ `held_at` is set ONCE and not refreshed on later checks: "how long has
+     * this been stuck" needs the first date.
+     *
+     * ⚠️ TOLD ONCE, NOT EVERY FRIDAY (client decision, 2 Sep 2026). The dashboard
+     * carries the reason for as long as the hold lasts, so the creator always
+     * knows; repeating the same bad news weekly is how people stop reading the
+     * receipts and payout notices too.
+     */
+    public function applyHold(GrowthBonusReward $reward, string $reason): void
+    {
+        $alreadyHeld = $reward->payout_hold_reason === $reason;
+
+        $reward->forceFill([
+            'payout_hold_reason' => $reason,
+            'held_at' => $reward->held_at ?? now(),
+            'scheduled_payout_date' => null,
+        ])->save();
+
+        if (! $alreadyHeld) {
+            $this->notifyHold($reward, $reason);
+        }
+    }
+
+    public function clearHold(GrowthBonusReward $reward): void
+    {
+        if ($reward->payout_hold_reason === null) {
+            return;
+        }
+
+        $reward->forceFill([
+            'payout_hold_reason' => null,
+            'held_at' => null,
+        ])->save();
+    }
+
+    /**
+     * ⚠️ Claimed on the REASON as well as the reward, so a bonus held for one
+     * cause and later for a different one says so — but the same cause is never
+     * announced twice, however many Fridays it survives.
+     *
+     * ⚠️ Never throws: it runs inside the payer, and a message failing must not
+     * stop the sweep or leave the hold unapplied.
+     */
+    private function notifyHold(GrowthBonusReward $reward, string $reason): void
+    {
+        $type = 'growth_bonus_held';
+        $dedupKey = 'reward:'.$reward->id.':'.$reason;
+
+        if (! NotificationDispatcher::claim($reward->creator_id, $type, $dedupKey)) {
+            return;
+        }
+
+        try {
+            $creator = $reward->creator ?: User::find($reward->creator_id);
+
+            if (! $creator) {
+                NotificationDispatcher::releaseClaim($reward->creator_id, $type, $dedupKey);
+
+                return;
+            }
+
+            $symbol = config('growth_bonus.display.currency_symbol', '£');
+            $amount = $symbol.number_format((float) $reward->amount, 0);
+
+            NotificationDispatcher::queue(
+                $creator,
+                $type,
+                [
+                    'title' => 'Your '.$amount.' Growth Bonus is on hold',
+                    'body' => $this->holdMessage($reason),
+                    'url' => '/growth-bonus',
+                    'module' => 'growth_bonus',
+                    'mailable' => GrowthBonusHeld::class,
+                    'mailable_args' => [
+                        'creator' => $creator,
+                        'milestoneGmv' => (float) $reward->milestone_gmv,
+                        'rewardAmount' => (float) $reward->amount,
+                        'reasonText' => $this->holdMessage($reason),
+                    ],
+                ],
+                NotificationDispatcher::ALL_CHANNELS,
+                marketing: false,
+            );
+        } catch (\Throwable $e) {
+            NotificationDispatcher::releaseClaim($reward->creator_id, $type, $dedupKey);
+
+            Log::warning('Growth Bonus hold notification could not be queued', [
+                'reward_id' => $reward->id,
+                'reason' => $reason,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function activationThreshold(): float
@@ -441,7 +644,29 @@ class GrowthBonusService
             if ($reward && $reward->status === GrowthBonusReward::STATUS_PAID && ! $reward->needs_review) {
                 $reward->forceFill(['needs_review' => true])->save();
                 Log::warning("Growth Bonus: paid reward {$reward->id} (creator {$profile->creator_id}, rung £{$rungGmv}) no longer covered by GMV £{$total} — flagged for admin review.");
-            } elseif ($reward && in_array($reward->status, [GrowthBonusReward::STATUS_PENDING_VALIDATION, GrowthBonusReward::STATUS_APPROVED], true)) {
+            } elseif ($reward && $reward->status === GrowthBonusReward::STATUS_APPROVED) {
+                /*
+                 * 🚨 AN APPROVED REWARD IS HELD, NOT REVERSED (client decision,
+                 * 2 Sep 2026). It used to be reversed silently — and because the
+                 * payer only ever selects `approved`, the bonus simply vanished
+                 * from every run with the creator never told why.
+                 *
+                 * Two facts have to survive separately: an ADMIN approved this,
+                 * and the PLATFORM is not sending it today. Reversal destroyed
+                 * the first in order to record the second.
+                 *
+                 * ⚠️ Applied here as well as in the payer so the creator learns
+                 * within a day rather than on Friday — the payer re-checks
+                 * anyway, because the last gate before money moves must never
+                 * trust a check made yesterday.
+                 */
+                $this->applyHold($reward, GrowthBonusReward::HOLD_MILESTONE_NOT_COVERED);
+            } elseif ($reward && $reward->status === GrowthBonusReward::STATUS_PENDING_VALIDATION) {
+                /*
+                 * ⚠️ Never approved, so no day was ever promised and no hold is
+                 * owed — this one is simply reversed, and restored by the branch
+                 * above if genuine later sales re-cross the rung.
+                 */
                 $reward->forceFill([
                     'status' => GrowthBonusReward::STATUS_REVERSED,
                     'reversed_at' => now(),
@@ -571,6 +796,88 @@ class GrowthBonusService
      * later run can retry — a burnt claim is indistinguishable from a delivered
      * message, which is how the birthday campaign silently skipped people.
      */
+    /**
+     * "Your bonus is approved, and we send it on <date>."
+     *
+     * 🚨 THE ADMIN APP APPROVES; THIS APP TELLS THE CREATOR AND PAYS. The two
+     * apps share a database and NOT a codebase, so the admin side writes the
+     * status and `growth-bonus:announce` picks it up here. Dispatching a job from
+     * there would put a class the admin worker cannot resolve on a shared queue.
+     *
+     * 🚨 RETURNS FALSE WHEN THE MESSAGE DID NOT GO, so the caller can hand the
+     * work back. A dated-and-claimed row that was never announced would be PAID
+     * on a day the creator was never told about.
+     *
+     * ⚠️ The dedup key carries the DATE, so a bonus re-dated after a hold sends a
+     * fresh message rather than being swallowed by the first claim.
+     */
+    public function notifyApproved(GrowthBonusReward $reward): bool
+    {
+        $type = 'growth_bonus_approved';
+        $dedupKey = 'reward:'.$reward->id
+            .':'.($reward->scheduled_payout_date?->toDateString() ?? 'nodate');
+
+        if (! NotificationDispatcher::claim($reward->creator_id, $type, $dedupKey)) {
+            // Already announced with this exact date — delivered, not a failure.
+            return true;
+        }
+
+        try {
+            $creator = $reward->creator ?: User::find($reward->creator_id);
+
+            if (! $creator) {
+                NotificationDispatcher::releaseClaim($reward->creator_id, $type, $dedupKey);
+
+                return false;
+            }
+
+            $symbol = config('growth_bonus.display.currency_symbol', '£');
+            $amount = $symbol.number_format((float) $reward->amount, 0);
+
+            // ⚠️ Read from the ROW, never recomputed. The mail, the dashboard and
+            // the payer must all name the same day.
+            $scheduled = $reward->scheduled_payout_date;
+
+            $body = $scheduled
+                ? 'We send your '.$amount.' bonus on '.$scheduled->format('l j F').'.'
+                : 'Your '.$amount.' bonus is cleared and will go with your next payout.';
+
+            NotificationDispatcher::queue(
+                $creator,
+                $type,
+                [
+                    'title' => 'Your '.$amount.' Growth Bonus is approved',
+                    'body' => $body,
+                    'url' => '/growth-bonus',
+                    'module' => 'growth_bonus',
+                    'mailable' => GrowthBonusApproved::class,
+                    'mailable_args' => [
+                        'creator' => $creator,
+                        'milestoneGmv' => (float) $reward->milestone_gmv,
+                        'rewardAmount' => (float) $reward->amount,
+                        'scheduledDate' => $scheduled?->toDateString(),
+                    ],
+                ],
+                NotificationDispatcher::ALL_CHANNELS,
+                // Money the creator is owed — a marketing opt-out must not
+                // silence it, same class as a payout notice.
+                marketing: false,
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            NotificationDispatcher::releaseClaim($reward->creator_id, $type, $dedupKey);
+
+            Log::warning('Growth Bonus approval notification could not be queued', [
+                'reward_id' => $reward->id,
+                'creator_id' => $reward->creator_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
     private function notifyMilestone(GrowthBonusProfile $profile, float $rungGmv, float $amount): void
     {
         $type = 'growth_bonus_milestone';

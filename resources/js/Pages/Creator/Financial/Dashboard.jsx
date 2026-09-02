@@ -80,7 +80,7 @@ function Stat({ label, value, sub, tone = 'default', icon = null }) {
     );
 }
 
-export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_year_number, date_range, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters, status_breakdown = [], reserve_breakdown = [], reserve_released_breakdown = [], reserve_total_released = 0, reserve_total_held = 0, upcoming_payout = null, reserve_reason, reserve_policy = null, payout_cycle = null, payout_history = [], fast_start_bonus = null, founder_bonus = null, active_tab = 'overview' }) {
+export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_year_number, date_range, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters, status_breakdown = [], reserve_breakdown = [], reserve_released_breakdown = [], reserve_total_released = 0, reserve_total_held = 0, upcoming_payout = null, reserve_reason, reserve_policy = null, payout_cycle = null, payout_history = [], fast_start_bonus = null, founder_bonus = null, growth_bonus_upcoming = [], active_tab = 'overview' }) {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [expandedPayout, setExpandedPayout] = useState(null);
     const [showPayoutBreakdown, setShowPayoutBreakdown] = useState(false);
@@ -1003,6 +1003,72 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                     })}
                                 </div>
                             </Section>
+
+                            {/*
+                                🚨 GROWTH BONUS MONEY THAT IS OWED AND NOT YET SENT.
+                                It is deliberately NOT in payout history: every row there
+                                was written after money moved, and mixing a promise into
+                                that table is how a creator reads an approval as a payment.
+                                Once `growth-bonus:pay` runs, a real PayoutRecord appears in
+                                history and this block empties itself.
+
+                                ⚠️ The date is the SERVER'S stored one — the same day the
+                                approval email named. Never derive "next Friday" here.
+                            */}
+                            {growth_bonus_upcoming.length > 0 && (
+                                <Section
+                                    title="Growth Bonus on the way"
+                                    sub="Earned and not yet sent. It arrives separately from your sales payout."
+                                >
+                                    <div className="rounded-box border-black overflow-hidden">
+                                        {growth_bonus_upcoming.map((row, i) => {
+                                            const approved = row.status === 'approved';
+                                            // Bare YYYY-MM-DD parses as UTC midnight; +T00:00:00
+                                            // keeps the named day for viewers west of Greenwich.
+                                            const when = row.scheduled_payout_date
+                                                ? new Date(row.scheduled_payout_date + "T00:00:00").toLocaleDateString(undefined, {
+                                                      weekday: 'long',
+                                                      day: 'numeric',
+                                                      month: 'long',
+                                                  })
+                                                : null;
+
+                                            return (
+                                                <div
+                                                    key={row.id}
+                                                    className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3.5"
+                                                    /* ⚠️ Inline, because `border-black` is a full 2px
+                                                       shorthand here and a `border-t` class beside it is
+                                                       discarded silently. */
+                                                    style={i > 0 ? { borderTop: '2px solid #000' } : undefined}
+                                                >
+                                                    <div className="min-w-0">
+                                                        <div className="text-[14px] font-semibold text-black">
+                                                            Milestone {formatCurrency(row.milestone_gmv, 'GBP')}
+                                                        </div>
+                                                        {/* 🚨 A hold outranks the date. Both facts
+                                                            are true — approved, and not being sent —
+                                                            and a row promising a day it no longer has
+                                                            is the page contradicting itself. */}
+                                                        <div className="text-[13px] text-black/60 leading-snug">
+                                                            {row.hold_reason
+                                                                ? `On hold · ${row.hold_reason}`
+                                                                : approved
+                                                                  ? when
+                                                                      ? `Approved · we send it on ${when}`
+                                                                      : 'Approved · goes with your next payout'
+                                                                  : 'Being checked'}
+                                                        </div>
+                                                    </div>
+                                                    <div className={`text-lg ${MONEY} text-gray-900 whitespace-nowrap`}>
+                                                        {formatCurrency(row.amount, 'GBP')}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </Section>
+                            )}
 
                             {(fast_start_bonus || founder_bonus) && (
                                 <Section title="Your bonuses" sub="Platform rewards paid on top of your earnings.">

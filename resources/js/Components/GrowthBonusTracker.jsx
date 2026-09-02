@@ -189,6 +189,82 @@ export default function GrowthBonusTracker({ data }) {
                 only reason a figure can look wrong — an unconvertible sale means
                 the spend above is UNDERSTATED, and without this line a milestone
                 that should have unlocked has no explanation. */}
+            {/*
+                🚨 THE APPROVAL, WITH THE DAY THE MONEY LEAVES. Until this, a
+                creator whose bonus had been approved and dated read exactly the
+                same card as one whose bonus nobody had looked at — the platform
+                knew and did not say. The date is the SERVER'S stored one, the
+                same day the approval email named; deriving "next Friday" here
+                would let this card and their inbox disagree.
+            */}
+            {/*
+                🚨 A HOLD OUTRANKS THE APPROVAL LINE. Both can be true at once —
+                an admin approved it AND the platform is not sending it — and
+                showing "we send it on Friday" beside a bonus that is held is the
+                card contradicting itself on the one screen whose job is to say
+                where the creator stands. The held sentence wins.
+
+                ⚠️ Amber, never red: nothing was taken away and nobody said no.
+                Red on this platform means a person refused.
+            */}
+            {(() => {
+                const held = (data.milestones ?? []).find(
+                    (m) => m.hold_reason && !m.paid_at,
+                );
+
+                if (!held) return null;
+
+                return (
+                    <p
+                        className={`mt-3 rounded-box-sm px-3 py-2 text-[12px] font-semibold leading-[1.5] ${
+                            expired
+                                ? "bg-white/10 text-white/85"
+                                : "bg-[#F7EFC9] text-black/80"
+                        }`}
+                    >
+                        {money(held.amount)} on hold — {held.hold_reason}
+                    </p>
+                );
+            })()}
+
+            {(() => {
+                // A held bonus is reported by the block above; it must not also
+                // claim a send date it no longer has.
+                const anyHold = (data.milestones ?? []).some(
+                    (m) => m.hold_reason && !m.paid_at,
+                );
+
+                const next = anyHold
+                    ? null
+                    : (data.milestones ?? []).find(
+                          (m) => m.status === "approved" && !m.paid_at,
+                      );
+
+                if (!next) return null;
+
+                // A bare YYYY-MM-DD parses as UTC midnight, so plain new Date()
+                // renders the day BEFORE for any viewer west of Greenwich -
+                // appending T00:00:00 parses it as local time.
+                const when = next.scheduled_payout_date
+                    ? new Date(next.scheduled_payout_date + "T00:00:00").toLocaleDateString(undefined, {
+                          weekday: "long",
+                          day: "numeric",
+                          month: "long",
+                      })
+                    : null;
+
+                return (
+                    <p
+                        className={`mt-3 text-[12px] font-semibold leading-[1.5] ${expired ? "text-white/80" : "text-black/75"}`}
+                    >
+                        {/* ⚠️ "Send", never "in your bank" — the bank's timing is
+                            not ours to promise. */}
+                        {money(next.amount)} approved
+                        {when ? ` — we send it on ${when}.` : " — it goes with your next payout."}
+                    </p>
+                );
+            })()}
+
             {data.unconverted_rows > 0 && (
                 <p
                     className={`mt-3 text-[12px] leading-[1.5] ${expired ? "text-white/60" : "text-black/65"}`}

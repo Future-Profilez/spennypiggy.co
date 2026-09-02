@@ -96,4 +96,38 @@ return [
     'display' => [
         'currency_symbol' => '£',
     ],
+
+    /*
+     * PHASE 3 — the automatic payout (30 Aug 2026).
+     *
+     * 🚨 APPROVING A BONUS NOW MOVES REAL MONEY. Before this it wrote a status
+     * and nothing else; from here an approval is an instruction to pay, and
+     * Stripe has no undo once the transfer is out.
+     *
+     * ⚠️ `payout_day` is ISO-8601 (1 = Monday … 5 = Friday) and matches
+     * `payout:run-weekly`, so a bonus rides the platform's own payout rhythm
+     * rather than inventing a second one.
+     */
+    'payout' => [
+        // Master switch for the PAYMENT only. Off = approvals are recorded and
+        // announced, and nothing is sent — which is exactly the Phase 1
+        // behaviour, so turning it off is a safe retreat rather than a broken
+        // half-state.
+        'enabled' => true,
+
+        // Friday, the day `payout:run-weekly` already uses.
+        'payout_day' => 5,
+
+        /*
+         * ⚠️ A bonus approved ON the payout day waits for the NEXT one.
+         * Announcing "today" and then paying in the same run is a race the
+         * creator watches: the command runs at a fixed time, and an approval at
+         * 16:00 on a Friday would name a date that had already passed.
+         */
+        'min_days_notice' => 1,
+
+        // Belt and braces against a runaway loop; a run larger than this is a
+        // fault, not a busy week.
+        'max_per_run' => 200,
+    ],
 ];

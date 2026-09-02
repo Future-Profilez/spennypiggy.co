@@ -206,6 +206,30 @@ class Kernel extends ConsoleKernel
             ->dailyAt('09:20')
             ->withoutOverlapping(30);
 
+        /*
+         * Phase 3 — approval reaches the creator, then the money follows.
+         *
+         * ⚠️ EVERY FIFTEEN MINUTES, not daily. An approval is a person pressing
+         * a button; a creator hearing tomorrow that their money was cleared
+         * today is the whole gap this closes. It is a narrow indexed lookup and
+         * a no-op on most runs.
+         */
+        $schedule->command('growth-bonus:announce')
+            ->everyFifteenMinutes()
+            ->withoutOverlapping(10);
+
+        /*
+         * 🚨 FRIDAY, AFTER `payout:run-weekly` (10:07) AND CLEAR OF
+         * `reserve:release` (10:30) — on Vapor every command due in the same
+         * minute shares one cli-timeout budget.
+         *
+         * ⚠️ It pays only what `growth-bonus:announce` has already DATED, so a
+         * creator is never paid on a day they were not told about.
+         */
+        $schedule->command('growth-bonus:pay')
+            ->weeklyOn(5, '10:45')
+            ->withoutOverlapping(30);
+
         // Daily job to process founder payouts (only picks bonuses whose
         // estimated_payout_date has arrived, so cadence is safe)
         //
