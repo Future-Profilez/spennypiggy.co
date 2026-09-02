@@ -186,6 +186,35 @@ class StripeMetadataService
             }
         }
 
+        /*
+         * 🚨 A CONNECTED ACCOUNT'S PAYMENT INTENT DOES NOT EXIST ON THE PLATFORM.
+         *
+         * Every charge on this platform is a Direct Charge, so the intent lives on the
+         * CREATOR's account and retrieving it without `stripe_account` answers
+         * **"No such payment_intent"** (JAVASCRIPT-REACT-AP). The chain above resolves
+         * that id from a per-type relation, and it comes back NULL two ways: the
+         * relation is missing on the row (a deleted listing, an unhydrated model), or
+         * the product type has **no branch at all** — `shop_item` and `piggy_pot` never
+         * had one.
+         *
+         * `deliverables.creator_id` names the creator on every row whatever the type,
+         * so it is the fallback that cannot be forgotten when a sixth product type is
+         * added.
+         *
+         * ⚠️ It never OVERRIDES a resolved id — the per-type relation is the more
+         * specific answer and stays authoritative.
+         */
+        if ($stripeAccountId === null && $deliverable->creator_id) {
+            $stripeAccountId = User::find($deliverable->creator_id)?->account_id;
+
+            if ($stripeAccountId) {
+                Log::info('StripeMetadataService: connected account resolved from creator_id', [
+                    'deliverable_id' => $deliverable->id,
+                    'product_type' => $deliverable->product_type,
+                ]);
+            }
+        }
+
         if (in_array($deliverable->product_type, ['task', 'task_purchase'])) {
             try {
                 Stripe::setApiKey(config('services.stripe.secret'));

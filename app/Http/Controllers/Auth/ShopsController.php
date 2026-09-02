@@ -2047,7 +2047,27 @@ class ShopsController extends Controller
         // Base query: buyer's purchases, or the creator's own sales. Delivery
         // status lives on `deliverables` (keyed by session_id), so we leftJoin it
         // to filter/sort by status without pulling every row into memory.
-        $base = ShopPayment::query()
+        /*
+         * 🚨 ALIASING A SOFT-DELETING MODEL'S TABLE BREAKS ITS OWN GLOBAL SCOPE.
+         *
+         * `SoftDeletingScope` qualifies with the MODEL'S TABLE NAME
+         * (`getQualifiedDeletedAtColumn()`), so `ShopPayment::query()->from('shop_payments as sp')`
+         * built `from shop_payments as sp where shop_payments.deleted_at is null` —
+         * and in MySQL an alias REPLACES the table name, so `shop_payments.` is no
+         * longer a valid reference. Every load of /shop/orders-list answered
+         * **1054 "Unknown column 'shop_payments.deleted_at'"** (JAVASCRIPT-REACT-90).
+         *
+         * ⚠️ THE COLUMN EXISTS — this is NOT the missing-column fault that migration
+         * `2026_08_21_100000_add_deleted_at_to_payment_tables` closed, and it was
+         * mistaken for it once. Verified: `Schema::hasColumn('shop_payments','deleted_at')`
+         * is true and the generated SQL still names the un-aliased table.
+         *
+         * Telling the model its table IS the alias makes the scope qualify `sp.`,
+         * which is the reference the query actually has.
+         */
+        $aliased = (new ShopPayment)->setTable('sp');
+
+        $base = $aliased->newQuery()
             ->from('shop_payments as sp')
             ->join('shops', 'shops.id', '=', 'sp.shop_id')
             ->leftJoin('deliverables as d', 'd.session_id', '=', 'sp.session_id')

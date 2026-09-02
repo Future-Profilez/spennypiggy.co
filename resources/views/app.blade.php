@@ -352,7 +352,13 @@
     </script>
     <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Anton&family=Fredoka:wght@300..700&display=swap" rel="stylesheet"></noscript>
 
-    <link rel="manifest" href="{{ url('/manifest.json')}}" />
+    {{-- 🚨 ROOT-RELATIVE, NEVER url(). `url()` builds an ABSOLUTE address from APP_URL,
+         so on any host but the canonical one the manifest becomes a CROSS-ORIGIN
+         request that `manifest-src 'self'` refuses — seen live on
+         `url4138.spennypiggy.co`, the SendGrid click-tracking subdomain, which this
+         app also answers for (JAVASCRIPT-REACT-AN). A relative href resolves against
+         whatever origin served the page, which is exactly what 'self' means. --}}
+    <link rel="manifest" href="/manifest.json" />
 
 
     {{-- iOS launch images.

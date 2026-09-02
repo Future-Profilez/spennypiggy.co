@@ -133,6 +133,55 @@ writing into them.
 author has every reason to believe the message arrived. All four are bridged now, through
 `useAlerts()`'s existing `warningAlert` / `infoAlert`.
 
+## 🚨 ALIASING A SOFT-DELETING MODEL BREAKS ITS OWN SCOPE (1 Sep 2026, spennypiggy.co)
+
+`SoftDeletingScope` qualifies with the **MODEL'S TABLE NAME**
+(`getQualifiedDeletedAtColumn()`), so
+`ShopPayment::query()->from('shop_payments as sp')` built
+`from shop_payments as sp where shop_payments.deleted_at is null` — and in MySQL an
+alias **REPLACES** the table name, so `shop_payments.` is no longer a valid reference.
+Every load of `/shop/orders-list` answered **1054 "Unknown column
+'shop_payments.deleted_at'"**.
+
+- 🚨 **THIS WAS MISTAKEN FOR THE MISSING-COLUMN FAULT AND RESOLVED WRONGLY ONCE.**
+  Migration `2026_08_21_100000_add_deleted_at_to_payment_tables` closed a real,
+  separate gap — but the column EXISTS and the error kept coming back. **Two different
+  faults produce the same 1054 message.** Verify with `Schema::hasColumn` and by reading
+  the generated SQL before assuming which one you have.
+- **Fix: `(new ShopPayment)->setTable('sp')`** so the scope qualifies the alias the
+  query actually has.
+- 🚨 **SQLITE ACCEPTS THE UN-ALIASED REFERENCE**, so a feature test hitting the route
+  passes against the bug. `tests/Feature/ShopOrdersListAliasTest.php` asserts the
+  GENERATED SQL, and pins the broken form too so nobody tidies the `setTable()` away.
+- ⚠️ Only one aliased soft-deleting query existed (`ordersList`); the two `users as cu`
+  / `users as bu` subqueries beside it are plain builder closures with no scope.
+
+## 🚨 A CONNECTED ACCOUNT'S PAYMENT INTENT IS NOT ON THE PLATFORM (1 Sep 2026, spennypiggy.co)
+
+Every charge here is a **Direct Charge**, so the intent lives on the CREATOR's account
+and retrieving it without `stripe_account` answers **"No such payment_intent"**.
+`StripeMetadataService::updateDeliverableMetadata` resolved that id from a
+**per-product-type relation**, and it came back null two ways: the relation missing on
+the row, or **the product type having no branch at all** — `shop_item` and `piggy_pot`
+never had one.
+
+- **`deliverables.creator_id` names the creator on every row whatever the type**, so it
+  is now the fallback — the one that cannot be forgotten when a sixth product type is
+  added. ⚠️ It never OVERRIDES a resolved id; the per-type relation is more specific and
+  stays authoritative.
+
+## ⚠️ `url()` IN A LAYOUT IS AN ABSOLUTE ADDRESS, AND THIS APP ANSWERS FOR MORE THAN ONE HOST (1 Sep 2026)
+
+`app.blade.php` linked the manifest with `url('/manifest.json')`, which builds an
+absolute address from `APP_URL` — so on any host but the canonical one it became a
+CROSS-ORIGIN request and `manifest-src 'self'` refused it. Seen live on
+**`url4138.spennypiggy.co`, the SendGrid click-tracking subdomain, which this app also
+serves responses for**, over http. Root-relative now: it resolves against whatever
+origin served the page, which is what `'self'` means.
+
+⚠️ **That the app answers for the mail-tracking subdomain at all is a DNS/infra
+question**, recorded rather than fixed here — the relative href is correct either way.
+
 ## 🚨 A LARGE UPLOAD DOES NOT GO TO uploadcare.com (30 Aug 2026, spennypiggy.co)
 
 Uploadcare switches to a **MULTIPART** upload above its size threshold and hands the
