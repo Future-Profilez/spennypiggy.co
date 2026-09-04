@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\LinkUserToCrmCreator;
 use App\Jobs\VerifyEmail;
 use App\Models\SecurityEvent;
 use App\Models\User;
 use App\Services\ActivityLogger;
+use App\Support\AnalyticsEvent;
 use App\Support\EmailDomainPolicy;
 use App\Support\SecurityAlert;
 use App\Support\SecurityEventLog;
 use App\Support\SecurityRedactor;
+use Carbon\Carbon;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -39,19 +43,65 @@ class EmailVerificationNotificationController extends Controller
      */
     public const AUTO_SEND_COOLDOWN = 600;
 
+    /**
+     * How long an email verification OTP remains valid, in minutes.
+     */
+    public const OTP_TTL_MINUTES = 15;
+
+    /**
+     * Maximum failed attempts before an OTP is invalidated.
+     */
+    public const OTP_MAX_ATTEMPTS = 5;
+
     public static function cacheKey(int $userId): string
     {
         return "verification_email_sent_at:{$userId}";
     }
 
+    public static function otpCacheKey(int $userId): string
+    {
+        return "verification_email_otp:{$userId}";
+    }
+
     /**
-     * Send the link and record WHEN.
+     * Generate a new 6-digit numeric OTP and cache it.
+     */
+    public static function generateOtp(User $user): string
+    {
+        $otp = sprintf('%06d', random_int(100000, 999999));
+
+        Cache::put(self::otpCacheKey($user->id), [
+            'otp' => $otp,
+            'attempts' => 0,
+            'expires_at' => now()->addMinutes(self::OTP_TTL_MINUTES)->timestamp,
+        ], now()->addMinutes(self::OTP_TTL_MINUTES));
+
+        return $otp;
+    }
+
+    /**
+     * Get the active unexpired OTP or generate a fresh one.
+     */
+    public static function getOrGenerateOtp(User $user): string
+    {
+        $cached = Cache::get(self::otpCacheKey($user->id));
+
+        if (is_array($cached) && ! empty($cached['otp']) && ($cached['expires_at'] ?? 0) > now()->timestamp) {
+            return $cached['otp'];
+        }
+
+        return self::generateOtp($user);
+    }
+
+    /**
+     * Send the link/OTP and record WHEN.
      *
      * Every send goes through here so the cooldown, the screen's "sent a moment
      * ago" line and the resend button all read one timestamp.
      */
     public static function dispatchLink(User $user): void
     {
+        self::generateOtp($user);
         VerifyEmail::dispatch($user);
         Cache::put(self::cacheKey($user->id), now()->timestamp, now()->addDay());
     }
@@ -233,6 +283,7 @@ class EmailVerificationNotificationController extends Controller
         // A new address gets a link immediately — the cooldown belongs to the
         // old one.
         Cache::forget(self::cacheKey($user->id));
+        Cache::forget(self::otpCacheKey($user->id));
         self::dispatchLink($user);
 
         try {
@@ -245,7 +296,7 @@ class EmailVerificationNotificationController extends Controller
             // own address.
         }
 
-        return back()->with('success', 'Address updated. We have sent a new link to '.$email.'.');
+        return back()->with('success', 'Address updated. We have sent a new code to '.$email.'.');
     }
 
     /**
@@ -262,6 +313,90 @@ class EmailVerificationNotificationController extends Controller
         return response()->json([
             'verified' => (bool) optional($user)->hasVerifiedEmail(),
             'retry_after' => $user ? self::secondsUntilResend($user->id) : 0,
+        ]);
+    }
+
+    /**
+     * Verify the 6-digit OTP code submitted by the user.
+     */
+    public function verifyOtp(Request $request)
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json(['status' => false, 'message' => 'Not authenticated.'], 401);
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json([
+                'status' => true,
+                'verified' => true,
+                'message' => 'Email is already verified.',
+                'redirect' => route('user.show', ['username' => $user->username]),
+            ]);
+        }
+
+        $request->validate([
+            'otp' => ['required', 'string', 'size:6', 'regex:/^[0-9]{6}$/'],
+        ], [
+            'otp.required' => 'Please enter the 6-digit verification code.',
+            'otp.size' => 'The verification code must be exactly 6 digits.',
+            'otp.regex' => 'The verification code must contain numbers only.',
+        ]);
+
+        $cacheKey = self::otpCacheKey($user->id);
+        $cached = Cache::get($cacheKey);
+
+        if (! is_array($cached) || empty($cached['otp']) || ($cached['expires_at'] ?? 0) <= now()->timestamp) {
+            return response()->json([
+                'status' => false,
+                'message' => 'That verification code has expired. Please click "Send again" for a new code.',
+            ], 422);
+        }
+
+        $attempts = (int) ($cached['attempts'] ?? 0);
+        if ($attempts >= self::OTP_MAX_ATTEMPTS) {
+            Cache::forget($cacheKey);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Too many failed attempts. Please request a new verification code.',
+            ], 429);
+        }
+
+        $submittedOtp = trim((string) $request->input('otp'));
+        if (! hash_equals((string) $cached['otp'], $submittedOtp)) {
+            $cached['attempts'] = $attempts + 1;
+            $remaining = self::OTP_MAX_ATTEMPTS - $cached['attempts'];
+            Cache::put($cacheKey, $cached, now()->addMinutes(self::OTP_TTL_MINUTES));
+
+            $errorMsg = $remaining > 0
+                ? "Incorrect verification code. {$remaining} attempt".($remaining === 1 ? '' : 's').' remaining.'
+                : 'Too many failed attempts. Please request a new verification code.';
+
+            return response()->json([
+                'status' => false,
+                'message' => $errorMsg,
+            ], 422);
+        }
+
+        // Correct OTP! Complete email verification
+        Cache::forget($cacheKey);
+
+        $user->email_verified_at = Carbon::now();
+        $user->save();
+
+        event(new Verified($user));
+        LinkUserToCrmCreator::dispatch($user->id);
+        AnalyticsEvent::push('email_verified', ['source' => 'otp_input']);
+
+        $destination = session('url.intended') ?: route('user.show', ['username' => $user->username]);
+
+        return response()->json([
+            'status' => true,
+            'verified' => true,
+            'message' => 'Email verified successfully!',
+            'redirect' => $destination,
         ]);
     }
 }

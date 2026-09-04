@@ -1,24 +1,7 @@
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import Field from "@/Pages/Auth/register/Field";
-
-/**
- * The verification screen.
- *
- * 🚨 It no longer sends the email. Registration dispatches the link, and
- * `EmailVerificationPromptController` sends one on arrival if nothing has gone
- * out recently. The old page fired the ONLY send from a mount effect gated by a
- * per-device localStorage timestamp — so a blocked script, a failed request, a
- * closed tab or a second device meant no email was ever sent while this screen
- * announced "Verification Email Sent !!".
- *
- * The design is login's and forgot-password's shell exactly (#0B0B0C, one mint
- * wash, a white bordered panel, the shared Field), because this is the third
- * screen of the same flow. The signature is the ADDRESS: it is set as the hero
- * of the panel with Change beside it, since a typo there is the single reason
- * creators get stuck here and the old page never showed it at all.
- */
 
 const POLL_MS = 10000;
 
@@ -52,6 +35,12 @@ export default function VerifyEmail({
     const [verified, setVerified] = useState(false);
     const [editing, setEditing] = useState(false);
 
+    // OTP state
+    const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+    const [otpError, setOtpError] = useState("");
+    const [verifying, setVerifying] = useState(false);
+    const otpRefs = useRef([]);
+
     const {
         data,
         setData,
@@ -62,9 +51,14 @@ export default function VerifyEmail({
         clearErrors,
     } = useForm({ email: "" });
 
-    // The countdown the resend button reads. The server owns the real cooldown;
-    // this only says when it is worth pressing again, so a caller is never
-    // refused by a 429 they had no way to predict.
+    // Focus first OTP input on mount
+    useEffect(() => {
+        if (!editing && !verified) {
+            otpRefs.current[0]?.focus();
+        }
+    }, [editing, verified]);
+
+    // The countdown the resend button reads.
     useEffect(() => {
         if (cooldown <= 0) return undefined;
 
@@ -73,10 +67,7 @@ export default function VerifyEmail({
         return () => clearInterval(t);
     }, [cooldown]);
 
-    // ⚠️ Polls a small JSON endpoint instead of `window.location.reload()`. The
-    // old form re-loaded the WHOLE page every 5 seconds for as long as the tab
-    // stayed open — the screen could not be read, and every open tab hit the
-    // app 12x a minute.
+    // Background poll for email verification link clicked in another tab/window
     useEffect(() => {
         const timer = setInterval(() => {
             if (document.hidden) return;
@@ -87,7 +78,6 @@ export default function VerifyEmail({
                     if (resp.data?.verified) {
                         clearInterval(timer);
                         setVerified(true);
-                        // Let the confirmation land before moving them on.
                         setTimeout(() => window.location.reload(), 1200);
                     }
                 })
@@ -97,11 +87,114 @@ export default function VerifyEmail({
         return () => clearInterval(timer);
     }, []);
 
+    const submitOtp = useCallback(
+        (code) => {
+            const fullCode = code || otp.join("");
+            if (fullCode.length !== 6) {
+                setOtpError("Please enter all 6 digits.");
+                return;
+            }
+
+            setVerifying(true);
+            setOtpError("");
+
+            axios
+                .post(route("verification.verify-otp"), { otp: fullCode })
+                .then((resp) => {
+                    if (resp.data?.verified) {
+                        setVerified(true);
+                        setTimeout(() => {
+                            window.location.href =
+                                resp.data?.redirect || route("home");
+                        }, 1000);
+                    }
+                })
+                .catch((err) => {
+                    const msg =
+                        err?.response?.data?.message ||
+                        err?.response?.data?.errors?.otp?.[0] ||
+                        "Verification failed. Please check the code and try again.";
+                    setOtpError(msg);
+                })
+                .finally(() => setVerifying(false));
+        },
+        [otp],
+    );
+
+    const handleOtpChange = (index, val) => {
+        setOtpError("");
+        const clean = val.replace(/[^0-9]/g, "");
+
+        if (!clean) {
+            const next = [...otp];
+            next[index] = "";
+            setOtp(next);
+            return;
+        }
+
+        // Pasted or typed multiple digits
+        if (clean.length > 1) {
+            const digits = clean.slice(0, 6).split("");
+            const next = [...otp];
+            digits.forEach((d, i) => {
+                if (index + i < 6) next[index + i] = d;
+            });
+            setOtp(next);
+            const nextFocus = Math.min(index + digits.length, 5);
+            otpRefs.current[nextFocus]?.focus();
+            if (next.every((d) => d !== "")) {
+                submitOtp(next.join(""));
+            }
+            return;
+        }
+
+        // Single digit
+        const next = [...otp];
+        next[index] = clean[0];
+        setOtp(next);
+
+        if (index < 5) {
+            otpRefs.current[index + 1]?.focus();
+        }
+
+        if (next.every((d) => d !== "")) {
+            submitOtp(next.join(""));
+        }
+    };
+
+    const handleOtpKeyDown = (index, e) => {
+        if (e.key === "Backspace" && !otp[index] && index > 0) {
+            otpRefs.current[index - 1]?.focus();
+        }
+    };
+
+    const handleOtpPaste = (e) => {
+        e.preventDefault();
+        setOtpError("");
+        const text = e.clipboardData
+            .getData("text")
+            .replace(/[^0-9]/g, "")
+            .slice(0, 6);
+        if (!text) return;
+        const digits = text.split("");
+        const next = ["", "", "", "", "", ""];
+        digits.forEach((d, i) => {
+            next[i] = d;
+        });
+        setOtp(next);
+        const focusIdx = Math.min(digits.length, 5);
+        otpRefs.current[focusIdx]?.focus();
+        if (digits.length === 6) {
+            submitOtp(text);
+        }
+    };
+
     const resend = useCallback(() => {
         if (sending || cooldown > 0) return;
 
         setSending(true);
         setNotice(null);
+        setOtpError("");
 
         axios
             .post(route("verification.email"))
@@ -109,9 +202,11 @@ export default function VerifyEmail({
                 const now = Math.floor(Date.now() / 1000);
                 setSentAt(resp.data?.last_sent_at || now);
                 setCooldown(resp.data?.retry_after || 60);
+                setOtp(["", "", "", "", "", ""]);
+                otpRefs.current[0]?.focus();
                 setNotice({
                     tone: "ok",
-                    text: `New link sent to ${resp.data?.email || email}.`,
+                    text: `New 6-digit code sent to ${resp.data?.email || email}.`,
                 });
             })
             .catch((err) => {
@@ -151,11 +246,11 @@ export default function VerifyEmail({
         post(route("verification.change-email"), {
             preserveScroll: true,
             onSuccess: () => {
-                // The server redirects back with the new address in `flash`.
                 setEmail(data.email.trim().toLowerCase());
                 setSentAt(Math.floor(Date.now() / 1000));
                 setCooldown(60);
                 setEditing(false);
+                setOtp(["", "", "", "", "", ""]);
                 reset();
             },
         });
@@ -167,7 +262,7 @@ export default function VerifyEmail({
         ? "Sending…"
         : cooldown > 0
           ? `Send again in ${cooldown}s`
-          : "Send the link again";
+          : "Send new code";
 
     return (
         <div className="relative flex min-h-[85dvh] flex-col justify-center overflow-hidden bg-[#0B0B0C] px-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:pt-12 lg:py-16">
@@ -186,34 +281,33 @@ export default function VerifyEmail({
             <div className="relative mx-auto grid w-full max-w-[440px] gap-6 lg:max-w-[980px] lg:grid-cols-[minmax(0,1fr)_440px] lg:grid-rows-[auto_auto] lg:gap-x-14 lg:gap-y-6">
                 <header className="lg:col-start-1 lg:row-start-1 lg:self-start">
                     <h1 className="font-gulfs text-3xl uppercase leading-[1.05] text-white sm:text-4xl lg:text-[52px] lg:leading-[0.95]">
-                        One link and you're in
+                        Enter verification code
                     </h1>
                     <span
                         aria-hidden="true"
                         className="mt-4 block h-1 w-16 rounded-full bg-[#05EFB8]"
                     />
                     <p className="mt-4 max-w-[34ch] text-sm text-white/70 lg:text-base">
-                        We've sent a link to the address on your account. Open
-                        it and this page lets you straight through — no code to
-                        type.
+                        We've sent a 6-digit code and a verification link to your email.
+                        Enter the code below to verify your account immediately.
                     </p>
 
                     <dl className="mt-6 max-w-[36ch] space-y-3 border-l-2 border-white/15 pl-4 text-sm">
                         <div>
                             <dt className="font-semibold text-white">
-                                Check spam and promotions
+                                Code expires in 15 minutes
                             </dt>
                             <dd className="text-white/60">
-                                It arrives from Spenny Piggy. Marking it "not
-                                spam" keeps the rest of your mail on track.
+                                Need more time? You can request a fresh code whenever you need.
                             </dd>
                         </div>
                         <div>
                             <dt className="font-semibold text-white">
-                                The link lasts 7 days
+                                Check spam and promotions
                             </dt>
                             <dd className="text-white/60">
-                                Past that, come back here and send a fresh one.
+                                The email arrives from Spenny Piggy. Marking it "not
+                                spam" keeps future receipts on track.
                             </dd>
                         </div>
                         <div>
@@ -221,7 +315,7 @@ export default function VerifyEmail({
                                 Wrong address?
                             </dt>
                             <dd className="text-white/60">
-                                Change it below — you don't need to start again.
+                                Change it on this screen — you don't need to register again.
                             </dd>
                         </div>
                     </dl>
@@ -339,33 +433,77 @@ export default function VerifyEmail({
 
                                 {!editing && (
                                     <>
-                                        <div className="mt-5 flex items-center gap-2 text-sm text-black/70">
+                                        <div className="mt-5">
+                                            <label className="mb-2.5 block text-xs font-bold uppercase tracking-[0.14em] text-black/70">
+                                                Enter 6-digit verification code
+                                            </label>
+                                            <div className="flex justify-between gap-1.5 sm:gap-2">
+                                                {otp.map((digit, i) => (
+                                                    <input
+                                                        key={i}
+                                                        ref={(el) => (otpRefs.current[i] = el)}
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        autoComplete="one-time-code"
+                                                        pattern="[0-9]*"
+                                                        maxLength={6}
+                                                        value={digit}
+                                                        onChange={(e) => handleOtpChange(i, e.target.value)}
+                                                        onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                                                        onPaste={i === 0 ? handleOtpPaste : undefined}
+                                                        disabled={verifying || verified}
+                                                        className={`h-12 w-11 sm:h-14 sm:w-12 text-center font-gulfs text-xl font-bold rounded-box-sm border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8C52FF] ${
+                                                            otpError
+                                                                ? "border-red-500 bg-red-50 text-red-700"
+                                                                : digit
+                                                                  ? "border-black bg-[#F5F0FF] text-black"
+                                                                  : "border-black/20 bg-white text-black hover:border-black/40"
+                                                        }`}
+                                                        aria-label={`Digit ${i + 1}`}
+                                                    />
+                                                ))}
+                                            </div>
+
+                                            {otpError && (
+                                                <p role="alert" className="mt-2 text-xs font-semibold text-red-600">
+                                                    {otpError}
+                                                </p>
+                                            )}
+
+                                            <button
+                                                type="button"
+                                                onClick={() => submitOtp()}
+                                                disabled={verifying || otp.join("").length !== 6}
+                                                className="mt-4 flex min-h-[52px] w-full items-center justify-center rounded-box-sm border-2 border-black bg-[#05EFB8] font-gulfs text-sm uppercase tracking-[0.14em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20"
+                                            >
+                                                {verifying ? "Verifying…" : "Verify Code"}
+                                            </button>
+                                        </div>
+
+                                        <div className="mt-5 flex items-center justify-between border-t border-black/10 pt-4 text-xs">
+                                            <span className="text-black/60">Didn't get the code?</span>
+                                            <button
+                                                type="button"
+                                                onClick={resend}
+                                                disabled={sending || cooldown > 0}
+                                                className="font-bold text-[#8C52FF] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                {resendLabel}
+                                            </button>
+                                        </div>
+
+                                        <div className="mt-3 flex items-center gap-2 text-xs text-black/60">
                                             <span
                                                 aria-hidden="true"
                                                 className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-[#8C52FF] motion-reduce:animate-none"
                                             />
                                             <span>
-                                                Waiting for you to open it
-                                                {ago ? ` — sent ${ago}` : ""}.
-                                                This page unlocks itself.
+                                                Or click the link in your email — this screen unlocks automatically.
                                             </span>
                                         </div>
 
-                                        <button
-                                            type="button"
-                                            onClick={resend}
-                                            disabled={sending || cooldown > 0}
-                                            className="mt-5 flex min-h-[56px] w-full items-center justify-center rounded-box-sm border-black bg-[#FF007F] font-gulfs text-base uppercase tracking-[0.14em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20"
-                                        >
-                                            {resendLabel}
-                                        </button>
-
-                                        <p className="mt-4 text-xs leading-[1.6] text-black/60">
-                                            Nothing after a few minutes? Search
-                                            your inbox for "Spenny Piggy" and
-                                            check spam — mail clients file a
-                                            first message from a new sender
-                                            there more often than not.
+                                        <p className="mt-4 text-xs leading-[1.6] text-black/50">
+                                            Check spam or promotions if you don't see it within a minute.
                                         </p>
                                     </>
                                 )}

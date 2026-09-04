@@ -50,6 +50,8 @@ class VerifyEmail implements ShouldQueue
     public function handle()
     {
 
+        $otp = \App\Http\Controllers\Auth\EmailVerificationNotificationController::getOrGenerateOtp($this->user);
+
         $emailData = [
             'to' => $this->user->email,
             'name' => $this->user->name,
@@ -57,6 +59,7 @@ class VerifyEmail implements ShouldQueue
             'phone' => $this->user->phone,
             'email' => $this->user->email,
             'uuid' => $this->user->uuid,
+            'otp' => $otp,
             // ⚠️ SIGNED, and built here rather than in the template. The uuid is a
             // public identifier, so a bare `/user/{uuid}` link let anyone mark any
             // account's email verified; and `env('APP_URL')` inside a Blade view is

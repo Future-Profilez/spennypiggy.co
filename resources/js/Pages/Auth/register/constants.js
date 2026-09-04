@@ -51,22 +51,12 @@ export const STEPS = {
 };
 
 /**
- * A Google signup brings its own email and has no password to choose, so the `credentials`
- * screen has nothing left to ask a CREATOR — it is dropped for them.
- *
- * ⚠️ It is KEPT for a supporter, because that screen also carries **country**, which the server
- * requires for role 0 and which sets their display currency. Dropping it for everyone made the
- * form pass client-side and then fail at submit with a field the person was never shown.
- * Filtering here keeps the rail, the counter and the back button honest without any of them
- * knowing why a step is missing.
+ * Both roles answer the credentials screen: email & password for regular signups,
+ * and country & pronouns for Google signups (where email & password are bypassed).
+ * Country is required for both roles since 31 Aug 2026.
  */
 export const stepsFor = (role, hasGoogle = false) => {
-    const steps =
-        STEPS[Number(role) === ROLE_CREATOR ? ROLE_CREATOR : ROLE_SUPPORTER];
-
-    return hasGoogle && Number(role) === ROLE_CREATOR
-        ? steps.filter((s) => s.key !== "credentials")
-        : steps;
+    return STEPS[Number(role) === ROLE_CREATOR ? ROLE_CREATOR : ROLE_SUPPORTER];
 };
 
 export const stepIndex = (role, key) =>

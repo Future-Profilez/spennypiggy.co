@@ -44,12 +44,36 @@
                 </td>
             </tr>
 
+            {{-- OTP Code Block --}}
+            @if(!empty($data['otp']))
+            <tr>
+                <td align="center" style="padding:0 0 20px 0;text-align:center;">
+                    <p style="font-family:'Outfit',Arial,sans-serif;font-size:12px;font-weight:700;color:#8C52FF;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 8px 0;">
+                        Your Verification Code
+                    </p>
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center" style="margin:0 auto;">
+                        <tr>
+                            <td align="center" bgcolor="#F8F5FF"
+                                style="background-color:#F8F5FF;border:2px dashed #8C52FF;border-radius:12px;-webkit-border-radius:12px;padding:14px 28px;">
+                                <span style="font-family:'Courier New',Courier,monospace;font-size:32px;font-weight:800;letter-spacing:8px;color:#1A1A1A;">
+                                    {{ $data['otp'] }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                    <p style="font-family:'Outfit',Arial,sans-serif;font-size:12px;color:#999999;margin:8px 0 0 0;">
+                        Enter this 6-digit code on the verification screen (expires in 15 minutes).
+                    </p>
+                </td>
+            </tr>
+            @endif
+
             {{-- Helper text --}}
             <tr>
                 <td align="center"
-                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
-                           line-height:20px;padding:0 0 22px 0;text-align:center;">
-                    Click the button below to confirm your email address and activate your account. This helps us keep your account secure. ✨
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:13px;color:#888888;
+                           line-height:20px;padding:0 0 18px 0;text-align:center;">
+                    Or click below to verify automatically without typing:
                 </td>
             </tr>
 

@@ -68,8 +68,8 @@ export default function CredentialsStep({
     const [showPassword, setShowPassword] = useState(false);
     const accent = accentFor(role);
     const isCreator = Number(role) === ROLE_CREATOR;
-    // A Google signup arrives with a verified email and no password to choose. The screen is
-    // only reached at all by a supporter, because it still carries their country.
+    // A Google signup arrives with a verified email and no password to choose. Both roles
+    // reach this screen because it carries their country and pronouns.
     const viaGoogle = !!googleProfile;
     const score = passwordScore(data.password);
     const strengthLabel = [

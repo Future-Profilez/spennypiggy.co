@@ -753,6 +753,10 @@ Route::middleware('auth')->group(function () {
     // every 5 seconds while it waits.
     Route::get('email/verification-status', [EmailVerificationNotificationController::class, 'status'])
         ->name('verification.status');
+    // OTP verification endpoint
+    Route::post('email/verify-otp', [EmailVerificationNotificationController::class, 'verifyOtp'])
+        ->middleware('throttle:10,1')
+        ->name('verification.verify-otp');
 
     // Content creation routes - NO subscription requirements.
     //
