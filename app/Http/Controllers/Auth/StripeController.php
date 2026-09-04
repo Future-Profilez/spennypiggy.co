@@ -62,10 +62,13 @@ use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\AnalyticsEvent;
 use App\Support\BlockedPaymentAlert;
+use App\Support\IdentityCheckState;
 use App\Support\NotificationContext;
 use App\Support\PayoutDestinationAudit;
+use App\Support\StripeChargesFlag;
 use App\Support\StripeCurrencySync;
 use App\Support\SubscriptionPlan;
+use App\Support\SuspendedAccount;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Exception;
@@ -575,6 +578,12 @@ class StripeController extends Controller
         if (! empty($user->account_id)) {
             try {
                 $account = StripeControl::getAccount($user->account_id);
+
+                // Whatever the answer is, record it — a creator arriving here
+                // with charges still disabled is exactly the row the admin
+                // console's alert is supposed to be about.
+                StripeChargesFlag::sync($user, $account);
+
                 if ($account->charges_enabled) {
                     $user->stripe_details_submitted = 1;
                     if (! $user->stripe_connected_at) {
@@ -3871,6 +3880,23 @@ class StripeController extends Controller
             ]);
         }
 
+        /*
+         * 🚨 THE PAYER, NOT THE PAYEE. A suspended account may not send money either,
+         * and this checkout starts on a route the suspension middleware deliberately
+         * lets through (reads stay open so somebody can still see their own account).
+         * The gate below refuses money coming IN to a suspended creator; this one
+         * refuses money going OUT of a suspended supporter.
+         *
+         * ⚠️ Nothing is recorded as a lost sale here — the payee did nothing wrong and
+         * has lost nothing; the refusal belongs to the payer's own account state.
+         */
+        if (SuspendedAccount::blocksPayer(Auth::user())) {
+            return response()->json([
+                'status' => false,
+                'msg' => SuspendedAccount::copyFor(Auth::user())['body'],
+            ]);
+        }
+
         // NEW: Check creator subscription eligibility first
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($creator);
 
@@ -5155,6 +5181,29 @@ class StripeController extends Controller
             if ((int) $user->identity_status === 2 && filled($user->stripe_user_id)) {
                 try {
                     $existing = VerificationSession::retrieve($user->stripe_user_id);
+
+                    // Stripe has just told us the truth about this session — record it
+                    // whichever way it went, so the creator's own screen stops guessing.
+                    $user->forceFill(IdentityCheckState::attributes((string) $existing->status))->save();
+
+                    // 🚨 Stripe has ALREADY PASSED THEM and the `verified` webhook never
+                    // landed. Answering "still being processed" here sends the creator
+                    // back to a wait that finished days ago, and leaves them blocked from
+                    // listing until the daily reconcile picks it up. Same field set as the
+                    // webhook — the passport rule stays with the webhook, which is the
+                    // path that can tell them why a document was refused.
+                    if ($existing->status === IdentityCheckState::VERIFIED
+                        && IdentityCheckState::documentTypeAllowed($existing)) {
+                        $user->forceFill(IdentityCheckState::verifiedAttributes())->save();
+
+                        Log::info('Identity repaired from a session Stripe had already verified', [
+                            'user_id' => $user->id,
+                            'session_id' => $existing->id,
+                        ]);
+
+                        return response()->json(['error' => 'Your identity is already verified.'], 409);
+                    }
+
                     if (in_array($existing->status, ['processing', 'verified'], true)) {
                         return response()->json(['error' => 'Your identity check is already being processed. We will tell you as soon as there is a result.'], 409);
                     }
@@ -5188,6 +5237,12 @@ class StripeController extends Controller
             $user->stripe_user_id = $session->id;
             $user->identity_verification_error = null;
 
+            // Stripe's own status for the session we just opened — 'requires_input'
+            // until a document is actually submitted. Without it, `identity_status = 2`
+            // reads as "with our team" from the moment the tab opens, which is what
+            // left abandoned creators waiting on an answer nobody was writing.
+            $user->forceFill(IdentityCheckState::attributes((string) $session->status));
+
             // A previous admin rejection is cleared now that a fresh check is
             // genuinely under way, so the item leaves the admin queue as
             // "awaiting result" rather than staying rejected.
@@ -5206,6 +5261,7 @@ class StripeController extends Controller
             // `env()` read — with config cached, `env()` outside config/ returns null.
             if (! app()->isProduction()) {
                 $user->identity_status = 1;
+                $user->identity_session_status = IdentityCheckState::VERIFIED;
             }
 
             $user->save();

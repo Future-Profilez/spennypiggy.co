@@ -43,6 +43,17 @@ class SocialLinks extends Model
      * before the narrowing keep their approved handles, and their profiles keep
      * rendering them — this list governs what can be SUBMITTED, not what exists.
      */
+    /**
+     * `social_links.status` — one status for the whole row, as the admin's handle
+     * review writes it (`UserController::…` sets 1 on approve, otherwise the
+     * rejection value with a `reason`).
+     */
+    public const STATUS_PENDING = 0;
+
+    public const STATUS_APPROVED = 1;
+
+    public const STATUS_REJECTED = 2;
+
     public const ACCEPTED_PLATFORMS = [
         'twitter',
         'instagram',

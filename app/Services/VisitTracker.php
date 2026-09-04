@@ -67,6 +67,7 @@ class VisitTracker
         'creators.keep-100' => 'ad_keep_100',
         'creators.discovery' => 'ad_discovery',
         'creators.link-in-bio' => 'ad_link_in_bio',
+        'creators.memberships' => 'ad_memberships',
 
         // The comparison build (client spec v4.3, 24 Aug 2026). ⚠️ `creators.vs`
         // is ONE route serving every competitor, so every comparison shares this
@@ -99,6 +100,7 @@ class VisitTracker
         'ad_keep_100',
         'ad_discovery',
         'ad_link_in_bio',
+        'ad_memberships',
         'ad_wishlist',
         'ad_compare',
         'ad_vs',

@@ -6,6 +6,7 @@ use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\CheckMediaModeration;
 use App\Jobs\SendBioSocialUpdateEmail;
+use App\Models\AccountDeletionFeedback;
 use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\Currency;
@@ -55,6 +56,7 @@ use App\Services\Risk\RiskIdentityService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\Badges;
+use App\Support\InvisibleText;
 use App\Support\PresetCovers;
 use App\Support\ProfileAssetVisibility;
 use App\Support\ProfileSelfCheck;
@@ -142,6 +144,56 @@ class ProfileController extends Controller
 
         return $postedUuid !== $currentUuid
             || ($posted['cdnUrlModifiers'] ?? null) !== $currentModifier;
+    }
+
+    /**
+     * Did the posted bio actually change?
+     *
+     * 🚨 THIS WAS `$request->bio !== $user->bio`, AND IT OPENED A BIO REVIEW FOR
+     * CREATORS WHO NEVER TOUCHED THEIR BIO. Two ways, both invisible:
+     *
+     * 1. A PAYLOAD THAT DOES NOT CARRY `bio` READ AS "the creator cleared it".
+     *    `ConvertEmptyStringsToNull` (Kernel.php) turns the form's `""` into null,
+     *    so an absent field and a deliberately emptied one arrive identical — and
+     *    `null !== 'their live bio'` is true. The creator saved an avatar, a
+     *    banner or a country and their published bio went into the review queue
+     *    proposing to delete itself. Same trap `creator_category` / `pride_badges`
+     *    document a few lines below: a field the request did not carry is not an
+     *    edit. `$request->has()` is the guard, and it still passes for a real
+     *    null, so genuinely clearing a bio is unaffected.
+     *
+     * 2. WHITESPACE COUNTED AS AN EDIT. The admin panel decides "is this actually
+     *    different?" with `CreatorReviewService::normaliseText` — trim, then
+     *    collapse every run of whitespace — so a bio differing only by a trailing
+     *    newline or a CRLF pair opened a request that the review screen then drew
+     *    as MATCH: a reviewer looking at two identical paragraphs, asked to
+     *    approve one of them. The two apps must answer that question the same way,
+     *    so this mirrors that normalisation exactly.
+     *
+     * ⚠️ CASE-SENSITIVE, and the SAVED value is still the creator's own text,
+     * untouched — this normalises only for the comparison. Capitalisation and
+     * deliberate line breaks are edits somebody made on purpose.
+     */
+    private static function bioDiffers(Request $request, ?string $current): bool
+    {
+        if (! $request->has('bio')) {
+            return false;
+        }
+
+        return self::normaliseBio($request->input('bio')) !== self::normaliseBio($current);
+    }
+
+    /**
+     * The reading of a bio used to answer "is this actually a different bio?".
+     *
+     * ⚠️ The rule itself lives in `App\Support\InvisibleText` because the SAME
+     * fault existed on social handles, and two copies of "which differences are
+     * invisible?" is two answers waiting to disagree. Read that class for why each
+     * of the three normalisations is there.
+     */
+    private static function normaliseBio(?string $value): string
+    {
+        return InvisibleText::normalise($value);
     }
 
     /**
@@ -369,7 +421,17 @@ class ProfileController extends Controller
                 // form's `""` arrives as null too and `null !== null` is false. The clause
                 // was inert. It is gone because a condition nobody can evaluate by reading
                 // it is worse than no condition, and `$updatedFields['social']` with it.
-                if ($request->bio !== $user->bio) {
+                // ⚠️ Compared against WHAT IS BEING SUBMITTED, not only against
+                // what is published. With a bio edit already pending, the live text is
+                // not what this save would change: `ProfileChangeRequest::open()`
+                // supersedes the open row, so saving the profile twice took the
+                // creator's own submission out of the queue and re-mailed them about
+                // it. Reverting to the published text still differs from that pending
+                // proposal, so it correctly opens a request that undoes the edit.
+                $pendingBio = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_BIO);
+                $submittedBio = $pendingBio->proposed['bio'] ?? $user->bio;
+
+                if (self::bioDiffers($request, $submittedBio)) {
 
                     UserVerificationStatus::UpdateOrCreate([
                         'user_id' => $user->id,
@@ -818,11 +880,61 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        /*
+         * The reason is REQUIRED, the free text is not (client direction,
+         * 4 Sep 2026) — except for "Other", which says nothing on its own.
+         *
+         * ⚠️ `Rule::in` is built from the config, so a code the list does not
+         * carry is rejected rather than stored: the whole value of this table
+         * is that every row can be counted against a known reason.
+         */
+        $reasons = array_keys(config('account_deletion.reasons', []));
+        $needsComment = (string) config('account_deletion.comment_required_for', 'other');
+
         $request->validate([
             'password' => ['required', 'current_password'],
+            'deletion_reason' => ['required', 'string', Rule::in($reasons)],
+            'deletion_comment' => [
+                Rule::requiredIf(fn () => $request->input('deletion_reason') === $needsComment),
+                'nullable',
+                'string',
+                'max:'.(int) config('account_deletion.comment_max', 1000),
+            ],
+        ], [
+            'deletion_reason.required' => 'Please tell us why you are leaving.',
+            'deletion_comment.required' => 'Please tell us a little more so we know what went wrong.',
         ]);
 
         $user = $request->user();
+
+        /*
+         * 🚨 WRITTEN BEFORE ANYTHING IS DELETED, AND IT NEVER THROWS.
+         *
+         * Every line below this cancels subscriptions and deletes rows; a
+         * feedback insert that failed halfway through would abort a deletion
+         * the person has already confirmed and leave their account in pieces.
+         * Losing one reason is the lesser fault by a distance.
+         *
+         * The identity is copied onto the row on purpose — see the migration.
+         */
+        try {
+            AccountDeletionFeedback::create([
+                'user_id' => $user->id,
+                'user_uuid' => $user->uuid,
+                'username' => $user->username,
+                'email' => $user->email,
+                'user_role' => $user->role,
+                'reason_code' => $request->input('deletion_reason'),
+                'comment' => $request->input('deletion_comment'),
+                'ip_address' => $request->ip(),
+                'deleted_account_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Could not record account deletion feedback', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         /*
          * 🚨 The connected account is PER BILL, not per collection.

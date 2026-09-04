@@ -7,6 +7,7 @@ use App\Models\MonthlyCharge;
 use App\Models\SocialLinks;
 use App\Models\User;
 use App\Services\CreatorJourneyService;
+use App\Support\IdentityCheckState;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -107,9 +108,30 @@ class IdentityBeforeListingTest extends TestCase
      */
     public function test_a_creator_awaiting_review_is_told_to_wait(): void
     {
-        $response = $this->pass($this->creator(['identity_status' => 2]), json: true);
+        $response = $this->pass($this->creator([
+            'identity_status' => 2,
+            'identity_session_status' => IdentityCheckState::PROCESSING,
+        ]), json: true);
 
         $this->assertStringContainsString('being reviewed', $response->getData(true)['message']);
+    }
+
+    /**
+     * 🚨 `identity_status = 2` is written when the Stripe session is CREATED, so it also
+     * covers a creator who opened the check and walked away — and Stripe reports nothing
+     * for that. Telling them it "is being reviewed" is a wait that can never end.
+     */
+    public function test_a_creator_who_never_finished_the_check_is_told_to_finish_it(): void
+    {
+        $response = $this->pass($this->creator([
+            'identity_status' => 2,
+            'identity_session_status' => IdentityCheckState::REQUIRES_INPUT,
+        ]), json: true);
+
+        $message = $response->getData(true)['message'];
+
+        $this->assertStringContainsString('did not finish', $message);
+        $this->assertStringNotContainsString('being reviewed', $message);
     }
 
     public function test_a_fan_is_unaffected(): void

@@ -4,15 +4,10 @@ namespace App\Console\Commands;
 
 use App\Http\Controllers\StripeWebhookController;
 use App\Models\FinancialTransaction;
-use App\Models\PiggyPotContribution;
-use App\Models\ShopPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
-use App\Models\TaskPurchase;
-use App\Models\TipGoalsPayment;
-use App\Models\WishItem;
-use App\Models\WishItemSubscription;
 use App\StripeControl;
+use App\Support\StripeCheckoutSources;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -46,28 +41,22 @@ class SweepStuckPayments extends Command
         $notBefore = Carbon::now()->subDays(max(1, (int) $this->option('max-age-days')));
         $max = max(1, (int) $this->option('max'));
 
-        // [label, model, session column, account resolver]
-        $tables = [
-            ['Wish (one-time)', WishItemSubscription::class, 'session_id',
-                fn ($r) => optional(WishItem::find($r->wish_item_id))->user->account_id ?? null],
-            ['Wish/checkout', StripePaymentDetail::class, 'session_id',
-                fn ($r) => $r->owner->account_id ?? null],
-            ['Support/Tip', TipGoalsPayment::class, 'session_id',
-                fn ($r) => $r->creator->account_id ?? null],
-            ['Shop', ShopPayment::class, 'session_id',
-                fn ($r) => $r->shop->user->account_id ?? null],
-            ['Task', TaskPurchase::class, 'stripe_session_id',
-                fn ($r) => $r->creator->account_id ?? null],
-            ['Piggy Pot', PiggyPotContribution::class, 'session_id',
-                fn ($r) => $r->creator->account_id ?? null],
-        ];
+        /*
+         * 🚨 THE LIST LIVES IN ONE PLACE NOW. This array was maintained by hand here and
+         * again in `ReconcileStripeSession::locate()`, and BOTH were missing memberships
+         * and bills — so a dropped webhook on either was neither found by this sweep nor
+         * repairable by the tool, while the webhook controller's refund cascade knew
+         * about all eight tables. A product missing from the map is a product whose lost
+         * fulfilment nothing notices.
+         */
+        $tables = StripeCheckoutSources::map();
 
         $checked = 0;
         $replayed = 0;
         $notPaid = 0;
         $skipped = 0;
 
-        foreach ($tables as [$label, $model, $sessionCol, $accountResolver]) {
+        foreach ($tables as [$label, $model, $sessionCol, , $accountResolver]) {
             if ($checked >= $max) {
                 break;
             }
@@ -141,7 +130,16 @@ class SweepStuckPayments extends Command
                 try {
                     app(StripeWebhookController::class)->handleAsyncPaymentSucceeded($session);
                     $replayed++;
-                    Log::info("payments:sweep-stuck — replayed fulfilment for {$label} id={$row->id} session={$sid}");
+
+                    // 🚨 ERROR, not info. A supporter was charged and given nothing until a
+                    // scheduled sweep noticed, and the `sentry` log channel only carries
+                    // error and above — at info level this repair is written where nobody
+                    // is looking, which is how a webhook stays broken for weeks.
+                    Log::error('payments:sweep-stuck — replayed fulfilment for a paid checkout the webhook never delivered', [
+                        'source' => $label,
+                        'row_id' => $row->id,
+                        'session_id' => $sid,
+                    ]);
                 } catch (\Throwable $e) {
                     Log::error("payments:sweep-stuck — replay failed for {$label} id={$row->id}: ".$e->getMessage());
                     $skipped++;

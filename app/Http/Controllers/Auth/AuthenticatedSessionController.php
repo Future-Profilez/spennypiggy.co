@@ -96,16 +96,14 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
         $user = Auth::user();
-        if ($user->suspended_account == 1) {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            return response()->json([
-                'status' => false,
-                'message' => 'Your account is suspended due to a policy violation or payout configuration issue. Please contact support.',
-            ], 403);
-        }
+        /*
+         * 🚨 A SUSPENDED ACCOUNT SIGNS IN. This used to refuse the login outright, which
+         * is the fault the 3 Sep 2026 change exists to close: the one person who needs
+         * to read the reason, see their own history and message support was the only
+         * person who could not reach any of it. Suspension is a STATE of the account —
+         * `CheckSuspendedUser` refuses every write once they are in, and every checkout
+         * gate refuses the money. Do not reinstate a block here.
+         */
         $request->session()->regenerate();
         $request->session()->regenerateToken();
 
@@ -281,7 +279,22 @@ class AuthenticatedSessionController extends Controller
             $user = $profileData['user'];
             $isOwner = Auth::check() && (string) Auth::id() === (string) $user->id;
 
-            if ($user->suspended_account == 1) {
+            /*
+             * 🚨 THE OWNER IS EXEMPT, AND THAT IS THE WHOLE POINT OF THE 3 Sep 2026
+             * CHANGE. `/{username}` is BOTH the public profile and the creator's own
+             * dashboard, so returning the withdrawn page for everybody meant a
+             * suspended creator opening their own account was shown a notice
+             * instead of their account — no banner, no history, no support route.
+             * They fall through to the normal render, where `SuspendedBanner`
+             * carries the reason.
+             *
+             * ⚠️ `$isOwner` is safe to branch on here: `$getData` is invoked
+             * directly (line ~584), not through a cache, so this cannot serve one
+             * viewer's answer to the next. Wrap this closure in a cache and the
+             * owner's dashboard becomes every visitor's — the documented
+             * `BioPageService::items($user, $isOwner)` trap.
+             */
+            if ($user->suspended_account == 1 && ! $isOwner) {
                 return ['__page' => 'Suspanded'];
             }
 
@@ -599,6 +612,11 @@ class AuthenticatedSessionController extends Controller
 
             // 410 Gone, not 404: the profile existed and was withdrawn, and Google
             // drops a 410 from the index faster than a 404.
+            //
+            // ⚠️ A VISITOR ONLY. The owner never reaches this branch — see the
+            // guard in $getData — and the page says nothing about WHY the profile
+            // is gone: the creator's account state is not a stranger's business,
+            // the same rule CreatorAvailabilityMessageService follows at checkout.
             return Inertia::render('Suspanded')->toResponse(request())->setStatusCode(410);
         }
         $pageName = $data['__page'] ?? 'Dashboard';
@@ -1204,24 +1222,20 @@ class AuthenticatedSessionController extends Controller
             return response()->json(['status' => false, 'msg' => 'Invalid verification code.'], 422);
         }
 
-        // 🚨 Refuse a suspended account BEFORE anything is validated or spent.
-        //
-        // `signIn()` refuses one too, but it does so up to PENDING_TTL_MINUTES (15)
-        // before the OTP is entered — so an admin suspending someone inside that
-        // window was overridden and the person still completed a full remembered
-        // session. The password branch had the same hole from the other direction.
-        //
-        // ⚠️ It must sit ABOVE the code checks, not inside `if ($valid)`: a backup
-        // code is claimed while `$valid` is being computed, so a guard placed lower
-        // spent one single-use recovery code per refused attempt.
-        if ((int) ($user->suspended_account ?? 0) === 1) {
-            $request->session()->forget('google_2fa_pending');
-
-            return response()->json([
-                'status' => false,
-                'msg' => 'This account has been suspended. Contact support for help.',
-            ], 403);
-        }
+        /*
+         * 🚨 THERE WAS A SUSPENDED-ACCOUNT REFUSAL HERE AND IT WAS REMOVED
+         * DELIBERATELY (3 Sep 2026). A suspended account signs in now — reads its
+         * own pages, sees the reason on the banner, messages support — and is
+         * refused every WRITE by `CheckSuspendedUser` and every payment by the
+         * checkout gates. Blocking the sign-in put the reason behind the door it
+         * was written on.
+         *
+         * ⚠️ The reasoning that put it at THIS point still applies to any guard
+         * added here in future: it has to sit ABOVE the code checks, never inside
+         * `if ($valid)`, because a backup code is claimed while `$valid` is being
+         * computed and a guard placed lower spends one single-use recovery code
+         * per refused attempt.
+         */
 
         $valid = false;
 

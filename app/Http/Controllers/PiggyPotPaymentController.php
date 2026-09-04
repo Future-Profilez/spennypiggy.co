@@ -25,6 +25,7 @@ use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
 use App\Support\NotificationContext;
+use App\Support\SuspendedAccount;
 use App\Traits\RiskEnforcement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -179,6 +180,23 @@ class PiggyPotPaymentController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ['eligible' => false, 'status' => 'stripe_disabled']),
+            ]);
+        }
+
+        /*
+         * 🚨 THE PAYER, NOT THE PAYEE. A suspended account may not send money either,
+         * and this checkout starts on a route the suspension middleware deliberately
+         * lets through (reads stay open so somebody can still see their own account).
+         * The gate below refuses money coming IN to a suspended creator; this one
+         * refuses money going OUT of a suspended supporter.
+         *
+         * ⚠️ Nothing is recorded as a lost sale here — the payee did nothing wrong and
+         * has lost nothing; the refusal belongs to the payer's own account state.
+         */
+        if (SuspendedAccount::blocksPayer(Auth::user())) {
+            return response()->json([
+                'status' => false,
+                'msg' => SuspendedAccount::copyFor(Auth::user())['body'],
             ]);
         }
 

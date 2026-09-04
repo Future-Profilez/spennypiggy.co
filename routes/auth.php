@@ -1043,6 +1043,12 @@ Route::middleware('auth')->group(function () {
                         'pwa_notification_details' => $pwaNotificationDetails ?? null,
                         'subscription_status' => $user->subscription_status, // Add numeric status for debugging
                         'webAuthnCredentials' => Auth::user()->webAuthnCredentials()->exists(), // Add WebAuthn credentials existence for debugging
+                        // The delete-account reasons come from the config that
+                        // VALIDATES them, never a copy in the bundle — a list
+                        // the form offers and the server refuses is the worst
+                        // of both.
+                        'deletion_reasons' => config('account_deletion.reasons', []),
+                        'deletion_comment_required_for' => config('account_deletion.comment_required_for', 'other'),
                     ]);
                 } catch (Throwable $e) {
                     Log::error('Account page error', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);

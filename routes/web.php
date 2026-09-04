@@ -23,6 +23,7 @@ use App\Http\Controllers\ComparisonController;
 use App\Http\Controllers\Creator\DisputeController;
 use App\Http\Controllers\Creator\ReviewHoldController;
 use App\Http\Controllers\CreatorActivityController;
+use App\Http\Controllers\CreatorLandingController;
 use App\Http\Controllers\CreatorPushController;
 use App\Http\Controllers\CreatorSubscriptionController;
 use App\Http\Controllers\Debug\SupportImageTestController;
@@ -72,6 +73,7 @@ use App\Services\DiscoveryService;
 use App\Services\PendingApprovalService;
 use App\Support\CompetitorSheet;
 use App\Support\DiscoveryPayload;
+use App\Support\MonetisationPillars;
 use App\Support\PresetCovers;
 use App\Support\PwaSplash;
 use Carbon\Carbon;
@@ -280,6 +282,10 @@ Route::get('/', function (DiscoveryService $discoveryService) {
 
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
+        // The three earning shapes, above the seven-product catalogue. One
+        // definition in config/monetisation.php — the list used to be typed
+        // here and again on /creators, with Memberships last in both.
+        'pillars' => MonetisationPillars::forInertia(),
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
@@ -477,6 +483,7 @@ Route::get('/giftstore', function () {
 Route::middleware('ssr')->group(function () {
     Route::get('/creators', function () {
         return Inertia::render('creators/Index', [
+            'pillars' => MonetisationPillars::forInertia(),
             // Client spec v4.3 §7 — the "how we compare" cards. Only published
             // comparisons are sent, so the overview can never link to a page
             // that is still being checked.
@@ -499,6 +506,18 @@ Route::middleware('ssr')->group(function () {
     Route::get('/creators/features', function () {
         return Inertia::render('creators/Features');
     })->name('creators.features');
+
+    /*
+     * The memberships landing page — client note, 4 Sep 2026.
+     *
+     * 🚨 A CONTROLLER, NOT A CLOSURE, and that is not tidiness. The page prints
+     * the membership benefit list and a fee example, and both must come from
+     * `config/rewards.php` and `Helpers::calculateStripeDirectChargeFlow()`
+     * rather than from the component. It also needs its <title> set server-side
+     * or `SeoMeta`'s default renders first and the crawler takes that one.
+     */
+    Route::get('/creators/memberships', [CreatorLandingController::class, 'memberships'])
+        ->name('creators.memberships');
 
     Route::get('/creators/disputes', function () {
         return Inertia::render('creators/Disputes');
@@ -673,10 +692,11 @@ Route::get('/unsubscribe/{user}', [EmailPreferenceController::class, 'unsubscrib
  * make it impossible for a non-active creator to stop the mail — which the
  * client brief calls out by name:
  *
- *   1. `/email-preferences` sits behind `auth`, and `CheckSuspendedUser` runs in
- *      the `web` group and force-logs-out `suspended_account = 1` on EVERY web
- *      request. A suspended creator could neither reach the page nor sign in to
- *      reach it.
+ *   1. `/email-preferences` sits behind `auth`, and at the time
+ *      `CheckSuspendedUser` force-logged-out `suspended_account = 1` on EVERY web
+ *      request, so a suspended creator could neither reach the page nor sign in to
+ *      reach it. ⚠️ SUPERSEDED 3 Sep 2026 — a suspended account signs in and reads
+ *      now. Somebody with no session at all still has only this route.
  *   2. The e-mailed link expired after 24 hours, so opening Monday's e-mail on
  *      Wednesday ended at "invalid or expired link".
  *
@@ -1127,6 +1147,7 @@ Route::withoutMiddleware([])->group(function () {
             ['url' => '/creators/stripe-safe', 'priority' => '0.6', 'changefreq' => 'monthly'],
             ['url' => '/creators/keep-100', 'priority' => '0.7', 'changefreq' => 'weekly'],
             ['url' => '/creators/features', 'priority' => '0.7', 'changefreq' => 'weekly'],
+            ['url' => '/creators/memberships', 'priority' => '0.8', 'changefreq' => 'weekly'],
             ['url' => '/creators/disputes', 'priority' => '0.6', 'changefreq' => 'monthly'],
             ['url' => '/creators/founder-bonus', 'priority' => '0.7', 'changefreq' => 'weekly'],
             ['url' => '/creators/discovery', 'priority' => '0.7', 'changefreq' => 'weekly'],

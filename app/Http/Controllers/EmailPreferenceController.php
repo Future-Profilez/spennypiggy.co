@@ -39,9 +39,12 @@ class EmailPreferenceController extends Controller
      *
      * The old 24-hour window meant a person who opened the email on Wednesday a
      * link sent on Monday got "Invalid or expired unsubscribe link" and was
-     * bounced to the homepage — and if they cannot sign in (a suspended creator
-     * is force-logged-out by `CheckSuspendedUser` on every web request, and
-     * `/email-preferences` is behind `auth`) that was the END of the road. They
+     * bounced to the homepage — and if they cannot sign in (at the time, a
+     * suspended creator was force-logged-out by `CheckSuspendedUser` on every web
+     * request, and `/email-preferences` is behind `auth`) that was the END of the
+     * road. ⚠️ That half is SUPERSEDED (3 Sep 2026): a suspended account signs in
+     * and reads normally now. Somebody who genuinely cannot sign in — a deleted
+     * or never-verified address — still depends on this link living 30 days. They
      * had NO WAY to stop the mail. `generateCheckoutReminderOptOut` already used
      * 30 days for exactly this reason: a dead unsubscribe link is worse than no
      * link at all.
@@ -299,13 +302,17 @@ class EmailPreferenceController extends Controller
     /**
      * The preference centre for somebody who is NOT signed in.
      *
-     * 🚨 THIS IS WHAT LETS A NON-ACTIVE CREATOR UNSUBSCRIBE. `/email-preferences`
-     * sits inside the `auth` group, and `CheckSuspendedUser` (in the `web`
-     * middleware group) force-logs-out and bounces any account with
-     * `suspended_account = 1` on EVERY web request — so a suspended creator can
-     * neither reach that page nor ever sign in to reach it. Before this, their
-     * only control was a single-category unsubscribe link that died after 24
-     * hours, after which they had no way to stop the mail at all.
+     * 🚨 THIS IS WHAT LETS SOMEBODY WHO CANNOT SIGN IN UNSUBSCRIBE.
+     * `/email-preferences` sits inside the `auth` group, so before this the only
+     * control such a person had was a single-category unsubscribe link that died
+     * after 24 hours, after which they had no way to stop the mail at all.
+     *
+     * ⚠️ It was written for the SUSPENDED creator, who at the time was
+     * force-logged-out by `CheckSuspendedUser` on every web request. That is no
+     * longer true (3 Sep 2026 — a suspended account signs in and reads, and
+     * `email.preferences.update` is on the suspension write-allowlist), and this
+     * page is no less necessary for it: an unverified or abandoned address has
+     * never had a session to reach the signed-in page with.
      *
      * Signed URL, no login, and the signature is checked here rather than by the
      * `signed` middleware so a stale link gets an explanation instead of a bare

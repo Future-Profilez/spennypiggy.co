@@ -826,9 +826,17 @@ export default function EditProfile({
                                                     {user.edit_bio_reason}
                                                 </div>
                                             )}
+                                        {/*
+                                            🚨 `profileUser`, never the bare `user` prop. The form
+                                            POSTS `profileUser.bio`, and three of the four mount
+                                            points pass a `user` object that need not carry `bio` —
+                                            so the box rendered EMPTY while a bio was still in the
+                                            payload, and the creator read a blank field as "no bio
+                                            on file". One source for what is shown and what is sent.
+                                        */}
                                         <textarea
                                             onBlur={IsProfileChannged}
-                                            defaultValue={user?.bio || ""}
+                                            defaultValue={profileUser?.bio || ""}
                                             onChange={(e) =>
                                                 setData("bio", e.target.value)
                                             }

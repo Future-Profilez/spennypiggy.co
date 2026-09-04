@@ -101,17 +101,14 @@ class WebAuthnLoginController extends Controller
                 ], 422);
             }
 
-            // Check if user is suspended
-            if ($user->suspended_account == 1) {
-                auth()->guard('web')->logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Your account is suspended due to a policy violation or payout configuration issue. Please contact support.',
-                ], 403);
-            }
+            /*
+             * 🚨 A SUSPENDED ACCOUNT SIGNS IN. This used to refuse the login outright, which
+             * is the fault the 3 Sep 2026 change exists to close: the one person who needs
+             * to read the reason, see their own history and message support was the only
+             * person who could not reach any of it. Suspension is a STATE of the account —
+             * `CheckSuspendedUser` refuses every write once they are in, and every checkout
+             * gate refuses the money. Do not reinstate a block here.
+             */
 
             // Update credential with last used info
             $credentialId = $request->input('id');

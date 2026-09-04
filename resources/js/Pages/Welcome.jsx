@@ -43,6 +43,7 @@ const CreatorShowcase = lazyRetry(() => import('./home/CreatorShowcase'));
 const SetupSteps = lazyRetry(() => import('./home/SetupSteps'));
 /* `FeatureShowcase` is NOT imported here any more — see the chapter note below.
    The file stays in the repo; it is simply not part of this page. */
+const ThreeWays = lazyRetry(() => import('./home/ThreeWays'));
 const WaysToGetPaid = lazyRetry(() => import('./home/WaysToGetPaid'));
 const AppShowcase = lazyRetry(() => import('./home/AppShowcase'));
 const PricingSection = lazyRetry(() => import('./home/PricingSection'));
@@ -63,7 +64,7 @@ const CHAPTERS = [
     { id: 'act-join', label: 'Join' },
 ];
 
-export default function Home({ auth, user, founderBonus, growthBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel, discovery, collections = [] }) {
+export default function Home({ auth, user, founderBonus, growthBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel, discovery, pillars = [], collections = [] }) {
 
     useEffect(() => {
         // PWA Mode: If logged in, redirect directly to profile page
@@ -202,6 +203,12 @@ export default function Home({ auth, user, founderBonus, growthBonus, trendingCr
             <div id="act-sell">
                 <Suspense fallback={<div aria-hidden="true" className="min-h-[70dvh]" />}>
                     <LiveBarSection />
+                </Suspense>
+                {/* The three shapes come BEFORE the seven products. See
+                    `home/ThreeWays.jsx` — the differentiator was the seventh
+                    card of a catalogue. */}
+                <Suspense fallback={<div aria-hidden="true" className="min-h-[50dvh]" />}>
+                    <ThreeWays pillars={pillars} />
                 </Suspense>
                 <Suspense fallback={<div aria-hidden="true" className="min-h-[70dvh]" />}>
                     <WaysToGetPaid />

@@ -79,13 +79,16 @@ use App\Services\StockWaitlistService;
 use App\Services\Stripe\StripeAccountState;
 use App\Services\StripeMetadataService;
 use App\Services\SubscriptionCheckoutService;
+use App\Services\SuspensionService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\StripeControl as AppStripeControl;
 use App\Support\AlertRouter;
+use App\Support\IdentityCheckState;
 use App\Support\IdentityFailureReason;
 use App\Support\NotificationContext;
 use App\Support\PayoutDestinationAudit;
+use App\Support\StripeChargesFlag;
 use App\Support\StripeCurrencySync;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
@@ -287,6 +290,14 @@ class StripeWebhookController extends Controller
                 // fails. With it unhandled, a rejected creator got no email, no
                 // stored reason, and a profile that still read "Verify identity"
                 // as if they had never tried. Do not comment it out again.
+                //
+                // 🚨 `processing` is the ONLY event that says a document was actually
+                // SUBMITTED. `identity_status = 2` is written when the session is
+                // created, so without this event "opened the check and closed the tab"
+                // and "uploaded everything, Stripe is deciding" are the same value —
+                // and the abandoned creator is told to wait for an answer nobody is
+                // ever going to send. Do not drop it.
+                case 'identity.verification_session.processing':
                 case 'identity.verification_session.requires_input':
                 case 'identity.verification_session.canceled':
                 case 'identity.verification_session.verified':
@@ -479,6 +490,10 @@ class StripeWebhookController extends Controller
         $type = $event->type;
 
         switch ($type) {
+            case 'identity.verification_session.processing':
+                $this->handleProcessingEvent($session);
+                break;
+
             case 'identity.verification_session.requires_input':
                 $this->handleRequiresInputEvent($session);
                 break;
@@ -906,7 +921,7 @@ class StripeWebhookController extends Controller
      * IdentityFailureReason), so the email and the profile page render the same
      * explanation without either of them re-deriving it from a raw Stripe code.
      */
-    private function failIdentityCheck(User $user, string $code, ?string $rawReason, bool $isFraudulent = false): void
+    private function failIdentityCheck(User $user, string $code, ?string $rawReason, bool $isFraudulent = false, string $sessionStatus = IdentityCheckState::REQUIRES_INPUT): void
     {
         $payload = IdentityFailureReason::payload(
             $isFraudulent ? 'fraud_suspected' : $code,
@@ -918,7 +933,7 @@ class StripeWebhookController extends Controller
             'identity_verification_error' => $payload,
             'identity_verification_details' => null,
             'identity_verified_at' => null,
-        ]);
+        ] + IdentityCheckState::attributes($sessionStatus));
 
         SendIdentityVerificationEmail::dispatch($user, $isFraudulent ? 'fraud' : 'failed');
 
@@ -934,6 +949,38 @@ class StripeWebhookController extends Controller
             'user_id' => $user->id,
             'code' => $explained['code'],
             'fraud' => $isFraudulent,
+        ]);
+    }
+
+    /**
+     * Handle the 'processing' event — the creator has submitted their document.
+     *
+     * This is the one moment the platform learns the difference between a check
+     * that is genuinely with Stripe and a session that was opened and abandoned.
+     * It writes no outcome (`identity_status` stays 2, waiting on verified /
+     * requires_input) — only the fact that the ball is no longer with the creator.
+     */
+    private function handleProcessingEvent($session)
+    {
+        $user = $this->resolveIdentityUser($session);
+
+        if (! $user) {
+            Log::error('User not found for processing verification session', ['session_id' => $session->id]);
+
+            return;
+        }
+
+        // Never walk a finished check backwards: a late or replayed event for an
+        // already-verified creator must not put them back into "being processed".
+        if ((int) $user->identity_status === 1) {
+            return;
+        }
+
+        $user->update(IdentityCheckState::attributes(IdentityCheckState::PROCESSING));
+
+        Log::info('Identity documents submitted, awaiting Stripe decision', [
+            'user_id' => $user->id,
+            'session_id' => $session->id,
         ]);
     }
 
@@ -988,7 +1035,13 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        $this->failIdentityCheck($user, 'session_canceled', data_get($session, 'last_error.reason'));
+        $this->failIdentityCheck(
+            $user,
+            'session_canceled',
+            data_get($session, 'last_error.reason'),
+            false,
+            IdentityCheckState::CANCELED
+        );
     }
 
     /**
@@ -1019,17 +1072,9 @@ class StripeWebhookController extends Controller
                 return;
             }
 
-            $user->update([
-                'identity_status' => 1, // Verified
-                'identity_verified_at' => now(),
-                'identity_verification_details' => null,
-                // A passed check clears the previous failure — otherwise the
-                // profile keeps rendering the old rejection reason next to a
-                // green "verified" tick.
-                'identity_verification_error' => null,
-                'identity_admin_status' => 1,
-                'identity_admin_reviewed_at' => now(),
-            ]);
+            // The one definition of "verified", shared with identity:reconcile and with
+            // createVerificationSession — three paths, one field set.
+            $user->update(IdentityCheckState::verifiedAttributes());
 
             SendIdentityVerificationEmail::dispatch($user, 'success');
 
@@ -5680,6 +5725,12 @@ class StripeWebhookController extends Controller
             $creator = User::where('account_id', $account->id)->first();
             if ($creator) {
                 StripeCurrencySync::apply($creator, $account, 'webhook:account.updated');
+
+                // `users.charges_enabled` is a cache of exactly this field and
+                // this is the event that moves it. Until 4 Sep 2026 nothing
+                // wrote the column at all, so the admin console accused every
+                // creator on the platform of having charges disabled.
+                StripeChargesFlag::sync($creator, $account);
             }
 
             if (($account->charges_enabled ?? false) === true) {
@@ -5796,9 +5847,19 @@ class StripeWebhookController extends Controller
 
             Log::warning("Stripe Risk: Account {$account->id} changed payout schedule to {$schedule}. Reverting and locking.");
 
-            // Auto-lock the account
-            $creator->suspended_account = 1;
-            $creator->save();
+            // Auto-lock the account.
+            //
+            // 🚨 Through SuspensionService, not a bare flag write. Setting the
+            // column alone produced a creator who was hidden and refused, with
+            // no reason recorded on the row, no payout hold, and every
+            // supporter subscription still billing — the two automatic paths in
+            // this file were the only suspensions on the platform that did none
+            // of that. The Stripe work itself is applied by `suspension:enforce`.
+            app(SuspensionService::class)->suspend(
+                $creator,
+                'payout_configuration',
+                "Stripe payout schedule changed to '{$schedule}' outside the connect grace window.",
+            );
             $creator->tokens()->delete();
 
             // Mark as HIGH RISK with minimum 20% reserve
@@ -6174,8 +6235,14 @@ class StripeWebhookController extends Controller
                     $creator = User::where('account_id', $accountId)->first();
                     if ($creator) {
                         try {
-                            $creator->suspended_account = 1;
-                            $creator->save();
+                            // Same rule as the payout-schedule lock above: the
+                            // service records the reason, freezes payouts and
+                            // queues the subscription work.
+                            app(SuspensionService::class)->suspend(
+                                $creator,
+                                'payment_risk',
+                                'Unexpected manual payout created on the connected account.',
+                            );
                             $creator->tokens()->delete();
 
                             // Mark as HIGH RISK with minimum 20% reserve

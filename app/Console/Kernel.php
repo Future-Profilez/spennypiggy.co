@@ -372,6 +372,18 @@ class Kernel extends ConsoleKernel
             ->dailyAt('03:45')
             ->withoutOverlapping(30);
 
+        // Stripe sends NO event for a creator who opens the passport check and closes
+        // the tab, so `identity_status = 2` can mean "with Stripe" or "abandoned" and
+        // nothing would ever move them off it. This reads the session's real status
+        // and also repairs a `verified` webhook that never landed.
+        //
+        // ⚠️ Retrieving a session is a read, not a billable verification.
+        // ⚠️ 04:10 — clear of the 03:4x/03:5x prune block, which shares one Vapor
+        // cli-timeout budget per minute.
+        $schedule->command('identity:reconcile')
+            ->dailyAt('04:10')
+            ->withoutOverlapping(30);
+
         // Delivery log: a row per email, push and bell entry the platform sends,
         // so this table grows faster than any payment table. The same pass
         // settles rows the mail transport never confirmed, which would otherwise
@@ -535,6 +547,36 @@ class Kernel extends ConsoleKernel
             ->dailyAt('07:40')
             ->withoutOverlapping(30);
 
+        /*
+         * The copy of the database that leaves the region.
+         *
+         * 🚨 03:10 UTC, deliberately AFTER the RDS backup window (02:14-02:44) and
+         * before the morning's business. Two backups competing for the same tiny
+         * instance's IO is how a nightly job starts timing out on the busiest days
+         * and nowhere else.
+         *
+         * ⚠️ It is a no-op unless `disaster_recovery.enabled`, which is production
+         * only — dev shares the same database host and must not be dumping it on a
+         * schedule.
+         *
+         * ⚠️ `runInBackground()` is deliberately ABSENT. Every command due in the
+         * same minute runs sequentially inside ONE schedule:run invocation on Vapor,
+         * and this one owns most of that minute's 600s budget; backgrounding it here
+         * would hand the dump a lifetime it does not control.
+         */
+        $schedule->command('db:backup-offsite')
+            ->dailyAt('03:10')
+            ->withoutOverlapping(60);
+
+        /*
+         * And the check that the safety net is still strung up. 07:30 so a failed
+         * 03:10 dump is already several hours stale and reported as such, rather
+         * than the two racing and the check passing on last night's file.
+         */
+        $schedule->command('infra:dr-check')
+            ->dailyAt('07:30')
+            ->withoutOverlapping();
+
         // Safety net for dropped payout webhooks: resolve records stuck in_transit.
         $schedule->command('payout:reconcile')
             ->dailyAt('11:30')
@@ -576,6 +618,17 @@ class Kernel extends ConsoleKernel
         // held money is a day of support tickets.
         $schedule->command('payouts:notify-holds')
             ->hourlyAt(25)
+            ->withoutOverlapping();
+
+        // Suspension consequences. `suspended_account` is written by the ADMIN
+        // app (and by two Stripe webhook paths here), so this sweep is what
+        // pauses supporters' subscriptions, cancels the account's own outgoing
+        // ones and stops its platform renewal — none of which the admin app can
+        // do. Every five minutes because a suspension is usually a live
+        // incident; the hiding and the payment refusals are already immediate,
+        // so nothing here is racing a charge.
+        $schedule->command('suspension:enforce')
+            ->everyFiveMinutes()
             ->withoutOverlapping();
 
         // Stripe compliance: pause/resume content memberships on the min-3-posts/30-day cadence

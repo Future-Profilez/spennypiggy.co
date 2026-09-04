@@ -64,6 +64,24 @@ class BlockedPaymentAlert
                 'created_at' => now(),
             ]);
 
+            /*
+             * 🚨 THE FLAG IS ABOUT THE SELLER. `blocked_payment_attempts` stores no
+             * payer — `creator_id` is the person being bought FROM, and reading it
+             * the other way round is what once told admins a supporter had failed
+             * a risk check when it was the creator who could not sell.
+             *
+             * Raised on the Nth refusal inside the window, not the first: one
+             * blocked purchase is an expired subscription somebody will renew this
+             * afternoon, and flagging it would put half the creator base on the
+             * list. Repeats absorb into the same open flag, so the row says "12
+             * times" rather than appearing twelve times.
+             *
+             * ⚠️ Outside the daily notification claim below on purpose — the claim
+             * decides whether the CREATOR is messaged, and it must not decide
+             * whether the back office ever hears about this.
+             */
+            self::flagRepeatedRefusals($creator, $reason);
+
             // One message a day, whatever the volume. The claim IS the insert, so
             // two simultaneous blocked checkouts cannot both send.
             if (! NotificationDispatcher::claim($creator->id, self::CLAIM_TYPE, now()->toDateString())) {
@@ -146,6 +164,11 @@ class BlockedPaymentAlert
             'no_subscription' => 'because your subscription is not active. Activate it and they can buy again.',
             'subscription_expired' => 'because your subscription has expired. Renew it and they can buy again.',
             'stripe_disabled' => 'because your Stripe account cannot take card payments at the moment. Open your payout settings to finish setting it up.',
+            // ⚠️ Says nothing about why the account is suspended — the reason
+            // lives on the suspension banner, which is the one surface where it
+            // is written for this creator and reviewed. A push notification is
+            // not the place to litigate a suspension.
+            'creator_suspended' => 'because your account is suspended. Contact support and our team will take you through it.',
             default => 'and we could not take the payment. Open your dashboard to see what needs fixing.',
         };
     }
@@ -197,5 +220,46 @@ class BlockedPaymentAlert
                 ])
                 ->all(),
         ];
+    }
+
+    /**
+     * Flag a creator whose sales keep being refused.
+     *
+     * ⚠️ Counted from the table, not from a cache counter — same reasoning as
+     * `SecurityEventLog::countRecent`. A cache flush must not reset the count at
+     * the one moment it matters.
+     */
+    private static function flagRepeatedRefusals(User $creator, ?string $reason): void
+    {
+        try {
+            $threshold = (int) config('user_flags.thresholds.blocked_payment_repeat_count', 5);
+            $hours = (int) config('user_flags.thresholds.blocked_payment_repeat_hours', 24);
+
+            $count = (int) DB::table('blocked_payment_attempts')
+                ->where('creator_id', $creator->id)
+                ->where('created_at', '>=', now()->subHours($hours))
+                ->count();
+
+            if ($count < $threshold) {
+                return;
+            }
+
+            UserFlagger::raise(
+                user: $creator,
+                flagType: 'blocked_payment_repeat',
+                reason: "{$count} attempts to buy from this creator were turned away in the last {$hours} hours "
+                    .self::becauseOf($reason),
+                context: [
+                    'attempts' => $count,
+                    'window_hours' => $hours,
+                    'latest_reason' => $reason,
+                ],
+                source: 'payment',
+            );
+        } catch (\Throwable $e) {
+            Log::warning('BlockedPaymentAlert: could not flag repeated refusals: '.$e->getMessage(), [
+                'creator_id' => $creator->id,
+            ]);
+        }
     }
 }

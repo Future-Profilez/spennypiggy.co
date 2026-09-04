@@ -112,9 +112,11 @@ export default function CreatorJourneyCard() {
             </div>
 
             {/* Nothing to click while the work is ours — offering a button here would be
-                asking them to redo what they have already submitted. The one exception is
-                a step whose "waiting" copy carries a route (an ID check the creator may have
-                walked away from): the server decides that, not this card. */}
+                asking them to redo what they have already submitted. A "waiting" step may
+                still carry a route; the server decides that, not this card. ⚠️ An ID check
+                the creator opened and walked away from is no longer one of them — it is not
+                "waiting" at all now, it is their own step with a "Finish ID check" CTA
+                (CreatorJourneyService::UNFINISHED_COPY). */}
             {waiting && !journey.route ? null : step === "first_listing" ? (
                 <ThreeWays onPick={go} />
             ) : step === "first_sale" && profileUrl ? (

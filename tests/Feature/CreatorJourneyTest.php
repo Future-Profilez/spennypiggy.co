@@ -10,6 +10,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Services\CreatorJourneyService;
 use App\Services\CreatorSetupService;
+use App\Support\IdentityCheckState;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -271,19 +272,69 @@ class CreatorJourneyTest extends TestCase
         $this->assertSame(['bio'], $this->journey->missingProfileParts($creator));
     }
 
-    public function test_identity_submitted_to_stripe_is_awaiting_review_but_keeps_a_way_back_in(): void
+    /**
+     * 🚨 THE CASE THIS WHOLE SPLIT EXISTS FOR. `identity_status = 2` is written when the
+     * Stripe session is CREATED, and Stripe emits no event for a closed tab — so a creator
+     * who opened the check and walked away used to read "Your ID check is being processed"
+     * forever, filed under "with our team", on a step only they could finish.
+     */
+    public function test_an_opened_but_unsubmitted_identity_check_is_the_creators_own_task(): void
     {
-        // 2 = session opened, waiting on Stripe's answer — or a closed tab, which Stripe
-        // never reports. The copy waits AND carries a route.
         $creator = $this->creatorAt('identity');
-        $creator->update(['identity_status' => 2]);
+        $creator->update([
+            'identity_status' => 2,
+            'identity_session_status' => IdentityCheckState::REQUIRES_INPUT,
+        ]);
+        $creator = $creator->fresh();
+
+        $next = $this->journey->nextStep($creator);
+
+        $this->assertSame('identity', $next['key']);
+        $this->assertFalse($next['awaiting_review']);
+        $this->assertTrue($this->journey->isUnfinished($creator, 'identity'));
+        $this->assertSame(CreatorJourneyService::UNFINISHED_COPY['identity']['title'], $next['title']);
+        $this->assertSame('stripe.identity.verification', $next['route']);
+        $this->assertNotNull($next['cta']);
+    }
+
+    /**
+     * ⚠️ A row written before `identity_session_status` existed knows only that a session
+     * was opened. Unfinished is the safe reading: the wrong way round leaves the creator
+     * waiting forever, this way costs them one click.
+     */
+    public function test_a_null_session_status_reads_as_unfinished(): void
+    {
+        $creator = $this->creatorAt('identity');
+        $creator->update(['identity_status' => 2, 'identity_session_status' => null]);
 
         $next = $this->journey->nextStep($creator->fresh());
 
+        $this->assertFalse($next['awaiting_review']);
+        $this->assertSame(CreatorJourneyService::UNFINISHED_COPY['identity']['title'], $next['title']);
+    }
+
+    /** Documents actually submitted — the only genuine "wait for us", and no button. */
+    public function test_a_processing_identity_check_is_awaiting_review_with_nothing_to_click(): void
+    {
+        $creator = $this->creatorAt('identity');
+        $creator->update([
+            'identity_status' => 2,
+            'identity_session_status' => IdentityCheckState::PROCESSING,
+            'journey_step' => 'identity',
+            'journey_step_at' => now()->subDays(9),
+        ]);
+        $creator = $creator->fresh();
+
+        $next = $this->journey->nextStep($creator);
+
         $this->assertSame('identity', $next['key']);
         $this->assertTrue($next['awaiting_review']);
-        $this->assertSame('stripe.identity.verification', $next['route']);
-        $this->assertNotNull($next['cta']);
+        $this->assertSame(CreatorJourneyService::REVIEW_COPY['identity']['title'], $next['title']);
+        $this->assertNull($next['route']);
+
+        // 🚨 And never chased: "you started this check but it was never completed" is
+        // false for somebody whose passport is sitting with Stripe.
+        $this->assertNull($this->journey->nudgeStageFor($creator));
     }
 
     /** 3 = flagged. Not a task, not a wait — a conversation with support, and never nudged. */

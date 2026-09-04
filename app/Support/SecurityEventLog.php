@@ -59,11 +59,23 @@ class SecurityEventLog
                 $attributes['context'] = self::scrubContext($attributes['context']);
             }
 
-            return SecurityEvent::create(array_merge([
+            $event = SecurityEvent::create(array_merge([
                 'event_type' => $eventType,
                 'severity' => 'info',
                 'app' => self::app(),
             ], $attributes));
+
+            /*
+             * An observation nobody reads is not an observation. The alert mails
+             * go to config/alerts.php recipients and are gone once read; a flag
+             * is the same fact sitting on the account until an admin resolves it.
+             *
+             * ⚠️ Only some event types, and only above `info` — the filter lives
+             * in UserFlagger::fromSecurityEvent, which never throws.
+             */
+            UserFlagger::fromSecurityEvent($event);
+
+            return $event;
         } catch (\Throwable $e) {
             Log::warning('SecurityEventLog::record failed', [
                 'event_type' => $eventType,

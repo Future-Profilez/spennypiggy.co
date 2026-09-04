@@ -5,14 +5,8 @@ namespace App\Console\Commands;
 use App\Http\Controllers\StripeWebhookController;
 use App\Models\Deliverable;
 use App\Models\FinancialTransaction;
-use App\Models\PiggyPotContribution;
-use App\Models\ShopPayment;
-use App\Models\StripePaymentDetail;
-use App\Models\TaskPurchase;
-use App\Models\TipGoalsPayment;
-use App\Models\WishItem;
-use App\Models\WishItemSubscription;
 use App\StripeControl;
+use App\Support\StripeCheckoutSources;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -148,38 +142,15 @@ class ReconcileStripeSession extends Command
     }
 
     /**
+     * ⚠️ Delegates to `StripeCheckoutSources`, which is also what the daily sweep reads.
+     * This method used to carry its own copy of the list and was missing memberships and
+     * bills, so a dropped webhook on either answered "No payment row found" here — for a
+     * session whose row was sitting in the database.
+     *
      * @return array{0:string,1:mixed,2:?string}
      */
     private function locate(string $sid): array
     {
-        if ($row = PiggyPotContribution::where('session_id', $sid)->first()) {
-            return ['Piggy Pot contribution', $row, $row->creator->account_id ?? null];
-        }
-
-        if ($row = TipGoalsPayment::where('session_id', $sid)->first()) {
-            return ['Support payment (Piggy Bank)', $row, $row->creator->account_id ?? null];
-        }
-
-        if ($row = ShopPayment::where('session_id', $sid)->first()) {
-            return ['Shop payment', $row, $row->shop->user->account_id ?? null];
-        }
-
-        if ($row = TaskPurchase::where('stripe_session_id', $sid)->first()) {
-            return ['Task purchase', $row, $row->creator->account_id ?? null];
-        }
-
-        // Wish (one-time) — its account lives on the wished item's creator.
-        if ($row = WishItemSubscription::where('session_id', $sid)->first()) {
-            $account = optional(WishItem::find($row->wish_item_id))->user->account_id ?? null;
-
-            return ['Wish subscription', $row, $account];
-        }
-
-        // Cart/basket wish (StripePaymentDetail). owner_id is the creator.
-        if ($row = StripePaymentDetail::where('session_id', $sid)->first()) {
-            return ['Wish / checkout (StripePaymentDetail)', $row, $row->owner->account_id ?? null];
-        }
-
-        return ['', null, null];
+        return StripeCheckoutSources::locate($sid);
     }
 }

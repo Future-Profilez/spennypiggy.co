@@ -15,6 +15,7 @@ use App\Models\ShopPayment;
 use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
+use App\Support\UserFlagger;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -353,6 +354,36 @@ class RiskService
 
             // Notify Creator
             $this->notifyCreatorOfRiskChange($metric->creator_id, $newRiskLevel, $newReservePercent);
+
+            /*
+             * The creator is told, and now so is the back office. Before this the
+             * only trace of a risk transition was a `Log::info` line and a
+             * `risk_audit_logs` row nobody opens unless they already suspect
+             * something — so a creator moving to high risk was visible on the risk
+             * screen and nowhere near the user list an admin actually works from.
+             *
+             * ⚠️ Raising only, never clearing. A creator returning to `low` does
+             * NOT resolve the flag: an admin decides whether the episode needed
+             * looking at, and a flag that removes itself is one that can close
+             * between two runs without anybody having read it.
+             *
+             * ⚠️ `creator_id` here is the user's UUID, not its primary key.
+             */
+            if (in_array($newRiskLevel, (array) config('user_flags.thresholds.risk_levels_flagged', ['high']), true)) {
+                UserFlagger::raise(
+                    user: (int) (User::where('uuid', $metric->creator_id)->value('id') ?? 0) ?: null,
+                    flagType: 'risk_level_high',
+                    reason: "The risk engine moved this creator from {$oldRiskLevel} to {$newRiskLevel} and applied a {$newReservePercent}% rolling reserve.",
+                    context: [
+                        'from' => $oldRiskLevel,
+                        'to' => $newRiskLevel,
+                        'reserve_percent' => $newReservePercent,
+                        'dispute_rate_30d' => $metric->dispute_rate_30d,
+                        'refund_rate_30d' => $metric->refund_rate_30d,
+                    ],
+                    source: 'risk',
+                );
+            }
         } else {
             // Even if level didn't change, values might need updating if config changed.
             // Write the level too, so a legacy row holding NULL is normalised instead of

@@ -38,6 +38,7 @@ use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\SuspendedAccount;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Exception;
@@ -651,6 +652,20 @@ class BillsController extends Controller
             );
 
             return $this->awayFrom($bill, app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
+        }
+
+        /*
+         * 🚨 THE PAYER, NOT THE PAYEE. A suspended account may not send money either,
+         * and this checkout starts on a route the suspension middleware deliberately
+         * lets through (reads stay open so somebody can still see their own account).
+         * The gate below refuses money coming IN to a suspended creator; this one
+         * refuses money going OUT of a suspended supporter.
+         *
+         * ⚠️ Nothing is recorded as a lost sale here — the payee did nothing wrong and
+         * has lost nothing; the refusal belongs to the payer's own account state.
+         */
+        if (SuspendedAccount::blocksPayer(Auth::user())) {
+            return $this->awayFrom($bill, SuspendedAccount::copyFor(Auth::user())['body']);
         }
 
         // NEW: Check creator subscription eligibility first

@@ -369,7 +369,7 @@ Users control each category separately, so turning off promotions does not silen
 Developer Master Plan, 19 Aug 2026, §E. Extends the existing system — nothing was rebuilt.
 
 - 🚨 **`EmailPreferenceController::catalogue()` IS THE ONE DEFINITION OF THE CENTRE** — key, title, plain-language description and section, read by both preference pages so the same switch can never be described two ways. A switch that is not in `CATEGORIES` cannot appear in it, and **security/legal/transactional mail has no column, so it can never appear at all**. `Pages/EmailPreference/Index.jsx` renders whatever the server sends; it holds no category list of its own.
-- 🚨 **A NON-ACTIVE CREATOR COULD NOT UNSUBSCRIBE, AND TWO SEPARATE THINGS CAUSED IT.** `/email-preferences` sits inside the `auth` group, and `CheckSuspendedUser` (in the **`web` middleware group**, so it runs on every web request) force-logs-out and bounces any account with `suspended_account = 1` — so a suspended creator can neither reach that page nor ever sign in to reach it. Their only control was the emailed link, and that link **expired after 24 hours**: an email opened two days later answered *"Invalid or expired unsubscribe link"* and dropped them on the homepage with no way to stop the mail at all, for ever. Both are fixed:
+- 🚨 **A NON-ACTIVE CREATOR COULD NOT UNSUBSCRIBE, AND TWO SEPARATE THINGS CAUSED IT.** `/email-preferences` sits inside the `auth` group, and `CheckSuspendedUser` (in the **`web` middleware group**, so it runs on every web request) used to force-log-out and bounce any account with `suspended_account = 1` — so a suspended creator could neither reach that page nor ever sign in to reach it. ⚠️ **That half is SUPERSEDED as of 3 Sep 2026**: a suspended account signs in and reads normally, and `email.preferences.update` is on the suspension write-allowlist. The signed no-login centre stays, and is still the only route for somebody who cannot sign in at all. Their only control was the emailed link, and that link **expired after 24 hours**: an email opened two days later answered *"Invalid or expired unsubscribe link"* and dropped them on the homepage with no way to stop the mail at all, for ever. Both are fixed:
   - **`LINK_TTL_DAYS = 30`** for every emailed preference link. `generateCheckoutReminderOptOut` already used 30 days for exactly this reason — *a dead unsubscribe link is worse than no link at all*.
   - **A signed, no-login preference centre**: `manage()` / `updateManaged()` render and write the FULL list without a session. Same page component, `signed: true` → `GuestLayout`, posts to a signed URL the server supplies.
   - **The one-click unsubscribe now lands on that centre** instead of `/`. The opt-out is still written *before* the redirect — one click still unsubscribes — but the person then sees what else is on, rather than choosing between one category and silence.
@@ -5069,6 +5069,113 @@ disabled**.
 - ⚠️ Migration `2026_08_31_100001` is a **guarded, empty-`down()` declaration for this app's
   test database only** — admin.spennypiggy.co's `2026_08_31_100000` is the one that ships.
 - Tests: `tests/Feature/AlertRouterTest.php` (7), `admin.spennypiggy.co/tests/Feature/AlertRoutingTest.php` (12).
+
+## 🚨 Memberships has a landing page, and the products have THREE SHAPES (4 Sep 2026)
+
+Client note, 4 Sep 2026: memberships are the recurring-revenue answer to "starting from £0
+every month", and what separates this platform from a gifting site is that a creator is paid
+in more than one shape. Neither was findable. Memberships was **the seventh of seven cards**
+on the home page AND on `/creators` — and that list was typed out twice, in two files, in two
+orders, so it had drifted and nothing could report it.
+
+### `config/monetisation.php` is the ONE definition of the three shapes
+
+`App\Support\MonetisationPillars::forInertia()` is the payload; `Components/PillarCards.jsx`
+is the block. Three surfaces read it — the home page (`home/ThreeWays.jsx`, mounted ABOVE
+`WaysToGetPaid`), `/creators` (above the seven-way grid), and `/creators/memberships`.
+
+- 🚨 **A PILLAR IS THE SHAPE OF THE MONEY, NOT A PRODUCT.** Seven products sit under three
+  shapes — `recurring` (memberships) · `requests` (paid requests) · `listings` (everything
+  sold once) — and the shape is what a creator is actually choosing between. The catalogue
+  still lists the seven; it just no longer has to carry the argument as well.
+- 🚨 **`route()` THROWS FOR AN UNKNOWN NAME AND THIS PAYLOAD IS BUILT ON THE HOME PAGE.** A
+  typo in the config would 500 the site's front door to render a link, so
+  `MonetisationPillars` **nulls an unresolvable route name** and the card renders without a
+  link. Same reasoning as `SuspendedAccount::actionFor()`. `route` is also the documented way
+  to say "this pillar has no page yet" — paid requests has none today.
+- ⚠️ **`activeKey` drops a pillar's own link on its own page.** A link that goes nowhere new
+  is the one link a reader on that page is likeliest to try.
+- ⚠️ **ONE FRAME, THREE ABUTTING ROWS — not three cards.** Three cards say "three separate
+  products"; three rows sharing hairlines say "three parts of one income", which is the
+  client's actual argument. Same device, and the same reasoning, as `Ledger`'s `LedgerFrame`
+  and `WaysToGetPaid`.
+
+### `/creators/memberships` (`creators.memberships`)
+
+`CreatorLandingController::memberships` → `Pages/creators/Memberships.jsx`. Mint accent
+(`ACCENT.earn` — money coming in), one accent for the page, built from `AdPage` + `Ledger`
+exactly like `/creators/wishlist`.
+
+- 🚨 **A CONTROLLER, NOT A CLOSURE, AND THE `<title>` IS SET SERVER-SIDE.** `SeoMeta` always
+  renders its own default title ABOVE `@inertiaHead`, so a page setting only the Inertia
+  title ships two `<title>` elements with the generic one first — and that is the one a
+  crawler takes. The documented `ComparisonController` trap.
+- 🚨 **INSIDE THE `ssr` GROUP.** Outside it the page is an empty shell to Google and to link
+  previews, and **nothing errors** — a signed-in human sees it correctly either way. Pinned
+  by test. ⚠️ The SSR bundle is a SECOND, MANUAL deploy (`npm run deploy:ssr`); see the SSR
+  section above.
+- 🚨 **REGISTERED IN `VisitTracker::AD_LANDING_ROUTES` *AND* `PAGE_TYPES`**
+  (`ad_memberships`). A page missing from either has its visits incremented in the cache and
+  never written to the database — it reports zero visits for ever and nothing errors.
+- 🚨 **THE BENEFIT LIST IS `config/rewards.php`, NOT WORDS TYPED INTO THE PAGE.** It is the
+  same list `AddMembership` renders and `RewardService` validates against; a retyped copy
+  advertises perks the form may not offer. `on_platform_perks` is sent SEPARATELY because it
+  is a RULE — `MembershipController::withDefaultOnPlatformContent` adds the monthly content
+  bundle when a creator picks none, so the page says so out loud rather than letting a
+  creator meet a benefit they did not choose on their own listing.
+  ⚠️ **The client's brief named "WhatsApp access" and "priority access"; neither is a perk
+  key.** The page shows what `config/rewards.php` offers (Telegram group, X community, the
+  two Instagram perks, the video calls, the content bundles). Adding a perk is a product
+  change with its own compliance question, not a copy edit.
+- 🚨 **THE STEPS ARE THE FORM'S OWN HEADINGS** — *Choose a tier* · *What they get* ·
+  *Price & thumbnail*. A creator who signs up on the strength of this page has to find the
+  thing they read about under the same name. (The client's brief said four steps; the form
+  has three and then it is live.)
+- 🚨 **THE HERO MODEL IS AN EXAMPLE, AND IT SAYS SO.** Two sliders and a twelve-month
+  staircase, all of it the reader's own two numbers multiplied out — nothing is drawn from
+  platform data and nothing is promised. ⚠️ **The bars are a RUNNING TOTAL**, stated in
+  words: a climbing chart beside a monthly figure otherwise reads as the monthly figure
+  climbing, which is the one thing this page must not imply.
+  ⚠️ **The bounds are GBP AND ARE LABELLED GBP** — `MIN_PRICE_GBP` / `MAX_PRICE_GBP.membership`
+  from `lib/priceLimits.js`. Printing £4.99–£100 against a reader's own currency is the
+  documented JPY fault; the creator sets their real price in the form, where the helper
+  converts.
+- ⚠️ **`FeeBlock` is passed `headless`** — it draws its own `h2`, so without it the section
+  head above it was the second heading in a row (the readability fault documented on the
+  comparison pages).
+- ⚠️ **"You keep your listed price" is fine HERE.** The "you keep" ban belongs to the Growth
+  Bonus surfaces, where the figure includes VAT that may go to HMRC; this page is about
+  membership fees, and "you keep 100%" is the platform's standing claim.
+- Tests: `tests/Feature/MembershipsLandingTest.php` (9). ⚠️ The banned-vocabulary test is a
+  SOURCE SCAN with comments blanked, and it went red on the first run for a real reason: a
+  compliance sentence read *"not a donation and not a gift"*. Naming the banned words in
+  order to disclaim them is a carve-out for the LEGAL pages' prohibited lists, not for a
+  marketing page — the sentence now states what a membership IS.
+  ⚠️ `assertInertia`'s closure receives a **Collection**, so `(array) $prop` returns the
+  object's own properties and `array_column` answers `[]` — a test written that way fails
+  for a reason unrelated to the code. Use `collect(...)->pluck(...)`.
+
+## The delete-account form asks why (4 Sep 2026, spennypiggy.co)
+
+`Pages/Profile/Partials/DeleteUserForm.jsx` + `ProfileController::destroy`. Client direction,
+4 Sep 2026: a reason dropdown plus an optional "Tell us more". The cross-app rules (the table,
+the config mirror, the read-only admin copy) are in the root `../CLAUDE.md`; this is the
+capture side.
+
+- 🚨 **THE LIST COMES FROM THE SERVER, NOT A CONSTANT IN THE BUNDLE.**
+  `config/account_deletion.php` both renders the select (shipped as the `deletion_reasons`
+  prop from the `/account` route) and validates the submission through `Rule::in`, so the form
+  can never offer a code the server would refuse — the fault `priceLimits.js` was extracted to
+  fix. A code outside the list is REJECTED rather than stored: the whole value of the table is
+  that every row counts against a known reason.
+- ⚠️ **`other` is the one reason whose free text is required.** Every other reason says what it
+  means on its own; a table of bare `other` rows answers no question anyone would ask of this
+  feature.
+- 🚨 **The feedback row is written BEFORE any deletion work and cannot throw** — see the root
+  file. ⚠️ `onError` no longer focuses the password field unconditionally: with three fields
+  that moved the cursor away from the one the person actually has to fix.
+- ⚠️ `border-[#000]` does not compile in this project — the inputs use `border-black`, which is
+  already the 2px house frame (`resources/css/index.css`).
 
 ## Detailed topic index — load the skill, do not inline this content
 

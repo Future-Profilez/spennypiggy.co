@@ -46,7 +46,38 @@ export function isFraudFlagged(failure, identityStatus) {
     return failure?.code === "fraud_suspected" || Number(identityStatus) === 3;
 }
 
-/** 2 = submitted to Stripe, waiting on the webhook verdict. */
+/**
+ * 2 = an identity session is OPEN. It says nothing about whether the creator
+ * actually submitted anything — see isIdentityProcessing below.
+ */
 export function isIdentityPending(identityStatus) {
     return Number(identityStatus) === 2;
+}
+
+/**
+ * The creator's documents are genuinely with Stripe.
+ *
+ * 🚨 `identity_status = 2` is written when the SESSION IS CREATED, not on submit,
+ * and Stripe emits no event for a closed tab — so treating 2 as "being processed"
+ * told every creator who opened the check and walked away to wait for an answer
+ * nobody was going to send. `identity_session_status` carries Stripe's own status
+ * ('requires_input' | 'processing' | 'verified' | 'canceled'); only 'processing'
+ * means a document was submitted.
+ */
+export function isIdentityProcessing(identityStatus, sessionStatus) {
+    return Number(identityStatus) === 2 && sessionStatus === "processing";
+}
+
+/**
+ * Session open, nothing submitted — the creator's own move.
+ *
+ * ⚠️ A missing/NULL session status counts as unfinished: every row written before
+ * that column existed was only ever known as "created", and `identity:reconcile`
+ * settles the real answer against Stripe within a day.
+ */
+export function isIdentityUnfinished(identityStatus, sessionStatus) {
+    return (
+        Number(identityStatus) === 2 &&
+        !isIdentityProcessing(identityStatus, sessionStatus)
+    );
 }

@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Stripe\ApiRequestor;
+use Stripe\HttpClient\ClientInterface;
 use Tests\TestCase;
 
 /**
@@ -16,6 +18,13 @@ use Tests\TestCase;
 class IdentityVerifySessionGateTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        ApiRequestor::setHttpClient(null);
+
+        parent::tearDown();
+    }
 
     private function user(array $attributes = []): User
     {
@@ -59,6 +68,49 @@ class IdentityVerifySessionGateTest extends TestCase
         $this->actingAs($this->user(['identity_status' => 1]))
             ->postJson(route('stripe.identity.verify'))
             ->assertStatus(409);
+    }
+
+    /**
+     * 🚨 Stripe had ALREADY PASSED THEM and the `verified` webhook never landed. Answering
+     * "still being processed" sends the creator back to a wait that finished days ago and
+     * leaves them blocked from listing until the daily reconcile catches up.
+     */
+    public function test_a_session_stripe_has_already_verified_repairs_the_creator(): void
+    {
+        config(['services.stripe.secret' => 'sk_test_gate']);
+
+        ApiRequestor::setHttpClient(new class implements ClientInterface
+        {
+            public function request($method, $absUrl, $headers, $params, $hasFile, $apiMode = 'v1')
+            {
+                return [
+                    json_encode([
+                        'id' => basename(parse_url($absUrl, PHP_URL_PATH)),
+                        'object' => 'identity.verification_session',
+                        'status' => 'verified',
+                    ]),
+                    200,
+                    [],
+                ];
+            }
+        });
+
+        $creator = $this->user([
+            'identity_status' => 2,
+            'identity_admin_status' => 2,
+            'stripe_user_id' => 'vs_test_already_done',
+        ]);
+
+        $this->actingAs($creator)
+            ->postJson(route('stripe.identity.verify'))
+            ->assertStatus(409)
+            ->assertJsonFragment(['error' => 'Your identity is already verified.']);
+
+        $creator->refresh();
+
+        $this->assertSame(1, (int) $creator->identity_status);
+        $this->assertNotNull($creator->identity_verified_at);
+        $this->assertSame(1, (int) $creator->identity_admin_status);
     }
 
     public function test_a_flagged_creator_is_told_to_contact_support_not_retried(): void

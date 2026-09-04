@@ -1,3 +1,4 @@
+import PillarCards from '@/Components/PillarCards';
 import { Head, Link } from '@inertiajs/react';
 import ThreeProgrammes, {
     THREE_PROGRAMMES,
@@ -126,7 +127,7 @@ const REASONS = [
     },
 ];
 
-export default function Index({ comparisons = [] }) {
+export default function Index({ comparisons = [], pillars = [] }) {
     const title = 'Sell your content and keep 100% — Spenny Piggy for creators';
     const description = `Seven ways to get paid on one profile, weekly payouts, and dispute evidence gathered for you. You keep 100% of your listed price. ${SUBSCRIPTION_COPY.promise}.`;
     const promise = `${SUBSCRIPTION_COPY.promise} · ${PRICE_FORMATTED} + VAT / month after · cancel anytime`;
@@ -196,6 +197,24 @@ export default function Index({ comparisons = [] }) {
                             accent={ACCENT.bonus}
                             className="rounded-box border-2 border-white/15 bg-white/[0.04]"
                         />
+                    </div>
+
+                    {/* The three shapes, then the seven products. A visitor
+                        deciding whether this is a gifting site reads the shapes;
+                        the catalogue below answers "which one". See
+                        `config/monetisation.php`. */}
+                    <div className="mt-20 md:mt-28">
+                        <SectionHead
+                            eyebrow="How you get paid"
+                            accent={ACCENT.earn}
+                        >
+                            Three shapes,{' '}
+                            <span className="text-gradient-wishlist">
+                                one account
+                            </span>
+                        </SectionHead>
+
+                        <PillarCards pillars={pillars} className="mt-10" />
                     </div>
 
                     {/* Ways to earn */}

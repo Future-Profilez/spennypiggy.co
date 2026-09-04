@@ -18,6 +18,7 @@ use App\Support\AnalyticsEvent;
 use App\Support\GifterVerificationCharge;
 use App\Support\MaintenanceMode;
 use App\Support\SubscriptionPlan;
+use App\Support\SuspendedAccount;
 use App\Support\VerifiedBadge;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -71,6 +72,10 @@ class HandleInertiaRequests extends Middleware
                 'cover_approved' => $user->cover_approved,
                 'is_founder' => $user->is_founder,
                 'identity_status' => $user->identity_status,
+                // 🚨 Without this the front end cannot tell a check Stripe is deciding
+                // from a session the creator opened and abandoned — `identity_status`
+                // is 2 for both. See App\Support\IdentityCheckState.
+                'identity_session_status' => $user->identity_session_status,
                 'identity_verified_at' => $user->identity_verified_at,
                 'identity_admin_status' => $user->identity_admin_status,
                 'identity_admin_notes' => $user->identity_admin_notes,
@@ -105,6 +110,16 @@ class HandleInertiaRequests extends Middleware
                 'referral_code' => $user->referral_code,
                 'is_500_limit_exceeded' => $user->is_500_limit_exceeded,
                 'suspended_account' => $user->suspended_account,
+                /*
+                 * 🚨 THE REASON, RESOLVED SERVER-SIDE, OR NULL.
+                 *
+                 * Null when the account is not suspended — the banner renders on
+                 * the prop's presence, so an object that is always sent is one
+                 * truthiness slip away from telling every signed-in creator they
+                 * are suspended. The admin's internal note is never in here; see
+                 * App\Support\SuspendedAccount.
+                 */
+                'suspension' => SuspendedAccount::payload($user),
                 'payout_paused_at' => $user->payout_paused_at,
                 'payout_pause_reason' => $user->payout_pause_reason,
                 'social_image' => $user->social_image,

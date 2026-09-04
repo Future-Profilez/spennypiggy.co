@@ -33,11 +33,26 @@ class ActivityObserver
     private static $processedEvents = [];
 
     /**
-     * Sensitive fields that should never be logged
+     * Sensitive fields that should never be logged.
+     *
+     * 🚨 THE NAMES HERE ARE THE ONES THIS SCHEMA ACTUALLY USES, NOT THE ONES
+     * JETSTREAM WOULD HAVE USED. `two_factor_secret` and `two_factor_key` are
+     * not columns on this `users` table — the 2FA seed is `tfa_key` — so a
+     * `USER_DELETED` audit row, which dumps the WHOLE row into
+     * `metadata_json.deleted_data`, carried the live TOTP secret in plain text
+     * next to the account's email and date of birth. Found 3 Sep 2026 in the
+     * live database; `password` and `remember_token` were redacted beside it,
+     * which is what made the gap invisible.
+     *
+     * ⚠️ `matchesSensitiveName()` below is the backstop: a future column called
+     * `…_secret` / `…_token` / `…_otp` is redacted whether or not anybody
+     * remembers to add it here.
      */
     protected $excludedFields = [
         'password',
         'remember_token',
+        'tfa_key',
+        'passwordless_login_token',
         'two_factor_secret',
         'two_factor_recovery_codes',
         'two_factor_key',
@@ -47,6 +62,23 @@ class ActivityObserver
         'token',
         'access_token',
         'refresh_token',
+    ];
+
+    /**
+     * Name fragments that make a column sensitive whatever it is called.
+     *
+     * ⚠️ Deliberately narrow. `key` alone is not here — `watermark_uuid`-style
+     * columns and every `foreign_key`-ish name would be redacted with it, and a
+     * log that redacts the ordinary fields is one nobody can read.
+     */
+    protected $sensitiveNameFragments = [
+        'password',
+        'secret',
+        'token',
+        '_otp',
+        'otp_',
+        'tfa',
+        '2fa',
     ];
 
     /**
@@ -481,7 +513,7 @@ class ActivityObserver
     {
         $sanitized = [];
         foreach ($data as $key => $value) {
-            if (in_array($key, $this->excludedFields)) {
+            if (in_array($key, $this->excludedFields) || $this->matchesSensitiveName($key)) {
                 $sanitized[$key] = '[REDACTED]';
             } else {
                 $sanitized[$key] = $this->sanitizeValue($value);
@@ -489,6 +521,25 @@ class ActivityObserver
         }
 
         return $sanitized;
+    }
+
+    /**
+     * Is this column name sensitive on its face?
+     *
+     * The explicit list above is the rule; this is the safety net for a column
+     * added later by somebody who never reads this file.
+     */
+    private function matchesSensitiveName(string $key): bool
+    {
+        $key = strtolower($key);
+
+        foreach ($this->sensitiveNameFragments as $fragment) {
+            if (str_contains($key, $fragment)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\IdentityCheckState;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,7 +25,13 @@ class EnsureIdentityVerifiedForListings
     /** Set on `users.identity_status` once Stripe reports the check passed. */
     public const VERIFIED = 1;
 
-    /** Submitted to Stripe, awaiting a result. The creator has nothing left to do. */
+    /**
+     * A Stripe Identity session is OPEN.
+     *
+     * 🚨 NOT "submitted": it is written when the session is CREATED, so it also covers a
+     * creator who opened the check and closed the tab — and Stripe reports nothing for
+     * that. `IdentityCheckState` reads the session's own status to tell the two apart.
+     */
     public const SUBMITTED = 2;
 
     public function handle(Request $request, Closure $next)
@@ -44,9 +51,14 @@ class EnsureIdentityVerifiedForListings
             return $next($request);
         }
 
-        $message = (int) ($user->identity_status ?? 0) === self::SUBMITTED
-            ? 'Your identity check is being reviewed. You can list items as soon as it clears.'
-            : 'Verify your identity before listing an item. It takes a couple of minutes.';
+        // Three different states, three different next moves. Telling a creator who
+        // never submitted anything that their check "is being reviewed" leaves them
+        // waiting on a result nobody is going to produce.
+        $message = match (true) {
+            IdentityCheckState::isProcessing($user) => 'Your identity check is being reviewed. You can list items as soon as it clears.',
+            IdentityCheckState::isUnfinished($user) => 'You started your ID check but did not finish it. Pick it up again — it takes about two minutes.',
+            default => 'Verify your identity before listing an item. It takes a couple of minutes.',
+        };
 
         // ⚠️ Three callers, three correct answers. The add-item forms on this
         // platform are split between Inertia and plain axios, and giving either

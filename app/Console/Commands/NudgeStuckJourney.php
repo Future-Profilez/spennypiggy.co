@@ -115,7 +115,7 @@ class NudgeStuckJourney extends Command
                 NotificationDispatcher::queue(
                     $user,
                     self::TYPE,
-                    $this->payloadFor($user, $stage),
+                    $this->payloadFor($user, $stage, $journey),
                     $this->channelsFor($user),
                     // Operational: this is the state of the creator's own account, so it is
                     // not routed through the marketing consent gate. The email channel is
@@ -160,13 +160,19 @@ class NudgeStuckJourney extends Command
      *
      * @return array<string, mixed>
      */
-    public function payloadFor(User $user, int $stage): array
+    public function payloadFor(User $user, int $stage, ?CreatorJourneyService $journey = null): array
     {
         $step = (string) $user->journey_step;
+        $journey ??= app(CreatorJourneyService::class);
 
         return [
             'title' => FinishYourSetup::subjectFor($step, $stage),
-            'body' => CreatorJourneyService::STEPS[$step]['body'] ?? FinishYourSetup::contextFor($step),
+            // ⚠️ A step the creator half-finished gets the wording that acknowledges it —
+            // the first-run copy ("a quick passport check") reads as though the ten
+            // minutes they already spent never happened.
+            'body' => $journey->isUnfinished($user, $step)
+                ? CreatorJourneyService::UNFINISHED_COPY[$step]['body']
+                : (CreatorJourneyService::STEPS[$step]['body'] ?? FinishYourSetup::contextFor($step)),
             'url' => route('dashboard'),
             'module' => 'journey',
             'mailable' => FinishYourSetup::class,

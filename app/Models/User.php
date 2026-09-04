@@ -52,6 +52,11 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'deleted_at',
         'creator_category',
         'identity_status',
+        // Stripe's own session status ('requires_input' | 'processing' | 'verified' |
+        // 'canceled'). `identity_status = 2` cannot tell "opened the check and walked
+        // away" from "documents submitted, Stripe deciding" — this can.
+        'identity_session_status',
+        'identity_session_updated_at',
         'identity_verified_at',
         'identity_verification_error',
         'identity_verification_details',
@@ -118,9 +123,22 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'password' => 'hashed',
         'identity_admin_status' => 'integer',
         'identity_status' => 'integer',
+        'identity_session_updated_at' => 'datetime',
         'identity_admin_reviewed_at' => 'datetime',
         'stripe_connected_at' => 'datetime',
+        // When Stripe last reported whether this account can take a card
+        // payment. ⚠️ NULL means NOT REPORTED YET, never "disabled" — see
+        // App\Support\StripeChargesFlag. Not $fillable: it is a fact Stripe
+        // reported, not something a request may set.
+        'charges_checked_at' => 'datetime',
         'content_posting_paused_at' => 'datetime',
+        // Suspension state. ⚠️ Deliberately NOT in $fillable — the reason and
+        // its author are written by SuspensionService (and by the admin app's
+        // suspend action) with forceFill, never mass-assigned from a request.
+        // A suspension reason a form could set is a suspension reason nobody
+        // chose. See config/suspension.php and App\Support\SuspendedAccount.
+        'suspended_at' => 'datetime',
+        'suspension_enforced_at' => 'datetime',
         'content_posting_warned_at' => 'datetime',
         // Deliberately NOT in $fillable: it is a Super Admin commercial control
         // set from the admin app, and nothing on the website should be able to

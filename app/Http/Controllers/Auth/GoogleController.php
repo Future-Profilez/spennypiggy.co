@@ -135,10 +135,14 @@ class GoogleController extends Controller
                 ->with('error', 'This account is deactivated. Please contact support.');
         }
 
-        if ($user->suspended_account == 1) {
-            return redirect()->route('login')
-                ->with('error', 'Your account is suspended. Please contact support.');
-        }
+        /*
+         * 🚨 A SUSPENDED ACCOUNT SIGNS IN. This used to refuse the login outright, which
+         * is the fault the 3 Sep 2026 change exists to close: the one person who needs
+         * to read the reason, see their own history and message support was the only
+         * person who could not reach any of it. Suspension is a STATE of the account —
+         * `CheckSuspendedUser` refuses every write once they are in, and every checkout
+         * gate refuses the money. Do not reinstate a block here.
+         */
 
         // ⚠️ Read the context BEFORE any branch returns.
         //

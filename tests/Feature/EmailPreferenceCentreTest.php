@@ -203,16 +203,26 @@ class EmailPreferenceCentreTest extends TestCase
 
     // ----------------------------------------- the person who cannot sign in
 
-    public function test_a_suspended_creator_cannot_reach_the_authenticated_page(): void
+    public function test_a_suspended_creator_can_now_reach_the_authenticated_page(): void
     {
-        // This is the blocker the brief names. `/email-preferences` is behind
-        // `auth`, and `CheckSuspendedUser` (web group) logs a suspended account
-        // out on every request — so it can never get there.
+        /*
+         * ⚠️ THIS TEST ASSERTED THE OPPOSITE UNTIL 3 Sep 2026, and the reason it
+         * changed is worth keeping: `CheckSuspendedUser` used to log a suspended
+         * account out on every request, which is the blocker the brief names and
+         * the reason the signed no-login centre below exists. A suspension is a
+         * state of the account now, not a lock on the door — reads are open and
+         * `email.preferences.update` is on the write-allowlist, so this page is
+         * reachable.
+         *
+         * The signed centre is NOT redundant for it: somebody with no session at
+         * all — an unverified or abandoned address — has never been able to reach
+         * the signed-in page, and that is who the next test covers.
+         */
         $user = User::factory()->create(['suspended_account' => 1]);
 
         $this->actingAs($user)
             ->get(route('email.preferences'))
-            ->assertRedirect(route('login'));
+            ->assertOk();
     }
 
     public function test_a_suspended_creator_can_open_and_save_the_signed_centre(): void

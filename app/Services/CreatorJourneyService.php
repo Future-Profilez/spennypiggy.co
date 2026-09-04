@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\FinancialTransaction;
 use App\Models\Post;
 use App\Models\User;
+use App\Support\IdentityCheckState;
 use App\Support\ProfileAssetVisibility;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -149,14 +150,32 @@ class CreatorJourneyService
             'route' => null,
             'params' => [],
         ],
-        // ⚠️ Status 2 is written when the Stripe session is CREATED, not when a document is
-        // submitted, and Stripe emits no event for a closed tab — so "waiting" here can
-        // also mean "walked away". The copy therefore keeps a way back in; the identity
-        // page itself offers "Start again" for exactly this case.
+        // ⚠️ Reached ONLY once Stripe has told us a document was actually submitted
+        // (`identity.verification_session.processing` → `identity_session_status`).
+        // A session that is merely OPEN renders UNFINISHED_COPY instead — see there.
         'identity' => [
             'title' => 'Your ID check is being processed',
-            'body' => 'Stripe usually answers within minutes and we will tell you either way. Did not finish the passport check? Pick it up again.',
-            'cta' => 'Resume ID check',
+            'body' => 'Your passport is with Stripe. They usually answer within minutes and we will tell you either way — there is nothing else for you to do.',
+            'cta' => null,
+            'route' => null,
+            'params' => [],
+        ],
+    ];
+
+    /**
+     * The creator STARTED something and did not finish it. Their move, not ours.
+     *
+     * 🚨 This exists because `identity_status = 2` is written when the Stripe session is
+     * CREATED, not when a document is submitted — and Stripe emits no event for a closed
+     * tab. Every abandoned creator was therefore shown REVIEW_COPY: "being processed",
+     * with an IN REVIEW pill and their step filed under "with our team", waiting on an
+     * answer that nothing was ever going to send. One creator sat like that for days.
+     */
+    public const UNFINISHED_COPY = [
+        'identity' => [
+            'title' => 'Finish your ID check',
+            'body' => 'You opened the passport check but did not finish it, so nothing has reached Stripe yet. It takes about two minutes and you cannot list anything for sale until it is done.',
+            'cta' => 'Finish ID check',
             'route' => 'stripe.identity.verification',
             'params' => [],
         ],
@@ -290,6 +309,16 @@ class CreatorJourneyService
             return null;
         }
 
+        // 🚨 Nor is a step we owe THEM. `nextStep()` has always carried `awaiting_review`
+        // with a note that callers must not nudge on it, and this caller never read it —
+        // so a creator whose documents were genuinely with Stripe was emailed "you started
+        // this check but it was never completed", which is false and unactionable. The
+        // `review` step was covered only by accident, through the query's
+        // `profile_status_lock != 1` exclusion.
+        if ($this->isAwaitingReview($creator, $step)) {
+            return null;
+        }
+
         $enteredAt = Carbon::parse($creator->journey_step_at);
 
         // ⚠️ diffInDays() is absolute. A timestamp in the future — clock skew or bad data —
@@ -374,6 +403,13 @@ class CreatorJourneyService
             return self::REVIEW_COPY[$step];
         }
 
+        // Started, not finished, and nobody is waiting on us. Rendered as a task with a
+        // way back in rather than as the plain "Verify identity" first-run copy, which
+        // would tell a creator to start something they already started.
+        if (isset(self::UNFINISHED_COPY[$step]) && $this->isUnfinished($creator, $step)) {
+            return self::UNFINISHED_COPY[$step];
+        }
+
         if ($step === 'review' && filled($creator->profile_reject_reason)) {
             return self::REJECTED_REVIEW_COPY + ['body' => (string) $creator->profile_reject_reason];
         }
@@ -434,12 +470,27 @@ class CreatorJourneyService
             // "photo and bio are filled in" — uploading both puts nobody in a queue.
             'review' => (int) ($creator->profile_status_lock ?? 0) === 1,
 
-            // 2 = session opened, waiting on Stripe's answer (0 failed, 1 verified).
-            // 3 = flagged: also "not the creator's move", see isBlocked().
-            'identity' => in_array((int) ($creator->identity_status ?? 0), [2, 3], true),
+            // 🚨 2 alone is NOT "with us". It is written when the Stripe session is
+            // CREATED, so it also covers a creator who opened the check and walked away
+            // — and Stripe sends no event for that, so they would wait forever. Only a
+            // session Stripe has told us is `processing` (a document was submitted) is
+            // genuinely out of the creator's hands. 3 = flagged, see isBlocked().
+            'identity' => IdentityCheckState::isProcessing($creator)
+                || (int) ($creator->identity_status ?? 0) === 3,
 
             default => false,
         };
+    }
+
+    /**
+     * The creator began this step and stopped part-way — it is still their move.
+     *
+     * Distinct from "not started": the copy has to acknowledge what they already did,
+     * or the card reads as though the last five minutes never happened.
+     */
+    public function isUnfinished(User $creator, string $step): bool
+    {
+        return $step === 'identity' && IdentityCheckState::isUnfinished($creator);
     }
 
     /**

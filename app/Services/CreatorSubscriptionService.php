@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Support\SuspendedAccount;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -18,6 +19,34 @@ class CreatorSubscriptionService
     public function validateCreatorSubscription(User $creator): array
     {
         try {
+            /*
+             * 🚨 SUSPENSION IS CHECKED FIRST, AND BEFORE THE ROLE TEST.
+             *
+             * This is the ONE gate every checkout on the platform already calls
+             * — ten call sites, including the two guest ones (Piggy Pot and
+             * Wish), which have no session for the suspension middleware to
+             * read. Refusing here is therefore how "a suspended account can
+             * receive no money by any route" is actually true, rather than a
+             * line added to ten controllers and forgotten in the eleventh.
+             *
+             * ⚠️ Above the role check on purpose: a suspended row is not to be
+             * paid whatever its role, and `role !== 1` returns eligible.
+             *
+             * ⚠️ The supporter is NOT told the account is suspended.
+             * `CreatorAvailabilityMessageService` maps every unrecognised status
+             * to the generic "this page is paused" copy, which is what a
+             * stranger should get — the suspension is the account holder's
+             * business, and the creator hears the specific reason on their own
+             * dashboard.
+             */
+            if (SuspendedAccount::isSuspended($creator)) {
+                return [
+                    'eligible' => false,
+                    'status' => SuspendedAccount::REASON,
+                    'message' => 'This account cannot take payments at the moment',
+                ];
+            }
+
             // Only applies to creators
             if ($creator->role !== 1) {
                 return [

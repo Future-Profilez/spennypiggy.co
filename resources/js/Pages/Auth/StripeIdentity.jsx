@@ -8,20 +8,28 @@ import {
     parseIdentityError,
     isFraudFlagged,
     isIdentityPending,
+    isIdentityProcessing,
+    isIdentityUnfinished,
 } from "@/utils/identityError";
 
 export default function StripeIdentity({ auth }) {
-
     const [loading, setLoading] = useState(false);
     const { successAlert, errorAlert } = useAlerts();
-    // identity_status: 0 = not verified / failed · 1 = verified · 2 = submitted,
-    // waiting on Stripe · 3 = flagged by the security review. This page used to
-    // read 2 as "rejected", a value the backend never wrote, so a rejected
-    // creator saw a plain "Verify now" with no reason at all.
+    // identity_status: 0 = not verified / failed · 1 = verified · 2 = a session is
+    // OPEN · 3 = flagged by the security review. This page used to read 2 as
+    // "rejected", a value the backend never wrote, so a rejected creator saw a
+    // plain "Verify now" with no reason at all.
     const identityStatus = Number(auth?.user?.identity_status);
     const failure = parseIdentityError(auth?.user?.identity_verification_error);
     const isVerified = identityStatus === 1;
     const isPending = isIdentityPending(identityStatus);
+    // 🚨 A session being OPEN is not a check being reviewed. `identity_status = 2`
+    // is written when the session is created, and Stripe emits no event for a
+    // closed tab — so "under review" was shown to creators who never submitted
+    // anything, with no way for that state to ever end.
+    const sessionStatus = auth?.user?.identity_session_status;
+    const isProcessing = isIdentityProcessing(identityStatus, sessionStatus);
+    const isUnfinished = isIdentityUnfinished(identityStatus, sessionStatus);
     const isFlagged = isFraudFlagged(failure, identityStatus);
     const hasFailed = !isVerified && !isPending && !!failure;
 
@@ -29,15 +37,23 @@ export default function StripeIdentity({ auth }) {
     const handleVerification = async () => {
         setLoading(true);
         try {
-            const { data: response } = await axios.post(route("stripe.identity.verify"));
+            const { data: response } = await axios.post(
+                route("stripe.identity.verify"),
+            );
             if (response.url) {
                 window.location.href = response.url;
-                successAlert("Redirecting to Stripe for identity verification...");
+                successAlert(
+                    "Redirecting to Stripe for identity verification...",
+                );
             } else {
-                errorAlert("Unexpected response from the server. Please try again later.");
+                errorAlert(
+                    "Unexpected response from the server. Please try again later.",
+                );
             }
         } catch (err) {
-            const errorMessage = err.response?.data?.error || "Unable to connect to the server. Please check your network and try again.";
+            const errorMessage =
+                err.response?.data?.error ||
+                "Unable to connect to the server. Please check your network and try again.";
             errorAlert(errorMessage);
         } finally {
             setLoading(false);
@@ -57,7 +73,8 @@ export default function StripeIdentity({ auth }) {
                             </span>
                         </h2>
                         <p className="text-gray-800 text-lg font-medium max-w-2xl mx-auto">
-                            Complete Stripe identity verification to unlock creator features and payments.
+                            Complete Stripe identity verification to unlock
+                            creator features and payments.
                         </p>
                     </div>
 
@@ -75,18 +92,35 @@ export default function StripeIdentity({ auth }) {
                                         Identity verified ✅
                                     </p>
                                     <p className="text-sm">
-                                        You’re all set — nothing else to do here.
+                                        You’re all set — nothing else to do
+                                        here.
                                     </p>
                                 </div>
                             )}
 
-                            {isPending && (
+                            {isProcessing && (
                                 <div className="mb-4 text-yellow-900 bg-yellow-50 p-4 rounded-box-sm border border-yellow-200">
                                     <p className="font-bold mb-1">
                                         Check submitted — under review
                                     </p>
                                     <p className="text-sm">
-                                        Stripe is checking your documents. This usually takes a few minutes; we’ll email you as soon as there’s a result.
+                                        Stripe is checking your documents. This
+                                        usually takes a few minutes; we’ll email
+                                        you as soon as there’s a result.
+                                    </p>
+                                </div>
+                            )}
+
+                            {isUnfinished && (
+                                <div className="mb-4 text-yellow-900 bg-yellow-50 p-4 rounded-box-sm border border-yellow-200">
+                                    <p className="font-bold mb-1">
+                                        You haven’t finished your check
+                                    </p>
+                                    <p className="text-sm">
+                                        You opened the passport check but never
+                                        completed it, so nothing has reached
+                                        Stripe yet. Pick it up below — it takes
+                                        about two minutes.
                                     </p>
                                 </div>
                             )}
@@ -120,17 +154,19 @@ export default function StripeIdentity({ auth }) {
                                                 What to do next
                                             </p>
                                             <ol className="space-y-1">
-                                                {failure.whatToDo.map((s, i) => (
-                                                    <li
-                                                        key={i}
-                                                        className="flex items-start gap-2 text-[13px] text-gray-700"
-                                                    >
-                                                        <span className="font-bold text-[#FF007F]">
-                                                            {i + 1}.
-                                                        </span>
-                                                        <span>{s}</span>
-                                                    </li>
-                                                ))}
+                                                {failure.whatToDo.map(
+                                                    (s, i) => (
+                                                        <li
+                                                            key={i}
+                                                            className="flex items-start gap-2 text-[13px] text-gray-700"
+                                                        >
+                                                            <span className="font-bold text-[#FF007F]">
+                                                                {i + 1}.
+                                                            </span>
+                                                            <span>{s}</span>
+                                                        </li>
+                                                    ),
+                                                )}
                                             </ol>
                                         </div>
                                     )}
@@ -143,9 +179,18 @@ export default function StripeIdentity({ auth }) {
                                         What happens next?
                                     </p>
                                     <ul className="text-sm text-gray-700 mt-2 space-y-1">
-                                        <li>1) You upload your passport in Stripe.</li>
-                                        <li>2) Stripe verifies it — usually a few minutes.</li>
-                                        <li>3) We email you the result either way.</li>
+                                        <li>
+                                            1) You upload your passport in
+                                            Stripe.
+                                        </li>
+                                        <li>
+                                            2) Stripe verifies it — usually a
+                                            few minutes.
+                                        </li>
+                                        <li>
+                                            3) We email you the result either
+                                            way.
+                                        </li>
                                     </ul>
                                 </div>
                             )}
@@ -165,23 +210,28 @@ export default function StripeIdentity({ auth }) {
                                         disabled={loading || isVerified}
                                         onClick={handleVerification}
                                         className={`relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none border-l-4 border-transparent pr-6 bg-black !text-white w-full ${
-                                            loading ? "!animate-pulse !bg-green-400" : "hover:!bg-[#FF007F] hover:!text-black"
+                                            loading
+                                                ? "!animate-pulse !bg-green-400"
+                                                : "hover:!bg-[#FF007F] hover:!text-black"
                                         }`}
                                         spinnerclass="fill-white"
                                     >
                                         {loading
                                             ? "Processing…"
                                             : isVerified
-                                                ? "VERIFIED"
-                                                : hasFailed
-                                                    ? "TRY VERIFICATION AGAIN"
-                                                    : isPending
-                                                        ? "START AGAIN"
-                                                        : "VERIFY NOW"}
+                                              ? "VERIFIED"
+                                              : hasFailed
+                                                ? "TRY VERIFICATION AGAIN"
+                                                : isProcessing
+                                                  ? "START AGAIN"
+                                                  : isUnfinished
+                                                    ? "FINISH ID CHECK"
+                                                    : "VERIFY NOW"}
                                     </LoaderButton>
-                                    {isPending && (
+                                    {isProcessing && (
                                         <p className="text-xs text-gray-600 mt-2 text-center">
-                                            Didn’t finish the check? You can start a new one.
+                                            Didn’t finish the check? You can
+                                            start a new one.
                                         </p>
                                     )}
                                 </div>

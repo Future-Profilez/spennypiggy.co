@@ -10,6 +10,7 @@ use App\Models\SocialLinks;
 use App\Models\User;
 use App\Models\UserVerificationStatus;
 use App\Services\UserProfileService;
+use App\Support\InvisibleText;
 use App\Support\ProfileAssetVisibility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -24,6 +25,35 @@ class SocialLinksController extends Controller
     public function __construct(UserProfileService $userProfileService)
     {
         $this->userProfileService = $userProfileService;
+    }
+
+    /**
+     * The value this save is proposing for one handle column.
+     *
+     * 🚨 A FIELD THE PAYLOAD DOES NOT CARRY IS NOT A DELETION. `ConvertEmptyStringsToNull`
+     * is global (Kernel.php:72), so a box the creator deliberately emptied arrives as
+     * null — and so does a field the form never sent. Reading `$request->instagram`
+     * made the two IDENTICAL, and this controller writes every accepted column, so a
+     * partial payload proposed wiping handles the creator had never touched.
+     *
+     * Live example, `profile_change_requests` #1 (3 Sep 2026): the row held
+     * `instagram = https://instagram.com/4242xo` and the proposal carried
+     * `instagram = null`. Approving it would have deleted an approved, published
+     * handle that the creator had not edited.
+     *
+     * `$request->has()` is the discriminator, and it is still true for a real null,
+     * so genuinely clearing a handle is unaffected. Same rule as the bio, and the
+     * same rule `creator_category` and `pride_badges` already follow.
+     */
+    private static function submittedValue(Request $request, string $field, ?SocialLinks $existing): ?string
+    {
+        if (! $request->has($field)) {
+            return $existing->{$field} ?? null;
+        }
+
+        $value = $request->input($field);
+
+        return is_scalar($value) ? (string) $value : null;
     }
 
     public function saveSocialLinks(Request $request)
@@ -83,13 +113,23 @@ class SocialLinksController extends Controller
             //
             // Nothing new can be written to them, which is the whole point; what
             // is already there is theirs.
+
+            // Read BEFORE the payload is turned into a proposal: it is both the
+            // fallback for a field the form did not send and the thing this save
+            // is compared against.
+            //
+            // ⚠️ `uuid` used to be regenerated here on every save, because it is
+            // fillable and was passed in the VALUES array rather than the match array.
+            // The row's public identifier changed each time a creator edited a handle.
+            $existing = SocialLinks::where('user_id', $userId)->first();
+
             $data = [
-                'whoyouinto' => $request->whoyouinto,
+                'whoyouinto' => self::submittedValue($request, 'whoyouinto', $existing),
                 'updated_at' => now(),
             ];
 
             foreach (SocialLinks::ACCEPTED_PLATFORMS as $platform) {
-                $data[$platform] = $request->{$platform};
+                $data[$platform] = self::submittedValue($request, $platform, $existing);
             }
 
             /*
@@ -114,12 +154,44 @@ class SocialLinksController extends Controller
             // See the 2026_08_25_120000 migration — the column gates nothing.
             $data['source'] = null;
 
-            // ⚠️ `uuid` used to be regenerated here on every save, because it is
-            // fillable and was passed in the VALUES array rather than the match array.
-            // The row's public identifier changed each time a creator edited a handle.
-            $existing = SocialLinks::where('user_id', $userId)->first();
-
             $user = Auth::user();
+
+            /*
+             * 🚨 A SAVE THAT CHANGES NOTHING IS NOT AN EDIT.
+             *
+             * There was no comparison here at all: pressing Save re-opened the
+             * handles for review, zeroed `social_links.status`, reset the whole
+             * profile's verification status and mailed the creator — for a form
+             * they had only looked at. `ProfileChangeRequest::open()` supersedes
+             * any request already pending, so a creator who saved twice also took
+             * their own earlier submission out of the queue.
+             *
+             * ⚠️ Compared against WHAT IS BEING SUBMITTED, not only against what is
+             * published: with a request already pending, the live row is not what
+             * this save would change. Re-submitting the pending values is a no-op;
+             * going BACK to the published ones differs from that pending proposal,
+             * so it correctly opens a request that reverts it.
+             *
+             * ⚠️ A REJECTED row is deliberately let through. `status = 2` means an
+             * admin asked for something, and refusing to re-submit would leave the
+             * creator holding a rejection they cannot clear.
+             */
+            $pending = ProfileChangeRequest::openFor($userId, ProfileChangeRequest::ASSET_SOCIALS);
+            $current = $pending?->proposed
+                ?? ($existing ? Arr::only($existing->getAttributes(), ProfileChangeRequest::SOCIAL_FIELDS) : []);
+
+            $unchanged = $existing
+                && (int) $existing->status !== SocialLinks::STATUS_REJECTED
+                && InvisibleText::sameMap($data, $current, ProfileChangeRequest::SOCIAL_FIELDS);
+
+            if ($unchanged) {
+                return response([
+                    'status' => 200,
+                    'message' => 'Social links updated successfully.',
+                    'url' => $redirectUrl ?? null,
+                    'socialCheck' => true,
+                ]);
+            }
 
             // Handles that are already published are edited through review — the
             // approved set stays on the profile until an admin decides.

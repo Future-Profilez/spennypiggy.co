@@ -7,11 +7,13 @@ use App\Models\ProfileChangeRequest;
 use App\Models\User;
 use App\Services\RekognitionModeration;
 use App\Support\ModerationNotice;
+use App\Support\UserFlagger;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
@@ -213,8 +215,77 @@ class CheckMediaModeration implements ShouldQueue
             ]);
 
             $this->notifyCreator($record, $reason);
+            $this->flagRepeatOffender($record);
         } catch (\Throwable $e) {
             Log::error('Failed to flag moderated content: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Raise an admin flag when one creator keeps having listings held.
+     *
+     * ⚠️ NOT ON THE FIRST HOLD. The scan errs towards holding — that is the point
+     * of it — and a single hold is usually a creator who uploaded the wrong
+     * photo and will replace it in ten minutes. Flagging every one would make the
+     * back-office list a copy of the moderation queue, which already exists.
+     *
+     * ⚠️ Counted off `moderation_reason`, not off the held flags themselves
+     * (`approved = 0` / `is_approved = 0`), because those are also set by the
+     * high-value review path — a creator listing a £3,000 item is not a
+     * moderation repeat.
+     */
+    private function flagRepeatOffender($record): void
+    {
+        try {
+            $creatorId = $record instanceof User
+                ? (int) $record->id
+                : (int) ($record->user_id ?? $record->creator_id ?? 0);
+
+            if (! $creatorId) {
+                return;
+            }
+
+            $threshold = (int) config('user_flags.thresholds.moderation_repeat_count', 3);
+            $days = (int) config('user_flags.thresholds.moderation_repeat_days', 30);
+            $since = now()->subDays($days);
+
+            $tables = [
+                'piggy_pots' => 'user_id',
+                'shops' => 'user_id',
+                'tasks' => 'creator_id',
+            ];
+
+            $held = 0;
+
+            foreach ($tables as $table => $ownerColumn) {
+                if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'moderation_reason')) {
+                    continue;
+                }
+
+                $held += (int) DB::table($table)
+                    ->where($ownerColumn, $creatorId)
+                    ->whereNotNull('moderation_reason')
+                    ->where('updated_at', '>=', $since)
+                    ->count();
+            }
+
+            if ($held < $threshold) {
+                return;
+            }
+
+            UserFlagger::raise(
+                user: $creatorId,
+                flagType: 'moderation_repeat',
+                reason: "{$held} listings from this creator were held by the media scan in the last {$days} days.",
+                context: [
+                    'held_listings' => $held,
+                    'window_days' => $days,
+                ],
+                source: 'moderation',
+            );
+        } catch (\Throwable $e) {
+            // A flag is an observation. It must never break the hold it observes.
+            Log::warning('Moderation repeat flag failed: '.$e->getMessage());
         }
     }
 

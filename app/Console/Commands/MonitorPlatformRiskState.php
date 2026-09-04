@@ -11,9 +11,11 @@ use App\Models\Payment;
 use App\Models\PlatformRiskState;
 use App\Models\RiskSetting;
 use App\Models\SecurityEvent;
+use App\Models\User;
 use App\Support\AlertRouter;
 use App\Support\PlatformGmvTrigger;
 use App\Support\SecurityEventLog;
+use App\Support\UserFlagger;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -503,9 +505,43 @@ class MonitorPlatformRiskState extends Command
             // Read straight off the metrics the risk engine already maintains —
             // recomputing per creator here would be a second implementation of
             // a number that already exists, and the two would disagree.
-            $creatorsOver = (int) CreatorMetric::where('refund_rate_30d', '>', $refundRateTrigger)
+            $creatorsOverRows = CreatorMetric::where('refund_rate_30d', '>', $refundRateTrigger)
                 ->where('tx_30d', '>=', $minTxPerCreator)
-                ->count();
+                ->get(['creator_id', 'refund_rate_30d', 'refunds_30d', 'tx_30d']);
+
+            $creatorsOver = $creatorsOverRows->count();
+
+            /*
+             * The platform alert says "N creators are over the line" and stops
+             * there — it never says WHICH, so an admin reading it has nowhere to
+             * go next. A flag on each of those creators is the same fact, on the
+             * row an admin actually works from.
+             *
+             * ⚠️ Raised per creator regardless of whether the platform-wide
+             * trigger fires below. The cluster floor exists to decide whether the
+             * PLATFORM is in trouble; a creator refunding a third of their sales
+             * is worth looking at whether or not four others are doing the same.
+             *
+             * ⚠️ Repeats absorb into one open flag, so this running daily does
+             * not produce a daily row — it moves `occurrences` and `last_seen_at`
+             * on the existing one.
+             */
+            foreach ($creatorsOverRows as $row) {
+                $rate = round(((float) $row->refund_rate_30d) * 100, 2);
+
+                UserFlagger::raise(
+                    // ⚠️ creator_metrics.creator_id is the user's UUID, not its key.
+                    user: (int) (User::where('uuid', $row->creator_id)->value('id') ?? 0) ?: null,
+                    flagType: 'refund_volume',
+                    reason: "Refund rate over the last 30 days is {$rate}% ({$row->refunds_30d} of {$row->tx_30d} transactions), above the platform threshold.",
+                    context: [
+                        'refund_rate_30d' => (float) $row->refund_rate_30d,
+                        'refunds_30d' => (int) $row->refunds_30d,
+                        'tx_30d' => (int) $row->tx_30d,
+                    ],
+                    source: 'risk',
+                );
+            }
 
             $minTx = (int) config('security_alerts.refund_volume.min_transactions', 50);
             $creatorFloor = (int) config('security_alerts.refund_volume.creators_over_threshold', 5);

@@ -394,11 +394,20 @@ class GoogleSignInTest extends TestCase
         $response->assertSessionHas('error');
     }
 
-    public function test_callback_refuses_suspended_user(): void
+    /**
+     * ⚠️ THIS ASSERTED A REFUSAL UNTIL 3 Sep 2026, and the reason it changed is
+     * worth keeping: `GoogleController::signIn()` bounced a suspended account
+     * back to the login screen. A suspension is a STATE of the account now, not a
+     * lock on the door — they sign in, read the reason on the banner and can
+     * message support, while `CheckSuspendedUser` refuses every write and the
+     * checkout gates refuse the money. Refusing the sign-in put the explanation
+     * behind the door it was written on.
+     */
+    public function test_callback_lets_a_suspended_user_in(): void
     {
         config(['services.google.client_id' => 'client_id', 'services.google.client_secret' => 'client_secret']);
 
-        User::factory()->create([
+        $user = User::factory()->create([
             'email' => 'suspended@gmail.com',
             'suspended_account' => 1,
         ]);
@@ -407,10 +416,9 @@ class GoogleSignInTest extends TestCase
             'email' => 'suspended@gmail.com',
         ]);
 
-        $response = $this->get('/auth/google/callback');
+        $this->get('/auth/google/callback');
 
-        $response->assertRedirect(route('login'));
-        $response->assertSessionHas('error', 'Your account is suspended. Please contact support.');
+        $this->assertAuthenticatedAs($user->fresh());
     }
 
     public function test_callback_with_2fa_user_redirects_to_login_with_pending_email(): void
@@ -770,11 +778,16 @@ class GoogleSignInTest extends TestCase
     }
 
     /**
-     * 🚨 `signIn()` refuses a suspended account, but it does so up to
-     * `PENDING_TTL_MINUTES` (15) before the OTP is entered. An admin suspending someone inside
-     * that window was being overridden — the person still completed a full remembered session.
+     * ⚠️ SUPERSEDED 3 Sep 2026 — this asserted a 403.
+     *
+     * The original concern was real and is now obsolete rather than wrong: the
+     * guard existed because `signIn()` refused a suspended account up to
+     * `PENDING_TTL_MINUTES` (15) BEFORE the OTP was entered, so an admin
+     * suspending someone inside that window was overridden. Neither end refuses
+     * any more — a suspended account is allowed all the way in and is stopped at
+     * every write and every payment instead.
      */
-    public function test_a_suspended_account_cannot_finish_the_google_2fa_login(): void
+    public function test_a_suspended_account_can_finish_the_google_2fa_login(): void
     {
         $secret = app(Google2FA::class)->generateSecretKey();
 
@@ -795,14 +808,13 @@ class GoogleSignInTest extends TestCase
         $this->postJson('/verify-2fa', [
             'email' => 'twofa@gmail.com',
             'otp' => app(Google2FA::class)->getCurrentOtp($secret),
-        ])->assertStatus(403);
+        ])->assertOk();
 
-        $this->assertGuest();
-        $this->assertNull(session('google_2fa_pending'));
+        $this->assertAuthenticatedAs($user->fresh());
     }
 
-    /** The password branch of the same endpoint had the hole from the other direction. */
-    public function test_a_suspended_account_cannot_finish_the_password_2fa_login(): void
+    /** ⚠️ SUPERSEDED with the branch above — the password half of the same endpoint. */
+    public function test_a_suspended_account_can_finish_the_password_2fa_login(): void
     {
         $secret = app(Google2FA::class)->generateSecretKey();
 
@@ -818,9 +830,9 @@ class GoogleSignInTest extends TestCase
             'email' => 'twofa2@gmail.com',
             'password' => 'Spenny!2026x',
             'otp' => app(Google2FA::class)->getCurrentOtp($secret),
-        ])->assertStatus(403);
+        ])->assertOk();
 
-        $this->assertGuest();
+        $this->assertAuthenticatedAs($user->fresh());
     }
 
     /**
@@ -867,6 +879,11 @@ class GoogleSignInTest extends TestCase
      * claimed while `$valid` was being computed — so a suspended creator lost one single-use code
      * per attempt and got a 403 for it. Nothing may be spent until the sign-in is known to be
      * allowed.
+     *
+     * ⚠️ SUSPENSION IS NO LONGER A REFUSAL (3 Sep 2026), so it can no longer be
+     * the refusal that exercises this. The INVARIANT is unchanged and still worth
+     * a test, so it is driven by a wrong code instead: whatever refuses a
+     * sign-in, the stored recovery code must survive it.
      */
     public function test_a_refused_login_does_not_burn_the_backup_code(): void
     {
@@ -881,11 +898,13 @@ class GoogleSignInTest extends TestCase
             'code' => encrypt('KEEP-ME-1234'),
         ]);
 
-        $user->forceFill(['suspended_account' => 1])->saveQuietly();
-
         $this->withSession(['google_2fa_pending' => GoogleController::pending(['email' => 'burned@gmail.com'])])
-            ->postJson('/verify-2fa', ['email' => 'burned@gmail.com', 'backup_code' => 'KEEP-ME-1234'])
-            ->assertStatus(403);
+            ->postJson('/verify-2fa', ['email' => 'burned@gmail.com', 'backup_code' => 'WRONG-CODE-9999'])
+            // ⚠️ Pre-existing shape, not a typo: this endpoint answers HTTP 200
+            // with `status: false` for a bad code. Asserting a 4xx here fails for
+            // a reason unrelated to what the test is about.
+            ->assertOk()
+            ->assertJson(['status' => false]);
 
         $this->assertGuest();
         $this->assertDatabaseCount('user_backup_codes', 1);

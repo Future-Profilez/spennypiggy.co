@@ -7,6 +7,7 @@ use App\Models\MembershipPayment;
 use App\Models\Post;
 use App\Models\User;
 use App\StripeControl;
+use App\Support\SuspendedAccount;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -588,6 +589,16 @@ class PostingCadenceService
      */
     public function resumeCreator(User $creator): int
     {
+        // 🚨 A SUSPENDED CREATOR IS NEVER RESUMED HERE. Suspension pauses the
+        // same subscriptions through the same Stripe field, so a creator who was
+        // meeting the posting cadence when they were suspended would have every
+        // supporter charged again by the next nightly cadence run — the one
+        // thing a suspension is supposed to stop. The suspension owns the pause
+        // until it is lifted; `suspension:enforce` resumes them then.
+        if (SuspendedAccount::isSuspended($creator)) {
+            return 0;
+        }
+
         $subIds = $this->activeSubscriptionIds($creator);
         $resumed = 0;
         $failed = 0;

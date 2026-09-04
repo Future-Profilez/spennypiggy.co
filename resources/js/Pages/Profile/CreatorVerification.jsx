@@ -3,7 +3,11 @@ import axios from "axios";
 import { useState, useEffect, useRef } from "react";
 import EditProfile from "../account/EditProfile";
 import Social from "../Auth/Social";
-import { parseIdentityError } from "@/utils/identityError";
+import {
+    isIdentityProcessing,
+    isIdentityUnfinished,
+    parseIdentityError,
+} from "@/utils/identityError";
 
 import {
     PRICE_FORMATTED,
@@ -299,6 +303,17 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const isSocialApproved = socialStatus == 1;
     const isSocialPending = hasAnySocialMedia && socialStatus == 0;
     const isSocialRejected = socialStatus == 2;
+    // 🚨 `identity_status = 2` means a session is OPEN, not that anything was
+    // submitted — see isIdentityProcessing in utils/identityError.
+    const identityProcessing = isIdentityProcessing(
+        creatorUser?.identity_status,
+        creatorUser?.identity_session_status,
+    );
+    const identityUnfinished = isIdentityUnfinished(
+        creatorUser?.identity_status,
+        creatorUser?.identity_session_status,
+    );
+
     const avatarStatus = creatorUser?.avatar_approved;
     const bioStatus = creatorUser?.bio_approved;
     const profileStatusLock = creatorUser?.profile_status_lock;
@@ -647,25 +662,32 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         {
             key: "identity",
             label: "Verify ID",
-            title: "Verify your identity",
+            title: identityUnfinished
+                ? "Finish your ID check"
+                : "Verify your identity",
             mins: 3,
-            description:
-                "A quick ID check by Stripe. You need this before you can list anything for sale.",
+            description: identityUnfinished
+                ? "You opened the passport check but did not finish it, so nothing has reached Stripe yet. It takes about two minutes."
+                : "A quick ID check by Stripe. You need this before you can list anything for sale.",
             hint: [
                 "A government photo ID — passports only",
                 "A quick selfie on your phone",
                 "Handled securely by Stripe; we never see your documents",
             ],
-            // identity_status: 1 = verified · 2 = submitted, waiting on Stripe ·
-            // 3 = flagged by the security review · 0 = failed. A submitted check
-            // used to fall through to "todo", so a creator returning from Stripe
-            // was invited to start a second (billable) session.
+            // identity_status: 1 = verified · 2 = a session is OPEN · 3 = flagged by
+            // the security review · 0 = failed.
+            //
+            // 🚨 2 IS NOT "PENDING". It is written when the Stripe session is CREATED,
+            // not on submit, and Stripe sends no event for a closed tab — so a creator
+            // who opened the check and walked away read "In review" here forever, on a
+            // step only they could finish. Only `identity_session_status === 'processing'`
+            // means a document actually reached Stripe.
             state:
                 creatorUser?.identity_status == 1
                     ? "done"
                     : creatorUser?.identity_status == 3 || identityError
                       ? "rejected"
-                      : creatorUser?.identity_status == 2
+                      : identityProcessing
                         ? "pending"
                         : "todo",
             reason: identityError
@@ -686,9 +708,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 >
                     {identityError
                         ? "Try verification again"
-                        : creatorUser?.identity_status == 2
+                        : identityProcessing
                           ? "Check status"
-                          : "Verify identity"}
+                          : identityUnfinished
+                            ? "Finish ID check"
+                            : "Verify identity"}
                 </Link>
             ),
         },

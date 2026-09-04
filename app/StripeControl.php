@@ -2,7 +2,9 @@
 
 namespace App;
 
+use App\Models\User;
 use App\Support\StripeRequirementLabels;
+use App\Support\UserFlagger;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Cache;
@@ -1995,6 +1997,48 @@ class StripeControl
                     ],
                 ],
             ]);
+
+            /*
+             * 🚨 THE FIX USED TO BE SILENT. This branch only ran when Stripe was
+             * paying a creator AUTOMATICALLY — sweeping their whole available
+             * balance, held reserves included, straight to their bank before our
+             * own Friday run ever saw it — and it put the account back on manual
+             * and returned `true` with nothing written anywhere. The command
+             * printed `Updated: 1` to stdout, which on Vapor goes nowhere any
+             * person reads. So the platform could correct this every day and
+             * nobody would ever know it had happened, to whom, or how often.
+             *
+             * Two records now, deliberately both:
+             *  - a `Log::error`, which the `sentry` channel in the default stack
+             *    turns into an issue with the account id as context;
+             *  - a flag on the creator's own row, which sits in the back office
+             *    until an admin resolves it rather than scrolling out of an alert
+             *    inbox.
+             *
+             * ⚠️ Neither of them BLOCKS anything, and this must stay that way —
+             * the account is already back on manual by the time these run.
+             */
+            $flaggedUser = User::query()
+                ->where('account_id', $connectedAccountId)
+                ->first(['id', 'role', 'username']);
+
+            Log::error('Connected account was on an automatic payout schedule and has been put back on manual', [
+                'account_id' => $connectedAccountId,
+                'user_id' => $flaggedUser?->id,
+                'username' => $flaggedUser?->username,
+                'previous_interval' => $interval,
+            ]);
+
+            UserFlagger::raise(
+                user: $flaggedUser,
+                flagType: 'payout_schedule_reverted',
+                reason: 'Stripe was set to pay this creator automatically ('.($interval ?: 'unknown interval').'). The platform put the account back on manual payouts.',
+                context: [
+                    'account_id' => $connectedAccountId,
+                    'previous_interval' => $interval,
+                ],
+                source: 'payment',
+            );
 
             return true;
         } catch (Exception $e) {

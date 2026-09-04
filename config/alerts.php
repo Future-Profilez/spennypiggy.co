@@ -104,6 +104,25 @@ return [
             'emails' => [],
         ],
 
+        /*
+         * 🚨 The daily posture check (`infra:dr-check`) found the safety net
+         * missing, not the site down. Separate from `infrastructure_health`
+         * because that channel is "something is broken NOW" and this one is
+         * "the thing that saves us has quietly stopped existing" — a standing
+         * condition nobody is paged for, which is precisely why it needs its
+         * own route rather than sharing an inbox with live outages.
+         *
+         * ⚠️ MIRRORED IN BOTH APPS. A test compares the channel key lists.
+         */
+        'disaster_recovery' => [
+            'label' => 'Disaster recovery posture',
+            'description' => 'Backups, retention, the offsite copy. Fires when the safety net has drifted, not when the site is down.',
+            'app' => 'website',
+            'critical' => true,
+            'roles' => [1],
+            'emails' => [],
+        ],
+
         'notification_delivery' => [
             'label' => 'Notification delivery alert',
             'description' => 'Push and email delivery failures crossing their threshold.',

@@ -42,6 +42,7 @@ use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
 use App\Support\ContentDownloadMonitor;
 use App\Support\NotificationContext;
+use App\Support\SuspendedAccount;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
@@ -530,6 +531,20 @@ class TaskController extends Controller
         }
 
         $creator = $task->creator;
+
+        /*
+         * 🚨 THE PAYER, NOT THE PAYEE. A suspended account may not send money either,
+         * and this checkout starts on a route the suspension middleware deliberately
+         * lets through (reads stay open so somebody can still see their own account).
+         * The gate below refuses money coming IN to a suspended creator; this one
+         * refuses money going OUT of a suspended supporter.
+         *
+         * ⚠️ Nothing is recorded as a lost sale here — the payee did nothing wrong and
+         * has lost nothing; the refusal belongs to the payer's own account state.
+         */
+        if (SuspendedAccount::blocksPayer(Auth::user())) {
+            return redirect()->back()->with('error', SuspendedAccount::copyFor(Auth::user())['body']);
+        }
 
         // NEW: Check creator subscription eligibility first
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($creator);

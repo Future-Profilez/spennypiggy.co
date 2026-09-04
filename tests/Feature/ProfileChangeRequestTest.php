@@ -205,7 +205,10 @@ class ProfileChangeRequestTest extends TestCase
             'status' => 1,
         ]);
 
-        $this->actingAs($user)->post(route('save_social_links'), ['instagram' => 'newhandle']);
+        $this->actingAs($user)->post(route('save_social_links'), [
+            'instagram' => 'newhandle',
+            'twitter' => '',
+        ]);
 
         $links = SocialLinks::where('user_id', $user->id)->firstOrFail();
 
@@ -217,8 +220,108 @@ class ProfileChangeRequestTest extends TestCase
 
         // 🚨 A removed platform is a change carried by an explicit null. Filtering
         // nulls out of the proposed map would silently drop every deletion.
+        //
+        // ⚠️ The field must be POSTED empty for that. This test used to send only
+        // `instagram` and assert the same thing, which pinned the bug in
+        // `profile_change_requests` #1 (3 Sep 2026): a form that never sent the
+        // field proposed wiping a published handle nobody had touched.
         $this->assertArrayHasKey('twitter', $change->proposed);
         $this->assertNull($change->proposed['twitter']);
+    }
+
+    public function test_a_handle_the_payload_does_not_carry_is_not_a_deletion(): void
+    {
+        $user = $this->approvedCreator();
+
+        SocialLinks::create([
+            'user_id' => $user->id,
+            'uuid' => '33333333-3333-4333-8333-333333333334',
+            'instagram' => 'https://instagram.com/4242xo',
+            'twitter' => 'livetwitter',
+            'status' => 1,
+        ]);
+
+        // The form sends the platform the creator edited and nothing else.
+        $this->actingAs($user)->post(route('save_social_links'), ['tiktok' => 'https://tiktok.com/@4242xo']);
+
+        $change = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_SOCIALS);
+
+        $this->assertSame('https://tiktok.com/@4242xo', $change->proposed['tiktok']);
+        $this->assertSame(
+            'https://instagram.com/4242xo',
+            $change->proposed['instagram'],
+            'A field the payload never carried must not be proposed for deletion.'
+        );
+        $this->assertSame('livetwitter', $change->proposed['twitter']);
+    }
+
+    public function test_re_saving_identical_handles_is_not_an_edit(): void
+    {
+        $user = $this->approvedCreator();
+
+        SocialLinks::create([
+            'user_id' => $user->id,
+            'uuid' => '33333333-3333-4333-8333-333333333335',
+            'instagram' => 'livehandle',
+            'status' => SocialLinks::STATUS_APPROVED,
+        ]);
+
+        $this->actingAs($user)->post(route('save_social_links'), [
+            // The same handle, carrying the invisible differences a paste or a
+            // textarea introduces: padding, a zero-width space, a CRLF.
+            'instagram' => " live\u{200B}handle\r\n",
+        ]);
+
+        $this->assertNull(
+            ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_SOCIALS),
+            'A save that changes nothing must not open a review request.'
+        );
+
+        $links = SocialLinks::where('user_id', $user->id)->firstOrFail();
+        $this->assertSame(SocialLinks::STATUS_APPROVED, (int) $links->status, 'The approval must survive it.');
+    }
+
+    public function test_a_real_handle_edit_is_still_a_change(): void
+    {
+        $user = $this->approvedCreator();
+
+        SocialLinks::create([
+            'user_id' => $user->id,
+            'uuid' => '33333333-3333-4333-8333-333333333336',
+            'instagram' => 'livehandle',
+            'status' => SocialLinks::STATUS_APPROVED,
+        ]);
+
+        $this->actingAs($user)->post(route('save_social_links'), ['instagram' => 'a-different-handle']);
+
+        $change = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_SOCIALS);
+
+        $this->assertNotNull($change, 'A handle somebody actually edited still reaches a reviewer.');
+        $this->assertSame('a-different-handle', $change->proposed['instagram']);
+    }
+
+    public function test_a_rejected_row_may_be_resubmitted_unchanged(): void
+    {
+        $user = $this->approvedCreator();
+
+        SocialLinks::create([
+            'user_id' => $user->id,
+            'uuid' => '33333333-3333-4333-8333-333333333337',
+            'instagram' => 'livehandle',
+            'status' => SocialLinks::STATUS_REJECTED,
+            'reason' => 'Please use your own account.',
+        ]);
+
+        $this->actingAs($user)->post(route('save_social_links'), ['instagram' => 'livehandle']);
+
+        $links = SocialLinks::where('user_id', $user->id)->firstOrFail();
+
+        $this->assertSame(
+            SocialLinks::STATUS_PENDING,
+            (int) $links->status,
+            'A rejection the creator cannot clear is a creator stuck for ever.'
+        );
+        $this->assertNull($links->reason);
     }
 
     // ------------------------------------------------------- not-live keeps old path
@@ -262,6 +365,101 @@ class ProfileChangeRequestTest extends TestCase
         $this->assertSame(0, ProfileChangeRequest::count(), 'Holding it would queue work nobody needs to do.');
     }
 
+    // ------------------------------------------------------- the bio must really change
+
+    /**
+     * 🚨 A creator opened the profile editor, generated a social banner and saved.
+     * Their bio went into the review queue proposing to DELETE itself, because
+     * `ConvertEmptyStringsToNull` turns an absent `bio` into null and
+     * `null !== 'their live bio'` is true. A field the request did not carry is
+     * not an edit — the same rule `creator_category` and `pride_badges` already
+     * follow in that controller.
+     */
+    public function test_a_payload_that_does_not_carry_the_bio_is_not_a_bio_edit(): void
+    {
+        $user = $this->approvedCreator();
+
+        $payload = $this->editProfilePayload($user);
+        unset($payload['bio']);
+
+        $this->actingAs($user)->post(route('edit-profile'), $payload);
+
+        $this->assertSame(0, ProfileChangeRequest::count(), 'An absent field is not a request to clear it.');
+        $this->assertSame(self::LIVE_BIO, $user->refresh()->bio);
+        $this->assertSame(1, (int) $user->bio_approved);
+    }
+
+    /**
+     * The admin panel decides "is this actually different?" with
+     * `CreatorReviewService::normaliseText`, so a bio differing only by a trailing
+     * newline opened a request the review screen then drew as MATCH — a reviewer
+     * looking at two identical paragraphs, asked to approve one of them.
+     */
+    public function test_whitespace_alone_is_not_a_bio_edit(): void
+    {
+        $user = $this->approvedCreator();
+
+        // An internal line break, not just outer padding: `TrimStrings` already
+        // removes the latter, so padding alone would pass against the bug.
+        $this->save($user, ['bio' => "  I make short films\r\nabout  coastal towns.\n"]);
+
+        $this->assertSame(0, ProfileChangeRequest::count());
+        $this->assertSame(self::LIVE_BIO, $user->refresh()->bio);
+    }
+
+    /**
+     * Reported from production: the creator had not touched their bio, and the admin
+     * queue showed the SAME text on both sides of the comparison. Three differences
+     * do that - none of them visible to anybody, and `\s` matches none of the first.
+     *
+     * @dataProvider invisibleBioDifferences
+     */
+    public function test_an_invisible_difference_is_not_a_bio_edit(string $posted): void
+    {
+        $user = $this->approvedCreator();
+
+        $this->save($user, ['bio' => $posted]);
+
+        $this->assertSame(0, ProfileChangeRequest::count());
+        $this->assertSame(self::LIVE_BIO, $user->refresh()->bio);
+    }
+
+    /**
+     * Both of these sit MID-STRING, and that is the whole point. Laravel's own
+     * `TrimStrings` strips `\s`, U+FEFF, U+200B and U+200E from the ENDS of every
+     * input, so a leading or trailing invisible never reaches the comparison and a
+     * fixture built from one passes against the bug it was written to catch.
+     * `\s` matches none of these in the middle, under `/u` or otherwise.
+     */
+    public static function invisibleBioDifferences(): array
+    {
+        return [
+            // U+200B, pasted in from a web page or a word processor.
+            'a zero-width space' => ["I make short films\u{200B} about coastal towns."],
+            // U+FEFF, carried in from a text file saved on Windows.
+            'a byte-order mark' => ["I make short films about\u{FEFF} coastal towns."],
+        ];
+    }
+
+    /** The same letter, composed and decomposed - identical on screen, different bytes. */
+    public function test_a_decomposed_accent_is_not_a_bio_edit(): void
+    {
+        $user = $this->approvedCreator(['bio' => "I film in caf\u{00E9}s."]);
+
+        $this->save($user, ['bio' => "I film in cafe\u{0301}s."]);
+
+        $this->assertSame(0, ProfileChangeRequest::count());
+    }
+
+    public function test_a_real_bio_edit_is_still_a_change(): void
+    {
+        $user = $this->approvedCreator();
+
+        $this->save($user, ['bio' => 'I make short films about harbour towns.']);
+
+        $this->assertNotNull(ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_BIO));
+    }
+
     // ------------------------------------------------------------------- supersession
 
     public function test_editing_twice_leaves_one_open_request_carrying_the_later_value(): void
@@ -284,6 +482,24 @@ class ProfileChangeRequestTest extends TestCase
 
         $this->assertNotNull($superseded);
         $this->assertNull($superseded->active_key, 'A closed row must free the key or the asset locks forever.');
+    }
+
+    public function test_re_saving_a_bio_that_is_already_pending_does_not_churn_the_queue(): void
+    {
+        $user = $this->approvedCreator();
+
+        $this->save($user, ['bio' => 'Second thoughts.']);
+        $first = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_BIO);
+
+        // The creator saves the profile again without touching the bio box.
+        $this->save($user, ['bio' => 'Second thoughts.']);
+
+        $this->assertSame(
+            1,
+            ProfileChangeRequest::where('user_id', $user->id)->count(),
+            'Re-submitting the pending text must not supersede the creator\'s own place in the queue.'
+        );
+        $this->assertSame($first->id, ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_BIO)->id);
     }
 
     public function test_a_pending_photo_is_scanned_against_its_own_row_not_the_live_one(): void
