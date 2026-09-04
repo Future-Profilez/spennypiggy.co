@@ -7,6 +7,7 @@ use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\CheckMediaModeration;
 use App\Jobs\SendBioSocialUpdateEmail;
 use App\Models\AccountDeletionFeedback;
+use App\Models\DeletedUser;
 use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\Currency;
@@ -906,6 +907,29 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        try {
+            DeletedUser::create([
+                'email' => $user->email,
+                'user_details' => json_encode([
+                    'id' => $user->id,
+                    'uuid' => $user->uuid,
+                    'name' => $user->name,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'avatar' => $user->avatar,
+                    'created_at' => $user->created_at,
+                    'deletion_comment' => $request->input('deletion_comment'),
+                ], JSON_THROW_ON_ERROR),
+                'reason' => $request->input('deletion_reason'),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Could not record deleted user snapshot', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         /*
          * 🚨 WRITTEN BEFORE ANYTHING IS DELETED, AND IT NEVER THROWS.
