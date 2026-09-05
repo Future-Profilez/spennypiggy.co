@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AccountDeletionFeedback;
+use App\Models\DeletedUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -39,6 +40,15 @@ class AccountDeletionReasonTest extends TestCase
         // itself is gone.
         $this->assertSame($user->username, $row->username);
         $this->assertSame($user->uuid, $row->user_uuid);
+
+        $deletedUser = DeletedUser::where('email', $user->email)->latest('id')->first();
+
+        $this->assertNotNull($deletedUser, 'The deletion recorded no deleted_users row.');
+        $this->assertSame('fees_too_high', $deletedUser->reason);
+        $this->assertSame(
+            'The percentage was more than I expected.',
+            json_decode($deletedUser->user_details, true)['deletion_comment']
+        );
     }
 
     public function test_a_deletion_without_a_reason_is_refused_and_the_account_survives(): void
