@@ -4,7 +4,6 @@ namespace App\Services\Help;
 
 use App\Models\HelpArticle;
 use App\Support\HelpTokens;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -22,8 +21,6 @@ use Illuminate\Support\Facades\Log;
  */
 class HelpEmbeddings
 {
-    private const ENDPOINT = 'https://api.openai.com/v1/embeddings';
-
     /** Model input cap. Long articles are truncated rather than refused. */
     private const MAX_CHARS = 8000;
 
@@ -37,14 +34,29 @@ class HelpEmbeddings
      */
     private static ?string $lastError = null;
 
+    /**
+     * The machine-readable half of the same failure.
+     *
+     * ⚠️ A scheduled command needs to tell "this will fix itself" from "a person
+     * must look". `rate_limited` on a free tier is the first; `auth` and
+     * `bad_request` are the second. The prose above is for the human, this is
+     * for the exit code.
+     */
+    private static ?string $lastReason = null;
+
     public static function lastError(): ?string
     {
         return self::$lastError;
     }
 
+    public static function lastReason(): ?string
+    {
+        return self::$lastReason;
+    }
+
     public static function enabled(): bool
     {
-        return (bool) config('help.ai.enabled') && (bool) config('help.ai.api_key');
+        return (bool) config('help.ai.enabled') && HelpAiKeyPool::configured();
     }
 
     /**
@@ -91,36 +103,37 @@ class HelpEmbeddings
         }
 
         self::$lastError = null;
+        self::$lastReason = null;
 
         try {
-            $response = Http::withToken(config('help.ai.api_key'))
-                ->timeout((int) config('help.ai.timeout', 12))
-                ->post(self::ENDPOINT, [
-                    'model' => config('help.ai.embedding_model'),
-                    'input' => array_values($inputs),
-                ]);
+            // Failover across the key pool lives in HelpAiClient — see its
+            // docblock. A key spent here is a key the answer half skips too.
+            $result = HelpAiClient::post('embeddings', [
+                'model' => config('help.ai.embedding_model'),
+                'input' => array_values($inputs),
+            ]);
 
-            if (! $response->successful()) {
-                // OpenAI's own message is written for whoever holds the key and
-                // says exactly what is wrong ("Incorrect API key provided…").
-                // Re-wording it into something vaguer helps nobody.
-                $message = $response->json('error.message') ?: mb_substr($response->body(), 0, 300);
-
-                self::$lastError = 'HTTP '.$response->status().': '.$message;
+            if (! $result['ok']) {
+                // The provider's own message, verbatim, naming which key it came
+                // from. `help:embed` prints this — a vaguer version sends people
+                // to re-run the command rather than to look at the key.
+                self::$lastError = $result['error'] ?: ('Embedding request failed ('.$result['reason'].').');
+                self::$lastReason = $result['reason'];
 
                 Log::warning('Help centre embedding request failed', [
-                    'status' => $response->status(),
-                    'body' => mb_substr($response->body(), 0, 500),
+                    'reason' => $result['reason'],
+                    'error' => mb_substr((string) $result['error'], 0, 500),
                 ]);
 
                 return null;
             }
 
-            $data = $response->json('data');
+            $data = $result['json']['data'] ?? null;
 
             if (! is_array($data) || count($data) !== count($inputs)) {
                 self::$lastError = 'The API returned '.(is_array($data) ? count($data) : 0)
                     .' embedding(s) for '.count($inputs).' input(s).';
+                self::$lastReason = 'bad_response';
 
                 Log::warning('Help centre embedding returned an unexpected shape');
 
@@ -136,6 +149,7 @@ class HelpEmbeddings
             return array_map(fn ($row) => array_map('floatval', $row['embedding'] ?? []), $data);
         } catch (\Throwable $e) {
             self::$lastError = $e->getMessage();
+            self::$lastReason = 'exception';
 
             Log::warning('Help centre embedding threw', ['error' => $e->getMessage()]);
 

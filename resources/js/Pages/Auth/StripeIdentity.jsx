@@ -98,6 +98,38 @@ export default function StripeIdentity({ auth }) {
                                 </div>
                             )}
 
+                            {/*
+                             * 🚨 SAID ONCE, IN PLAIN WORDS, AND NEVER AS A
+                             * THREAT (client direction, 4 Sep 2026: "friendly
+                             * way me likhna, darana nhi h"). Every verified
+                             * creator is queued for a human sign-off comparing
+                             * the ID against the profile photo and the social
+                             * accounts, and a refusal stops their income — so
+                             * they are told the check exists BEFORE it can
+                             * happen to them, rather than finding out from a
+                             * suspension.
+                             *
+                             * ⚠️ It does NOT say a review is pending, and must
+                             * not: the client's instruction was not to put
+                             * every creator on a waiting list in their own
+                             * head. It says checks continue, which is true of
+                             * everybody, all the time.
+                             */}
+                            <div className="mb-4 bg-[#F7F7F5] p-4 rounded-box-sm border border-black/10">
+                                <p className="text-sm text-gray-800">
+                                    <span className="font-bold">
+                                        One thing worth knowing:
+                                    </span>{" "}
+                                    verification doesn’t stop here. We keep
+                                    checking accounts over time, matching the ID
+                                    against the profile photo and the social
+                                    accounts on the page. Keep those looking
+                                    like you and there’s nothing to think about
+                                    — if anything ever doesn’t line up we’ll
+                                    tell you exactly what we need.
+                                </p>
+                            </div>
+
                             {isProcessing && (
                                 <div className="mb-4 text-yellow-900 bg-yellow-50 p-4 rounded-box-sm border border-yellow-200">
                                     <p className="font-bold mb-1">

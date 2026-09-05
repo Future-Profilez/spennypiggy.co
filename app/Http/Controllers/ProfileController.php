@@ -24,6 +24,7 @@ use App\Models\PostCommentReplies;
 use App\Models\PostLike;
 use App\Models\ProfileChangeRequest;
 use App\Models\Shop;
+use App\Models\SocialLinks;
 use App\Models\ShopCategory;
 use App\Models\ShopPayment;
 use App\Models\ShopShippingInfo;
@@ -577,16 +578,16 @@ class ProfileController extends Controller
                 $user->refresh();
 
                 if (! empty($request->bio)) {
+                    // Clear rejection reason on new bio edit so ghost rejection alert disappears
+                    $user->edit_bio_reason = null;
+                    $user->save();
+                    $user->refresh();
+
                     $logs = Logs::where('edited_about_me_id', $user->id)->where('status', 'pending')->first();
                     if (! empty($logs)) {
                         // logs data save
                         $logs->status = 'updated';
                         $logs->save();
-
-                        // user data save
-                        $user->edit_bio_reason = '';
-                        $user->save();
-                        $user->refresh();
                     }
                 }
                 // SFW gate on profile media. Both are uploaded unapproved and wait
@@ -827,11 +828,11 @@ class ProfileController extends Controller
     {
         $missing = [];
 
-        if (blank($user->avatar)) {
+        if (blank($user->avatar) || (int) $user->avatar_approved === 2) {
             $missing[] = 'a profile photo';
         }
 
-        if (blank($user->bio)) {
+        if (blank($user->bio) || (int) $user->bio_approved === 2) {
             $missing[] = 'a bio';
         }
 
@@ -850,7 +851,8 @@ class ProfileController extends Controller
          * relation was right. `hasAnyHandle()` is the one definition and already
          * answers exactly this question.
          */
-        if (! ProfileAssetVisibility::hasAnyHandle($user->social_links)) {
+        if (! ProfileAssetVisibility::hasAnyHandle($user->social_links)
+            || (int) ($user->social_links?->status ?? 0) === SocialLinks::STATUS_REJECTED) {
             $missing[] = 'a social handle';
         }
 
@@ -2901,6 +2903,7 @@ class ProfileController extends Controller
         return response()->json([
             'status' => true,
             'qr_code' => $qrCode,
+            'secret_key' => $user->tfa_key,
         ]);
     }
 
@@ -2952,10 +2955,11 @@ class ProfileController extends Controller
         $status = $request->status ?? 0;
 
         $user->is_2fa = $status;
-        $user->save();
         if ($status == 0) {
             UserBackupCode::where('user_id', $user->id)->delete();
+            $user->tfa_key = null;
         }
+        $user->save();
 
         $msg = 'Two factor authentication has been '.($status ? 'enabled.' : 'disabled.');
 

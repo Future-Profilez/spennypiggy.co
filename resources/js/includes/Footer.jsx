@@ -5,6 +5,7 @@ import lazyRetry from "../utils/lazyRetry";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { FaInstagram, FaTiktok, FaTwitter, FaYoutube } from "react-icons/fa";
 import { Mail, MapPin, Phone } from "lucide-react";
+import { openLiveChat } from "../lib/liveChat";
 import {
     COOKIES_POLICY_URL,
     DATA_REQUEST_URL,
@@ -56,7 +57,15 @@ const HELP = [
     // the same knowledge. Two help centres is the drift trap: retire it once
     // /help has the coverage, rather than maintaining both.
     { name: 'Help Centre', path: '/help' },
-    { name: 'Live chat', href: 'https://spennypiggy.co', external: true, className: 'livechat' },
+    // 🚨 THE HREF IS A REAL mailto:, AND THAT IS THE FALLBACK, NOT A SPARE.
+    // `livechat` is Intercom's `custom_launcher_selector` (IntercomProvider), so
+    // with the widget loaded the launcher opens and the href is never followed.
+    // But the provider returns early for a LOGGED-OUT visitor and an ad blocker
+    // stops it loading at all — and this row used to point at the HOMEPAGE, so
+    // for exactly the reader with no other route to us, "Live chat" reloaded the
+    // site. `openLiveChat` only cancels the click when the messenger is genuinely
+    // booted; see lib/liveChat.js. `noBlank` because a mailto: must not open a tab.
+    { name: 'Live chat', href: 'mailto:support@spennypiggy.co', external: true, noBlank: true, className: 'livechat', onClick: openLiveChat },
     { name: "FAQs", href: 'https://intercom.help/spenny-piggy', external: true },
     { name: 'How it works', route: 'how-spenny-piggy-works' },
     { name: 'Blog', href: 'https://blog.spennypiggy.co', external: true },
@@ -89,7 +98,12 @@ const PAYMENTS = [
     { name: 'Payments & reserves', route: 'reserves-and-payments-policy' },
     { name: 'Content & payments', route: 'content-payment-policy' },
     { name: 'Paid tasks', route: 'paid-tasks-terms' },
-    { name: 'Fast payout', route: 'fast-start-bonus-terms' },
+    // ⚠️ NAMED FOR THE PROGRAMME THE TERMS DESCRIBE, not for a payout speed.
+    // It read "Fast payout" and opened the Fast Start BONUS terms — a page about
+    // a 5% bonus on net earnings, which says nothing about how fast anyone is
+    // paid. Reported 4 Sep 2026 as a mislabelled link; the same rule the Growth
+    // Bonus row beside it follows (name it what the creator's dashboard calls it).
+    { name: 'Fast Start bonus', route: 'fast-start-bonus-terms' },
     // ⚠️ Beside Fast payout, not under Agreements: the Growth Bonus is money
     // moving, which is what this column is. Named for the programme the creator
     // sees on their dashboard, so the two are recognisably the same thing.
@@ -209,6 +223,7 @@ function FooterLink({ item, onSuggest, inline = false }) {
         return (
             <a
                 href={item.href}
+                onClick={item.onClick}
                 {...(item.noBlank ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
                 className={`${anchor} ${item.className ?? ''}`}
             >

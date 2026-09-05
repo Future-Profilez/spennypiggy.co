@@ -79,10 +79,51 @@ class SuspendedAccount
                 ? $copy['tone']
                 : 'suspended',
             'action' => self::actionFor($copy),
+            /*
+             * 🚨 THE ADMIN'S OWN WORDS, FOR THE ONE REASON THAT HAS ANY.
+             *
+             * `suspension_note` is a case file written for other admins and is
+             * NEVER rendered to the account holder — that rule is unchanged. An
+             * identity refusal is different: a person looked at the ID and wrote
+             * what was wrong with it, addressed to the creator, and without it
+             * the banner says "we could not accept it" and the creator has no
+             * idea what to change. Client direction, 4 Sep 2026.
+             */
+            'detail' => self::detailFor($user, $code),
             'suspended_at' => $user instanceof User && $user->suspended_at
                 ? $user->suspended_at->toIso8601String()
                 : null,
         ];
+    }
+
+    /**
+     * The creator-facing note attached to an identity refusal, or null.
+     *
+     * ⚠️ NEVER THROWS and never returns a raw column. `identity_verification_error`
+     * holds JSON written by the admin app; a malformed or legacy value yields
+     * null rather than printing a serialised blob onto the creator's dashboard.
+     */
+    private static function detailFor($user, ?string $code): ?string
+    {
+        if ($code !== 'identity_rejected' || ! $user instanceof User) {
+            return null;
+        }
+
+        $raw = $user->identity_verification_error;
+
+        if (blank($raw)) {
+            return null;
+        }
+
+        try {
+            $decoded = is_array($raw) ? $raw : json_decode((string) $raw, true);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $note = is_array($decoded) ? ($decoded['note'] ?? null) : null;
+
+        return filled($note) ? (string) $note : null;
     }
 
     /**

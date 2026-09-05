@@ -136,7 +136,7 @@ const TransactionRow = ({ tx, formatCurrency }) => {
             const txDate = new Date(tx.transaction_date || tx.display_date);
             const days = (Date.now() - txDate.getTime()) / (1000 * 60 * 60 * 24);
             if (days < 7) {
-                return { label: 'Pending (Clearing)', tone: 'yellow', title: 'Payment received. Clearing for 7 days before it becomes available for Friday payout.' };
+                return { label: 'Pending (Clearing)', tone: 'yellow', title: 'Payment received. It is paid out on the Friday after its earning week (Friday to Thursday) has closed and been held for a week.' };
             }
         } catch (e) {
         }

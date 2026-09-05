@@ -238,7 +238,7 @@ class SecurityHeaders
          * ccTLD list (~190 entries) would push a already-4KB header past what some
          * proxies will forward, to authorise hosts nobody has ever reached.
          */
-        $googleAds = 'https://www.googleadservices.com https://googleads.g.doubleclick.net https://ad.doubleclick.net https://stats.g.doubleclick.net https://*.doubleclick.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://www.google.com https://google.com https://www.google.co.uk https://www.google.ie https://www.google.com.br https://www.google.nl https://www.google.com.np';
+        $googleAds = 'https://www.googleadservices.com https://googleads.g.doubleclick.net https://ad.doubleclick.net https://stats.g.doubleclick.net https://*.doubleclick.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://www.google.com https://google.com https://www.google.co.uk https://www.google.ie https://www.google.com.br https://www.google.nl https://www.google.com.np https://www.google.ca https://www.google.fi';
 
         /*
          * ⚠️ Termly's consent API is on its OWN regional subdomain

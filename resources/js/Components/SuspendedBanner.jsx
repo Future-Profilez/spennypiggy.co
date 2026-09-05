@@ -1,55 +1,51 @@
 import { usePage } from "@inertiajs/react";
 
 /*
- * The one thing a suspended account is told, on every page they can reach.
+ * The account-state notice a suspended or limited creator reads on their OWN
+ * profile, directly under their cover.
  *
- * 🚨 IT IS NOT DISMISSIBLE AND IT IS NOT ON ONE TAB. This is a state that
- * changes what the account can do — the same class as CreatorRiskBanner and
- * PendingChangesNotice, which is why it mounts in the layout rather than in a
- * page. A reading can wait for the About tab; a blocker cannot, and someone who
- * dismissed this would spend the rest of the session watching their own writes
- * fail with no explanation on screen.
+ * 🚨 MOUNTED IN `Pages/Dashboard.jsx` UNDER THE COVER, GATED ON THE OWNER —
+ * NOT in AuthenticatedLayout (client direction, 5 Sep 2026). It used to sit at
+ * the top of every page, which put it above the Help Centre and every other
+ * screen as a bolted-on card that belonged to none of them. `/{username}` is
+ * the creator's dashboard and where they land; the state of their account is
+ * a fact about THIS page. The trade-off is deliberate and known: on other
+ * pages a refused write still explains itself through the error bag.
  *
- * 🚨 The copy comes from the server (`auth.suspension`), never from a map in
- * here. The reason is a decision a person made about someone's account, and the
- * sentence they read has to be the one the platform is willing to stand behind
- * — see config/suspension.php. The admin's internal note is deliberately not
- * sent to the browser at all.
+ * 🚨 THE COPY COMES FROM THE SERVER (`auth.user.suspension`), NEVER A MAP
+ * HERE. The reason is a decision a person made about somebody's account, and
+ * the sentence they read has to be the one the platform stands behind — see
+ * config/suspension.php. The admin's internal note is never sent to the
+ * browser. ⚠️ It is `auth.user.suspension` — inside the user array, beside
+ * `suspended_account`. The first version read one level too high and rendered
+ * nothing, for ever; pinned by SuspendedAccountAccessTest.
+ *
+ * Design: the cover is a landscape frame with a 2px black border; this is a
+ * second frame of the SAME width directly beneath it, so it reads as the
+ * cover's caption rather than an alert floating in the page. State colour is
+ * spent in ONE place — the spine down the left edge — because the headline
+ * already says the word and a coloured pill repeating it is noise. Amber is
+ * not a softer red: red means a person judged the account, amber means
+ * something is left undone. No shadow, no scale, black on pink.
  */
-export default function SuspendedBanner() {
+export default function SuspendedBanner({ className = "" }) {
     const { auth } = usePage().props;
-    /*
-     * 🚨 `auth.user.suspension`, NOT `auth.suspension`. The prop is built inside
-     * the shared user array in `HandleInertiaRequests`, beside `suspended_account`.
-     * The first version of this component read one level too high, so it was
-     * always undefined and the banner NEVER RENDERED — no error, nothing in any
-     * log, and a suspended creator seeing no explanation at all. Same class as
-     * `SaveButton`'s dead `is_saved` prop. Pinned by SuspendedAccountAccessTest.
-     */
     const suspension = auth?.user?.suspension;
 
-    // Rendered on the prop's presence, which the server sends only for a
-    // suspended account. No client-side truth test about who is suspended.
+    // Rendered on the prop's presence — the server sends it only for a
+    // suspended account. No client-side test about who is suspended.
     if (!suspension) return null;
 
-    /*
-     * 🚨 AMBER IS NOT A SOFTER RED, IT IS A DIFFERENT STATEMENT. Red on this
-     * platform means a person judged the account. An unpaid subscription or an
-     * unfinished ID check is something left undone, so it reads "Account
-     * limited" in amber — the same rule ProfileSelfCheck follows. The server
-     * decides which; the component never infers it from the code.
-     */
     const limited = suspension.tone === "limited";
-    const pillClass = limited ? "bg-[#E6EA7B]" : "bg-[#FF4D4D]";
-    const pillLabel = limited ? "Account limited" : "Account suspended";
+    const spine = limited ? "bg-[#E6EA7B]" : "bg-[#FF4D4D]";
 
     const openSupport = () => {
         /*
          * 🚨 `typeof window.Intercom === "function"` IS NOT A LOADED CHECK.
          * IntercomProvider installs a stub that queues calls until the real
          * script arrives, so with an ad blocker the call is accepted, nothing
-         * opens, and the person is left believing they have messaged support
-         * about their suspended account. Only the real widget sets `booted`.
+         * opens, and the person believes they have messaged support about
+         * their account. Only the real widget sets `booted`.
          */
         if (typeof window !== "undefined" && window.Intercom?.booted === true) {
             try {
@@ -70,71 +66,110 @@ export default function SuspendedBanner() {
             encodeURIComponent(limited ? "Limited account" : "Suspended account review");
     };
 
+    /*
+     * What is true of the account right now, as a state table. Structure here
+     * carries information: three facts, one word each, read across a row —
+     * not four sentences a person has to parse. The wording of the second
+     * cell follows the tone: "as soon as this is sorted" is honest for
+     * something the creator can end today, "if the suspension is lifted" for
+     * something only we can end.
+     */
+    const facts = [
+        { label: "Profile and listings", state: "Hidden" },
+        {
+            label: "Supporter subscriptions",
+            state: "Paused",
+            note: limited ? "restart as soon as this is sorted" : "restart if the suspension is lifted",
+        },
+        { label: "Payouts and purchases", state: "On hold" },
+    ];
+
+    const primaryBtn =
+        "inline-flex min-h-[44px] items-center justify-center rounded-box-sm border-black bg-[#FF007F] px-5 py-2 text-sm font-extrabold text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95";
+    const quietBtn =
+        "inline-flex min-h-[44px] items-center justify-center rounded-box-sm border-black bg-white px-5 py-2 text-sm font-extrabold text-black transition-colors duration-200 hover:bg-[#F4F4F5]";
+
     return (
-        // ⚠️ In flow, directly under the header — it is a banner, not an
-        // overlay, so nothing has to be lifted above the bottom bar for it.
-        <div className="w-full px-4 sm:px-8 pt-4">
-            <div className="mx-auto max-w-[1400px] rounded-box border-black bg-white p-5 md:p-6">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div className="min-w-0">
-                        <span className={`inline-flex items-center rounded-box-xs ${pillClass} px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wide text-black`}>
-                            {pillLabel}
-                        </span>
-                        <h2 className="mt-3 font-gulfs text-xl leading-[1.2] text-black md:text-2xl">
+        // ⚠️ Same horizontal treatment as the cover directly above it — bleeds
+        // to the edge below `sm:` and carries the frame from `sm:` up — so the
+        // two read as one composed block.
+        <section
+            role="status"
+            aria-live="polite"
+            className={`relative overflow-hidden bg-white -mx-5 sm:mx-0 rounded-none border-0 sm:rounded-box sm:border-2 sm:border-black ${className}`}
+        >
+            {/* The one place state colour is spent. Inside the frame, full height. */}
+            <div aria-hidden="true" className={`absolute inset-y-0 left-0 w-1.5 ${spine}`} />
+
+            <div className="pl-7 pr-5 py-5 sm:pl-8 sm:pr-6 sm:py-6 md:pl-9 md:pr-7">
+                <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between md:gap-8">
+                    <div className="min-w-0 max-w-[62ch]">
+                        {/* ⚠️ UPPERCASE IS A CSS TREATMENT, NOT THE STORED STRING.
+                            `config/suspension.php` keeps sentence case because the
+                            same title is quoted back to an admin in the suspend
+                            dialog ("They will read: …") and shouting in the data
+                            would follow it everywhere. It is the house display
+                            treatment for `font-gulfs` — and legitimate here because
+                            this is OUR copy; creator-authored text is never set in
+                            display caps (it mangles long titles and accents).
+                            ⚠️ Caps carry no descenders, so the leading tightens with
+                            them — 1.15 leaves a visible gap between two capital lines. */}
+                        <h2 className="font-gulfs text-[22px] uppercase leading-[1.05] text-black sm:text-[26px] md:text-[28px]">
                             {suspension.title}
                         </h2>
-                        <p className="mt-2 max-w-[70ch] text-sm leading-[1.55] text-black/75 md:text-base">
+                        <p className="mt-2 text-[15px] leading-[1.55] text-black/70">
                             {suspension.body}
                         </p>
-                        {/* ⚠️ States the consequences plainly rather than letting
-                            the person discover each one by hitting it. Every
-                            sentence here matches what the code actually does. */}
-                        {/* ⚠️ The list says the same true things either way, but not
-                            in the same words: "while this is in place" is honest for
-                            something the creator can end today, "until this is lifted"
-                            is honest for something only we can end. */}
-                        <ul className="mt-3 max-w-[70ch] list-disc space-y-1 pl-5 text-sm leading-[1.55] text-black/70">
-                            <li>Your profile and listings are hidden, and no one can buy from you.</li>
-                            <li>
-                                Supporters&rsquo; recurring payments to you are paused, not
-                                cancelled &mdash; they restart{" "}
-                                {limited ? "as soon as this is sorted" : "if the suspension is lifted"}.
-                            </li>
-                            <li>Payouts are on hold, and you cannot make purchases while this is in place.</li>
-                            <li>You can still sign in, read your account and your history, and message support.</li>
-                        </ul>
                     </div>
 
-                    {/* 🚨 WHEN THERE IS A WAY OUT, IT IS THE PRIMARY BUTTON AND
-                        SUPPORT DROPS TO SECONDARY. A creator who can fix this
-                        themselves should not have to open a chat to be told so —
-                        and the server only sends an action for a reason they CAN
-                        fix. `mandatory.checkout` is on the write-allowlist for
-                        exactly this, or the button would be refused. */}
+                    {/* 🚨 WHEN THERE IS A WAY OUT, IT IS THE PRIMARY BUTTON and support
+                        drops to secondary. The server sends an action only for a
+                        reason the creator can fix themselves, and its route is on
+                        the write-allowlist — or the button would be refused. */}
                     <div className="flex shrink-0 flex-col gap-2 sm:flex-row md:flex-col lg:flex-row">
                         {suspension.action && (
-                            <a
-                                href={suspension.action.url}
-                                // No scale on press — house rule. Brightness only.
-                                className="inline-flex min-h-[44px] items-center justify-center rounded-box-sm border-black bg-[#FF007F] px-5 py-2 text-sm font-extrabold text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
-                            >
+                            <a href={suspension.action.url} className={primaryBtn}>
                                 {suspension.action.label}
                             </a>
                         )}
                         <button
                             type="button"
                             onClick={openSupport}
-                            className={
-                                suspension.action
-                                    ? "inline-flex min-h-[44px] items-center justify-center rounded-box-sm border-black bg-white px-5 py-2 text-sm font-extrabold text-black transition-colors duration-200 hover:bg-[#F4F4F5]"
-                                    : "inline-flex min-h-[44px] items-center justify-center rounded-box-sm border-black bg-[#FF007F] px-5 py-2 text-sm font-extrabold text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
-                            }
+                            className={suspension.action ? quietBtn : primaryBtn}
                         >
                             Contact support
                         </button>
                     </div>
                 </div>
+
+                {/* State table — DIVISIONS ONLY, NO FRAME OF ITS OWN.
+                    🚨 House rule: one card, no boxes inside it (the compact
+                    DiscoveryStatsPanel direction). A `border-black` here would be a
+                    2px box inside the card's own 2px box, in the same colour, which
+                    reads as boxes inside boxes. Depth is border weight, then colour,
+                    then SPACE — so the cells are separated by hairlines on one shared
+                    grid (`divide-y`/`sm:divide-x`), never a border per cell, which
+                    doubles up where two cells meet. */}
+                <dl className="mt-5 grid grid-cols-1 divide-y divide-black/15 border-t border-black/15 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                    {facts.map((f) => (
+                        <div key={f.label} className="px-0 py-3 sm:px-4 sm:first:pl-0">
+                            <dt className="text-[12.5px] leading-[1.4] text-black/60">{f.label}</dt>
+                            <dd className="mt-0.5 text-[15px] font-extrabold leading-[1.3] text-black">
+                                {f.state}
+                                {f.note && (
+                                    <span className="block text-[12.5px] font-medium leading-[1.4] text-black/60">
+                                        {f.note}
+                                    </span>
+                                )}
+                            </dd>
+                        </div>
+                    ))}
+                </dl>
+
+                <p className="mt-3 text-[13px] leading-[1.5] text-black/60">
+                    You can still sign in, read your account and your history, and message support.
+                </p>
             </div>
-        </div>
+        </section>
     );
 }

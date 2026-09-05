@@ -94,13 +94,20 @@ class ReconcileIdentitySessionsTest extends TestCase
 
     /**
      * 🚨 The FULL field set, not just `identity_status`. A creator repaired here while
-     * carrying a stale `identity_admin_status = 2` would read as verified on their own
-     * page and as rejected in the admin queue — one platform, two answers.
+     * carrying a stale `identity_admin_status = 2` would read as REJECTED on their own
+     * page and sit in no queue at all — passed by Stripe and invisible to everybody.
+     *
+     * ⚠️ REWRITTEN 4 Sep 2026. This asserted the repair set the admin verdict to 1,
+     * which pinned the fault the ID sign-off exists to close: Stripe checks the
+     * DOCUMENT, and stamping a human's approval off an automated pass is how a creator
+     * using somebody else's ID goes live with a verified tick nobody looked at. The
+     * stale-verdict concern it was written for is real and is what 0 answers.
      */
-    public function test_a_repair_clears_the_stale_admin_verdict_too(): void
+    public function test_a_repair_puts_the_creator_back_in_the_sign_off_queue(): void
     {
         $creator = $this->openCheck([
             'identity_admin_status' => 2,
+            'identity_admin_reviewed_at' => now()->subDay(),
             'identity_verification_error' => json_encode(['code' => 'document_unreadable']),
         ]);
         $this->stripeAnswers(IdentityCheckState::VERIFIED);
@@ -109,9 +116,13 @@ class ReconcileIdentitySessionsTest extends TestCase
 
         $creator->refresh();
 
-        $this->assertSame(1, (int) $creator->identity_admin_status);
-        $this->assertNotNull($creator->identity_admin_reviewed_at);
+        // 0 = waiting on a person, which is the whole point of the step.
+        $this->assertSame(0, (int) $creator->identity_admin_status);
+        // ⚠️ The old review date belongs to a decision about a different document.
+        $this->assertNull($creator->identity_admin_reviewed_at);
         $this->assertNull($creator->identity_verification_error);
+        // ⚠️ And the creator is NOT blocked meanwhile — the listing gate reads this.
+        $this->assertSame(1, (int) $creator->identity_status);
     }
 
     public function test_a_dry_run_writes_nothing(): void

@@ -32,9 +32,16 @@ import LegalLayout from "@/Layouts/LegalLayout";
  *     cost a creator the programme on a technicality.
  *   · 3.1 — the Activation Window runs from Stripe Connect activation. There is
  *     no "final creator approval" timestamp on this platform to measure from.
- *   · 5.2 / 5.3 / 5.5 — there are no Friday-to-Thursday periods and no Thursday
- *     review gate. Each transaction waits its own 7 days, so the worked example
- *     pays on the Friday of week 4, not week 3.
+ *   · 5.2 / 5.3 / 5.5 — REVERSED AGAIN ON 4 Sep 2026, and this is the history
+ *     worth keeping. The client's original terms described Friday-to-Thursday
+ *     earning periods; the engine did not do that (it swept every transaction
+ *     more than 7 days old), so on 26 Aug 2026 the TERMS were corrected to match
+ *     the engine. On 4 Sep 2026 the client confirmed the period model is what
+ *     they intend, so the ENGINE was changed instead (App\Support\PayoutCycle)
+ *     and these clauses were restored to the period wording. The wait is 8 to 14
+ *     days, not 7 to 13. ⚠️ There is still no Thursday REVIEW gate — the Thursday
+ *     23:55 `finance:sync-transactions` tick is a ledger sync, and no clause here
+ *     claims otherwise.
  *   · 6.1 — the bonus is added to the payout manually today; the automated
  *     separate line item is Phase 3.
  *   · 7.4 — a milestone removed by a refund CAN be earned again by genuine later
@@ -220,15 +227,16 @@ export default function GrowthBonusTerms(props) {
                                 The Qualifying Moment is recorded to the second, in UK time.
                             </Clause>
                             <Clause n="5.2">
-                                Payouts run every Friday, UK time. Each transaction waits seven
-                                days from the date it completes before it is eligible, so a
-                                transaction is paid on the first Friday that falls at least seven
-                                days after it completed.
+                                Payouts run every Friday, UK time. Each payout covers a complete
+                                earning week running Friday 00:00 to Thursday 23:59, after that
+                                week has been held for a further week. So earnings from Friday
+                                4 September to Thursday 10 September are paid on Friday
+                                18 September.
                             </Clause>
                             <Clause n="5.3">
                                 A milestone bonus is paid on the same payout as the transaction
-                                that created the Qualifying Moment. In practice that is seven to
-                                thirteen days after the milestone is reached, depending on the day
+                                that created the Qualifying Moment. In practice that is eight to
+                                fourteen days after the milestone is reached, depending on the day
                                 of the week it is reached on.
                             </Clause>
                             <Clause n="5.4">
@@ -238,13 +246,13 @@ export default function GrowthBonusTerms(props) {
                                 that decides when the bonus is paid, not the ones before it.
                             </Clause>
                             <Clause n="5.5">
-                                Worked example. A creator reaches £90 of Qualifying Earnings
-                                during week 1. On the Saturday of week 2 they make a further £10,
-                                taking them to £100 — that Saturday is the Qualifying Moment, and
-                                the £25 milestone is unlocked immediately. That £10 transaction
-                                waits its own seven days, so it is not eligible for the Friday of
-                                week 3; it is paid on the Friday of week 4, and the £25 bonus is
-                                paid with it.
+                                Worked example. A creator reaches £90 of Qualifying Earnings by
+                                Thursday 10 September. On Saturday 12 September they make a
+                                further £10, taking them to £100 — that Saturday is the Qualifying
+                                Moment, and the £25 milestone is unlocked immediately. That £10
+                                transaction belongs to the earning week of Friday 11 to Thursday
+                                17 September, which is held through the following week and paid on
+                                Friday 25 September. The £25 bonus is paid with it.
                             </Clause>
                             <Clause n="5.6">
                                 The bonus is paid only if the transaction that created the

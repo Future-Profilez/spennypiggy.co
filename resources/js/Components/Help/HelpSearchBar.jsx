@@ -27,6 +27,27 @@ import StillNeedHelp from "./StillNeedHelp";
  * slab sticking out from behind the field. The frame here is the border, and
  * colour arrives on focus.
  */
+/**
+ * 🚨 A FAILURE TO GENERATE IS NOT "WE HAVE NO ANSWER FOR THAT".
+ *
+ * These reasons mean the answering SERVICE did not run — the request failed, it
+ * threw, the embedding could not be made, the corpus has not been embedded, or
+ * the caller is over their hourly cap. None of them says anything about whether
+ * the help centre covers the question, and telling a reader "we do not have an
+ * answer for that yet" when the articles are sitting right there is how somebody
+ * decides the platform cannot help them and opens a ticket.
+ *
+ * Everything NOT on this list — `not_in_articles`, `below_similarity_threshold`
+ * — is the model and the corpus genuinely answering, and that copy is correct.
+ */
+const TECHNICAL_REASONS = new Set([
+    "request_failed",
+    "exception",
+    "embedding_unavailable",
+    "no_articles_embedded",
+    "rate_limited",
+]);
+
 export default function HelpSearchBar({
     ai = false,
     autoFocus = false,
@@ -48,6 +69,15 @@ export default function HelpSearchBar({
 
     const searchRef = useRef(null);
     const askRef = useRef(null);
+    /*
+     * ⚠️ A REF, NOT A DEPENDENCY. `ask` needs the latest keyword results for its
+     * failure branch, and putting `results` in its dependency array would
+     * rebuild the callback on every debounced search — i.e. on every keystroke —
+     * while reading the state directly from the closure would hand it whatever
+     * was on screen when `ask` was last built. The ref is always current and
+     * costs nothing.
+     */
+    const resultsRef = useRef(null);
     const rootRef = useRef(null);
     const inputRef = useRef(null);
 
@@ -89,6 +119,10 @@ export default function HelpSearchBar({
     }, []);
 
     useEffect(() => {
+        resultsRef.current = results;
+    }, [results]);
+
+    useEffect(() => {
         // A new keystroke invalidates a pending answer — leaving it on screen
         // above a different question is the worst kind of stale.
         setAnswer(null);
@@ -128,9 +162,17 @@ export default function HelpSearchBar({
             setAnswer(res?.data ?? null);
         } catch (err) {
             if (axios.isCancel?.(err) || err?.name === "CanceledError") return;
-            // Never a dead end — the unanswered branch still lists the closest
-            // articles and a way to reach a person.
-            setAnswer({ answered: false, results: [], reason: "request_failed" });
+            // 🚨 THE ARTICLES ARE ALREADY IN STATE — HAND THEM OVER.
+            // This used to set `results: []`, so a timeout or a dropped
+            // connection printed "we do not have an answer for that yet" with
+            // NOTHING under it, while the keyword search for the very same query
+            // had already returned and was sitting in `results`. The reader was
+            // told the help centre was empty because one request failed.
+            setAnswer({
+                answered: false,
+                results: resultsRef.current ?? [],
+                reason: "request_failed",
+            });
         } finally {
             if (!controller.signal.aborted) setAsking(false);
         }
@@ -318,10 +360,25 @@ export default function HelpSearchBar({
                     {/* ------------------------------- asked, but no answer */}
                     {!asking && answer && !answer.answered && (
                         <div className="px-5 py-5">
+                            {/*
+                              🚨 THREE DIFFERENT SENTENCES, BECAUSE THEY ARE THREE
+                              DIFFERENT SITUATIONS. Printing "we do not have an
+                              answer for that yet" after a timeout blames the
+                              corpus for a service outage, and the articles that
+                              DO answer it are listed directly underneath —
+                              which reads as the help centre contradicting
+                              itself. A technical failure says so and hands over
+                              the search results; only a genuine miss says the
+                              answer is not here.
+                            */}
                             <p className="text-[15px] font-semibold text-black">
-                                {answer.results?.length > 0
-                                    ? "We could not answer that directly. These come closest:"
-                                    : "We do not have an answer for that yet."}
+                                {TECHNICAL_REASONS.has(answer.reason)
+                                    ? answer.results?.length > 0
+                                        ? "Written answers are unavailable right now. Here is what the help centre has on that:"
+                                        : "Written answers are unavailable right now. Try searching, or reach us below."
+                                    : answer.results?.length > 0
+                                      ? "We could not answer that directly. These come closest:"
+                                      : "We do not have an answer for that yet."}
                             </p>
 
                             {answer.results?.length > 0 && (
@@ -345,10 +402,16 @@ export default function HelpSearchBar({
                                 </ul>
                             )}
 
-                            <p className="mt-3 text-sm text-black/60">
-                                Questions we cannot answer are logged, so asking helped even when it did
-                                not help you.
-                            </p>
+                            {/* ⚠️ Only true of a genuine miss. A failed request is
+                                not a gap in the corpus and is not logged as one,
+                                so claiming it was would be a small lie told to
+                                the person least able to check it. */}
+                            {!TECHNICAL_REASONS.has(answer.reason) && (
+                                <p className="mt-3 text-sm text-black/60">
+                                    Questions we cannot answer are logged, so asking helped even when it
+                                    did not help you.
+                                </p>
+                            )}
 
                             {answer.escalation && (
                                 <div className="mt-4">

@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Console\Commands\ReleaseReserves;
 use App\Helpers;
+use App\Services\CreatorPushService;
 use App\Services\PostingCadenceService;
 use App\Services\Risk\ReservePolicy;
 use Illuminate\Support\Facades\Cache;
@@ -74,7 +75,13 @@ class HelpTokens
 
             // ---- Payouts & reserves ---------------------------------------
             'payout.day' => fn () => 'Friday',
-            'payout.hold_days' => fn () => '7',
+            // ⚠️ Kept for the RESERVE explanation and for legacy article bodies. The payout
+            // itself is no longer a bare day count — a sale waits until its Friday-to-Thursday
+            // earning week closes and is held a further week, i.e. 8 to 14 days. Use
+            // {{payout.period}} / {{payout.wait}} in payout copy, never this.
+            'payout.hold_days' => fn () => (string) PayoutCycle::MIN_HOLD_DAYS,
+            'payout.period' => fn () => 'Friday to Thursday',
+            'payout.wait' => fn () => '8 to 14 days',
             /*
              * 🚨 TWO DIFFERENT CLOCKS, BOTH ABOUT 30 DAYS. Keep them apart in
              * copy or the sentence becomes nonsense:
@@ -123,11 +130,80 @@ class HelpTokens
             'founder.monthly_pct' => fn () => self::pct(((float) config('founder_bonus.bonus.bonus_percentage', 0.10)) * 100),
             'founder.monthly_cap' => fn () => self::money(config('founder_bonus.bonus.max_bonus_per_month', 1000)),
             'referral.reward' => fn () => self::money(config('referral.reward_amount', 50)),
+            /*
+             * 🚨 THE REWARD IS NEVER QUOTED WITHOUT THE THRESHOLD. A referral
+             * only counts once the referred creator passes this in lifetime
+             * qualifying earnings, so "{{referral.reward}} per creator" on its
+             * own sets somebody up to share their link, watch a signup land and
+             * be paid nothing. The promo deck follows the same rule.
+             */
+            'referral.threshold' => fn () => self::money(config('referral.qualifying_gmv', 1000)),
+
+            // ---- Fast Start -----------------------------------------------
+            /*
+             * ⚠️ A RANGE WHEN TIERED, NEVER ONE BRACKET'S FIGURE. With
+             * `enable_tiered` on there is no single rate, and quoting the flat
+             * one would understate it for a high earner and overstate it for a
+             * new one. The promo card omits the figure entirely in that state;
+             * a token cannot omit itself without leaving a gap mid-sentence, so
+             * it widens to the real range instead.
+             */
+            'faststart.rate' => function () {
+                if (! config('fast_start_bonus.bonus.enable_tiered')) {
+                    return self::pct(((float) config('fast_start_bonus.bonus.flat_rate', 0.05)) * 100);
+                }
+
+                $rates = array_map(
+                    fn ($t) => (float) ($t['rate'] ?? 0),
+                    (array) config('fast_start_bonus.bonus.tiered_rates', [])
+                );
+
+                if (! $rates) {
+                    return self::pct(((float) config('fast_start_bonus.bonus.flat_rate', 0.05)) * 100);
+                }
+
+                return self::pct(min($rates) * 100).'–'.self::pct(max($rates) * 100);
+            },
+            'faststart.window_days' => fn () => (string) (int) config('fast_start_bonus.bonus.window_days', 30),
+            'faststart.settlement_days' => fn () => (string) (int) config('fast_start_bonus.bonus.settlement_buffer_days', 7),
+
+            // ---- Growth Bonus ----------------------------------------------
+            /*
+             * ⚠️ THE CEILING IS THE SUM OF THE LADDER, NOT A CONFIGURED FIGURE.
+             * `ladder` holds INCREMENTAL amounts, so the total a creator can
+             * ever be paid is their sum — deriving it means an edited ladder can
+             * never leave the help centre advertising a maximum the engine will
+             * not pay. Same reason the last rung's own GMV is read from the row
+             * rather than typed.
+             */
+            'growth.max_reward' => fn () => self::money(array_sum(array_map(
+                fn ($r) => (float) ($r['amount'] ?? 0),
+                (array) config('growth_bonus.ladder', [])
+            ))),
+            'growth.first_reward' => fn () => self::money(
+                (float) (((array) config('growth_bonus.ladder', []))[0]['amount'] ?? 0)
+            ),
+            'growth.top_gmv' => function () {
+                $ladder = (array) config('growth_bonus.ladder', []);
+
+                return self::money((float) (end($ladder)['gmv'] ?? 0));
+            },
+            'growth.rungs' => fn () => (string) count((array) config('growth_bonus.ladder', [])),
+            'growth.activation_gmv' => fn () => self::money(config('growth_bonus.activation.threshold_gmv', 100)),
+            'growth.window_days' => fn () => (string) (int) config('growth_bonus.activation.window_days', 30),
+            'growth.seats' => fn () => (string) (int) config('growth_bonus.limits.max_seats', 150),
+            'growth.expiry_months' => fn () => (string) (int) config('growth_bonus.expiry_months', 12),
 
             // ---- Content rules --------------------------------------------
             'cadence.min_posts' => fn () => (string) PostingCadenceService::MIN_POSTS,
             'cadence.window_days' => fn () => (string) PostingCadenceService::WINDOW_DAYS,
             'cadence.warning_days' => fn () => (string) PostingCadenceService::WARNING_DAYS,
+
+            // ---- Creator push ----------------------------------------------
+            'push.per_day' => fn () => (string) CreatorPushService::MAX_PER_DAY,
+            'push.per_month' => fn () => (string) CreatorPushService::MAX_PER_MONTH,
+            'push.max_length' => fn () => (string) CreatorPushService::MAX_LENGTH,
+            'push.window_days' => fn () => (string) CreatorPushService::MONTH_WINDOW_DAYS,
 
             // ---- Support / verification ------------------------------------
             'gifter.verification_threshold' => fn () => self::money(500),

@@ -1,5 +1,6 @@
 import { Link } from "@inertiajs/react";
 import { MessageCircle, Mail, Receipt } from "lucide-react";
+import { openLiveChat } from "@/lib/liveChat";
 
 /**
  * What a reader does when the help centre did not answer them.
@@ -16,16 +17,11 @@ import { MessageCircle, Mail, Receipt } from "lucide-react";
 export default function StillNeedHelp({ escalation, compact = false }) {
     if (!escalation) return null;
 
-    const openChat = (e) => {
-        // ⚠️ Only preventDefault when the messenger is genuinely loaded.
-        // IntercomProviderFixed returns early for logged-out visitors, so a bare
-        // Intercom() call would be a dead button for the audience most likely to
-        // need it — the email link underneath must stay reachable.
-        if (typeof window !== "undefined" && typeof window.Intercom === "function") {
-            e.preventDefault();
-            window.Intercom("showNewMessage");
-        }
-    };
+    // ⚠️ Only preventDefault when the messenger is genuinely loaded. The guard
+    // used to be `typeof window.Intercom === "function"`, which the provider's
+    // QUEUEING STUB satisfies — so for a logged-out visitor (the provider returns
+    // early for guests) this button cancelled its own mailto: and opened nothing.
+    // See lib/liveChat.js; the href below is the fallback and must stay real.
 
     return (
         <section
@@ -45,7 +41,7 @@ export default function StillNeedHelp({ escalation, compact = false }) {
                 {escalation.chat && (
                     <a
                         href={`mailto:${escalation.email}`}
-                        onClick={openChat}
+                        onClick={openLiveChat}
                         className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-box-sm border-2 border-black bg-black px-4 py-2 text-sm font-bold text-white hover:bg-black/85"
                     >
                         <MessageCircle className="h-4 w-4" aria-hidden="true" />

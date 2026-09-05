@@ -560,7 +560,7 @@ export default function UserCarts(props) {
             hasAuthUser: !!auth?.user,
             creator_id: datas?.user?.id,
         });
-        if (!card_capabilities) {
+        if (paymentMethod === 'card' && !card_capabilities) {
             toast.error(riskMessageBody("CREATOR_UNAVAILABLE"));
             if (debugEnabled) {
                 console.warn("DEBUG: creator card_capabilities missing");
@@ -965,7 +965,7 @@ export default function UserCarts(props) {
                                 </pre>
                             </div>
                         ) : null}
-                        {!card_capabilities && (
+                        {paymentMethod === 'card' && !card_capabilities && (
                             <div
                                 className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-r"
                                 role="alert"
@@ -1168,7 +1168,7 @@ export default function UserCarts(props) {
                                             (turnstileSiteKey &&
                                                 !captchaToken &&
                                                 !skipCaptcha) ||
-                                            !card_capabilities
+                                            (paymentMethod === 'card' && !card_capabilities)
                                         }
                                         onClick={handleSubmit}
                                     />

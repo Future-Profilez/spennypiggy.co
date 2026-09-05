@@ -37,6 +37,16 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    /*
+     * The back office, for the few places the website has to point somebody at
+     * it. ⚠️ Unset by default and every caller must cope with an empty value —
+     * a guessed admin hostname in an email is worse than no link at all, and
+     * this app has never needed to know the address before.
+     */
+    'admin' => [
+        'url' => env('ADMIN_APP_URL', ''),
+    ],
+
     'stripe' => [
         'key' => env('STRIPE_PUBLIC_KEY'),
         'secret' => env('STRIPE_SECRET_KEY'),

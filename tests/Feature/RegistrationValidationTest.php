@@ -95,4 +95,26 @@ class RegistrationValidationTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
     }
+
+    public function test_registration_validation_fails_with_invalid_social_handle(): void
+    {
+        $response = $this->postJson(route('register.validate'), [
+            'social_platform' => 'instagram',
+            'social_handle' => 'https://instagram.com/p/Cxyz123', // post link, not profile
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['social_handle']);
+    }
+
+    public function test_registration_validation_passes_with_valid_social_handle(): void
+    {
+        $response = $this->postJson(route('register.validate'), [
+            'social_platform' => 'instagram',
+            'social_handle' => 'creator_music',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['valid' => true]);
+    }
 }

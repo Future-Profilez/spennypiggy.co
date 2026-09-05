@@ -176,10 +176,15 @@ class WeeklyPayoutDryRunTest extends TestCase
     }
 
     /**
-     * Money is still inside the 7-day hold — the single most common reason a
-     * Friday run pays nobody, and the one that reads as "the job didn't run".
+     * Money is still inside an earning week that has not closed and been held —
+     * the single most common reason a Friday run pays nobody, and the one that
+     * reads as "the job didn't run".
+     *
+     * ⚠️ This asserted the literal "7-day hold" until 4 Sep 2026, which pinned the
+     * OLD rolling sweep. The assertion is about the run SAYING WHY it paid nobody,
+     * not about the number — see App\Support\PayoutCycle.
      */
-    public function test_an_empty_run_names_the_seven_day_hold(): void
+    public function test_an_empty_run_names_the_hold(): void
     {
         Payment::create([
             'creator_id' => $this->creator->uuid,
@@ -190,7 +195,7 @@ class WeeklyPayoutDryRunTest extends TestCase
         ]);
 
         $this->artisan('payout:run-weekly --dry-run')
-            ->expectsOutputToContain('still inside the 7-day hold')
+            ->expectsOutputToContain('still inside an earning week that has not closed and been held')
             ->assertExitCode(0);
     }
 

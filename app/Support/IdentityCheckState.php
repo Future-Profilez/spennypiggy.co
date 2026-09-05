@@ -86,8 +86,36 @@ final class IdentityCheckState
             // A passed check clears the previous failure — otherwise the profile keeps
             // rendering the old rejection reason next to a green "verified" tick.
             'identity_verification_error' => null,
-            'identity_admin_status' => 1,
-            'identity_admin_reviewed_at' => now(),
+            /*
+             * 🚨 BACK INTO THE QUEUE, NEVER STRAIGHT TO APPROVED (4 Sep 2026,
+             * client direction).
+             *
+             * 0 means "a person still has to look". Two things depend on it
+             * being written rather than left alone: a creator who was REFUSED
+             * carries a stale 2, which reads as rejected on their own page and
+             * puts them in no queue at all — verified by Stripe and invisible to
+             * everybody; and a fresh document is a fresh thing to judge, so an
+             * earlier sign-off does not carry over to it.
+             *
+             * It used to be written to 1 in this array, so the admin sign-off was
+             * stamped in the same second Stripe returned a pass and no person ever
+             * looked. Measured on the live database: 4 of the 6 reviewed rows had
+             * `identity_admin_reviewed_at` within a second of `identity_verified_at`.
+             *
+             * The reason a human is needed at all: **Stripe checks the DOCUMENT, not
+             * the person.** It proves the passport is real and the selfie matches the
+             * passport — not that the holder is the person on the profile photo and
+             * the social accounts. Somebody using another person's ID passes every
+             * automated check there is.
+             *
+             * Leaving it at 0 does NOT block the creator: the listing gate reads
+             * `identity_status`, which is 1 here. It only puts them in the admin
+             * sign-off queue.
+             */
+            'identity_admin_status' => 0,
+            // ⚠️ Cleared with it, or the row says a review happened on a date
+            // that belongs to a decision about a different document.
+            'identity_admin_reviewed_at' => null,
         ];
     }
 

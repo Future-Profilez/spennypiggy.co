@@ -33,6 +33,7 @@ use App\Services\NotificationDispatcher;
 use App\Services\Risk\PayoutService;
 use App\Services\Risk\ReservePolicy;
 use App\Support\OpportunityPanelPayload;
+use App\Support\PayoutCycle;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -797,12 +798,21 @@ class CreatorFinancialController extends Controller
         }
 
         $tz = config('app.timezone', 'UTC');
-        $nowTz = now($tz);
-        $day = (int) $nowTz->dayOfWeekIso;
-        $daysSinceFriday = $day >= 5 ? $day - 5 : $day + 2;
-        $cycleStart = $nowTz->copy()->startOfDay()->subDays($daysSinceFriday)->startOfDay();
-        $cycleEnd = $cycleStart->copy()->addDays(6)->endOfDay();
-        $nextPayoutAt = $cycleStart->copy()->addDays(7)->startOfDay();
+
+        // 🚨 THE WINDOW SHOWN IS THE ONE THE NEXT PAYOUT PAYS, NOT THE WEEK BEING EARNED.
+        // It used to send the CURRENT Friday-to-Thursday week beside the next Friday, so a
+        // creator read "earning window 4–10 Sep · next payout 11 Sep" and concluded this
+        // week's sales were in Friday's payment. They are not — that week is held through
+        // the following week and paid the Friday after. The two halves of this payload
+        // belong to each other and are resolved together.
+        $nextRun = PayoutCycle::nextRun(now($tz));
+        $cycleStart = $nextRun['period_start'];
+        $cycleEnd = $nextRun['period_end'];
+        $nextPayoutAt = $nextRun['payout_date'];
+
+        // The week still being earned — shown separately, so "what am I building up" and
+        // "what is being paid on Friday" are never the same line.
+        [$currentStart, $currentEnd] = PayoutCycle::currentPeriod(now($tz));
 
         return Inertia::render('Creator/Financial/Dashboard', [
             'active_tab' => $tab,
@@ -835,9 +845,14 @@ class CreatorFinancialController extends Controller
             'reserve_policy' => $reservePolicy,
             'payout_cycle' => [
                 'timezone' => $tz,
+                // The period the next payout COVERS.
                 'window_start' => $cycleStart->toDateTimeString(),
                 'window_end' => $cycleEnd->toDateTimeString(),
                 'next_payout_at' => $nextPayoutAt->toDateTimeString(),
+                // The period currently being EARNED, and the Friday it will be paid on.
+                'current_window_start' => $currentStart->toDateTimeString(),
+                'current_window_end' => $currentEnd->toDateTimeString(),
+                'current_window_paid_at' => $currentEnd->copy()->startOfDay()->addDays(PayoutCycle::MIN_HOLD_DAYS)->toDateTimeString(),
             ],
             'payout_history' => $payoutHistory,
             'fast_start_bonus' => $fastStartBonus,
@@ -1793,13 +1808,18 @@ class CreatorFinancialController extends Controller
     /**
      * Tag each income transaction with a payout badge:
      *   - 'paid_out'  : already included in an executed payout run (FT.payout_run_id set).
-     *   - 'this_week' : eligible for the upcoming weekly run (succeeded, past the 7-day hold,
-     *                   fulfilled — i.e. not grayed out).
+     *   - 'this_week' : eligible for the upcoming weekly run (succeeded, fulfilled — i.e.
+     *                   not grayed out — and inside an earning period that has closed and
+     *                   been held; see App\Support\PayoutCycle).
      * Expenses and non-income rows get no badge.
      */
     private function applyPayoutBadges($income): void
     {
-        $payoutCutoff = now()->subDays(7);
+        // 🚨 THE SAME CUT-OFF THE RUN WILL USE, not a rolling window from today. This badge
+        // says "in this Friday's payout" on the creator's own ledger, so if it and
+        // PayoutService disagree the platform is promising a payment it will not make.
+        // One definition, read by both — see App\Support\PayoutCycle.
+        $payoutCutoff = PayoutCycle::cutoffFor(PayoutCycle::nextPayoutDate());
 
         $income->each(function ($tx) use ($payoutCutoff) {
             $tx->payout_badge = null;

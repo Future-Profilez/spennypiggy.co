@@ -138,7 +138,7 @@ export default function TipInner({classes, idd}) {
         errorAlert("The maximum amount is £500 (or equivalent).");
         return false;
     }
-    if (card_capabilities === false) {
+    if (data.payment_method === 'card' && card_capabilities === false) {
         errorAlert(riskMessageBody("CREATOR_UNAVAILABLE"));
         return false;
     }
@@ -535,7 +535,7 @@ export default function TipInner({classes, idd}) {
               ) : null}
               </> : ''}
 
-              {user?.role === 1 && card_capabilities === false && (
+              {user?.role === 1 && data.payment_method === 'card' && card_capabilities === false && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-box-sm relative mb-4"  >
                     <h2 className="font-bold w-full text-normal">{riskMessageTitle("CREATOR_UNAVAILABLE")}</h2>
                     <span className="block sm:inline">{riskMessageBody("CREATOR_UNAVAILABLE")}</span>
@@ -545,7 +545,7 @@ export default function TipInner({classes, idd}) {
               <PayButton
                 label="Become a Supporter"
                 processing={loading}
-                disabled={!data.agree || !data.digital_waiver || (turnstileSiteKey && !verified) || (user?.role === 1 && card_capabilities === false)}
+                disabled={!data.agree || !data.digital_waiver || (turnstileSiteKey && !verified) || (user?.role === 1 && data.payment_method === 'card' && card_capabilities === false)}
                 onClick={() => setShowConfirm(true)}
               />
 

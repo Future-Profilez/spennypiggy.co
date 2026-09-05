@@ -49,6 +49,7 @@ use App\Http\Controllers\HelpController;
 use App\Http\Controllers\MagicBellProxyController;
 use App\Http\Controllers\MaintenanceAccessController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OutreachUnsubscribeController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushSubscriptionController;
@@ -684,6 +685,20 @@ Route::middleware('auth')->group(function () {
 // bare 403 — friendlier for users clicking a stale link from an old email.
 Route::get('/unsubscribe/{user}', [EmailPreferenceController::class, 'unsubscribe'])
     ->name('email.unsubscribe');
+
+/*
+ * Cold-outreach unsubscribe — for a CRM LEAD (`crm_creators`), not a user. The
+ * link is minted by the ADMIN app with the shared APP_KEY; the controller
+ * validates the signature. Three segments, so it can never be shadowed by the
+ * `/{username}/{page?}` profile catch-all. POST is RFC 8058 one-click from the
+ * mail client — no session, no CSRF token (exempted in VerifyCsrfToken).
+ */
+Route::get('/outreach/unsubscribe/{lead}', [OutreachUnsubscribeController::class, 'show'])
+    ->whereNumber('lead')
+    ->name('outreach.unsubscribe');
+Route::post('/outreach/unsubscribe/{lead}', [OutreachUnsubscribeController::class, 'oneClick'])
+    ->whereNumber('lead')
+    ->name('outreach.unsubscribe.one-click');
 
 /*
  * The preference centre, reachable from an e-mail WITHOUT logging in.
@@ -1369,13 +1384,17 @@ require __DIR__.'/debug-emails.php';
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(function () {
     Route::get('/founder/bonuses', [FounderBonusAdminController::class, 'index'])->name('admin.founder/bonuses.index');
     Route::get('/founder/bonuses/data', [FounderBonusAdminController::class, 'getBonuses'])->name('admin.founder/bonuses.data');
-    Route::post('/founder/bonuses/{bonus}/reject', [FounderBonusAdminController::class, 'rejectPayout'])->name('admin.founder/bonuses.reject');
+    Route::get('/founder/bonuses/export', [FounderBonusAdminController::class, 'exportCsv'])->name('admin.founder/bonuses.export');
+    Route::post('/founder/bonuses/{type}/{id}/approve', [FounderBonusAdminController::class, 'approvePayout'])->name('admin.founder/bonuses.approve');
+    Route::post('/founder/bonuses/{type}/{id}/reject', [FounderBonusAdminController::class, 'rejectPayout'])->name('admin.founder/bonuses.reject');
+    Route::post('/founder/bonuses/{type}/{id}/mark-paid', [FounderBonusAdminController::class, 'markAsPaid'])->name('admin.founder/bonuses.mark-paid');
+    Route::post('/founder/bonuses/trigger-qualification-check', [FounderBonusAdminController::class, 'triggerQualificationCheck'])->name('admin.founder/bonuses.trigger-qualification');
+    Route::post('/founder/bonuses/trigger-monthly-calculation', [FounderBonusAdminController::class, 'triggerMonthlyCalculation'])->name('admin.founder/bonuses.trigger-monthly-calculation');
     Route::get('/founder/bonus-settings', [FounderBonusAdminController::class, 'getSettings'])->name('admin.founder/bonus-settings.get');
     Route::post('/founder/bonus-settings', [FounderBonusAdminController::class, 'updateSettings'])->name('admin.founder/bonus-settings.update');
     Route::get('/founder/bonus-settings-page', function () {
         return Inertia::render('Admin/FounderBonus/Settings');
     })->name('admin.founder/bonus-settings.page');
-    Route::post('/founder/bonuses/trigger-qualification-check', [FounderBonusAdminController::class, 'triggerQualificationCheck'])->name('admin.founder/bonuses.trigger-qualification');
 
     // Task Purchases Admin
     Route::get('/tasks', [TaskPurchaseController::class, 'index'])->name('admin.tasks.index');
@@ -1486,8 +1505,7 @@ if (app()->environment('local', 'testing')) {
 */
 Route::prefix('help')->name('help.')->group(function () {
     // Server-rendered — the Help Centre index is a public, crawlable page.
-    // ⚠️ Only this one: the rest of this group is JSON, and the category and
-    // article pages have not been checked for SSR safety.
+    // ⚠️ The three PAGE routes in this group carry 'ssr'; the rest are JSON.
     Route::get('/', [HelpController::class, 'index'])->middleware('ssr')->name('index');
 
     // JSON. Throttled because search sorts a corpus on every keystroke.
@@ -1513,8 +1531,22 @@ Route::prefix('help')->name('help.')->group(function () {
         ->middleware('throttle:60,1')
         ->name('inline');
 
-    Route::get('/{category}', [HelpController::class, 'category'])->name('category');
-    Route::get('/{category}/{article}', [HelpController::class, 'article'])->name('article');
+    // 🚨 SERVER-RENDERED, and that is the whole point of a help centre.
+    // Without 'ssr' these two answered with the app shell and nothing else: the
+    // meta tags and the header, then an empty <div id="app">. Google renders JS
+    // and could read them; Bing and every AI assistant people now ask questions
+    // of cannot, so ~70 answers existed and were machine-unreadable while the
+    // index above them was fine — which is exactly what makes it invisible.
+    // Reported 4 Sep 2026 by a client fetching the live site.
+    //
+    // ⚠️ Both were checked before the flag went on, not assumed: Article.jsx and
+    // Category.jsx use the same AuthenticatedLayout and the same Help components
+    // the index already renders, and every browser global they touch
+    // (document.addEventListener in HelpSearchBar/HelpLink, window.Intercom in
+    // StillNeedHelp) is inside a useEffect or an event handler. Nothing reads a
+    // browser global at module scope or during render.
+    Route::get('/{category}', [HelpController::class, 'category'])->middleware('ssr')->name('category');
+    Route::get('/{category}/{article}', [HelpController::class, 'article'])->middleware('ssr')->name('article');
 });
 
 /*

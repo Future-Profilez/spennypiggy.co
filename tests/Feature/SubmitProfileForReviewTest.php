@@ -159,4 +159,51 @@ class SubmitProfileForReviewTest extends TestCase
             ->get('/update-profile-lock-status')
             ->assertSessionHas('success');
     }
+
+    public function test_rejected_bio_blocks_submit_until_creator_edits_it(): void
+    {
+        $user = $this->creator(['bio_approved' => 2, 'edit_bio_reason' => 'Too short.']);
+        $this->handles($user, ['instagram' => 'ben_lewis']);
+
+        // Attempting to submit without fixing the bio must be refused
+        $this->actingAs($user)
+            ->get('/update-profile-lock-status');
+
+        $this->assertSame(0, (int) $user->fresh()->profile_status_lock);
+        $this->assertStringContainsString('a bio', (string) session('error'));
+
+        // Once the creator updates their bio, edit_bio_reason is cleared and submit succeeds
+        $this->actingAs($user)
+            ->post('/edit-profile', [
+                'name' => $user->name,
+                'username' => $user->username,
+                'email' => $user->email,
+                'bio' => 'Updated bio with more detail about music.',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $fresh = $user->fresh();
+        $this->assertNull($fresh->edit_bio_reason);
+        $this->assertSame(0, (int) $fresh->bio_approved);
+
+        $this->actingAs($user)
+            ->get('/update-profile-lock-status')
+            ->assertSessionHas('success');
+
+        $this->assertSame(1, (int) $user->fresh()->profile_status_lock);
+    }
+
+    public function test_rejected_social_handle_blocks_submit_until_updated(): void
+    {
+        $user = $this->creator();
+        $this->handles($user, ['instagram' => 'ben_lewis']);
+        $user->social_links()->update(['status' => SocialLinks::STATUS_REJECTED]);
+
+        $this->actingAs($user)
+            ->get('/update-profile-lock-status');
+
+        $this->assertSame(0, (int) $user->fresh()->profile_status_lock);
+        $this->assertStringContainsString('a social handle', (string) session('error'));
+    }
 }
+

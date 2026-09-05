@@ -22,6 +22,7 @@ class FounderBonus extends Model
         'estimated_payout_date',
         'payout_status',
         'payout_rejection_reason',
+        'payment_reference',
         'paid_date',
         'stripe_transfer_id',
         'stripe_payout_id',
@@ -40,64 +41,66 @@ class FounderBonus extends Model
     // Payout status constants
     const STATUS_PENDING = 'pending';
 
+    const STATUS_APPROVED = 'approved';
+
     const STATUS_PAID = 'paid';
 
     const STATUS_REJECTED = 'rejected';
 
     /**
-     * Get minimum first 30 days earnings from config
+     * Get minimum first 30 days earnings from settings or config
      */
     public static function getMinFirst30dEarnings()
     {
-        return config('founder_bonus.qualification.min_first_30d_earnings', 2500.00);
+        return (float) Setting::getValue('founder_min_first_30d_earnings', config('founder_bonus.qualification.min_first_30d_earnings', 2500.00));
     }
 
     /**
-     * Get bonus percentage from config
+     * Get bonus percentage from settings or config
      */
     public static function getBonusPercentage()
     {
-        return config('founder_bonus.bonus.bonus_percentage', 0.10);
+        return (float) Setting::getValue('founder_bonus_percentage', config('founder_bonus.bonus.bonus_percentage', 0.10));
     }
 
     /**
-     * Get maximum founder seats from config
+     * Get maximum founder seats from settings or config
      */
     public static function getMaxFounderSeats()
     {
-        return config('founder_bonus.limits.max_founder_seats', 150);
+        return (int) Setting::getValue('founder_max_seats', config('founder_bonus.limits.max_founder_seats', 150));
     }
 
     /**
-     * Get minimum monthly earnings from config
+     * Get minimum monthly earnings from settings or config
      */
     public static function getMinMonthlyEarnings()
     {
-        return config('founder_bonus.bonus.min_monthly_earnings', 2500.00);
+        return (float) Setting::getValue('founder_min_monthly_earnings', config('founder_bonus.bonus.min_monthly_earnings', 2500.00));
     }
 
     /**
-     * Get maximum monthly earnings from config
+     * Get maximum monthly earnings from settings or config
      */
     public static function getMaxMonthlyEarnings()
     {
-        return config('founder_bonus.bonus.max_monthly_earnings', 10000.00);
+        return (float) Setting::getValue('founder_max_monthly_earnings', config('founder_bonus.bonus.max_monthly_earnings', 10000.00));
     }
 
     /**
-     * Get maximum bonus per month from config
+     * Get maximum bonus per month from settings or config
      */
     public static function getMaxBonusPerMonth()
     {
-        return config('founder_bonus.bonus.max_bonus_per_month', 1000.00);
+        return (float) Setting::getValue('founder_max_bonus_per_month', config('founder_bonus.bonus.max_bonus_per_month', 1000.00));
     }
 
     /**
-     * Get qualification days from config
+     * Get qualification days from settings or config
      */
     public static function getQualificationDays()
     {
-        return config('founder_bonus.qualification.qualification_period_days', 30);
+        return (int) Setting::getValue('founder_qualification_days', config('founder_bonus.qualification.qualification_period_days', 30));
     }
 
     /**
@@ -171,6 +174,14 @@ class FounderBonus extends Model
     }
 
     /**
+     * Scope for approved payouts
+     */
+    public function scopeApprovedPayouts($query)
+    {
+        return $query->where('payout_status', self::STATUS_APPROVED);
+    }
+
+    /**
      * Scope for qualified founders this month
      */
     public function scopeQualifiedThisMonth($query)
@@ -207,10 +218,10 @@ class FounderBonus extends Model
             return false;
         }
 
-        // Check available seats for current month
-        $currentMonthFounders = self::qualifiedThisMonth()->count();
+        // Check platform total founder seats limit
+        $totalFounders = self::getTotalFounderCount();
         $maxSeats = self::getMaxFounderSeats();
-        if ($currentMonthFounders >= $maxSeats) {
+        if ($totalFounders >= $maxSeats) {
             return false;
         }
 
@@ -226,14 +237,14 @@ class FounderBonus extends Model
     }
 
     /**
-     * Get available founder seats for current month
+     * Get available founder seats across the platform
      */
     public static function getAvailableSeats()
     {
         $maxSeats = self::getMaxFounderSeats();
-        $currentMonthFounders = self::qualifiedThisMonth()->count();
+        $totalFounders = self::getTotalFounderCount();
 
-        return $maxSeats - $currentMonthFounders;
+        return max(0, $maxSeats - $totalFounders);
     }
 
     /**
@@ -317,12 +328,16 @@ class FounderBonus extends Model
     /**
      * Mark payout as paid
      */
-    public function markAsPaid()
+    public function markAsPaid(?string $paymentReference = null)
     {
-        $this->update([
+        $data = [
             'payout_status' => self::STATUS_PAID,
             'paid_date' => now(),
-        ]);
+        ];
+        if ($paymentReference) {
+            $data['payment_reference'] = $paymentReference;
+        }
+        $this->update($data);
     }
 
     /**

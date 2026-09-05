@@ -19,7 +19,7 @@ return new class extends Migration
             $table->timestamp('founder_qualified_at')->nullable();
             $table->decimal('monthly_earnings', 10, 2)->default(0.00);
             $table->decimal('bonus_amount', 10, 2)->default(0.00);
-            $table->enum('payout_status', ['pending', 'paid', 'rejected'])->default('pending');
+            $table->enum('payout_status', ['pending', 'approved', 'paid', 'rejected'])->default('pending');
             $table->timestamp('payout_date')->nullable();
             $table->text('payout_rejection_reason')->nullable();
             $table->timestamps();

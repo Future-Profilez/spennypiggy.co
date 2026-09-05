@@ -86,6 +86,23 @@ return [
             'note' => 'Also gated by ALERTS_ENABLED in .env (the master switch for every channel on this host).',
         ],
 
+        /*
+         * 🚨 A CREATOR WE REFUSED HAS COME BACK, AND THEY ARE LOCKED OUT UNTIL
+         * SOMEBODY LOOKS. A refusal suspends the account, so this person cannot
+         * sell anything at all while they wait — which is why the client asked
+         * to hear about it immediately rather than in the half-hourly digest
+         * ("taaki jaldi se jaldi wo wapas aa sake site par"). The digest still
+         * carries the row; this is the one that arrives the moment it happens.
+         */
+        'identity_reverified' => [
+            'label' => 'Refused ID check re-verified',
+            'description' => 'A creator we refused has passed Stripe again and is waiting on a second sign-off. They cannot sell until it is done.',
+            'app' => 'website',
+            'critical' => false,
+            'roles' => [1, 4],
+            'emails' => [],
+        ],
+
         'fraud_digest' => [
             'label' => 'Fraud digest',
             'description' => 'Daily summary of blocked payments, risk states and chargeback activity.',

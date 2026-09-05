@@ -120,7 +120,7 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
     useEffect(() => {
         if (google2faPendingEmail) {
             setData("email", google2faPendingEmail);
-            setOpen("open");
+            setOpen(true);
         }
     }, [google2faPendingEmail]);
 
@@ -365,11 +365,8 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
             .then((resp) => {
                 if (resp.data.status) {
                     if (resp.data.is_2fa) {
-                        setOpen("open");
+                        setOpen(true);
                         setLoading(false);
-                        setTimeout(() => {
-                            setOpen(false);
-                        }, 1000);
                     } else {
                         submit();
                     }
@@ -834,6 +831,7 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                 hasPasskey={hasPasskey}
                 onSuccess={handleOTPSuccess}
                 onHide={() => {
+                    setOpen(false);
                     if (google2faPendingEmail) {
                         router.post(route("auth.google.cancel", { target: "login" }));
                     }

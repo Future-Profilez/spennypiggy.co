@@ -449,4 +449,88 @@ class HelpAiAnswerTest extends TestCase
 
         Http::assertNothingSent();
     }
+
+    // ------------------------------------------------------- caching faults
+
+    /**
+     * 🚨 A transient failure must never be remembered. The original
+     * Cache::remember() cached generate()'s failure values for the full week —
+     * one outage or a bad key froze "we could not answer" for that exact
+     * question long after the provider recovered. This uses the REAL ttl on
+     * purpose: setUp() zeroes it, which is why the suite never saw the bug.
+     */
+    public function test_a_provider_failure_is_not_cached(): void
+    {
+        config(['help.ai.cache_ttl' => 604800, 'help.ai.min_similarity' => 0.0]);
+        $this->article([], [1.0, 0.0, 0.0]);
+
+        // ⚠️ ONE fake with a SEQUENCE. A second Http::fake() does not replace
+        // the first — stubs stack and the first match wins — so faking a 500
+        // and then faking a 200 keeps answering 500, and a test written that
+        // way fails against correct code. (A throwaway probe made exactly that
+        // mistake and was read as a reproduction.)
+        Http::fake([
+            'api.openai.com/v1/embeddings' => Http::response(['data' => [['index' => 0, 'embedding' => [1.0, 0.0, 0.0]]]]),
+        ]);
+        Http::fakeSequence('api.openai.com/v1/chat/completions')
+            ->push(['error' => 'boom'], 500)
+            ->push(['choices' => [['message' => ['content' => 'Part of each sale is held.']]]], 200);
+
+        $first = HelpAnswer::ask('why is money held');
+        $this->assertSame('request_failed', $first['reason']);
+
+        // The provider is back. Nothing about the failure may be remembered —
+        // not in the answer cache (this test) and not as a key cooldown either
+        // (HelpAiKeyPoolTest): a 5xx is the provider's bad minute, not ours.
+        $second = HelpAnswer::ask('why is money held');
+
+        $this->assertTrue($second['answered'], 'The outage response was cached and outlived the outage.');
+    }
+
+    /** The counterpart: a verdict about the corpus IS cached for the week. */
+    public function test_a_no_answer_verdict_is_cached(): void
+    {
+        config(['help.ai.cache_ttl' => 604800, 'help.ai.min_similarity' => 0.0]);
+        $this->article([], [1.0, 0.0, 0.0]);
+
+        $this->fakeOpenAi([1.0, 0.0, 0.0], HelpAnswer::NO_ANSWER);
+        $first = HelpAnswer::ask('why is money held');
+        $this->assertSame('not_in_articles', $first['reason']);
+
+        // A model that would now answer must not be asked — the verdict stands.
+        $this->fakeOpenAi([1.0, 0.0, 0.0], 'An answer.');
+        $second = HelpAnswer::ask('why is money held');
+
+        $this->assertFalse($second['answered']);
+        $this->assertSame('not_in_articles', $second['reason']);
+        Http::assertNothingSent();
+    }
+
+    // -------------------------------------------------------------- provider
+
+    /**
+     * The provider is an env change. Both services must build their endpoint
+     * from config('help.ai.base_url'), never from a hardcoded OpenAI host.
+     */
+    public function test_both_endpoints_follow_the_configured_base_url(): void
+    {
+        config([
+            'help.ai.base_url' => 'https://api.groq.com/openai/v1/',
+            'help.ai.min_similarity' => 0.0,
+        ]);
+        $this->article([], [1.0, 0.0, 0.0]);
+
+        Http::fake([
+            'api.groq.com/openai/v1/embeddings' => Http::response(['data' => [['index' => 0, 'embedding' => [1.0, 0.0, 0.0]]]]),
+            'api.groq.com/openai/v1/chat/completions' => Http::response(['choices' => [['message' => ['content' => 'Held for a while.']]]]),
+            'api.openai.com/*' => Http::response(['error' => 'wrong host'], 500),
+        ]);
+
+        $result = HelpAnswer::ask('why is money held');
+
+        $this->assertTrue($result['answered']);
+        Http::assertSent(fn ($r) => $r->url() === 'https://api.groq.com/openai/v1/embeddings');
+        Http::assertSent(fn ($r) => $r->url() === 'https://api.groq.com/openai/v1/chat/completions');
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), 'api.openai.com'));
+    }
 }

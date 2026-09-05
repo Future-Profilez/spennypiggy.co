@@ -63,6 +63,7 @@ use App\StripeControl;
 use App\Support\AnalyticsEvent;
 use App\Support\BlockedPaymentAlert;
 use App\Support\IdentityCheckState;
+use App\Support\IdentityRejection;
 use App\Support\NotificationContext;
 use App\Support\PayoutDestinationAudit;
 use App\Support\StripeChargesFlag;
@@ -2232,12 +2233,27 @@ class StripeController extends Controller
                 }
 
                 $stripe = new StripeClient(config('services.stripe.secret'));
+                $metadata = Helpers::buildStripeMetadata('wishlist', $cart[0], [
+                    'user_id' => null, // Anonymous purchase
+                    'creator_id' => $creator->id,
+                    'wish_id' => $cart[0]->wish_item_id ?? null,
+                    'deliverable_type' => 'media_bundle',
+                    'certificate' => 'true',
+                    'product_type' => 'wish_one_off',
+                    'device_id' => $device_id,
+                    'fee_profile' => $methodResolution['fee_profile'],
+                    'creator_net_amount' => (string) ($totalCreatorNet * 100),
+                    'total_charge_amount' => (string) (array_sum(array_column($lineItems, 'price_data.unit_amount'))),
+                    'digital_waiver_confirmed_at' => now()->toDateTimeString(),
+                    'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
+                ]);
                 $anonSessionPayload = [
-                    'success_url' => route('checkout.anonymous.success', [$device_id]),
-                    'cancel_url' => route('checkout.anonymous.cancel', [$device_id]),
+                    'success_url' => route('checkout.success', [$cart[0]->owner_id]).'?session_id={CHECKOUT_SESSION_ID}',
+                    'cancel_url' => route('checkout.cancel', [$cart[0]->owner_id]),
                     'line_items' => $lineItems,
                     'mode' => 'payment',
                     'payment_method_types' => $methodResolution['payment_method_types'],
+                    'metadata' => $metadata,
                 ];
                 if ($methodResolution['fee_profile'] === 'card' && $methodResolution['force_3ds']) {
                     $anonSessionPayload['payment_method_options'] = [
@@ -2249,19 +2265,7 @@ class StripeController extends Controller
                     'payment_intent_data' => [
                         'application_fee_amount' => (int) ($totalApplicationFee * 100),
                         'description' => "Anonymous Support Payment for {$creator->username} (Total value including all fees)",
-                        'metadata' => Helpers::buildStripeMetadata('wishlist', $cart[0], [
-                            'user_id' => null, // Anonymous purchase
-                            'creator_id' => $creator->id,
-                            'wish_id' => $cart[0]->wish_item_id ?? null,
-                            'deliverable_type' => 'media_bundle',
-                            'certificate' => 'true',
-                            'product_type' => 'wish_one_off',
-                            'device_id' => $device_id,
-                            'creator_net_amount' => (string) ($totalCreatorNet * 100),
-                            'total_charge_amount' => (string) (array_sum(array_column($lineItems, 'price_data.unit_amount'))),
-                            'digital_waiver_confirmed_at' => now()->toDateTimeString(),
-                            'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
-                        ]),
+                        'metadata' => $metadata,
                     ],
                 ], ['stripe_account' => $connectedAccountId]);
 
@@ -5248,6 +5252,26 @@ class StripeController extends Controller
             // "awaiting result" rather than staying rejected.
             if ($user->identity_admin_status == 2) {
                 $user->identity_admin_status = 0;
+
+                /*
+                 * 🚨 AND THE RESTRICTION COMES OFF WITH IT.
+                 *
+                 * A rejection stops the creator's money in both directions
+                 * (`IdentityRejection`), and the banner that carries the reason
+                 * tells them to run the check again — so this is the button
+                 * they were sent to press. Clearing the admin status without
+                 * lifting the hold would leave them restricted with the banner
+                 * gone: no explanation on screen and nothing left to press.
+                 *
+                 * ⚠️ It lifts ONLY a hold this feature applied — the reason code
+                 * is checked inside. A policy suspension is untouched, so this
+                 * cannot become a way to un-suspend yourself.
+                 *
+                 * ⚠️ The creator is NOT verified again by pressing it: Stripe
+                 * still has to pass and an admin still has to sign off. This
+                 * only returns them to where they were before the refusal.
+                 */
+                IdentityRejection::lift($user);
             }
 
             // 2 = check submitted, waiting on Stripe's webhook. Without it the

@@ -617,7 +617,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             approvedState: profileStatusLock == 2,
             reason: profileRejectReason,
             reviewNote: REVIEW_NOTE,
-            locked: !canSubmitForReview && !profileRejectReason,
+            locked: !canSubmitForReview,
             lockReason: submitBlockers.length
                 ? `Unlocks once you add or fix your ${listItems(submitBlockers)}.`
                 : null,

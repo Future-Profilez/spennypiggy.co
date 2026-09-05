@@ -315,6 +315,10 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
         // Re-entrancy guard: a second tap before the disabled re-render must not
         // fire a second checkout session.
         if (processing) return;
+        if (data.payment_method === 'card' && !card_capabilities) {
+            toast.error(riskMessageBody("CREATOR_UNAVAILABLE"));
+            return;
+        }
         if (!data.agree) {
             toast.error("Please accept the Paid Tasks terms");
             return;
@@ -565,7 +569,7 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
                                                 }
                                             />
                                         )}
-                                        {!card_capabilities && (
+                                        {data.payment_method === 'card' && !card_capabilities && (
                                             <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-r" role="alert">
                                                 <p className="font-bold">{riskMessageTitle("CREATOR_UNAVAILABLE")}</p>
                                                 <p className="text-sm">{riskMessageBody("CREATOR_UNAVAILABLE")}</p>
@@ -619,7 +623,7 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
                                             <PayButton
                                                 label={purchaseHistory && purchaseHistory.length > 0 ? 'Purchase Again 🔄' : (task.type === 'instant' ? 'Pay to Access 🔓' : 'Pay to Assign 📝')}
                                                 processing={processing}
-                                                disabled={!data.agree || !data.digital_waiver || (turnstileSiteKey && !verified) || !card_capabilities}
+                                                disabled={!data.agree || !data.digital_waiver || (turnstileSiteKey && !verified) || (data.payment_method === 'card' && !card_capabilities)}
                                                 onClick={handlePurchase}
                                             />
                                             {!isCreator && (

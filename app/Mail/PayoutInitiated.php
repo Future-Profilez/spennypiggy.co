@@ -3,6 +3,8 @@
 namespace App\Mail;
 
 use App\Models\User;
+use App\Support\PayoutCycle;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
@@ -35,6 +37,28 @@ class PayoutInitiated extends Mailable
         $this->currency = strtoupper($currency ?: 'GBP');
     }
 
+    /**
+     * The earning week this payout covers, e.g. "Fri 4 Sep to Thu 10 Sep".
+     *
+     * 🚨 DERIVED FROM `sentAt`, NEVER FROM "today". A queued mail can be rendered
+     * minutes or hours after the run — and a retry can render it days later — so
+     * asking the clock would name a different week than the one the creator was
+     * actually paid for, in writing, with nothing to catch it.
+     *
+     * ⚠️ Returns null on an unparseable date rather than guessing: no line at all
+     * is better than the wrong week on a payment receipt.
+     */
+    public function earningWeek(): ?string
+    {
+        try {
+            [$start, $end] = PayoutCycle::periodFor(Carbon::parse($this->sentAt));
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return $start->format('D j M').' to '.$end->format('D j M');
+    }
+
     public function envelope(): Envelope
     {
         return new Envelope(
@@ -50,6 +74,14 @@ class PayoutInitiated extends Mailable
 
     public function content(): Content
     {
-        return new Content(view: 'email.payout-initiated');
+        // ⚠️ Passed as view data, not called from the template: `$this` inside a
+        // Mailable's view is NOT the Mailable, so `$this->earningWeek()` there is a
+        // fatal. And `earningWeek` is deliberately not a public property — a public
+        // property of the same name would OVERWRITE this computed value silently
+        // (the documented buildViewData collision).
+        return new Content(
+            view: 'email.payout-initiated',
+            with: ['earningWeek' => $this->earningWeek()],
+        );
     }
 }

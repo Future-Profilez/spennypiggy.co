@@ -1,6 +1,7 @@
 import { Head, Link } from "@inertiajs/react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import HelpSearchBar from "@/Components/Help/HelpSearchBar";
+import { openLiveChat } from "@/lib/liveChat";
 import StillNeedHelp from "@/Components/Help/StillNeedHelp";
 import AudienceFilter from "@/Components/Help/AudienceFilter";
 
@@ -95,20 +96,22 @@ export default function HelpIndex({
                             a hand with?
                         </h1>
 
-                        <p className="mt-4 max-w-xl text-[15px] leading-[1.6] text-black/60 sm:text-base">
+                        <p className="mt-4 max-w-xl text-[15px] leading-[1.6] text-white
+                         sm:text-base">
                             {ai_enabled
                                 ? "Ask in your own words, search, or start a "
                                 : "Search, browse by topic, or start a "}
+                            {/* ⚠️ The href is a REAL mailto:, not "#" with a JS
+                                redirect behind it. openLiveChat only cancels the
+                                click when the messenger is genuinely booted — the
+                                old `typeof window.Intercom === "function"` guard
+                                was satisfied by the provider's queueing stub, so
+                                a guest (no Intercom at all) clicked a dead link.
+                                A real href also survives middle-click and a
+                                crawler, which "#" never did. */}
                             <a
-                                href="#"
-                                onClick={(e) => {
-                                    if (typeof window !== "undefined" && typeof window.Intercom === "function") {
-                                        e.preventDefault();
-                                        window.Intercom("showNewMessage");
-                                    } else {
-                                        window.location.href = `mailto:${escalation?.email}`;
-                                    }
-                                }}
+                                href={`mailto:${escalation?.email}`}
+                                onClick={openLiveChat}
                                 className="livechat font-semibold text-[#FF007F] hover:underline"
                             >
                                 live chat

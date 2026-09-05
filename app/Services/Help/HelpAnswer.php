@@ -5,7 +5,6 @@ namespace App\Services\Help;
 use App\Models\HelpArticle;
 use App\Support\HelpTokens;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -29,14 +28,33 @@ use Illuminate\Support\Facades\Log;
  */
 class HelpAnswer
 {
-    private const ENDPOINT = 'https://api.openai.com/v1/chat/completions';
-
     /**
      * The exact string the model must return when the articles do not contain
      * the answer. Matched verbatim so the caller can turn it into a proper
      * "we could not answer this" state rather than printing an apology.
      */
     public const NO_ANSWER = 'NO_ANSWER';
+
+    /**
+     * Reasons that are a DECISION about the corpus, and may be cached.
+     *
+     * 🚨 EVERYTHING ELSE IS A FAILURE AND MUST NEVER BE CACHED. `Cache::remember`
+     * cannot tell them apart, so a single API timeout, a rate-limited key or a
+     * rotated one used to be stored as "we have no answer for that" for the full
+     * TTL — a whole DAY per question, for every later asker, long after the
+     * service recovered. The service comes back and the help centre does not,
+     * with nothing in any log to connect the two.
+     *
+     * `not_in_articles` and `below_similarity_threshold` are the model and the
+     * corpus genuinely answering; they are stable until the corpus changes, and
+     * they are what the TTL exists for. `no_articles_embedded` is NOT on the
+     * list — it is fixed by running `help:embed`, and caching it would keep the
+     * help centre silent for a day after somebody had already fixed it.
+     */
+    private const CACHEABLE_REASONS = [
+        'not_in_articles',
+        'below_similarity_threshold',
+    ];
 
     public static function enabled(): bool
     {
@@ -62,9 +80,22 @@ class HelpAnswer
 
         $cacheKey = 'help:ai:'.md5($normalised.'|'.($audience ?? 'all'));
 
-        return Cache::remember($cacheKey, (int) config('help.ai.cache_ttl', 86400), function () use ($question, $normalised, $audience) {
-            return self::generate($question, $normalised, $audience);
-        });
+        $cached = Cache::get($cacheKey);
+
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $result = self::generate($question, $normalised, $audience);
+
+        // ⚠️ Written only when the outcome is a decision, never when it is a
+        // failure — see CACHEABLE_REASONS. `Cache::remember` cannot make that
+        // distinction, which is why this is not one.
+        if ($result['answered'] || in_array($result['reason'], self::CACHEABLE_REASONS, true)) {
+            Cache::put($cacheKey, $result, (int) config('help.ai.cache_ttl', 86400));
+        }
+
+        return $result;
     }
 
     private static function generate(string $question, string $normalised, ?string $audience): array
@@ -119,30 +150,39 @@ class HelpAnswer
         }
 
         try {
-            $response = Http::withToken(config('help.ai.api_key'))
-                ->timeout((int) config('help.ai.timeout', 12))
-                ->post(self::ENDPOINT, [
-                    'model' => config('help.ai.answer_model'),
-                    // Deterministic: the same question must not get a different
-                    // policy answer on Tuesday.
-                    'temperature' => 0,
-                    'max_tokens' => (int) config('help.ai.max_tokens', 450),
-                    'messages' => [
-                        ['role' => 'system', 'content' => self::systemPrompt($audience)],
-                        ['role' => 'user', 'content' => self::userPrompt($question, $context)],
-                    ],
-                ]);
+            // One call, several credentials. HelpAiClient walks the healthy keys
+            // and stands down whichever the provider refuses, so a spent free
+            // tier costs this request nothing and the next visitor nothing.
+            $result = HelpAiClient::post('chat/completions', [
+                'model' => config('help.ai.answer_model'),
+                // Deterministic: the same question must not get a different
+                // policy answer on Tuesday.
+                'temperature' => 0,
+                'max_tokens' => (int) config('help.ai.max_tokens', 450),
+                'messages' => [
+                    ['role' => 'system', 'content' => self::systemPrompt($audience)],
+                    ['role' => 'user', 'content' => self::userPrompt($question, $context)],
+                ],
+            ]);
 
-            if (! $response->successful()) {
+            if (! $result['ok']) {
                 Log::warning('Help centre answer request failed', [
-                    'status' => $response->status(),
-                    'body' => mb_substr($response->body(), 0, 500),
+                    'reason' => $result['reason'],
+                    'error' => mb_substr((string) $result['error'], 0, 500),
                 ]);
 
-                return self::unanswered('request_failed', $best);
+                // ⚠️ `rate_limited` is passed through as itself rather than
+                // flattened into `request_failed`. The frontend treats both as
+                // "the service did not run" and shows the articles either way,
+                // but only one of them is a reason to add another key — and
+                // `help:ai-status` is where that shows up.
+                return self::unanswered(
+                    $result['reason'] === 'rate_limited' ? 'rate_limited' : 'request_failed',
+                    $best
+                );
             }
 
-            $answer = trim((string) $response->json('choices.0.message.content'));
+            $answer = trim((string) data_get($result['json'], 'choices.0.message.content'));
 
             // The model was told to return this exact string when the articles
             // do not contain the answer, and saying so is the correct outcome —

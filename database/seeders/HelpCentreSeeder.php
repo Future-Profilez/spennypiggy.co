@@ -7,6 +7,7 @@ use App\Models\HelpCategory;
 use App\Services\Help\HelpContent;
 use App\Support\HelpTokens;
 use Database\Seeders\Help\ExtraArticles;
+use Database\Seeders\Help\FeatureArticles;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 
@@ -63,7 +64,8 @@ class HelpCentreSeeder extends Seeder
             // readable as the corpus grows. Same shape, same rules.
             $articles = array_merge(
                 $category['articles'],
-                ExtraArticles::forCategory($category['slug'])
+                ExtraArticles::forCategory($category['slug']),
+                FeatureArticles::forCategory($category['slug'])
             );
 
             foreach ($articles as $i => $article) {
@@ -692,16 +694,22 @@ MD,
                 'title' => 'When do I get paid?',
                 'audience' => 'creator',
                 'keywords' => 'payout, when paid, friday, payment schedule, bank transfer, money, earnings',
-                'summary' => 'Every {{payout.day}}. Earnings run {{payout.day}} to Thursday and go out the following {{payout.day}}, usually landing on Monday.',
+                'summary' => 'Every {{payout.day}}. Each payout covers the {{payout.period}} earning week that closed the week before, so your first takes {{payout.wait}}.',
                 'related' => ['why-is-some-of-my-money-held', 'connect-your-payouts', 'what-fees-are-deducted'],
                 'body' => <<<'MD'
-Payouts run **every {{payout.day}}**. Your earnings week runs {{payout.day}} to Thursday, and that week's money goes out the following {{payout.day}} — usually reaching your bank on the Monday after.
+Payouts run **every {{payout.day}}**. Each one covers a complete earning week that runs **{{payout.period}}**, after that week has been held for a further week.
+
+So earnings from 4 to 10 September — a {{payout.period}} week — are paid on **18 September**.
 
 Money is paid straight into your own Stripe account, in your name.
 
+## Your first payout takes longer
+
+Because a sale waits for its own week to close and then for the hold, your first payout lands **{{payout.wait}}** later — 8 days if you sell on the Thursday a week closes, 14 if you sell on the day one opens. After that you are on a weekly {{payout.day}} cycle.
+
 ## The hold
 
-A sale is not eligible until it is {{payout.hold_days}} days old. That window is what lets a genuine problem with a purchase surface before the money has left.
+A completed earning week is held for a week before it is paid. That is what lets a genuine problem with a purchase surface before the money has left.
 
 ## What is included
 
@@ -710,7 +718,7 @@ A sale is not eligible until it is {{payout.hold_days}} days old. That window is
 
 ## What is not included yet
 
-- Sales inside the {{payout.hold_days}}-day hold.
+- Sales in the current earning week, and in the week being held.
 - Paid Requests the buyer has not accepted, and physical Shop orders not yet marked delivered.
 - Anything under [reserve](/help/money-and-payouts/why-is-some-of-my-money-held).
 

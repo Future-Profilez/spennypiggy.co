@@ -37,6 +37,7 @@ use App\Mail\TaskPurchasedSupporterMail;
 use App\Mail\TaskRefunded;
 use App\Models\AuditLog;
 use App\Models\BillPayment;
+use App\Models\BlockedPayment;
 use App\Models\CreatorMetric;
 use App\Models\Currency;
 use App\Models\Deliverable;
@@ -86,6 +87,7 @@ use App\StripeControl as AppStripeControl;
 use App\Support\AlertRouter;
 use App\Support\IdentityCheckState;
 use App\Support\IdentityFailureReason;
+use App\Support\IdentityReverifiedAlert;
 use App\Support\NotificationContext;
 use App\Support\PayoutDestinationAudit;
 use App\Support\StripeChargesFlag;
@@ -578,6 +580,14 @@ class StripeWebhookController extends Controller
             ->orderByDesc('updated_at')
             ->first();
 
+        // Safely resolve creator/user ID across all metadata variations and email lookup
+        $resolvedUserId = $subscription->metadata->user_id
+            ?? $subscription->metadata->buyer_id
+            ?? $customer->metadata->user_id
+            ?? $customer->metadata->buyer_id
+            ?? ($subs->user_id ?? null)
+            ?? (isset($customer->email) ? User::where('email', $customer->email)->value('id') : null);
+
         // If no DB record and not a creation event, we might want to skip or create?
         // Original logic: "Trial Started" creates record. "First Payment" creates record.
 
@@ -610,7 +620,7 @@ class StripeWebhookController extends Controller
 
             // Create new record for trial
             MonthlyCharge::create([
-                'user_id' => $subscription->metadata->user_id ?? $customer->metadata->user_id ?? null,
+                'user_id' => $resolvedUserId,
                 'name' => $customer->name ?? 'Creator',
                 'email' => $customer->email,
                 'stripe_id' => $subscriptionId,
@@ -666,11 +676,14 @@ class StripeWebhookController extends Controller
                     $subs->tax = $tax;
                     $subs->status = 'active';
                     $subs->upcoming_payment = $stripeEnd;
+                    if ($resolvedUserId && empty($subs->user_id)) {
+                        $subs->user_id = $resolvedUserId;
+                    }
                     $subs->save();
                 } else {
                     // Create new record for first payment (if trial wasn't tracked)
                     MonthlyCharge::create([
-                        'user_id' => $subscription->metadata->user_id ?? $customer->metadata->user_id ?? null,
+                        'user_id' => $resolvedUserId,
                         'name' => $customer->name ?? 'Creator',
                         'email' => $customer->email,
                         'stripe_id' => $subscriptionId,
@@ -1078,17 +1091,41 @@ class StripeWebhookController extends Controller
 
             SendIdentityVerificationEmail::dispatch($user, 'success');
 
-            // Request redaction of verification session to avoid storing sensitive images at Stripe
-            try {
-                $client = AppStripeControl::getClient();
-                $client->identity->verificationSessions->redact($session->id, []);
-            } catch (\Throwable $e) {
-                Log::warning('Stripe Identity redaction failed', [
-                    'user_id' => $user->id,
-                    'session_id' => $session->id ?? null,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            /*
+             * 🚨 A CREATOR WE REFUSED HAS COME BACK. They are suspended until a
+             * human signs the new check off, so they can sell nothing at all
+             * while they wait — the client asked to hear about that the moment
+             * it happens rather than on the next half-hourly digest, which
+             * still carries the row. Ordinary first-time verifications are NOT
+             * mailed: an alert that fires on everybody is one nobody reads.
+             */
+            IdentityReverifiedAlert::notify($user);
+
+            /*
+             * 🚨 REDACTION MOVED TO AFTER THE HUMAN SIGN-OFF (4 Sep 2026), and
+             * this is the one line that would have made that whole feature
+             * impossible.
+             *
+             * `verificationSessions->redact()` PERMANENTLY DESTROYS the document
+             * images at Stripe — it is not a soft delete and there is no undo. It
+             * ran here, the moment Stripe passed the check, so by the time a
+             * reviewer opened the creator's file there was nothing left to look
+             * at: the whole point of the sign-off is comparing the ID photo with
+             * the profile photo, and the ID photo was already gone. The screen
+             * would have drawn "no images" for every creator, for ever, with
+             * nothing wrong in any log.
+             *
+             * 🚨 NOTHING IS STORED HERE EITHER WAY — that was the client's rule
+             * ("photo apne ko db me save hi ni krni") and it is unchanged. The
+             * images stay at Stripe, are fetched live through a one-hour link at
+             * the moment a reviewer looks, and the ADMIN APP redacts the session
+             * as soon as a decision is taken. The window is one review, not for
+             * ever.
+             *
+             * ⚠️ Do NOT reinstate a redact call on this path. If the sign-off
+             * step is ever removed, redact from wherever the LAST read of those
+             * images happens — never before it.
+             */
 
             Helpers::sendNotification(
                 'Identity verification successful ✅',
@@ -3017,6 +3054,55 @@ class StripeWebhookController extends Controller
     }
 
     /**
+     * A renewal arrived for a creator we have suspended — stop the NEXT one.
+     *
+     * 🚨 THE BACKSTOP, NOT THE MECHANISM. Suspension pauses every incoming
+     * subscription through `SuspensionService::enforce()`, which the
+     * `suspension:enforce` sweep runs every five minutes. Two things can still
+     * let a renewal through: the minutes between the admin writing the flag and
+     * the sweep claiming the account, and any single subscription whose pause
+     * failed at Stripe (the sweep is best-effort per subscription, deliberately,
+     * so one dead id cannot stop the rest). Either way the result is a supporter
+     * being charged for a creator who cannot sell — which is the one thing the
+     * client asked to be true nowhere on the site.
+     *
+     * 🚨 THE CURRENT PERIOD IS STILL FULFILLED. Stripe has already taken the
+     * money by the time this event arrives; refusing to deliver would charge the
+     * supporter and give them nothing, which is worse than the fault being
+     * fixed. Same rule the suspension already follows for outgoing
+     * subscriptions — they cancel at period end, and no refund is issued.
+     *
+     * ⚠️ NEVER THROWS. This runs inside a webhook whose real job is fulfilment.
+     */
+    private function pauseRenewalIfCreatorSuspended(?string $subscriptionId, ?User $creator): void
+    {
+        try {
+            if (! $subscriptionId || ! $creator) {
+                return;
+            }
+
+            if ((int) $creator->suspended_account !== 1) {
+                return;
+            }
+
+            StripeControl::pauseSubscription($subscriptionId, $creator->account_id);
+
+            // ⚠️ ERROR, not info: a supporter has just been charged for a
+            // creator who is suspended, and somebody has to know it happened.
+            Log::error('Renewal charged for a suspended creator — subscription paused at Stripe', [
+                'creator_id' => $creator->id,
+                'subscription' => $subscriptionId,
+                'reason_code' => $creator->suspension_reason_code,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Could not pause a suspended creator\'s renewal', [
+                'subscription' => $subscriptionId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Handle invoice.payment_succeeded events for subscription renewals
      */
     public function handleInvoicePaymentSucceeded($data, $metadata)
@@ -3043,6 +3129,10 @@ class StripeWebhookController extends Controller
             ->first();
 
         if ($wishSubscription) {
+            $this->pauseRenewalIfCreatorSuspended(
+                $subscriptionId,
+                optional($wishSubscription->wish_item)->user
+            );
             $this->handleWishSubscriptionRenewal($data, $wishSubscription);
         }
 
@@ -3278,6 +3368,10 @@ class StripeWebhookController extends Controller
             ->first();
 
         if ($wishSubscription && $wishSubscription->wish_item) {
+            $this->pauseRenewalIfCreatorSuspended(
+                $subscriptionId,
+                $wishSubscription->wish_item->user
+            );
             $this->handleWishSubscriptionInvoicePaid($data, $wishSubscription);
         } else {
             // Check if this is a bill subscription
@@ -3287,6 +3381,8 @@ class StripeWebhookController extends Controller
                 ->first();
 
             if ($billPayment && $billPayment->bill) {
+                $this->pauseRenewalIfCreatorSuspended($subscriptionId, $billPayment->bill->user);
+
                 Log::info('Invoice paid for bill subscription', [
                     'subscription_id' => $subscriptionId,
                     'bill_id' => $billPayment->bills_id,
@@ -3355,6 +3451,11 @@ class StripeWebhookController extends Controller
                     ->first();
 
                 if ($membershipPayment && $membershipPayment->membership) {
+                    $this->pauseRenewalIfCreatorSuspended(
+                        $subscriptionId,
+                        $membershipPayment->membership->user
+                    );
+
                     Log::info('Invoice paid for membership subscription', [
                         'subscription_id' => $subscriptionId,
                         'membership_id' => $membershipPayment->membership_id,
@@ -4343,10 +4444,18 @@ class StripeWebhookController extends Controller
     {
         Log::info('Processing async payment failed', ['session_id' => $session->id]);
 
+        $creatorId = null;
+        $payerId = null;
+        $paymentType = 'standard';
+        $email = $session->customer_details->email ?? $session->customer_email ?? null;
+
         $purchase = TaskPurchase::where('stripe_session_id', $session->id)->first();
         if ($purchase) {
             $purchase->status = 'failed';
             $purchase->save();
+            $creatorId = $purchase->creator_id;
+            $payerId = $purchase->supporter_id;
+            $paymentType = 'task';
             Log::info('Updated TaskPurchase status to failed', ['id' => $purchase->id]);
 
             // Clear caches
@@ -4358,9 +4467,9 @@ class StripeWebhookController extends Controller
             }
         }
 
-        // Also update Deliverable
-        $deliverable = Deliverable::where('session_id', $session->id)->first();
-        if ($deliverable) {
+        // Also update Deliverables for this session
+        $deliverables = Deliverable::where('session_id', $session->id)->get();
+        foreach ($deliverables as $deliverable) {
             $deliverable->payment_status = 'failed';
             $deliverable->status = 'failed';
             $deliverable->save();
@@ -4375,34 +4484,100 @@ class StripeWebhookController extends Controller
         if ($piggyPot) {
             $piggyPot->status = 'failed';
             $piggyPot->save();
+            $creatorId = $creatorId ?? $piggyPot->creator_id;
+            $payerId = $payerId ?? $piggyPot->user_id;
+            $paymentType = 'piggy_pot';
             Log::info('Updated PiggyPotContribution status to failed', ['id' => $piggyPot->id]);
         }
 
         $shopPay = ShopPayment::where('session_id', $session->id)->first();
-        if ($shopPay && $shopPay->payment_status !== 'paid') {
+        if ($shopPay) {
             $shopPay->payment_status = 'failed';
             $shopPay->save();
+            $creatorId = $creatorId ?? $shopPay->shop?->user_id;
+            $payerId = $payerId ?? $shopPay->user_id;
+            $paymentType = 'shop';
             Log::info('Updated ShopPayment status to failed (async settlement)', ['id' => $shopPay->id]);
         }
 
         $tipPay = TipGoalsPayment::where('session_id', $session->id)->first();
-        if ($tipPay && $tipPay->status !== 'paid') {
+        if ($tipPay) {
             $tipPay->status = 'failed';
             $tipPay->save();
+            $creatorId = $creatorId ?? $tipPay->creator_id;
+            $payerId = $payerId ?? $tipPay->user_id;
+            $paymentType = 'tip';
             Log::info('Updated TipGoalsPayment status to failed (async settlement)', ['id' => $tipPay->id]);
         }
 
+        $detail = StripePaymentDetail::where('session_id', $session->id)->first();
+        if ($detail) {
+            $detail->payment_status = 'failed';
+            $detail->save();
+            $creatorId = $creatorId ?? $detail->owner_id;
+            $payerId = $payerId ?? $detail->user_id;
+            $paymentType = 'cart';
+            Log::info('Updated StripePaymentDetail status to failed (async settlement)', ['id' => $detail->id]);
+        }
+
+        $wishSub = WishItemSubscription::where('session_id', $session->id)->first();
+        if ($wishSub) {
+            $wishSub->status = 'failed';
+            $wishSub->save();
+            $creatorId = $creatorId ?? $wishSub->wishItem?->user_id;
+            $payerId = $payerId ?? $wishSub->user_id;
+            $paymentType = 'wish';
+            Log::info('Updated WishItemSubscription status to failed (async settlement)', ['id' => $wishSub->id]);
+        }
+
         Payment::where('stripe_session_id', $session->id)
-            ->whereIn('status', ['initiated', 'processing', 'review_hold'])
+            ->whereIn('status', ['initiated', 'processing', 'review_hold', 'paid', 'completed'])
             ->update(['status' => 'failed']);
+
+        // Resolve creator ID fallback from session metadata
+        $creatorId = $creatorId
+            ?? $session->metadata->creator_id
+            ?? $session->metadata->creatorId
+            ?? null;
+
+        if (! $payerId && $email) {
+            $payerId = User::where('email', $email)->value('id');
+        }
+
+        $piId = is_string($session->payment_intent ?? null)
+            ? $session->payment_intent
+            : ($session->payment_intent->id ?? null);
+
+        // Flag payer in BlockedPayment so future buyer risk checks trip
+        if ($creatorId) {
+            try {
+                BlockedPayment::logBlockedPayment([
+                    'creator_id' => $creatorId,
+                    'payer_id' => $payerId,
+                    'amount' => isset($session->amount_total) ? ($session->amount_total / 100) : 0,
+                    'currency' => strtoupper($session->currency ?? 'GBP'),
+                    'payment_type' => $paymentType,
+                    'payment_method' => 'bank',
+                    'blocked_reason' => 'bank_settlement_failed',
+                    'payer_info' => [
+                        'email' => $email,
+                        'name' => $session->customer_details->name ?? null,
+                    ],
+                    'payment_metadata' => [
+                        'session_id' => $session->id,
+                        'payment_intent' => $piId,
+                    ],
+                ]);
+            } catch (\Exception $e) {
+                Log::warning('Failed to log BlockedPayment on async payment failure: '.$e->getMessage());
+            }
+        }
 
         // With instant_fulfilment on, the redirect wrote a COMPLETED ledger row
         // for bank money that had not settled. This event is the bank saying it
         // never will — without this sync the creator keeps a completed,
         // payout-eligible FinancialTransaction for money that never arrived.
-        if (! empty($session->payment_intent)) {
-            $this->syncFinancialTransactionsByPaymentIntent($session->payment_intent, 'failed');
-        }
+        $this->syncFinancialTransactionsByPaymentIntent($piId ?? '', 'failed', $session->id);
     }
 
     /**
@@ -6558,7 +6733,7 @@ class StripeWebhookController extends Controller
      * Directly update financial_transactions status for all source records linked to a payment intent.
      * This provides immediate consistency without waiting for the sync command queue.
      */
-    private function syncFinancialTransactionsByPaymentIntent(string $paymentIntentId, string $newStatus): void
+    private function syncFinancialTransactionsByPaymentIntent(string $paymentIntentId, string $newStatus, ?string $explicitSessionId = null): void
     {
         try {
             $ftStatus = match ($newStatus) {
@@ -6570,11 +6745,21 @@ class StripeWebhookController extends Controller
                 default => $newStatus,
             };
 
-            // Resolve the checkout session for this PI. Many source records are keyed by
-            // session_id, not payment_intent — the previous `orWhere($sessionCol, $paymentIntentId)`
-            // compared a session column against the PI value and never matched them.
-            $sessionId = Payment::where('stripe_payment_intent_id', $paymentIntentId)->value('stripe_session_id')
-                ?? StripePaymentDetail::where('stripe_payment_intent_id', $paymentIntentId)->value('session_id');
+            // Resolve the checkout session for this PI or use explicitly provided sessionId.
+            // Many source records are keyed by session_id, not payment_intent.
+            $sessionId = $explicitSessionId
+                ?? (! empty($paymentIntentId) ? Payment::where('stripe_payment_intent_id', $paymentIntentId)->value('stripe_session_id') : null)
+                ?? (! empty($paymentIntentId) ? StripePaymentDetail::where('stripe_payment_intent_id', $paymentIntentId)->value('session_id') : null)
+                ?? (! empty($paymentIntentId) ? Deliverable::where('payment_intent_id', $paymentIntentId)->value('session_id') : null);
+
+            if (empty($paymentIntentId) && $sessionId) {
+                $paymentIntentId = Payment::where('stripe_session_id', $sessionId)->value('stripe_payment_intent_id')
+                    ?? StripePaymentDetail::where('session_id', $sessionId)->value('stripe_payment_intent_id')
+                    ?? Deliverable::where('session_id', $sessionId)->value('payment_intent_id')
+                    ?? TaskPurchase::where('stripe_session_id', $sessionId)->value('payment_intent_id')
+                    ?? PiggyPotContribution::where('session_id', $sessionId)->value('payment_intent_id')
+                    ?? '';
+            }
 
             // Cascade a source record's OWN status only for terminal/negative outcomes.
             // A 'succeeded' sync must never overwrite a source 'paid' status with 'completed'.
@@ -6589,13 +6774,14 @@ class StripeWebhookController extends Controller
                 [TipGoalsPayment::class,      null,                       'session_id',        'status'],
                 [ShopPayment::class,          null,                       'session_id',        'payment_status'],
                 [StripePaymentDetail::class,  'stripe_payment_intent_id', 'session_id',        'payment_status'],
+                [WishItemSubscription::class, null,                       'session_id',        'status'],
                 [MembershipPayment::class,    null,                       'session_id',        'status'],
                 [BillPayment::class,          null,                       'session_id',        'status'],
             ];
 
             foreach ($sourceModels as [$modelClass, $piCol, $sessionCol, $statusCol]) {
                 $ids = [];
-                if ($piCol) {
+                if ($piCol && ! empty($paymentIntentId)) {
                     $ids = array_merge($ids, $modelClass::where($piCol, $paymentIntentId)->pluck('id')->all());
                 }
                 if ($sessionCol && $sessionId) {
@@ -6609,9 +6795,9 @@ class StripeWebhookController extends Controller
                 if ($sourceStatus !== null) {
                     // A failure event must never demote a source row that already
                     // settled ('paid') — refunds and disputes DO overwrite paid,
-                    // a failed/blocked attempt does not.
+                    // a blocked attempt does not.
                     $sourceQuery = $modelClass::whereIn('id', $ids);
-                    if (in_array($sourceStatus, ['failed', 'blocked'], true)) {
+                    if ($sourceStatus === 'blocked') {
                         $sourceQuery->where($statusCol, '!=', 'paid');
                     }
                     $sourceQuery->update([$statusCol => $sourceStatus]);

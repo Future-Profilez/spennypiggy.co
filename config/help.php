@@ -41,7 +41,94 @@ return [
          * caches config on deploy, and the feature would silently stop working
          * on exactly the environment that matters.
          */
-        'api_key' => env('OPENAI_API_KEY') ?: env('DALLE_SECRET_KEY'),
+        /*
+         * 🚨 THE POOL. Comma-separated, as many as you have — the code does not
+         * care whether that is one, two or five.
+         *
+         *   HELP_AI_API_KEYS=gsk_aaa...,gsk_bbb...
+         *
+         * ⚠️ A FREE TIER'S QUOTA IS PER ACCOUNT, NOT PER KEY. Two keys minted
+         * in ONE provider account share one daily allowance, so they run out
+         * together and the failover buys nothing. Real capacity means separate
+         * accounts (and check the provider's terms allow one person to hold
+         * more than one). The pool deduplicates identical keys for the same
+         * reason — the same string twice is not two accounts.
+         *
+         * ⚠️ Keys may point at DIFFERENT hosts only if those hosts serve the
+         * same model names, because `base_url` and the model names below are
+         * shared by the whole pool. Mixing providers means a second install,
+         * not a second key.
+         */
+        'keys' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('HELP_AI_API_KEYS', ''))
+        ))),
+
+        /*
+         * The single-key form. Still supported, and still what
+         * `config('help.ai.api_key')` answers — the pool falls back to it when
+         * HELP_AI_API_KEYS is empty, so an existing environment needs no change.
+         */
+        'api_key' => env('HELP_AI_API_KEY') ?: (
+            // The OpenAI keys are only a sensible fallback when the endpoint
+            // IS OpenAI. Against any other host they produce a 401 that reads
+            // as "the key is wrong" — and the person who set HELP_AI_BASE_URL
+            // to Groq and left HELP_AI_API_KEY blank would never guess why.
+            str_contains(env('HELP_AI_BASE_URL', 'https://api.openai.com/v1'), 'api.openai.com')
+                ? (env('OPENAI_API_KEY') ?: env('DALLE_SECRET_KEY'))
+                : null
+        ),
+
+        /*
+         * Any OpenAI-COMPATIBLE host: the same /chat/completions and
+         * /embeddings request and response shapes. Known to work:
+         *
+         *   OpenAI  https://api.openai.com/v1                              (default)
+         *   Groq    https://api.groq.com/openai/v1                         (free tier)
+         *   Gemini  https://generativelanguage.googleapis.com/v1beta/openai (free tier)
+         *
+         * ⚠️ Changing the host means changing BOTH model names below to ones
+         * that host serves, then `php artisan help:embed` — the embedding hash
+         * includes the model name, so every article re-embeds automatically.
+         *
+         * ⚠️ `min_similarity` was tuned against text-embedding-3-small. A
+         * different embedding model has a different score distribution; after
+         * switching, ask a few real questions and read the `confidence` the
+         * endpoint returns before trusting the threshold.
+         *
+         * 🚨 A FREE TIER IS NOT FREE OF CONSEQUENCES. Read the provider's data
+         * policy before pointing this at one: /help/ask receives supporters'
+         * own words about their own payments, and a free tier that trains on
+         * inputs is receiving those. That is a decision for the platform, not
+         * a default this file can make.
+         */
+        'base_url' => rtrim(env('HELP_AI_BASE_URL', 'https://api.openai.com/v1'), '/'),
+
+        /*
+         * How long a credential is stood down for after the provider refuses it.
+         *
+         * ⚠️ A 429's own `Retry-After` header ALWAYS WINS over `rate_limited`
+         * below — only the provider knows when its quota actually resets. These
+         * are the fallbacks for when it does not say.
+         *
+         * `auth` is deliberately long and deliberately loud: a refused key is a
+         * configuration fault that will not fix itself, and retrying it every
+         * ten minutes forever just buries the error line that says so.
+         *
+         * ⚠️ There is deliberately NO cooldown for a 5xx or a dropped connection.
+         * That is the provider's bad minute, not the key's — the request moves
+         * to the next key and nothing is remembered.
+         */
+        'cooldown' => [
+            'rate_limited' => (int) env('HELP_AI_COOLDOWN_RATE_LIMITED', 600),
+            'auth' => (int) env('HELP_AI_COOLDOWN_AUTH', 3600),
+            // Floor for a provider-supplied Retry-After — "1 second" is true and
+            // useless, and retrying that fast just spends the next request.
+            'min' => (int) env('HELP_AI_COOLDOWN_MIN', 5),
+            // Ceiling for the same value. A provider that answers "retry in 30
+            // days" must not take Ask AI out for a month.
+            'max' => (int) env('HELP_AI_COOLDOWN_MAX', 86400),
+        ],
 
         'embedding_model' => env('HELP_AI_EMBEDDING_MODEL', 'text-embedding-3-small'),
         'answer_model' => env('HELP_AI_ANSWER_MODEL', 'gpt-4o-mini'),
@@ -79,8 +166,20 @@ return [
         // sentences.
         'max_tokens' => (int) env('HELP_AI_MAX_TOKENS', 200),
 
-        // Seconds. A help search that hangs is worse than one that falls back.
+        // Seconds, per attempt. A help search that hangs is worse than one that
+        // falls back.
         'timeout' => (int) env('HELP_AI_TIMEOUT', 12),
+
+        /*
+         * 🚨 Seconds for a WHOLE pooled call, however many keys it tries.
+         *
+         * Without this, worst case is `timeout × keys` — so adding a key made
+         * the page slower, and three keys at 12s each is 72 seconds against a
+         * 60-second Lambda. HelpAnswer makes TWO pooled calls (embed, then
+         * chat), so the real ceiling is roughly twice this: keep 2 × budget
+         * comfortably inside the Lambda limit.
+         */
+        'request_budget' => (int) env('HELP_AI_REQUEST_BUDGET', 18),
 
         // Per-IP hourly cap on generated answers. Each one costs money and the
         // endpoint is public and unauthenticated.

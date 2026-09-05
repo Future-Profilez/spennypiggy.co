@@ -5177,6 +5177,237 @@ capture side.
 - ⚠️ `border-[#000]` does not compile in this project — the inputs use `border-black`, which is
   already the 2px house frame (`resources/css/index.css`).
 
+## 🚨 THE HELP CENTRE'S ANSWERS WERE INVISIBLE TO EVERY MACHINE (4 Sep 2026)
+
+Reported by the client fetching the live site: `/help` came back complete, and **every page
+below it — every category, every article — came back as the meta tags and the header and
+then an empty `<div id="app">`.** Same cut-off point on all of them.
+
+🚨 **ONLY `help.index` CARRIED `->middleware('ssr')`**, and the route file's own note said
+why: *"the category and article pages have not been checked for SSR safety."* Nobody ever
+checked, so ~70 answers were live and machine-unreadable with the index above them fine.
+
+- 🚨 **NOTHING ERRORS, AND A BROWSER CANNOT SEE IT.** A signed-in human's React hydrates
+  over the shell and the page is perfect. The readers who get the shell are Bing and every
+  AI assistant people now ask questions of — **which is the audience a help centre exists
+  for.** Verify in `curl`, never in a browser.
+- **Both pages WERE checked before the flag went on, not assumed:** `Article.jsx` and
+  `Category.jsx` use the same `AuthenticatedLayout` and the same Help components the index
+  already renders, and every browser global they touch (`document.addEventListener` in
+  `HelpSearchBar`/`HelpLink`, `window.Intercom` in `StillNeedHelp`) is inside a `useEffect`
+  or an event handler. Nothing reads one at module scope or during render.
+- ⚠️ **The JSON endpoints stay OUT of the group** — SSR on a route returning JSON is a
+  render-host round trip for nothing, and `/help/search` runs on a keystroke.
+- 🚨 **The SSR bundle is a SECOND, MANUAL deploy** (`npm run deploy:ssr`, and `livebuild`
+  runs it after the Vapor deploy). Adding the middleware changes nothing in production until
+  the bundle is pushed.
+- Tests: `tests/Feature/HelpCentreSsrTest.php` (4). ⚠️ It asserts the MIDDLEWARE, not
+  rendered HTML — `EnableSsr::willRender` needs a render host and a built bundle, neither of
+  which exists in the suite, so a rendering assertion would pass against the bug. Verified
+  red by removing the flag from the category route.
+
+### 🚨 `typeof window.Intercom === "function"` WAS STILL LIVE ON THE HELP PAGES
+
+The documented trap, in the two places it costs the most. `IntercomProvider` installs a
+**queueing stub**, so the check passed, `preventDefault()` ran, and nothing opened — for a
+LOGGED-OUT visitor, whom the provider returns early for, and for whom `/help` is the only
+self-serve route there is. The hero's "start a live chat" was `href="#"` with a JS redirect
+behind it, so there was not even a link left to follow.
+
+- **`resources/js/lib/liveChat.js` is the ONE definition** — `liveChatAvailable()` checks
+  `window.Intercom?.booted === true` (only the real widget sets it) and `openLiveChat(e)`
+  cancels the click **only** when it has something better to offer. Used by
+  `Help/Index.jsx`, `Components/Help/StillNeedHelp.jsx` and `includes/Footer.jsx`.
+- 🚨 **THE FALLBACK IS THE ANCHOR'S OWN `href`, NOT A SECOND THING THE HANDLER DOES.** A
+  real `mailto:` works with no JavaScript, works for a crawler, and works for the middle
+  click that opens it in a new tab. Write the fallback into the markup and let the handler
+  step aside.
+- 🚨 **The footer's "Live chat" row pointed at the HOMEPAGE** (`https://spennypiggy.co`), so
+  for exactly the reader with no other route to us it reloaded the site. It is a `mailto:`
+  with `noBlank` now; the `livechat` class still opens the launcher when Intercom is loaded.
+- ⚠️ **"© 2026 Spenny Piggy Dev" is NOT a bug** — `Footer.jsx` appends `Dev` on any
+  non-production host. A report naming it means the reporter was reading a **dev
+  environment**, so check which host their other findings came from before acting on them.
+- ⚠️ **The footer's "Fast payout" row is "Fast Start bonus"** — it opened the Fast Start
+  bonus terms, a page about a bonus on net earnings that says nothing about payout speed.
+
+## 🚨 When the answering service is down, the reader still gets the ARTICLES (4 Sep 2026)
+
+`/help/ask` was designed to degrade rather than fail — `HelpController::ask` computes the
+keyword results on **every** path and returns them alongside whatever the model did or did
+not manage. Two things were quietly undoing that, and neither is visible from a browser on
+a good day.
+
+- 🚨 **A TRANSIENT FAILURE WAS CACHED AS "WE HAVE NO ANSWER FOR THAT" — FOR A DAY.**
+  `HelpAnswer::ask` wrapped `generate()` in `Cache::remember`, which **cannot tell a
+  DECISION from a FAILURE**. One API timeout, one rate-limited key or one rotated key was
+  stored under that question's cache key for the full `help.ai.cache_ttl` (86400s), for
+  every later asker — so **the service came back and the help centre did not**, with
+  nothing in any log connecting the two.
+  - **`HelpAnswer::CACHEABLE_REASONS` is the whitelist**: `not_in_articles` and
+    `below_similarity_threshold` only — the model and the corpus genuinely answering, stable
+    until the corpus changes, which is what the TTL exists for. Everything else is a
+    failure and is re-tried on the next ask.
+  - ⚠️ **`no_articles_embedded` is deliberately NOT cacheable.** It is fixed by running
+    `help:embed`, and caching it would keep the help centre silent for a day *after*
+    somebody had already fixed it.
+- 🚨 **`HelpSearchBar`'s catch branch THREW THE ARTICLES AWAY.** It set `results: []`, so a
+  dropped connection printed *"We do not have an answer for that yet"* with **nothing under
+  it** — while the keyword search for that same query had already returned and was sitting
+  in state. The reader was told the help centre was empty because one request failed. It
+  hands over `resultsRef.current` now.
+  - ⚠️ **A ref, not a dependency.** Putting `results` in `ask`'s dependency array rebuilds
+    the callback on every debounced search, i.e. every keystroke; reading the state from the
+    closure hands it whatever was on screen when `ask` was last built.
+- 🚨 **A FAILURE TO GENERATE IS NOT "WE HAVE NO ANSWER FOR THAT".** `TECHNICAL_REASONS` in
+  `HelpSearchBar.jsx` (`request_failed` · `exception` · `embedding_unavailable` ·
+  `no_articles_embedded` · `rate_limited`) says the SERVICE did not run, and none of them
+  says anything about whether the corpus covers the question — so the copy branches, and the
+  *"questions we cannot answer are logged"* line is suppressed, because a failed request is
+  not logged as a gap and claiming it was is a small lie told to the person least able to
+  check it.
+- **The provider is an env change (5 Sep 2026).** `HELP_AI_BASE_URL` (default
+  `https://api.openai.com/v1`) is the one host both `HelpAnswer` and `HelpEmbeddings` build
+  their endpoints from; any OpenAI-compatible host works, and `.env.example` carries ready
+  blocks for **Groq** and **Gemini** free tiers. ⚠️ Off OpenAI, set `HELP_AI_API_KEY` and BOTH
+  model names — the OpenAI keys are deliberately not reused against another host (they would
+  401 and read as "the key is wrong"). Switching re-embeds everything on the next `help:embed`
+  (the hash includes the model); `min_similarity` was tuned for `text-embedding-3-small`, so
+  read the returned `confidence` before trusting it on another model. 🚨 **A free tier is not
+  free of consequences** — `/help/ask` receives supporters' own words about their own payments;
+  read the provider's data policy before pointing it there. Pinned by
+  `test_both_endpoints_follow_the_configured_base_url`.
+- **The keys are a POOL (5 Sep 2026).** `HELP_AI_API_KEYS=k1,k2,k3` — any number. `HelpAiKeyPool`
+  rotates on an atomic shared cursor (consecutive askers alternate exactly), `HelpAiClient` is
+  the ONE HTTP path both the embedding and the answer call take, and failover happens **inside
+  the request**: a 429 stands that key down for the provider's own `Retry-After` and the request
+  moves to the next key; a 401/403 stands it down for an hour and logs at **error**; a 5xx or a
+  dropped connection stands NOTHING down (the provider's bad minute, not the key's); any other
+  4xx is our request and stops after the first key with the keys untouched. Every key spent →
+  `rate_limited`, articles returned, **not cached**. 🚨 Cooldowns live in the CACHE keyed by key
+  fingerprint — never a static (Vapor warm containers), never by position (reordering the env
+  would move a cooldown to another account). 🚨 **A free quota is per ACCOUNT** — two keys from
+  one Groq account share one allowance; the pool deduplicates identical strings for the same
+  reason. `php artisan help:ai-status` (`--reset`) shows each key's state and how many times it
+  was stood down today — the number that decides whether to add an account. Tests:
+  `HelpAiKeyPoolTest` (21).
+  - 🚨 **ONE TIME BUDGET FOR THE WHOLE LOOP** (`HELP_AI_REQUEST_BUDGET`, 18s), not one timeout
+    per key — otherwise the worst case is `timeout × keys`, so **adding a key made the page
+    slower**, and `HelpAnswer`'s two pooled calls at 3 keys × 12s is 72s against a **60-second
+    Lambda**: a hard timeout instead of the search fallback. ⚠️ It is a **ceiling, never a
+    floor** — `max($perAttempt, $budget)` silently lets a large `timeout` override it, which is
+    the fault it exists to prevent.
+  - 🚨 **Cooldowns are per key AND PER MODEL** — providers meter chat and embeddings
+    separately, so a key out of embedding tokens still has chat tokens. Cache key is
+    `help:ai:cooldown:{fingerprint}:{model}`; `help:ai-status` prints a row per key per model.
+  - ⚠️ The failure reason is **ranked**: any 429 anywhere in the loop reports `rate_limited`,
+    even if a later key answered 502 — a spent quota is the one signal meaning "add an account".
+  - ⚠️ **`help:embed` exits SUCCESS on a spent quota** (it is hourly; red every hour is how a
+    real failure stops being noticed). `auth` / `bad_request` / bad shape still fail.
+- Tests: `tests/Feature/HelpAnswerFallbackTest.php` (4). ⚠️ **Both fixes were verified
+  failing against their own bugs**; the two controls (the endpoint's fallback, and a genuine
+  miss still being cached) correctly stay green. Three traps the first version of this file
+  fell into, all of which made it pass against the bug:
+  - 🚨 **A SECOND `Http::fake()` MERGES INTO THE FIRST AND EARLIER STUBS WIN THE MATCH**, so
+    a "recovery" registered after a wildcard failure never fires. Use ONE closure fake
+    flipped by a variable.
+  - 🚨 **Without a stored `help_articles.embedding` every path stops at
+    `no_articles_embedded`** and all three tests pass for the wrong reason.
+  - 🚨 **Assert `answered === true` after recovery, never "the reason changed"** — the
+    failure modes share a shape, so a reason comparison passes against the bug.
+
+## The help centre covers the features that shipped (4 Sep 2026)
+
+Audited the corpus against the shipped feature list. **Creator Growth Bonus (live 28 Aug
+2026), Fast Start, referrals, shipping profiles, creator push, saved items, the wishlist,
+the leaderboard and account suspension had ZERO articles between them** — the Growth Bonus
+had a public page, a terms page, a dashboard widget, an admin console and no answer to
+"what is it". 70 → **79 articles**.
+
+- **`database/seeders/Help/FeatureArticles.php`** is the third batch, merged by
+  `HelpCentreSeeder` beside `ExtraArticles`, same shape and same rules. New:
+  `the-creator-leaderboard` · `tell-your-supporters` · `what-is-a-wishlist` ·
+  `reusable-shipping-rates` · `growth-bonus` · `fast-start-bonus` · `refer-a-creator` ·
+  `saving-items-for-later`.
+- 🚨 **A FEATURE CAN SHIP COMPLETE AND STAY INVISIBLE.** Nobody searches for a word we never
+  wrote, so the help centre gains no article, `help_search_misses` records nothing, and
+  support answers the same question by hand for a year. **Adding an article is part of
+  shipping a user-facing feature**, not a follow-up.
+- 🚨 **TWO ARTICLES WERE DESCRIBING BEHAVIOUR THAT HAD CHANGED, WHICH IS WORSE THAN NONE.**
+  `my-account-was-suspended` still said a suspended account cannot sign in and must contact
+  support — reversed on 3 Sep 2026, when suspension became read-only access with a banner,
+  two tones (limited vs suspended) and a self-service route for an unpaid subscription. And
+  `delete-my-account` said "contact support" after the self-service form with its reason
+  dropdown shipped the same week. Both rewritten. **When a rule changes, grep the seeder for
+  the old one.**
+- `bonuses-explained` now names four schemes and states the thing that makes them read as
+  contradictory: **Founder and Fast Start are measured NET of VAT, the Growth Bonus on the
+  listed sale value INCLUDING it**, so the two progress figures on one dashboard legitimately
+  differ. It also never quotes `{{referral.reward}}` without `{{referral.threshold}}`.
+- **New tokens** (`App\Support\HelpTokens`) — every figure in the new articles resolves from
+  the config the engine enforces: `growth.{max_reward,first_reward,top_gmv,rungs,activation_gmv,window_days,seats,expiry_months}`,
+  `faststart.{rate,window_days,settlement_days}`, `referral.threshold`,
+  `push.{per_day,per_month,max_length,window_days}`.
+  - ⚠️ **`growth.max_reward` is the SUM of the ladder, and `growth.top_gmv` the last rung's
+    own threshold** — `ladder` holds INCREMENTAL amounts, so an edited ladder can never leave
+    the help centre advertising a ceiling the engine will not pay.
+  - ⚠️ **`faststart.rate` widens to a RANGE when `enable_tiered` is on.** There is no single
+    rate then, and quoting the flat one understates it for a high earner. The promo card omits
+    the figure entirely in that state; a token cannot omit itself without leaving a gap
+    mid-sentence.
+- **`CreatorPushService::MONTH_WINDOW_DAYS`** — the rolling window was the literal `30` in
+  the query, the refusal message and the article describing the limit. `push.window_days`
+  reads the constant.
+- ⚠️ **`php artisan help:embed` MUST BE RUN AFTER SEEDING, on an environment with a working
+  key.** A new article that is not embedded is invisible to `/help/ask` while every other
+  article is answerable — worse than the feature being off. (It fails 401 on the local key.)
+- Tests: `tests/Feature/HelpCentreTest.php` (39) still green — including its own guards that
+  no body hardcodes a figure a token provides, no title carries a token, and every `related`
+  slug exists.
+
+## The creator is told checks continue, not that one is pending (4 Sep 2026)
+
+`Auth/StripeIdentity.jsx` carries one line saying verification does not stop at the Stripe
+pass — accounts are checked over time against the profile photo and the social accounts on
+the page. The full feature (the admin queue, the refusal machinery, the redaction move) is
+in the repository root `../CLAUDE.md`.
+
+- 🚨 **IT MUST NOT SAY A REVIEW IS PENDING** (client direction, 4 Sep 2026). Auto-approve
+  exists so a creator is never blocked waiting on us, and telling every verified creator
+  that another decision is coming puts them on a waiting list in their own head. The line
+  says checks CONTINUE, which is true of everybody all the time.
+- 🚨 **FRIENDLY, NEVER A THREAT** — *"friendly way me likhna, darana nhi h"*. Neutral ground,
+  no red, and it ends with what we would do rather than what would happen to them. Same
+  reasoning that took the ban warning off the avatar upload screen on 25 Aug 2026.
+- ⚠️ It is deliberately OUTSIDE the `isVerified` branch: a creator who has not finished the
+  check should read it too, before they decide which photo to use.
+
+## 🚨 The payout cycle is FIXED Friday-to-Thursday — read `PayoutCycle`, never re-derive (4 Sep 2026)
+
+The rule, the blast radius and the cross-app mirror are in the repository root `../CLAUDE.md`
+("A payout covers a fixed Friday-to-Thursday week"). This is what it means for the files here.
+
+- 🚨 **A NEW SURFACE READS `App\Support\PayoutCycle`. Never write out the dates again.** Four
+  copies of this arithmetic already drifted apart once — the engine, the ledger badge, the
+  dashboard payload and the Help tokens — and the way it showed was a creator being promised a
+  payment on a screen the payout run disagreed with.
+- 🚨 **`applyPayoutBadges` AND `Risk\PayoutService` MUST MOVE TOGETHER.** The `this_week` badge
+  on the creator's own transaction list says "in this Friday's payout"; if it and the run use a
+  different cut-off, the platform is promising money it will not send. Both read
+  `PayoutCycle::cutoffFor(PayoutCycle::nextPayoutDate())`.
+- ⚠️ **`payout_cycle` carries TWO windows now.** `window_*` is what the next payout COVERS;
+  `current_window_*` (+ `current_window_paid_at`) is the week being EARNED. Rendering the second
+  under the first is the fix — pairing "this week" with "next Friday" is what made creators read
+  this week's sales as being in Friday's payment.
+- ⚠️ **In payout copy use `{{payout.period}}` and `{{payout.wait}}`, never the bare
+  `{{payout.hold_days}}`** — that token survives for the reserve explanation and for legacy
+  article bodies, and a bare day count is no longer what the payout waits on.
+  🚨 `HelpCentreTest::test_no_article_hardcodes_a_figure_a_token_already_provides` **caught the
+  first draft of this copy** typing "Friday" and "after your first sale" as literals. It works;
+  do not route around it.
+- ⚠️ **Reserve release is untouched** — still a rolling 30 days keyed to each transaction's own
+  date, paid separately. No copy may imply it follows this cycle.
+
 ## Detailed topic index — load the skill, do not inline this content
 
 The dated feature write-ups that used to sit in this file now live as **skills**: only the

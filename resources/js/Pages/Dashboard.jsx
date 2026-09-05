@@ -110,6 +110,7 @@ const GrowthBonusTracker = lazyRetry(
 );
 const FounderBadge = lazyRetry(() => import("@/Components/FounderBadge"));
 import PendingChangesNotice from "@/Components/PendingChangesNotice";
+import SuspendedBanner from "@/Components/SuspendedBanner";
 import lazyRetry from "@/utils/lazyRetry";
 
 const CreatorRiskBanner = lazyRetry(
@@ -1177,6 +1178,14 @@ export default function Dashboard(props) {
                                     )}
                                 </div>
                             </div>
+
+                            {/* 🚨 THE ACCOUNT-STATE NOTICE, DIRECTLY UNDER THE COVER, OWNER ONLY.
+                                `auth.user.suspension` is the SIGNED-IN user's state, so without
+                                the owner gate a suspended gifter browsing a stranger's profile
+                                would read their own notice under somebody else's cover. Same
+                                width and frame as the cover so the two read as one block.
+                                Moved here from AuthenticatedLayout (client direction, 5 Sep 2026). */}
+                            {IsloggedIn && <SuspendedBanner className="mb-4" />}
 
                             {/* Profile layout: identity rail (left) · cover + content (center) · overview rail (right, xl) */}
                             <div className="profileLayout grid grid-cols-1 items-start gap-4 lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]">

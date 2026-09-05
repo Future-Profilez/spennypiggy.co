@@ -63,6 +63,16 @@ class CreatorPushService
 
     public const MAX_PER_MONTH = 4;
 
+    /**
+     * The rolling window MAX_PER_MONTH is counted over.
+     *
+     * ⚠️ It was the literal `30` in three places — the query, the refusal
+     * message and the help centre article describing the limit — so a change to
+     * the window would have left two of them describing a rule the query no
+     * longer enforces. `HelpTokens::push.window_days` reads this.
+     */
+    public const MONTH_WINDOW_DAYS = 30;
+
     public const MAX_LENGTH = 160;
 
     public const MIN_LENGTH = 10;
@@ -88,7 +98,7 @@ class CreatorPushService
 
         $month = CreatorPushMessage::where('creator_id', $creator->id)
             ->where('status', CreatorPushMessage::STATUS_SENT)
-            ->where('created_at', '>=', Carbon::now()->subDays(30))
+            ->where('created_at', '>=', Carbon::now()->subDays(self::MONTH_WINDOW_DAYS))
             ->count();
 
         $reason = null;
@@ -96,7 +106,7 @@ class CreatorPushService
         if ($today >= self::MAX_PER_DAY) {
             $reason = 'You have already sent a notification today. You can send another tomorrow.';
         } elseif ($month >= self::MAX_PER_MONTH) {
-            $reason = 'You have sent '.self::MAX_PER_MONTH.' notifications in the last 30 days, which is the limit.';
+            $reason = 'You have sent '.self::MAX_PER_MONTH.' notifications in the last '.self::MONTH_WINDOW_DAYS.' days, which is the limit.';
         }
 
         return [

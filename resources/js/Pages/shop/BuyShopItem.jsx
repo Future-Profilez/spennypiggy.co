@@ -301,7 +301,7 @@ export default function BuyShopItem({
         // Re-entrancy guard: a second tap before the disabled re-render must not
         // fire a second checkout session.
         if (loading || checking) return false;
-        if (!card_capabilities) {
+        if (paymentMethod === "card" && !card_capabilities) {
              errorAlert(riskMessageBody("CREATOR_UNAVAILABLE"));
              return false;
         }
@@ -847,10 +847,10 @@ export default function BuyShopItem({
                                 />
                             ) : null}
 
-                            {!card_capabilities && (
+                            {paymentMethod === "card" && !card_capabilities && (
                                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
                                     <strong className="font-bold">Payment Unavailable: </strong>
-                                    <span className="block sm:inline">This creator cannot receive payments yet.</span>
+                                    <span className="block sm:inline">This creator cannot receive card payments yet. Try paying by bank above.</span>
                                 </div>
                             )}
 
@@ -873,7 +873,7 @@ export default function BuyShopItem({
                                 <PayButton
                                     label="Pay"
                                     processing={checking}
-                                    disabled={!card_capabilities || !digitalWaiver}
+                                    disabled={(paymentMethod === "card" && !card_capabilities) || !digitalWaiver}
                                     onClick={executeCaptcha}
                                 />
                             </div>

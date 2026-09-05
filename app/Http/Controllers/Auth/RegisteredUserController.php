@@ -127,28 +127,32 @@ class RegisteredUserController extends Controller
             'password' => ['sometimes', 'required', 'string', Rules\Password::defaults()],
             'password_confirmation' => ['sometimes', 'required_with:password', 'same:password'],
             'country' => ['sometimes', 'required', 'string'],
+            'social_platform' => ['sometimes', 'nullable', Rule::in(SocialHandle::platforms())],
+            'social_handle' => ['sometimes', 'nullable', 'string', 'max:255'],
         ], $messages);
 
         $validator->after(function ($validator) use ($request) {
             $email = (string) $request->input('email', '');
 
-            if ($email === '' || ! str_contains($email, '@')) {
-                return;
+            if ($email !== '' && str_contains($email, '@')) {
+                // 🚨 Was an APPROVED-LIST check answering every refusal with
+                // "Invalid Email Id." — which reads as "you typed it wrong", so
+                // people retyped a perfectly good business address and left. See
+                // App\Support\EmailDomainPolicy for why the list could not do the
+                // job it was written for.
+                if ($error = EmailDomainPolicy::errorFor($email)) {
+                    $validator->errors()->add('email', $error);
+                } elseif (EmailDomainPolicy::aliasOfExistingAccount($email)) {
+                    $validator->errors()->add('email', 'An account already exists for this mailbox. Try signing in, or use the password reset.');
+                }
             }
 
-            // 🚨 Was an APPROVED-LIST check answering every refusal with
-            // "Invalid Email Id." — which reads as "you typed it wrong", so
-            // people retyped a perfectly good business address and left. See
-            // App\Support\EmailDomainPolicy for why the list could not do the
-            // job it was written for.
-            if ($error = EmailDomainPolicy::errorFor($email)) {
-                $validator->errors()->add('email', $error);
-
-                return;
-            }
-
-            if (EmailDomainPolicy::aliasOfExistingAccount($email)) {
-                $validator->errors()->add('email', 'An account already exists for this mailbox. Try signing in, or use the password reset.');
+            if ($request->has('social_handle') && filled($request->input('social_handle'))) {
+                $platform = $request->input('social_platform', 'instagram');
+                $handle = $request->input('social_handle');
+                if ($socialError = SocialHandle::errorFor($platform, $handle)) {
+                    $validator->errors()->add('social_handle', $socialError);
+                }
             }
         });
 

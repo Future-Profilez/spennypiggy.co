@@ -8,7 +8,6 @@ import MaintenanceBanner from '@/Components/MaintenanceBanner';
 import IntercomProvider from '@/Components/IntercomProvider';
 import TermsUpdatePopup from '@/Components/TermsUpdatePopup';
 import OnboardingNudge from '@/Components/OnboardingNudge';
-import SuspendedBanner from '@/Components/SuspendedBanner';
 import { Link, usePage } from '@inertiajs/react';
 import lazyRetry from "@/utils/lazyRetry";
 const Footer = lazyRetry(() => import('@/includes/Footer'));
@@ -47,11 +46,11 @@ export default function Authenticated(props){
             </div>
         )}
         <Header auth={auth} cart_count={cart_count} />
-        {/* ⚠️ Above every other strip and on EVERY page, not one tab: a
-            suspension changes what this account can do, so it belongs with the
-            blockers, not with the readings. Renders nothing unless the server
-            sent `auth.suspension`. */}
-        <SuspendedBanner />
+        {/* ⚠️ The suspension notice is NOT mounted here any more (5 Sep 2026,
+            client direction). It sat above every page as a bolted-on card; it
+            now lives on the creator's own profile under the cover, in
+            Pages/Dashboard.jsx, where the state of the account is a fact about
+            the page. A refused write elsewhere still explains itself. */}
         {/* ⚠️ IN FLOW, and above every other strip — it is a banner now, not a
             modal, so its position in the tree IS its position on the page. It
             used to sit below `<main>` because a fixed scrim does not care. */}
