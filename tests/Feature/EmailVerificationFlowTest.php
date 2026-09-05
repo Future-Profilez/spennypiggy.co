@@ -268,4 +268,68 @@ class EmailVerificationFlowTest extends TestCase
         Queue::assertPushed(VerifyEmail::class, 1);
         Queue::assertPushed(VerifyEmail::class, fn ($job) => $job->user->is($stuck));
     }
+
+    public function test_valid_otp_verifies_email_and_redirects(): void
+    {
+        $user = $this->unverified();
+        $otp = Verification::generateOtp($user);
+
+        $response = $this->actingAs($user)->postJson(route('verification.verify-otp'), [
+            'otp' => $otp,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('verified', true);
+        $this->assertNotNull($user->fresh()->email_verified_at);
+        $this->assertNull(Cache::get(Verification::otpCacheKey($user->id)));
+    }
+
+    public function test_invalid_otp_fails_and_decrements_attempts(): void
+    {
+        $user = $this->unverified();
+        Verification::generateOtp($user);
+
+        $response = $this->actingAs($user)->postJson(route('verification.verify-otp'), [
+            'otp' => '000000',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('status', false);
+        $this->assertNull($user->fresh()->email_verified_at);
+    }
+
+    public function test_exceeding_max_otp_attempts_locks_and_invalidates_otp(): void
+    {
+        $user = $this->unverified();
+        Verification::generateOtp($user);
+
+        for ($i = 0; $i < Verification::OTP_MAX_ATTEMPTS - 1; $i++) {
+            $this->actingAs($user)->postJson(route('verification.verify-otp'), ['otp' => '111111'])
+                ->assertStatus(422);
+        }
+
+        // 5th attempt exhausts attempts and invalidates OTP
+        $final = $this->actingAs($user)->postJson(route('verification.verify-otp'), ['otp' => '111111']);
+        $final->assertStatus(422); // 5th failed attempt returns 422 with final warning
+        // 6th attempt hits max limit and returns 429
+        $locked = $this->actingAs($user)->postJson(route('verification.verify-otp'), ['otp' => '111111']);
+        $locked->assertStatus(429);
+        $this->assertNull(Cache::get(Verification::otpCacheKey($user->id)));
+    }
+
+    public function test_expired_or_missing_otp_returns_validation_error(): void
+    {
+        $user = $this->unverified();
+        // No OTP generated in cache
+
+        $response = $this->actingAs($user)->postJson(route('verification.verify-otp'), [
+            'otp' => '123456',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('status', false);
+        $this->assertNull($user->fresh()->email_verified_at);
+    }
 }
+

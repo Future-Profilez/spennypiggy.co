@@ -379,12 +379,14 @@ class RegisteredUserController extends Controller
                 ]);
             }
 
-            // Solution A: Max accounts per IP limit
-            $ipCount = User::where('ip_address', $ip_address)->count();
+            // Solution A: Max accounts per IP limit (rolling 24-hour window)
+            $ipCount = User::where('ip_address', $ip_address)
+                ->where('created_at', '>=', now()->subHours(24))
+                ->count();
 
-            if ($ipCount >= 3) {
+            if ($ipCount >= 5) {
                 throw ValidationException::withMessages([
-                    'email' => 'Too many accounts have been created from this IP address.',
+                    'email' => 'Too many accounts have been created from this IP address recently. Please try again later.',
                 ]);
             }
         }
@@ -489,7 +491,7 @@ class RegisteredUserController extends Controller
                 ? json_encode($creatorBadges)
                 : null,
             'ip_address' => $ip_address,
-            'country' => $request->country_code ?? null,
+            'country' => $request->country_code ?: $request->country,
             'terms_accepted_at' => now(),
             'creator_email_receipt_acknowledged_at' => $request->role == 1 ? now() : null,
             'bio_approved' => 0,

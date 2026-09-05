@@ -419,7 +419,7 @@ export default function Register() {
 
         return (
             !!data.email.trim() &&
-            data.password.length > 7 &&
+            data.password.length >= 12 &&
             !liveErrors.email &&
             !liveErrors.password &&
             !!data.country &&
