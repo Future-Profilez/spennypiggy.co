@@ -191,10 +191,24 @@ class EmailVerificationFlowTest extends TestCase
         $this->assertSame('creator@gmail.com', $user->fresh()->email);
     }
 
-    /** The same allowlist registration enforces — otherwise this is a way around it. */
+    /**
+     * The same domain policy registration enforces — otherwise this is a way
+     * around it.
+     *
+     * 🚨 THE VERDICT IS SEEDED, NOT LOOKED UP. This refusal comes from
+     * `EmailDomainPolicy::canReceiveMail()`, not from an allowlist — the
+     * method's old name for this test said otherwise. It used to pass only
+     * because a real resolver answered NXDOMAIN for a `.test` domain, so the
+     * assertion depended on the machine's DNS and blocked on a slow one;
+     * `checkdnsrr()` takes no timeout, which is what hung the whole suite.
+     * Seeding the cache states the intent and never leaves the process, the
+     * same way `EmailDomainPolicyTest` exercises both branches.
+     */
     public function test_an_address_outside_the_allowlist_is_refused(): void
     {
         $user = $this->unverified();
+
+        Cache::put('email_mx_ok:not-allowed.test', false, now()->addDay());
 
         $this->actingAs($user)
             ->post(route('verification.change-email'), ['email' => 'someone@not-allowed.test'])
@@ -332,4 +346,3 @@ class EmailVerificationFlowTest extends TestCase
         $this->assertNull($user->fresh()->email_verified_at);
     }
 }
-
