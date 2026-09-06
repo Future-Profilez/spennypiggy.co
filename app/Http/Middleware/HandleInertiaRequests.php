@@ -17,6 +17,7 @@ use App\Services\SubscriptionActivationService;
 use App\Support\AnalyticsEvent;
 use App\Support\GifterVerificationCharge;
 use App\Support\MaintenanceMode;
+use App\Support\ReviewSubmission;
 use App\Support\SubscriptionPlan;
 use App\Support\SuspendedAccount;
 use App\Support\VerifiedBadge;
@@ -126,6 +127,18 @@ class HandleInertiaRequests extends Middleware
                 'social_url' => $user->social_url,
                 'auto_tweet' => $user->auto_tweet,
                 'profile_reject_reason' => $user->profile_reject_reason,
+                /*
+                 * 🚨 "SUBMITTED" AND "WITH THE REVIEW TEAM" ARE DIFFERENT FACTS.
+                 *
+                 * `profile_status_lock = 1` says the creator pressed Submit. It does
+                 * NOT say an admin can see them: the queue also requires a photo, bio,
+                 * handle and card, so a submission missing one of those sits in no
+                 * queue at all. Reading the bare lock is what told 22 creators "our
+                 * team is checking it now — there is nothing else to do" while nobody
+                 * could ever look at them. Null unless there is something to say; see
+                 * App\Support\ReviewSubmission.
+                 */
+                'review_submission' => ReviewSubmission::payload($user),
                 'is_subscription_cancelled' => $user->is_subscription_cancelled,
                 'upcoming_payment_date' => $user->upcoming_payment_date,
                 'subscription_end' => $user->subscription_end,

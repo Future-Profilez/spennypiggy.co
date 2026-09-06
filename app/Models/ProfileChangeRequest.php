@@ -170,6 +170,34 @@ class ProfileChangeRequest extends Model
         });
     }
 
+    /**
+     * The open requests for several assets at once, keyed by asset.
+     *
+     * ⚠️ `openFor()` in a loop is one round trip per asset, and the callers that
+     * want more than one want ALL of them — `ProfileSelfCheck` runs on every load
+     * of the creator's own dashboard, which is the busiest authenticated page on
+     * the site. `active_key` is `{userId}:{asset}`, so one `whereIn` answers the
+     * same question.
+     *
+     * @param  array<int, string>  $assets
+     * @return array<string, self>
+     */
+    public static function openForAssets(int $userId, array $assets): array
+    {
+        if (! $assets) {
+            return [];
+        }
+
+        return static::query()
+            ->whereIn('active_key', array_map(
+                fn (string $asset) => static::activeKey($userId, $asset),
+                $assets
+            ))
+            ->get()
+            ->keyBy('asset')
+            ->all();
+    }
+
     /** The open request for one asset, if there is one. */
     public static function openFor(int $userId, string $asset): ?self
     {

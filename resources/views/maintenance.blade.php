@@ -321,6 +321,11 @@
                     <div class="unit"><div class="n" id="m">00</div><div class="u">Minutes</div></div>
                     <div class="unit"><div class="n" id="s">00</div><div class="u">Seconds</div></div>
                 </div>
+
+                {{-- Shown by the countdown once it runs out, in place of the digits.
+                     Hidden by default so a viewer with no JavaScript never sees a
+                     sentence contradicting the return time printed on the band. --}}
+                <p class="msg" id="overrun" hidden>The work is taking a little longer than we expected. We are nearly there — this page refreshes itself.</p>
             @endif
 
             <p class="safe">Payments already in progress will finish normally.</p>
@@ -376,7 +381,16 @@
                     var left = target - Date.now();
 
                     if (left <= 0) {
-                        h.textContent = m.textContent = s.textContent = '00';
+                        /* 🚨 A COUNTDOWN FROZEN AT 00:00:00 IS THE WORST THING THIS
+                           PAGE CAN SHOW. It reads as a broken clock on a broken
+                           site, and it is the normal outcome whenever the work runs
+                           past its estimate — which is most of the time. Replace the
+                           digits with a sentence and stop claiming a deadline we
+                           have already missed. */
+                        box.hidden = true;
+
+                        var over = document.getElementById('overrun');
+                        if (over) over.hidden = false;
 
                         /* Come back on our own rather than leaving someone staring
                            at a wall that has already been lifted. Once only — a

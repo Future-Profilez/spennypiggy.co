@@ -301,6 +301,19 @@ class Kernel extends ConsoleKernel
             ->dailyAt('09:40')
             ->withoutOverlapping();
 
+        /*
+         * Remind creators whose profile is SUBMITTED but held out of the admin queue by
+         * something they can fix. Weekly, because the reminder ladder is measured in
+         * fortnights and months — a daily run would re-examine the same rows to send
+         * nothing six days out of seven.
+         *
+         * Monday 09:50: after `creators:nudge-journey` (09:40) so the two cannot land in
+         * the same minute and share a cli-timeout budget on Vapor.
+         */
+        $schedule->command('review:nudge-blocked')
+            ->weeklyOn(1, '09:50')
+            ->withoutOverlapping();
+
         // Recompute where each creator has got to. This must run BEFORE the admin app's
         // onboarding drip (10:00 and 20:00) reads `users.journey_step`, or the drip coaches
         // creators on a step they finished yesterday. Hourly rather than daily because the

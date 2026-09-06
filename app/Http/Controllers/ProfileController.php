@@ -7,10 +7,10 @@ use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\CheckMediaModeration;
 use App\Jobs\SendBioSocialUpdateEmail;
 use App\Models\AccountDeletionFeedback;
-use App\Models\DeletedUser;
 use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\Currency;
+use App\Models\DeletedUser;
 use App\Models\Deliverable;
 use App\Models\FinancialTransaction;
 use App\Models\Logs;
@@ -25,7 +25,6 @@ use App\Models\PostCommentReplies;
 use App\Models\PostLike;
 use App\Models\ProfileChangeRequest;
 use App\Models\Shop;
-use App\Models\SocialLinks;
 use App\Models\ShopCategory;
 use App\Models\ShopPayment;
 use App\Models\ShopShippingInfo;
@@ -62,6 +61,7 @@ use App\Support\InvisibleText;
 use App\Support\PresetCovers;
 use App\Support\ProfileAssetVisibility;
 use App\Support\ProfileSelfCheck;
+use App\Support\ReviewSubmission;
 use App\Support\SecureMedia;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -820,50 +820,16 @@ class ProfileController extends Controller
     /**
      * What a creator still has to add before anyone reviews them.
      *
-     * ⚠️ Cover and intro are deliberately absent — neither is reviewed, so
-     * neither can block a submission.
+     * 🚨 DELEGATED, NOT DUPLICATED. The same list decides whether this submit is
+     * accepted, whether the creator's own screen says "with our team" or "one thing
+     * left", and what `review:nudge-blocked` writes in the reminder mail. Three
+     * copies of it would be three answers — see App\Support\ReviewSubmission.
      *
      * @return array<int, string>
      */
     private function missingForReview(User $user): array
     {
-        $missing = [];
-
-        if (blank($user->avatar) || (int) $user->avatar_approved === 2) {
-            $missing[] = 'a profile photo';
-        }
-
-        if (blank($user->bio) || (int) $user->bio_approved === 2) {
-            $missing[] = 'a bio';
-        }
-
-        /*
-         * 🚨 `$user->socialLinks` IS NOT A RELATION — the method is `social_links()`.
-         *
-         * Laravel resolves an unknown property to NULL rather than erroring, so
-         * this read `null`, `$hasHandle` was false for everyone, and EVERY
-         * creator was told "Add a social handle before submitting for review"
-         * with their handle on screen behind the message. Nothing appeared in
-         * any log.
-         *
-         * ⚠️ The list of columns is NOT written out here either. It was an
-         * eight-item subset of the fourteen the table has, so a creator whose
-         * only handle was on a retired platform read as empty even once the
-         * relation was right. `hasAnyHandle()` is the one definition and already
-         * answers exactly this question.
-         */
-        if (! ProfileAssetVisibility::hasAnyHandle($user->social_links)
-            || (int) ($user->social_links?->status ?? 0) === SocialLinks::STATUS_REJECTED) {
-            $missing[] = 'a social handle';
-        }
-
-        // "Card added" is the active subscription — the same thing the journey
-        // card checks, so the button and this cannot disagree.
-        if (! in_array((int) $user->subscription_status, [1, 2], true)) {
-            $missing[] = 'a payment card';
-        }
-
-        return $missing;
+        return ReviewSubmission::missing($user);
     }
 
     /** "a bio and a payment card" — a list a person can read. */

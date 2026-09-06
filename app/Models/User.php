@@ -157,6 +157,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         // Written by CreatorJourneyService, read by the admin app's onboarding drip.
         'journey_step_at' => 'datetime',
         'journey_completed_at' => 'datetime',
+        // When the "setup is done" celebration was shown. Write-once, and deliberately
+        // NOT in $fillable — see the column's own migration. Written with forceFill by
+        // CreatorSetupCelebrationController and by `setup:backfill-celebrated`.
+        'setup_celebrated_at' => 'datetime',
         'founder_missed_at' => 'datetime',
         'terms_accepted_at' => 'datetime',
         'creator_email_receipt_acknowledged_at' => 'datetime',

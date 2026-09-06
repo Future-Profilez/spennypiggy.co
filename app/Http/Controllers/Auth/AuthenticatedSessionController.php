@@ -30,6 +30,8 @@ use App\Support\DiscoveryPayload;
 use App\Support\DiscoverySources;
 use App\Support\GrowthBonusPanelPayload;
 use App\Support\ProfileSelfCheck;
+use App\Support\SetupCelebrationPayload;
+use App\Support\SocialVisibility;
 use App\Support\SubscriptionPayload;
 use App\TwitterAuthService;
 use Carbon\Carbon;
@@ -319,9 +321,25 @@ class AuthenticatedSessionController extends Controller
                 [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
             }
             // Fetch social links using eager loaded relation or cache
+            /*
+             * 🚨 A HANDLE IS COLLECTED TO VERIFY A PERSON, NOT TO PUBLISH THEM
+             * (6 Sep 2026, client direction).
+             *
+             * The OWNER always receives the whole row — they need every handle, its
+             * review status and its show/hide state to edit any of it. A VISITOR
+             * receives only what the creator has chosen to show, and only once it is
+             * approved: `SocialVisibility::forVisitor()` answers null when there is
+             * nothing public, which is the shape every existing reader already handles
+             * (`CoverIdentity`'s `slinks?.[key]`).
+             *
+             * ⚠️ That replaces the old status-only gate. An approved handle used to
+             * appear on the public profile automatically with no way to take it off —
+             * and deleting it is not available, because `saveSocialLinks` refuses a row
+             * with no handle and `missingForReview()` requires one before review.
+             */
             $sociallinks = $user->social_links;
-            if ($sociallinks && $sociallinks->status != 1 && (! Auth::check() || Auth::id() !== $user->id)) {
-                $sociallinks = null;
+            if (! $isOwner) {
+                $sociallinks = SocialVisibility::forVisitor($sociallinks);
             }
             // Loaded on EVERY tab, not just About. The intro card moved out of the
             // About tab into the sticky identity rail (31 July 2026), so it renders
@@ -540,6 +558,23 @@ class AuthenticatedSessionController extends Controller
                 // decide the other way. See ProfileSelfCheck's class docblock.
                 'profile_self_check' => $user->role == 1 && $isOwner
                     ? ProfileSelfCheck::for($user, $user->social_links)
+                    : null,
+                /*
+                 * "Your setup is done — now list three things."
+                 *
+                 * 🚨 OWNER ONLY, CREATORS ONLY, for the same reason as every payload
+                 * above it: this route is also the public profile, and this says what
+                 * one named account has left to do before it can sell.
+                 *
+                 * ⚠️ The emulation flag is PASSED IN rather than read inside, because
+                 * the payload has no request. An admin looking at a creator's page
+                 * must not spend that creator's one celebration — see the class.
+                 */
+                'setup_celebration' => $user->role == 1 && $isOwner
+                    // ⚠️ The `session()` helper, not `$request` — `getUserProfile()` takes no
+                    // Request and this array is built inside a closure that does not import
+                    // one. A `$request` here is an undefined variable that no linter reports.
+                    ? SetupCelebrationPayload::for($user, (bool) session('emulated_by_admin', false))
                     : null,
                 // Discovery Phase 3 — the "More creators to support" row at the
                 // foot of every public creator profile.

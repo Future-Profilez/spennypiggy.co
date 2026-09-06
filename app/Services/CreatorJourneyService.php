@@ -7,6 +7,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Support\IdentityCheckState;
 use App\Support\ProfileAssetVisibility;
+use App\Support\ReviewSubmission;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
@@ -135,6 +136,23 @@ class CreatorJourneyService
             'params' => [],
         ],
     ];
+
+    /**
+     * The steps that make an account READY, as opposed to the ones that make it EARN.
+     *
+     * 🚨 THIS IS NOT `STEP_DONE`, AND THE DIFFERENCE IS THE WHOLE POINT. The journey runs
+     * nine steps deep and only reports itself finished after `first_sale` — a moment that
+     * depends on a supporter, not on the creator. But the creator has *finished their own
+     * setup* six steps earlier, the instant the ID check passes, and that is the moment
+     * worth marking: everything the platform asked of them is done, and from here the
+     * remaining work is theirs to choose. Reading `STEP_DONE` for that moment would
+     * congratulate them only after somebody had already bought something, which is far too
+     * late to be encouragement and reads as sarcasm to a creator with no sales.
+     *
+     * ⚠️ Order matters and mirrors STEPS. A step added to STEPS before `first_listing` must
+     * be added here too, or the celebration fires while a real setup task is outstanding.
+     */
+    public const SETUP_STEPS = ['profile', 'social', 'subscription', 'review', 'stripe', 'identity'];
 
     /**
      * What a step says once the creator has done their part and it is with an admin.
@@ -468,7 +486,14 @@ class CreatorJourneyService
         return match ($step) {
             // 1 = submitted by the creator, not yet decided. 🚨 Keyed on the LOCK, never on
             // "photo and bio are filled in" — uploading both puts nobody in a queue.
-            'review' => (int) ($creator->profile_status_lock ?? 0) === 1,
+            //
+            // 🚨 AND THE LOCK ALONE IS NOT ENOUGH EITHER (6 Sep 2026). The admin queue
+            // also requires a photo, bio, handle and card, so a creator carrying the lock
+            // with one of those missing is in NO queue and nobody will ever decide. Saying
+            // "awaiting review" there is a wait with no end — measured live, all 22
+            // creators at lock 1 were in exactly that state. ReviewSubmission is the one
+            // definition the queue, this and the nudge mail all read.
+            'review' => ReviewSubmission::isWithReviewTeam($creator),
 
             // 🚨 2 alone is NOT "with us". It is written when the Stripe session is
             // CREATED, so it also covers a creator who opened the check and walked away
@@ -524,6 +549,35 @@ class CreatorJourneyService
     {
         return (int) ($creator->role ?? 0) === 1
             && (int) ($creator->suspended_account ?? 0) !== 1;
+    }
+
+    /**
+     * Has the creator finished everything the PLATFORM asked of them?
+     *
+     * True the instant the ID check passes, whether or not they have listed, posted or sold
+     * anything. Read by the setup celebration and by the listings progress strip.
+     *
+     * ⚠️ Costs NO query. Every one of the six is a plain column read or an already-loaded
+     * relation, which is why this can sit on the shared Inertia payload — the three steps
+     * that do hit the database (`first_listing`, `first_post`, `first_sale`) are exactly the
+     * ones this deliberately does not look at.
+     *
+     * ⚠️ Returns false for a fan and for a suspended account, through `applies()`. A
+     * suspended creator is not being congratulated on an account they cannot sell from.
+     */
+    public function setupComplete(User $creator): bool
+    {
+        if (! $this->applies($creator)) {
+            return false;
+        }
+
+        foreach (self::SETUP_STEPS as $step) {
+            if (! $this->isDone($creator, $step)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function isDone(User $creator, string $step): bool

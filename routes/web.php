@@ -25,8 +25,8 @@ use App\Http\Controllers\Creator\ReviewHoldController;
 use App\Http\Controllers\CreatorActivityController;
 use App\Http\Controllers\CreatorLandingController;
 use App\Http\Controllers\CreatorPushController;
+use App\Http\Controllers\CreatorSetupCelebrationController;
 use App\Http\Controllers\CreatorSubscriptionController;
-use App\Http\Controllers\Debug\SupportImageTestController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -37,6 +37,7 @@ use App\Http\Controllers\Debug\SupportImageTestController;
 */
 
 // Health check endpoint for Vapor
+use App\Http\Controllers\Debug\SupportImageTestController;
 use App\Http\Controllers\DeliveriesController;
 use App\Http\Controllers\EmailPreferenceController;
 use App\Http\Controllers\ErrorController;
@@ -1331,6 +1332,21 @@ Route::post('/signup-waitlist', [SignupWaitlistController::class, 'join'])
 Route::post('/push/heartbeat', [PushSubscriptionController::class, 'heartbeat'])
     ->middleware(['auth', 'throttle:20,1'])
     ->name('push.heartbeat');
+
+/*
+| The setup celebration has been seen — spends the creator's one-time popup.
+|
+| ⚠️ Three segments, so the `/{username}/{page?}` catch-all could never claim it — but it
+| is declared here with the others rather than in auth.php purely so the whole one-time
+| feature reads in one place.
+|
+| ⚠️ Throttled because the component posts on OPEN. A page reloading in a loop would
+| otherwise write once per load; the column short-circuits after the first, and this caps
+| the cost of finding that out.
+*/
+Route::post('/creator/setup-celebration/seen', [CreatorSetupCelebrationController::class, 'seen'])
+    ->middleware(['auth', 'throttle:10,1'])
+    ->name('creator.setup-celebration.seen');
 
 /*
 | Guest purchase lookup — "where did my purchase go?" for someone with no account.

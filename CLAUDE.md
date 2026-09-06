@@ -5614,6 +5614,102 @@ The rule, the blast radius and the cross-app mirror are in the repository root `
 - ⚠️ **Reserve release is untouched** — still a rolling 30 days keyed to each transaction's own
   date, paid separately. No copy may imply it follows this cycle.
 
+## 🚨 A social handle VERIFIES a creator, it does not PUBLISH them (6 Sep 2026, BOTH apps)
+
+Reported by a creator who asked support to delete her social handles: she did not want her
+Spenny Piggy page linked to her personal accounts. **Deleting them is not available** —
+`SocialLinksController::saveSocialLinks` refuses a row with no handle,
+`ProfileController::missingForReview()` requires one before review, and the admin's
+`CreatorReviewService::whereProfileComplete()` drops a creator with none out of the review
+queue and the verified badge entirely. So the handle stays on file and the **publishing**
+became the creator's decision.
+
+- **New column `social_links.public_platforms`** (migration `2026_09_06_100000`, guarded,
+  spennypiggy.co owns the table). A JSON array of platform KEYS — a key list, not a map of
+  booleans, or "absent" and "false" become two spellings of hidden and every retired
+  platform column needs an entry it will never use.
+- 🚨 **NULL MEANS NOTHING IS PUBLIC, AND THAT IS THE POINT.** Every row that already exists
+  reads as hidden the moment this deploys — **no backfill, nothing for a creator to do**. A
+  default of "show everything" would have been the old behaviour under a new name, and
+  consent to be published is given, never assumed (the rule `marketing_emails_enabled` had
+  to be corrected for on 23 Aug 2026). **Nothing may ever read an absent value as "show
+  everything".**
+- 🚨 **`App\Support\SocialVisibility` IS THE ONE DEFINITION.** A handle is public only when
+  all three hold: the creator listed that platform, the row is APPROVED (`status = 1`), and
+  the column carries a value.
+  - ⚠️ **The approval clause is not redundant.** Turning a platform on is a display choice
+    and never a re-submission, so a creator can tick a handle that is still pending — and a
+    pending handle is one nobody has checked. Publishing it would put an unreviewed link on
+    a public page.
+  - ⚠️ **`ProfileAssetVisibility::HANDLE_COLUMNS`, never `ACCEPTED_PLATFORMS`** — a creator
+    verified on a retired platform still has a handle rendering on their profile, and it has
+    to be hideable too.
+  - ⚠️ `forVisitor()` returns an **ARRAY, never the model**: a model with its handle
+    attributes blanked is one `->save()` away from deleting the creator's handles for real,
+    and the caller sits in a profile payload that also writes caches. It answers **null**
+    when nothing is public, which is the shape every existing reader already handles
+    (`CoverIdentity`'s `slinks?.[key]`) — and tells a stranger nothing about which platforms
+    exist. `status` and `reason` are dropped with it.
+- 🚨 **VISIBILITY IS NOT REVIEWABLE CONTENT, so it is kept OUT of `$data` in
+  `saveSocialLinks`.** The handle, and therefore the verification, is identical either way.
+  Folding it into the diff would mean pressing "show my Instagram" re-opened the whole row
+  for review, zeroed `status`, mailed the creator and — because `ProfileChangeRequest::open()`
+  supersedes whatever is pending — took their own earlier submission out of the queue.
+  - It is written **directly to the live row on every save**, including the "nothing changed"
+    early return, which is the COMMONEST way a visibility change arrives (the creator opened
+    the editor to hide a handle and touched nothing else). Returning there without writing it
+    made the toggle look saved and do nothing. Pinned by test, verified red.
+  - ⚠️ **`DB::table`, never the Eloquent builder** — `Builder::update()` stamps `updated_at`
+    (`addUpdatedAtColumn`), and the admin review queue ORDERS and ages on that column, so a
+    display choice would reshuffle a reviewer's list. Same reasoning as `StripeChargesFlag::sync()`.
+  - ⚠️ **`ProfileChangeRequest::SOCIAL_FIELDS` deliberately does not carry it**, so an admin
+    approving a handle edit never overwrites the creator's own privacy choice.
+  - ⚠️ **Clearing a handle clears its visibility** (`SocialVisibility::forStorage()` narrows
+    the choice against the handles THIS save proposes, not against the stored row). Otherwise
+    a platform re-added months later comes back already public on the strength of a decision
+    made about a different account. Judging it against the submission is also what lets a
+    creator type a handle and show it in one submit.
+- **The owner always receives the whole row** (every handle, its review status, its
+  show/hide state — they cannot edit what the page will not send them);
+  `AuthenticatedSessionController` masks only for a visitor, gated on the `$isOwner` already
+  resolved there.
+- 🚨 **`UserProfileService`'s eager-load select was missing `tiktok`** — one of the three
+  platforms verification is performed against — so it rendered as "no handle" on the cached
+  public profile however the row read. **An unselected column is null, not absent.** Fixed
+  with `public_platforms` in the same list, and the cache key bumped to
+  `user_profile_basic_v2_` **with both forget sites updated** (`UserProfileService` and
+  `Auth\PwaNotification`): a v1 entry carries neither column, so every handle would read as
+  hidden for up to ten minutes after deploy.
+- **Owner UI:** a per-platform **Public / Hidden** switch in `Pages/Auth/Social.jsx`, rendered
+  only once that field has a value — a switch above an empty box asks the creator to decide
+  about a handle they have not given us.
+- 🚨 **THE COPY RULE REVERSED, AND A FIXTURE PINNED THE OLD ONE.** Until now the standing rule
+  was *"the form copy MUST NOT promise privacy"*, because an approved handle was published
+  automatically. It now must STATE the privacy, and the old wording ("before it shows on your
+  profile") is the lie in the other direction. Updated in `register/CreatorProfileStep.jsx`,
+  `Profile/CreatorVerification.jsx`'s social step and `Auth/Social.jsx`'s banner;
+  `tests/javascript/signupSocialHandle.test.jsx` required `/shows on your profile/` and was
+  **rewritten, not deleted**, with the reasoning kept in place.
+- ⚠️ **Admin app: cast only, `$fillable` in NEITHER.** The back office must keep seeing every
+  handle on file whatever the creator publishes, so nothing there filters on this column — and
+  a back office able to mass-assign it is a route by which a bulk update publishes handles
+  nobody agreed to publish (the marketing-consent rule).
+- ⚠️ **`GET /sociallinks/{username}` is public, unauthenticated, and returns only
+  `{success: true}`** — its payload lines have been commented out for a long time, so it leaks
+  nothing and needed no gate. `MemberCheckout.jsx:346` reads `resp.data.sociallinks` off it,
+  which has therefore always been undefined; left alone rather than half-maintained.
+  ⚠️ `OptimizedProfileController` sends `sociallinks`/`slinks` ungated and is **unrouted** —
+  do not "fix" it into a live path without adding the visitor mask.
+- **Where a handle is still COMPULSORY (unchanged, and why deletion is not on offer):** signup
+  for a creator (`Rule::requiredIf` + `creatorProfileStepComplete`) · the socials editor's
+  at-least-one refusal · `missingForReview()` · `CreatorJourneyService`'s `social` step, which
+  gates `review` → `stripe` → listing → selling · the admin review queue and the verified badge.
+- Tests: `spennypiggy.co/tests/Feature/SocialVisibilityTest.php` (12). ⚠️ Two flip red against
+  the original fault (an absent choice read as "show everything") and one against dropping the
+  write from the unchanged path — each verified. ⚠️ The status-reset half of that last test is a
+  **control, not a guard**: the save's diff only covers `SOCIAL_FIELDS`, so folding
+  `public_platforms` into `$data` is inert and cannot redden it.
+
 ## Detailed topic index — load the skill, do not inline this content
 
 The dated feature write-ups that used to sit in this file now live as **skills**: only the

@@ -94,7 +94,14 @@ class UserProfileService
                 'vat_amount_percentage',
             ])
                 ->with([
-                    'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,tumblr,reddit,discord,other,status,reason',
+                    // 🚨 AN UNSELECTED COLUMN IS NULL, NOT ABSENT — so a platform
+                    // missing from this list renders as "no handle" however the row
+                    // reads. `tiktok` was missing entirely (one of the three platforms
+                    // verification is performed against), and `public_platforms`
+                    // decides whether ANY of them may be shown at all
+                    // (App\Support\SocialVisibility) — without it every handle reads
+                    // as hidden, including the ones the creator turned on.
+                    'social_links:id,user_id,instagram,twitter,tiktok,twitch,facebook,youtube,tumblr,reddit,discord,other,status,reason,public_platforms',
                     'user_categories:id,user_id,category,created_at',
                     // Include uuid so perma_link accessor can build a playable URL
                     'intro:id,user_id,uuid,poster,poster_token,height,width,approved,created_at',
@@ -107,7 +114,10 @@ class UserProfileService
             return $callback();
         }
 
-        return Cache::remember('user_profile_basic_'.$username, 600, $callback);
+        // ⚠️ `_v2` — the selected column set gained `tiktok` and `public_platforms`
+        // (6 Sep 2026). A cached v1 row carries neither, so every handle would read
+        // as hidden and TikTok as absent for up to ten minutes after deploy.
+        return Cache::remember('user_profile_basic_v2_'.$username, 600, $callback);
     }
 
     /**
@@ -1498,6 +1508,9 @@ class UserProfileService
         Cache::forget($this->profileCacheTokenKey($userId));
 
         // Clear basic profile cache
+        Cache::forget('user_profile_basic_v2_'.$username);
+        // ⚠️ The pre-v2 key is forgotten too: a row cached before the deploy is still
+        // live for its TTL and still readable by anything that has not been rebuilt.
         Cache::forget('user_profile_basic_'.$username);
         Cache::forget('user_followers_count_'.$userId);
         Cache::forget('user_following_count_'.$userId);

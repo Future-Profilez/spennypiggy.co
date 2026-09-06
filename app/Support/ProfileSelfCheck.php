@@ -79,21 +79,23 @@ final class ProfileSelfCheck
             return [];
         }
 
+        // ⚠️ ONE query for all four, not one per asset. This runs on every load of
+        // the creator's own dashboard.
+        $changes = ProfileChangeRequest::openForAssets($user->id, ProfileChangeRequest::ASSETS);
+
         return array_values(array_filter([
-            self::bio($user),
-            self::media($user, ProfileChangeRequest::ASSET_AVATAR, 'Profile photo'),
-            self::media($user, ProfileChangeRequest::ASSET_COVER, 'Cover banner'),
-            self::socials($user, $links),
+            self::bio($user, $changes[ProfileChangeRequest::ASSET_BIO] ?? null),
+            self::media($user, ProfileChangeRequest::ASSET_AVATAR, 'Profile photo', $changes[ProfileChangeRequest::ASSET_AVATAR] ?? null),
+            self::media($user, ProfileChangeRequest::ASSET_COVER, 'Cover banner', $changes[ProfileChangeRequest::ASSET_COVER] ?? null),
+            self::socials($links, $changes[ProfileChangeRequest::ASSET_SOCIALS] ?? null),
         ]));
     }
 
     /* -------------------------------------------------------------- bio -- */
 
     /** @return array{asset: string, label: string, severity: string, message: string}|null */
-    private static function bio(User $user): ?array
+    private static function bio(User $user, ?ProfileChangeRequest $change): ?array
     {
-        $change = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_BIO);
-
         $bio = trim((string) ($change
             ? ($change->proposed['bio'] ?? '')
             : $user->bio));
@@ -184,10 +186,8 @@ final class ProfileSelfCheck
      *
      * @return array{asset: string, label: string, severity: string, message: string}|null
      */
-    private static function media(User $user, string $asset, string $label): ?array
+    private static function media(User $user, string $asset, string $label, ?ProfileChangeRequest $change): ?array
     {
-        $change = ProfileChangeRequest::openFor($user->id, $asset);
-
         $reason = $change
             ? ($change->moderation_reason ?: null)
             : ($user->moderation_asset === $asset ? ($user->moderation_reason ?: null) : null);
@@ -207,10 +207,8 @@ final class ProfileSelfCheck
     /* ---------------------------------------------------------- socials -- */
 
     /** @return array{asset: string, label: string, severity: string, message: string}|null */
-    private static function socials(User $user, ?SocialLinks $links): ?array
+    private static function socials(?SocialLinks $links, ?ProfileChangeRequest $change): ?array
     {
-        $change = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_SOCIALS);
-
         if ($change) {
             $handles = Arr::only($change->proposed ?? [], ProfileChangeRequest::SOCIAL_FIELDS);
         } elseif ($links) {

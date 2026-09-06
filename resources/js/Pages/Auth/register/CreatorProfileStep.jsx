@@ -1,9 +1,7 @@
 import { useState } from "react";
 import Field from "./Field";
 import StepShell, { RHYTHM } from "./StepShell";
-import BadgePicker, {
-    PrideBadgePicker,
-} from "@/Components/Badges/BadgePicker";
+import BadgePicker, { PrideBadgePicker } from "@/Components/Badges/BadgePicker";
 import {
     CREATOR_CATEGORY_GROUPS,
     MAX_CATEGORIES,
@@ -106,19 +104,23 @@ export default function CreatorProfileStep({
                 that is the CONSENT check, and bundling a product requirement into it
                 is how an optional consent quietly becomes conditional.
 
-                🚨 THE COPY MUST NOT PROMISE PRIVACY. The handle goes for review and
-                then appears on the creator's profile like any other. An earlier draft
-                said "it is not shown on your profile", which was true of the
-                contact-only design this replaced and is a lie about the shipped
-                one. */}
+                🚨 SUPERSEDED 6 Sep 2026 — THE COPY MUST NOW STATE THE PRIVACY,
+                because the behaviour changed. This block used to carry the opposite
+                rule: an approved handle appeared on the public profile automatically,
+                so promising privacy was a lie. `social_links.public_platforms` now
+                means nothing is public until the creator says so
+                (App\Support\SocialVisibility), and the old wording — "before it shows
+                on your profile" — is the lie in the other direction. Reported by a
+                creator who asked for her handles to be deleted because she did not
+                want her page linked to her personal accounts. */}
             <div className={RHYTHM.panelDivide}>
                 <p className="text-sm font-semibold text-black">
                     Add a social account
                 </p>
                 <p className="mt-1 text-xs leading-[1.55] text-black/60">
-                    This gets your social step done now, so you will not be asked
-                    again. We check it before it shows on your profile, and we never
-                    post anything.
+                    We only use this to check you are really you. It stays
+                    private unless you choose to show it, and we never post
+                    anything.
                 </p>
 
                 <div className="mt-3 flex flex-wrap gap-2">

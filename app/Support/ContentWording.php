@@ -24,7 +24,8 @@ namespace App\Support;
  * share a database but not code, and the admin app has to reach the same verdict
  * about a bio as the website does — a phrase the website accepts and the admin
  * console then flags is the exact round trip this class was extracted to close.
- * Change one, change both.
+ * Change one, change both — `tests/Feature/ContentWordingMirrorTest.php` (and its
+ * twin in the admin app) fails on any edit until you have.
  *
  * ⚠️ NOT the same list as `CampaignCopyRules` in the admin app, deliberately.
  * That one governs bulk campaign email — a surface which goes to every account

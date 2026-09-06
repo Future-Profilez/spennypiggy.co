@@ -31,10 +31,12 @@ import {
 
 export default function AddSocial({
     removetext,
-    openSocial, classes,
+    openSocial,
+    classes,
     sLinks,
     links,
-    type, buttontext,
+    type,
+    buttontext,
     redirect_url,
 }) {
     const { auth } = usePage().props;
@@ -61,6 +63,44 @@ export default function AddSocial({
     }, [sLinks, links]);
 
     const [data, setData] = useState(initialData);
+
+    /*
+     * 🚨 HIDDEN BY DEFAULT. `public_platforms` is a list of platform keys the creator
+     * has chosen to SHOW; a missing or empty value means nothing is public, which is
+     * what every row that existed before 6 Sep 2026 reads as. Never treat an absent
+     * value as "show everything" — that is the behaviour this control exists to end.
+     *
+     * ⚠️ Seeded from the same row the handles are, so re-opening the sheet shows the
+     * creator what is actually live rather than a fresh set of switches.
+     */
+    const [publicPlatforms, setPublicPlatforms] = useState(() => {
+        const source = sLinks || links || {};
+        const stored = source?.public_platforms;
+        if (Array.isArray(stored))
+            return stored.filter((k) => typeof k === "string");
+        if (typeof stored === "string") {
+            try {
+                const parsed = JSON.parse(stored);
+                return Array.isArray(parsed)
+                    ? parsed.filter((k) => typeof k === "string")
+                    : [];
+            } catch {
+                return [];
+            }
+        }
+        return [];
+    });
+
+    const isPublic = (platformId) => publicPlatforms.includes(platformId);
+
+    const togglePublic = (platformId) => {
+        setIsDirty(true);
+        setPublicPlatforms((prev) =>
+            prev.includes(platformId)
+                ? prev.filter((k) => k !== platformId)
+                : [...prev, platformId],
+        );
+    };
     const [validationResults, setValidationResults] = useState({});
     const [displayValues, setDisplayValues] = useState({});
     const [isDirty, setIsDirty] = useState(false);
@@ -74,7 +114,7 @@ export default function AddSocial({
                 [platformId]: result,
             }));
         }, 250),
-        []
+        [],
     );
 
     useEffect(() => {
@@ -93,7 +133,7 @@ export default function AddSocial({
                     // Extract handle from URL for display
                     newDisplayValues[platformId] = extractHandleFromUrl(
                         platformId,
-                        value
+                        value,
                     );
                 } else {
                     newDisplayValues[platformId] = value;
@@ -142,7 +182,7 @@ export default function AddSocial({
 
     const hasAtLeastOneValue = useMemo(() => {
         return Object.values(data).some(
-            (value) => value && value.trim() !== ""
+            (value) => value && value.trim() !== "",
         );
     }, [data]);
 
@@ -192,13 +232,23 @@ export default function AddSocial({
         axios
             .post(route("save_social_links"), {
                 ...submissionData,
+                // ⚠️ Narrowed AGAIN on the server against the handles this save carries
+                // (`SocialVisibility::forStorage`) — clearing a handle must also clear
+                // its visibility, or re-adding that platform months later comes back
+                // already public on the strength of an old decision.
+                public_platforms: publicPlatforms.filter(
+                    (key) =>
+                        submissionData[key] &&
+                        String(submissionData[key]).trim() !== "",
+                ),
                 redirect_url,
             })
             .then((res) => {
                 setLoading(false);
                 if (res.data.status) {
                     successAlert(
-                        res.data.message || "Social links updated successfully!"
+                        res.data.message ||
+                            "Social links updated successfully!",
                     );
 
                     setIsDirty(false); // ✅ reset dirty state
@@ -237,7 +287,7 @@ export default function AddSocial({
                         htmlFor={platform.id}
                         className={clsx(
                             "block text-sm font-medium mb-2 flex items-center",
-                            platform.color
+                            platform.color,
                         )}
                     >
                         <Icon className="mr-2 text-lg" />
@@ -286,7 +336,7 @@ export default function AddSocial({
                                         validation.status === "valid",
                                     "border-2 border-red-500 bg-red-50 focus:ring-red-200":
                                         validation.status === "invalid",
-                                }
+                                },
                             )}
                             onChange={handleInput}
                             onBlur={() => handleBlur(platform.id)}
@@ -342,11 +392,42 @@ export default function AddSocial({
                 </div>
                 <p
                     id={`${platform.id}-hint`}
-                    className="mt-1 mb-4 text-xs text-gray-600"
+                    className="mt-1 mb-4 text-xs text-black/60"
                 >
                     <FaInfoCircle className="inline mr-1" />
                     {platform.hint}
                 </p>
+
+                {/*
+                    Who can see this handle. Rendered only once there is something to
+                    show — a switch above an empty field asks the creator to decide
+                    about a handle they have not given us.
+
+                    ⚠️ It is a plain button, not a checkbox: the state IS the label, so
+                    there is nothing for a separate control to be labelled by.
+                */}
+                {value && value.trim() !== "" && (
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-box-sm border-black bg-[#FFF6EC] px-3 py-2">
+                        <span className="text-xs font-semibold text-black/70">
+                            {isPublic(platform.id)
+                                ? "Shown on your profile"
+                                : "Private — only you and our review team"}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => togglePublic(platform.id)}
+                            aria-pressed={isPublic(platform.id)}
+                            className={clsx(
+                                "min-h-[44px] rounded-box-sm border-black px-4 text-xs font-bold uppercase transition-colors duration-200",
+                                isPublic(platform.id)
+                                    ? "bg-[#05EFB8] text-black hover:brightness-110 active:brightness-95"
+                                    : "bg-white text-black hover:bg-[#F4F4F5]",
+                            )}
+                        >
+                            {isPublic(platform.id) ? "Public" : "Hidden"}
+                        </button>
+                    </div>
+                )}
             </li>
         );
     };
@@ -366,9 +447,11 @@ export default function AddSocial({
             action={close}
             space="4"
             modalclass="pinkmodal full"
-            size="md" 
-            classes={classes} 
-            text={buttontext ? buttontext : removetext ? "" : "Add Social Links"}
+            size="md"
+            classes={classes}
+            text={
+                buttontext ? buttontext : removetext ? "" : "Add Social Links"
+            }
         >
             <div className="editprofileModalInner p-3  ">
                 <div className="swishinfo">
@@ -391,7 +474,7 @@ export default function AddSocial({
                                     !formValidation.hasValidFields,
                                 "bg-green-50 border-green-500":
                                     formValidation.hasValidFields,
-                            }
+                            },
                         )}
                     >
                         <div
@@ -417,8 +500,8 @@ export default function AddSocial({
                                 })}
                             >
                                 {formValidation.hasValidFields
-                                    ? "Great! Your social links look good."
-                                    : "Social verification required"}
+                                    ? "Your social links look good."
+                                    : "One social account needed"}
                             </p>
                             <p
                                 className={clsx("text-sm mt-1", {
@@ -429,8 +512,8 @@ export default function AddSocial({
                                 })}
                             >
                                 {formValidation.hasValidFields
-                                    ? "These links will help verify your creator account and improve discoverability."
-                                    : "Please add at least one social media profile to verify your creator account and access all features."}
+                                    ? "We use these to check you are really you. Each one stays private on your page unless you switch it to Public below."
+                                    : "Add at least one so our team can verify you. Handles stay private on your page unless you choose to show them."}
                             </p>
                         </div>
                     </div>
@@ -470,7 +553,7 @@ export default function AddSocial({
                                             !isDirty ||
                                             !hasAtLeastOneValue ||
                                             formValidation.hasErrors,
-                                    }
+                                    },
                                 )}
                             >
                                 {loading && (
