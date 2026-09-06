@@ -200,6 +200,19 @@ return [
         'mark-as-read',
         'delete-all-notifications',
         'accept-terms',
+        /*
+         * 🚨 ASKING FOR HELP IS NOT A WRITE THAT NEEDS STOPPING. Every reason
+         * above says "contact support" — and the Help Centre is where a
+         * restricted account goes to find out what that means. `help.ask` and
+         * `help.feedback` are POSTs only because a question does not belong in
+         * a URL: nothing is published, no money moves, nothing on a public page
+         * changes (feedback is an aggregate counter). Refusing them put the
+         * page that explains a suspension behind the suspension — a person
+         * reading "contact support" got "we suspended your account" back the
+         * moment they typed a question. Found live, 5 Sep 2026.
+         */
+        'help.ask',
+        'help.feedback',
     ],
 
     /**

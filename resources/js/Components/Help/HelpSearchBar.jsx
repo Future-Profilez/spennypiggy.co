@@ -1,52 +1,53 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, router } from "@inertiajs/react";
 import axios from "axios";
-import { Search, X, Loader2, Sparkles } from "lucide-react";
-import ArticleBody from "./ArticleBody";
+import { Search, X, Loader2, Sparkles, CornerDownLeft } from "lucide-react";
+import HelpChatPanel from "./HelpChatPanel";
 import StillNeedHelp from "./StillNeedHelp";
 
 /**
- * ONE control: type to search, or press Ask AI for a written answer.
+ * ONE control: type to search, or ask a question.
  *
  * This replaces the two separate boxes that stood here before. A search field
  * and an ask field side by side is one decision more than the reader should
  * have to make, and they were asking for the same thing in two ways.
  *
- * 🚨 THE AI ANSWER IS THE ANSWER — the sources are a footnote. The reader asked
- * a question, so a summary they can read is what they get; the articles it came
- * from sit underneath as small chips they can check. Leading with a list of
- * articles is what search already does, and it is what they pressed this button
- * to avoid.
+ * 🚨 THE LENGTH OF WHAT WAS TYPED DECIDES WHICH IT IS (client direction,
+ * 6 Sep 2026). A word or two — "payout", "reserve held" — is a lookup, and a
+ * list of articles answers it faster than a sentence would. Four words or more
+ * is a QUESTION, and a question gets asked: the Ask row becomes the default
+ * action on Enter and, once the reader stops typing, the question is sent on
+ * its own. Below the threshold the AI is never called unless the reader asks
+ * for it — a keyword search costs nothing, a generation costs quota.
  *
- * 🚨 The button is only rendered when the server can genuinely answer
- * (`ai` prop, from HelpAnswer::enabled()). An "Ask AI" button that quietly runs
- * a keyword search is a promise the product does not keep.
+ * 🚨 ASK AI OPENS A CONVERSATION, NOT A DROPDOWN. The first question hands off
+ * to `HelpChatPanel`, which owns the transcript, the follow-ups and every
+ * answer bubble — this component only searches, and only ever renders keyword
+ * results. Two places rendering an answer is two copies of the "failure is not
+ * a gap in the corpus" copy waiting to disagree.
  *
- * ⚠️ NO OFFSET SHADOW ON THE DARK HERO. A 5px coloured offset under a full-width
- * bar does not read as the house frame at that size — it reads as a misaligned
- * slab sticking out from behind the field. The frame here is the border, and
- * colour arrives on focus.
+ * 🚨 The Ask action is only rendered when the server can genuinely answer
+ * (`ai` prop, from HelpAnswer::enabled()). An "Ask AI" control that quietly
+ * runs a keyword search is a promise the product does not keep.
+ *
+ * ⚠️ NO OFFSET SHADOW ON THE DARK HERO. A 5px coloured offset under a
+ * full-width bar does not read as the house frame at that size — it reads as a
+ * misaligned slab sticking out from behind the field. The frame here is the
+ * border, and colour arrives on focus.
+ *
+ * ⚠️ `border-black` is the full 2px `border` shorthand in this project, so it
+ * is used ALONE — never beside a width class, and never as `border-b-2
+ * border-black` (that paints all four sides). Internal rules are `divide-*`.
  */
-/**
- * 🚨 A FAILURE TO GENERATE IS NOT "WE HAVE NO ANSWER FOR THAT".
- *
- * These reasons mean the answering SERVICE did not run — the request failed, it
- * threw, the embedding could not be made, the corpus has not been embedded, or
- * the caller is over their hourly cap. None of them says anything about whether
- * the help centre covers the question, and telling a reader "we do not have an
- * answer for that yet" when the articles are sitting right there is how somebody
- * decides the platform cannot help them and opens a ticket.
- *
- * Everything NOT on this list — `not_in_articles`, `below_similarity_threshold`
- * — is the model and the corpus genuinely answering, and that copy is correct.
- */
-const TECHNICAL_REASONS = new Set([
-    "request_failed",
-    "exception",
-    "embedding_unavailable",
-    "no_articles_embedded",
-    "rate_limited",
-]);
+
+/** A query with at least this many words is a question, and is asked. */
+export const AUTO_ASK_WORDS = 4;
+
+const ASK_ROW = "__ask__";
+
+export function wordCount(value) {
+    return value.trim().split(/\s+/).filter(Boolean).length;
+}
 
 export default function HelpSearchBar({
     ai = false,
@@ -62,31 +63,36 @@ export default function HelpSearchBar({
     const [query, setQuery] = useState("");
     const [results, setResults] = useState(null);
     const [fallback, setFallback] = useState(null);
-    const [answer, setAnswer] = useState(null);
     const [searching, setSearching] = useState(false);
-    const [asking, setAsking] = useState(false);
     const [open, setOpen] = useState(false);
+    const [chatOpen, setChatOpen] = useState(false);
+    const [chatQuestion, setChatQuestion] = useState("");
+    // Which row the keyboard is on: a result's slug, ASK_ROW, or null.
+    const [active, setActive] = useState(null);
 
     const searchRef = useRef(null);
-    const askRef = useRef(null);
     /*
-     * ⚠️ A REF, NOT A DEPENDENCY. `ask` needs the latest keyword results for its
-     * failure branch, and putting `results` in its dependency array would
-     * rebuild the callback on every debounced search — i.e. on every keystroke —
-     * while reading the state directly from the closure would hand it whatever
-     * was on screen when `ask` was last built. The ref is always current and
-     * costs nothing.
+     * ⚠️ A REF, NOT A DEPENDENCY. The panel needs the latest keyword results
+     * for a failed FIRST generation, and putting `results` in `ask`'s
+     * dependency array would rebuild it on every keystroke.
      */
     const resultsRef = useRef(null);
     const rootRef = useRef(null);
     const inputRef = useRef(null);
+    // The last question handed to the panel, so re-committing the identical
+    // string reopens the same transcript rather than starting a second one.
+    const autoAskedRef = useRef(null);
+
+    const trimmed = query.trim();
+    const canAsk = ai && trimmed.length >= 3;
+    const isQuestion = canAsk && wordCount(trimmed) >= AUTO_ASK_WORDS;
 
     // ---------------------------------------------------------------- search
 
     const runSearch = useCallback((value) => {
-        const trimmed = value.trim();
+        const q = value.trim();
 
-        if (trimmed.length < 2) {
+        if (q.length < 2) {
             setResults(null);
             setFallback(null);
             setSearching(false);
@@ -103,7 +109,7 @@ export default function HelpSearchBar({
             // Literal path, never route(): ziggy.js is a generated snapshot and
             // route() throws for a name it has not been regenerated for — which
             // would land in this catch and read as "search is broken".
-            .get("/help/search", { params: { q: trimmed }, signal: controller.signal })
+            .get("/help/search", { params: { q }, signal: controller.signal })
             .then((res) => {
                 setResults(res?.data?.results ?? []);
                 setFallback(res?.data?.fallback ?? null);
@@ -123,68 +129,50 @@ export default function HelpSearchBar({
     }, [results]);
 
     useEffect(() => {
-        // A new keystroke invalidates a pending answer — leaving it on screen
-        // above a different question is the worst kind of stale.
-        setAnswer(null);
         const id = setTimeout(() => runSearch(query), 220);
         return () => clearTimeout(id);
     }, [query, runSearch]);
 
     // ------------------------------------------------------------------- ask
 
-    const ask = useCallback(async () => {
-        const trimmed = query.trim();
+    const ask = useCallback(() => {
+        const q = query.trim();
 
         // ⚠️ An empty field FOCUSES the input rather than being refused. The
-        // button is the loudest thing in the hero, so a visitor arriving to find
-        // it greyed out reads the page as broken before they have typed a
+        // Ask action is the loudest thing in the hero, so a visitor arriving to
+        // find it greyed out reads the page as broken before they have typed a
         // character — a disabled primary action is the worst possible first
         // impression of a help centre.
-        if (trimmed.length < 3) {
+        if (q.length < 3) {
             inputRef.current?.focus();
             return;
         }
 
-        // Re-entrancy guard: the disabled re-render loses the double-tap race
-        // and each submission costs a generation.
-        if (asking) return;
+        // The panel asks it. Same question re-sent opens the same transcript;
+        // a different one starts fresh — the panel keys on the string.
+        setOpen(false);
+        autoAskedRef.current = q;
+        setChatQuestion(q);
+        setChatOpen(true);
+    }, [query]);
 
-        askRef.current?.abort();
-        const controller = new AbortController();
-        askRef.current = controller;
+    /*
+     * 🚨 NOTHING OPENS THE CONVERSATION ON A TIMER (client direction, 6 Sep 2026:
+     * "page ko hila dete h").
+     *
+     * A 4+ word query used to open the chat by itself 1.4s after the last
+     * keystroke. The panel is IN THE FLOW — that is the whole point of it, and
+     * the client's own earlier direction — so it appeared under the bar and shoved
+     * the directory below it down the page, while the reader was still typing and
+     * looking at the box. A surface that rearranges itself under a person mid-
+     * sentence reads as a fault whatever it is doing.
+     *
+     * The word count still decides — it picks which row Enter commits to (see
+     * `isQuestion` and the Ask row below). What changed is that the READER
+     * commits, always: Enter, the Ask row, the Ask AI button, or Cmd/Ctrl+Enter.
+     */
 
-        setAsking(true);
-        setAnswer(null);
-        setOpen(true);
-
-        try {
-            const res = await axios.post("/help/ask", { q: trimmed }, { signal: controller.signal });
-            setAnswer(res?.data ?? null);
-        } catch (err) {
-            if (axios.isCancel?.(err) || err?.name === "CanceledError") return;
-            // 🚨 THE ARTICLES ARE ALREADY IN STATE — HAND THEM OVER.
-            // This used to set `results: []`, so a timeout or a dropped
-            // connection printed "we do not have an answer for that yet" with
-            // NOTHING under it, while the keyword search for the very same query
-            // had already returned and was sitting in `results`. The reader was
-            // told the help centre was empty because one request failed.
-            setAnswer({
-                answered: false,
-                results: resultsRef.current ?? [],
-                reason: "request_failed",
-            });
-        } finally {
-            if (!controller.signal.aborted) setAsking(false);
-        }
-    }, [query, asking]);
-
-    useEffect(
-        () => () => {
-            searchRef.current?.abort();
-            askRef.current?.abort();
-        },
-        [],
-    );
+    useEffect(() => () => searchRef.current?.abort(), []);
 
     useEffect(() => {
         if (!open) return undefined;
@@ -195,307 +183,386 @@ export default function HelpSearchBar({
         return () => document.removeEventListener("mousedown", onDown);
     }, [open]);
 
-    const showPanel = open && (query.trim().length >= 2 || asking || answer);
-    const canAsk = query.trim().length >= 3;
+    // -------------------------------------------------------------- keyboard
+
+    /*
+     * 🚨 `!chatOpen` IS LOAD-BEARING. Once the conversation is open it handles
+     * everything (client direction: "chat me hi karo sab handle") — a floating
+     * results layer over a panel that already lists its own sources is two
+     * answers to one question, stacked on top of each other. Dropping this guard
+     * is what let the dropdown reopen over the transcript.
+     */
+    const showPanel = open && !chatOpen && trimmed.length >= 2;
+    const showAskRow = canAsk;
+
+    // The rows the arrow keys walk, in the order they are drawn.
+    const rows = useMemo(() => {
+        const list = (results ?? []).map((r) => r.slug);
+        if (showAskRow) list.push(ASK_ROW);
+        return list;
+    }, [results, showAskRow]);
+
+    // A question defaults to the Ask row; a lookup defaults to the top article.
+    useEffect(() => {
+        if (rows.length === 0) {
+            setActive(null);
+            return;
+        }
+        setActive(isQuestion && showAskRow ? ASK_ROW : rows[0]);
+    }, [rows, isQuestion, showAskRow]);
+
+    const openRow = (slug) => {
+        if (slug === ASK_ROW) {
+            ask();
+            return;
+        }
+        const r = results?.find((x) => x.slug === slug);
+        if (!r) return;
+        setOpen(false);
+        router.visit(`/help/${r.category_slug}/${r.slug}`);
+    };
+
+    const onKeyDown = (e) => {
+        if (e.key === "Escape") {
+            setOpen(false);
+            return;
+        }
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            if (!rows.length) return;
+            e.preventDefault();
+            setOpen(true);
+            const i = rows.indexOf(active);
+            const step = e.key === "ArrowDown" ? 1 : -1;
+            const next = (i + step + rows.length) % rows.length;
+            setActive(rows[next]);
+            return;
+        }
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+        // ⌘/Ctrl+Enter always asks, whatever the row.
+        if ((e.metaKey || e.ctrlKey) && canAsk) {
+            ask();
+            return;
+        }
+        if (active) {
+            openRow(active);
+            return;
+        }
+        if (canAsk) ask();
+    };
+
+    const optionId = (slug) => `help-search-opt-${slug === ASK_ROW ? "ask" : slug}`;
 
     return (
         <div ref={rootRef} className={`relative ${className}`}>
             {/*
-              One object: field and action share a single border and a single
-              radius, divided by a hairline rather than floating apart.
+              🚨 THE BAR HANDS OVER TO THE CONVERSATION (client direction,
+              6 Sep 2026: "ak baar in chat aa gaya tab chat me hi karo sab
+              handle"). While the panel is open the field is NOT a second place
+              to type: the panel has its own composer, its own history and its
+              own sources, and two inputs stacked six pixels apart is a reader
+              choosing between two things that do the same job. The strip names
+              what is being asked and offers the one way back.
             */}
-            <div
-                className={[
-                    "flex flex-col overflow-hidden rounded-box-sm border-[3px] border-black bg-white sm:flex-row sm:items-stretch",
-                    onDark ? "focus-within:ring-2 focus-within:ring-[#05EFB8]" : "focus-within:ring-2 focus-within:ring-[#8C52FF]/40",
-                ].join(" ")}
-            >
-                <div className="flex flex-1 items-center gap-3 px-4 py-3">
-                    <Search className="h-5 w-5 shrink-0 text-black/60" aria-hidden="true" />
-                    <input
-                        ref={inputRef}
-                        type="search"
-                        value={query}
-                        autoFocus={autoFocus}
-                        onFocus={() => setOpen(true)}
-                        maxLength={maxQuestion}
-                        onChange={(e) => {
-                            setQuery(e.target.value.slice(0, maxQuestion));
-                            setOpen(true);
-                        }}
-                        onKeyDown={(e) => {
-                            if (e.key === "Escape") setOpen(false);
-                            if (e.key !== "Enter") return;
-                            // ⌘/Ctrl+Enter asks; plain Enter opens the top result.
-                            // Two intents, one field — the modifier is what keeps
-                            // the common case (search) a single keystroke.
-                            if ((e.metaKey || e.ctrlKey) && ai) {
-                                e.preventDefault();
-                                ask();
-                            } else if (results?.length) {
-                                const first = results[0];
-                                router.visit(`/help/${first.category_slug}/${first.slug}`);
-                            }
-                        }}
-                        placeholder={placeholder}
-                        aria-label="Search the help centre, or ask a question"
-                        className="w-full border-0 bg-transparent p-0 text-base text-black placeholder:text-black/60 focus:outline-none focus:ring-0"
+            {chatOpen ? (
+                <div
+                    className={[
+                        "flex items-center gap-3 rounded-box-sm px-4 py-2.5",
+                        onDark ? "bg-white/10" : "border-black bg-white",
+                    ].join(" ")}
+                >
+                    <Sparkles
+                        className={`h-4 w-4 shrink-0 ${onDark ? "text-[#05EFB8]" : "text-[#D1006A]"}`}
+                        aria-hidden="true"
                     />
-                    {searching && !asking && (
-                        <Loader2 className="h-4 w-4 shrink-0 animate-spin text-black/60" aria-hidden="true" />
-                    )}
-                    {!searching && query && (
+                    <p className="min-w-0 flex-1">
+                        <span
+                            className={`block font-gulfs text-[10px] uppercase tracking-[0.16em] ${onDark ? "text-white/60" : "text-black/60"}`}
+                        >
+                            Asking
+                        </span>
+                        <span
+                            className={`block truncate text-[14px] font-semibold ${onDark ? "text-white" : "text-black"}`}
+                        >
+                            {chatQuestion}
+                        </span>
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setChatOpen(false);
+                            setQuery("");
+                            setResults(null);
+                            autoAskedRef.current = null;
+                            inputRef.current?.focus();
+                        }}
+                        className={[
+                            "inline-flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-box-sm px-3 text-[13px] font-semibold transition-colors duration-200",
+                            onDark
+                                ? "help-focus-invert bg-white text-black hover:bg-white/90"
+                                : "help-focus border-black bg-white text-black hover:bg-[#F4F4F5]",
+                        ].join(" ")}
+                    >
+                        <Search className="h-3.5 w-3.5" aria-hidden="true" />
+                        New search
+                    </button>
+                </div>
+            ) : (
+                <>
+                {/*
+                  One object: field and action share a single border and a single
+                  radius, divided by a hairline rather than floating apart.
+                */}
+                <div
+                    className={[
+                        "flex flex-col overflow-hidden rounded-box-sm border-black bg-white sm:flex-row sm:items-stretch",
+                        onDark ? "focus-within:ring-2 focus-within:ring-[#05EFB8]" : "focus-within:ring-2 focus-within:ring-[#8C52FF]/40",
+                    ].join(" ")}
+                >
+                    {/* 🚨 A FIXED ROW HEIGHT, NOT PADDING. With `py-3` the row was
+                        sized by its tallest child, so the 44px Clear button
+                        appearing on the FIRST KEYSTROKE grew the bar by 20px and
+                        shoved the whole page down — a twitch on every search, and
+                        one the reader causes themselves by typing. `min-h` equal
+                        to the Ask button's keeps the bar one height, always. */}
+                    <div className="flex min-h-[52px] flex-1 items-center gap-3 px-4">
+                        <Search className="h-5 w-5 shrink-0 text-black/60" aria-hidden="true" />
+                        <input
+                            ref={inputRef}
+                            type="search"
+                            value={query}
+                            autoFocus={autoFocus}
+                            onFocus={() => setOpen(true)}
+                            maxLength={maxQuestion}
+                            onChange={(e) => {
+                                setQuery(e.target.value.slice(0, maxQuestion));
+                                setOpen(true);
+                            }}
+                            onKeyDown={onKeyDown}
+                            placeholder={placeholder}
+                            aria-label="Search the help centre, or ask a question"
+                            role="combobox"
+                            aria-expanded={showPanel}
+                            aria-controls="help-search-listbox"
+                            aria-autocomplete="list"
+                            aria-activedescendant={showPanel && active ? optionId(active) : undefined}
+                            className="w-full border-0 bg-transparent p-0 text-base text-black placeholder:text-black/60 focus:outline-none focus:ring-0"
+                        />
+                        {searching && (
+                            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-black/60" aria-hidden="true" />
+                        )}
+                        {!searching && query && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setQuery("");
+                                    setResults(null);
+                                    inputRef.current?.focus();
+                                }}
+                                aria-label="Clear"
+                                className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center text-black/60 hover:text-black"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
+
+                    {ai && (
                         <button
                             type="button"
-                            onClick={() => {
-                                setQuery("");
-                                setResults(null);
-                                setAnswer(null);
-                            }}
-                            aria-label="Clear"
-                            className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center text-black/60 hover:text-black"
+                            onClick={ask}
+                            // Black ink on brand pink: measured, white on #FF007F
+                            // is 3.78:1 and under AA at this size.
+                            className="flex min-h-[52px] shrink-0 items-center justify-center gap-2 bg-[#FF007F] px-6 font-gulfs text-[16px] uppercase tracking-widest text-black transition-[filter] hover:brightness-110 active:brightness-95 md:text-[18px]"
                         >
-                            <X className="h-4 w-4" />
+                            <Sparkles className="h-4 w-4" aria-hidden="true" />
+                            Ask AI
                         </button>
                     )}
                 </div>
 
                 {ai && (
-                    <>
-                        {/* <span className="h-px w-full bg-black sm:h-auto sm:w-[3px]" aria-hidden="true" /> */}
-                        <button
-                            type="button"
-                            onClick={ask}
-                            disabled={asking}
-                            // Black ink on brand pink: measured, white on #FF007F
-                            // is ~4.2:1 and under AA at this size.
-                            className="flex min-h-[52px] shrink-0 items-center justify-center gap-2 bg-[#FF007F] px-6 font-gulfs text-[16px] md:text-[18px] uppercase tracking-widest text-black text-shadow transition-opacity hover:opacity-90 disabled:opacity-45"
-                        >
-                            {asking ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                                    Thinking
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles className="h-4 w-4" aria-hidden="true" />
-                                    Ask AI
-                                </>
-                            )}
-                        </button>
-                    </>
-                )}
-            </div>
-
-            {ai && (
-                <div className={`mt-2 flex items-center justify-between gap-3 text-xs ${onDark ? "text-white/60" : "text-black/60"}`}>
-                    <span>Type to search, or press Ask AI for a short written answer.</span>
-                    {/* Only appears near the ceiling. A counter on an empty field
-                        is a limit announced before anyone was near it. */}
-                    {query.length > maxQuestion * 0.75 && (
-                        <span className={query.length >= maxQuestion ? "font-bold text-[#FF007F]" : ""}>
-                            {query.length}/{maxQuestion}
+                    <div className={`mt-2 flex items-center justify-between gap-3 text-xs ${onDark ? "text-white/60" : "text-black/60"}`}>
+                        <span>
+                            A word or two searches. Ask a full question ({AUTO_ASK_WORDS}+ words) and Enter answers it.
                         </span>
-                    )}
-                </div>
+                        {/* Only appears near the ceiling. A counter on an empty field
+                            is a limit announced before anyone was near it. */}
+                        {query.length > maxQuestion * 0.75 && (
+                            <span className={query.length >= maxQuestion ? "font-bold text-[#FF007F]" : ""}>
+                                {query.length}/{maxQuestion}
+                            </span>
+                        )}
+                    </div>
+                )}
+                </>
             )}
 
             {showPanel && (
-                <div className="absolute left-0 right-0 top-full z-30 mt-2 max-h-[70dvh] overflow-y-auto rounded-box border-[3px] border-black bg-white text-left ">
-                    {asking && (
-                        <p className="flex items-center gap-2 px-5 py-6 text-sm text-black/60">
-                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                            Reading the help articles…
-                        </p>
-                    )}
-
-                    {/* ---------------------------------------------- answer */}
-                    {!asking && answer?.answered && (
-                        <div className="px-5 py-5">
-                            <p className="flex items-center gap-2 font-gulfs text-[12px] uppercase tracking-[0.18em] text-black/60">
-                                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                                Answer
+                <div
+                    id="help-search-listbox"
+                    role="listbox"
+                    aria-label="Search results"
+                    className="absolute left-0 right-0 top-full z-30 mt-2 max-h-[70dvh] overflow-y-auto rounded-box border-black bg-white text-left"
+                >
+                    <div className="divide-y-2 divide-black">
+                        {/* -------------------------------------------- caption */}
+                        <div className="flex items-center justify-between gap-3 bg-[#F4F4F5] px-4 py-2">
+                            <p className="font-gulfs text-[11px] uppercase tracking-[0.18em] text-black/70">
+                                {results === null
+                                    ? "Searching"
+                                    : results.length === 0
+                                      ? "No articles"
+                                      : `${results.length} article${results.length === 1 ? "" : "s"}`}
                             </p>
+                            <p className="hidden items-center gap-2 text-[11px] text-black/60 sm:flex" aria-hidden="true">
+                                <Key>↑</Key>
+                                <Key>↓</Key>
+                                <span>move</span>
+                                <Key>↵</Key>
+                                <span>{isQuestion ? "ask" : "open"}</span>
+                            </p>
+                        </div>
 
-                            {/* The answer is the point — set larger than the
-                                sources under it, not the other way round. */}
-                            <div className="mt-3 text-[16px] leading-[1.65] text-black">
-                                <ArticleBody html={answer.answer_html} />
-                                {!answer.answer_html && (
-                                    <p className="whitespace-pre-line">{answer.answer}</p>
-                                )}
+                        {/* ------------------------------------------ results */}
+                        {results === null && (
+                            <div className="flex items-center gap-2 px-4 py-4 text-sm text-black/60">
+                                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                                Searching the help articles…
                             </div>
+                        )}
 
-                            {/* 🚨 Always shown, but as a footnote. A generated
-                                sentence with nothing behind it is exactly what
-                                this must not produce — the reader has to be one
-                                click from the source. */}
-                            {answer.sources?.length > 0 && (
-                                <div className="mt-4 border-t border-black/10 pt-3">
-                                    <p className="text-[12px] font-bold uppercase tracking-wider text-black/60">
-                                        Based on
-                                    </p>
-                                    <div className="mt-2 flex flex-wrap gap-2">
-                                        {answer.sources.map((s) => (
+                        {results?.length > 0 && (
+                            <ul className="divide-y divide-black/10">
+                                {results.map((r) => {
+                                    const isActive = active === r.slug;
+                                    return (
+                                        <li
+                                            key={r.slug}
+                                            id={optionId(r.slug)}
+                                            role="option"
+                                            aria-selected={isActive}
+                                        >
                                             <Link
-                                                key={s.slug}
-                                                href={`/help/${s.category_slug}/${s.slug}`}
+                                                href={`/help/${r.category_slug}/${r.slug}`}
                                                 onClick={() => setOpen(false)}
-                                                className="inline-flex min-h-[36px] items-center rounded-full border-2 border-black bg-white px-3 text-[13px] font-semibold text-black hover:bg-black hover:text-white"
+                                                onMouseEnter={() => setActive(r.slug)}
+                                                // Brand yellow = "where you are", the
+                                                // house device for the active tab.
+                                                className={`grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 ${
+                                                    isActive ? "bg-[#E6EA7B]" : "hover:bg-black/[0.03]"
+                                                }`}
                                             >
-                                                {s.title}
+                                                <span className="min-w-0">
+                                                    <span className="block font-gulfs text-[11px] uppercase tracking-[0.16em] text-black/60">
+                                                        {r.category_title ?? r.category_slug?.replace(/-/g, " ")}
+                                                    </span>
+                                                    <span className="mt-0.5 block text-[15px] font-semibold leading-[1.35] text-black">
+                                                        {r.title}
+                                                    </span>
+                                                    {r.summary && (
+                                                        <span className="mt-0.5 block text-[13px] leading-[1.5] text-black/70 line-clamp-1 sm:line-clamp-2">
+                                                            {r.summary}
+                                                        </span>
+                                                    )}
+                                                </span>
+                                                <CornerDownLeft
+                                                    className={`h-4 w-4 shrink-0 text-black ${isActive ? "opacity-100" : "opacity-0"}`}
+                                                    aria-hidden="true"
+                                                />
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+
+                        {results?.length === 0 && (
+                            // 🚨 Never a bare "no results". That is the moment
+                            // a reader decides the platform has no answer and
+                            // opens a ticket instead.
+                            <div className="px-4 py-4">
+                                <p className="text-[15px] font-semibold text-black">
+                                    Nothing matched “{trimmed}”.
+                                </p>
+                                <p className="mt-1 text-[13px] text-black/70">
+                                    {canAsk
+                                        ? "Ask it as a question below, or browse a section."
+                                        : "Try different words, or browse a section."}
+                                </p>
+
+                                {fallback?.categories?.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {fallback.categories.map((c) => (
+                                            <Link
+                                                key={c.slug}
+                                                href={`/help/${c.slug}`}
+                                                onClick={() => setOpen(false)}
+                                                className="inline-flex min-h-[40px] items-center gap-2 rounded-box-sm border-black bg-white px-3 text-[13px] font-semibold text-black hover:bg-black hover:text-white"
+                                            >
+                                                {c.icon && <span aria-hidden="true">{c.icon}</span>}
+                                                {c.title}
                                             </Link>
                                         ))}
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            <p className="mt-3 text-[12px] leading-[1.5] text-black/60">
-                                Written from the articles above. If it does not match what you see on your
-                                own account, the article is what counts.
-                            </p>
-                        </div>
-                    )}
+                                {fallback?.escalation && (
+                                    <div className="mt-4">
+                                        <StillNeedHelp escalation={fallback.escalation} compact />
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
-                    {/* ------------------------------- asked, but no answer */}
-                    {!asking && answer && !answer.answered && (
-                        <div className="px-5 py-5">
-                            {/*
-                              🚨 THREE DIFFERENT SENTENCES, BECAUSE THEY ARE THREE
-                              DIFFERENT SITUATIONS. Printing "we do not have an
-                              answer for that yet" after a timeout blames the
-                              corpus for a service outage, and the articles that
-                              DO answer it are listed directly underneath —
-                              which reads as the help centre contradicting
-                              itself. A technical failure says so and hands over
-                              the search results; only a genuine miss says the
-                              answer is not here.
-                            */}
-                            <p className="text-[15px] font-semibold text-black">
-                                {TECHNICAL_REASONS.has(answer.reason)
-                                    ? answer.results?.length > 0
-                                        ? "Written answers are unavailable right now. Here is what the help centre has on that:"
-                                        : "Written answers are unavailable right now. Try searching, or reach us below."
-                                    : answer.results?.length > 0
-                                      ? "We could not answer that directly. These come closest:"
-                                      : "We do not have an answer for that yet."}
-                            </p>
-
-                            {answer.results?.length > 0 && (
-                                <ul className="mt-3 flex flex-col gap-2">
-                                    {answer.results.slice(0, 5).map((r) => (
-                                        <li key={r.slug}>
-                                            <Link
-                                                href={`/help/${r.category_slug}/${r.slug}`}
-                                                onClick={() => setOpen(false)}
-                                                className="block rounded-box-sm border-2 border-black px-4 py-3 hover:bg-black/[0.03]"
-                                            >
-                                                <span className="block text-[15px] font-semibold text-black">
-                                                    {r.title}
-                                                </span>
-                                                <span className="mt-0.5 block text-sm text-black/60 line-clamp-2">
-                                                    {r.summary}
-                                                </span>
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-
-                            {/* ⚠️ Only true of a genuine miss. A failed request is
-                                not a gap in the corpus and is not logged as one,
-                                so claiming it was would be a small lie told to
-                                the person least able to check it. */}
-                            {!TECHNICAL_REASONS.has(answer.reason) && (
-                                <p className="mt-3 text-sm text-black/60">
-                                    Questions we cannot answer are logged, so asking helped even when it
-                                    did not help you.
-                                </p>
-                            )}
-
-                            {answer.escalation && (
-                                <div className="mt-4">
-                                    <StillNeedHelp escalation={answer.escalation} compact />
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* ------------------------------------ keyword results */}
-                    {!asking && !answer && (
-                        <>
-                            {results === null && (
-                                <p className="px-5 py-5 text-sm text-black/60">Searching…</p>
-                            )}
-
-                            {results?.length > 0 && (
-                                <ul className="divide-y divide-black/10">
-                                    {results.map((r) => (
-                                        <li key={r.slug}>
-                                            <Link
-                                                href={`/help/${r.category_slug}/${r.slug}`}
-                                                onClick={() => setOpen(false)}
-                                                className="block px-5 py-3 hover:bg-black/[0.03]"
-                                            >
-                                                <span className="block text-[15px] font-semibold text-black">
-                                                    {r.title}
-                                                </span>
-                                                <span className="mt-0.5 block text-sm text-black/60 line-clamp-2">
-                                                    {r.summary}
-                                                </span>
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-
-                            {results?.length === 0 && (
-                                // 🚨 Never a bare "no results". That is the moment
-                                // a reader decides the platform has no answer and
-                                // opens a ticket instead.
-                                <div className="px-5 py-5">
-                                    <p className="text-[15px] font-semibold text-black">
-                                        Nothing matched “{query.trim()}”.
-                                    </p>
-
-                                    {ai && canAsk && (
-                                        <button
-                                            type="button"
-                                            onClick={ask}
-                                            className="mt-3 inline-flex min-h-[44px] items-center gap-2 rounded-box-sm border-2 border-black bg-[#FF007F] px-4 font-gulfs text-sm uppercase tracking-widest text-black"
-                                        >
-                                            <Sparkles className="h-4 w-4" aria-hidden="true" />
-                                            Ask AI instead
-                                        </button>
+                        {/* --------------------------------------------- ask row */}
+                        {showAskRow && (
+                            <div id={optionId(ASK_ROW)} role="option" aria-selected={active === ASK_ROW}>
+                                <button
+                                    type="button"
+                                    onClick={ask}
+                                    onMouseEnter={() => setActive(ASK_ROW)}
+                                    className={`grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 text-left transition-[filter] ${
+                                        active === ASK_ROW ? "bg-[#FF007F] brightness-110" : "bg-[#FF007F]"
+                                    } hover:brightness-110 active:brightness-95`}
+                                >
+                                    <Sparkles className="h-4 w-4 shrink-0 text-black" aria-hidden="true" />
+                                    <span className="min-w-0">
+                                        <span className="block font-gulfs text-[11px] uppercase tracking-[0.16em] text-black/70">
+                                            {isQuestion ? "Ask AI · default" : "Ask AI"}
+                                        </span>
+                                        <span className="block truncate text-[15px] font-semibold text-black">
+                                            “{trimmed}”
+                                        </span>
+                                    </span>
+                                    {active === ASK_ROW ? (
+                                        <CornerDownLeft className="h-4 w-4 shrink-0 text-black" aria-hidden="true" />
+                                    ) : (
+                                        <span className="hidden text-[11px] font-semibold text-black/70 sm:inline">⌘↵</span>
                                     )}
-
-                                    {fallback?.categories?.length > 0 && (
-                                        <div className="mt-4 flex flex-wrap gap-2">
-                                            {fallback.categories.map((c) => (
-                                                <Link
-                                                    key={c.slug}
-                                                    href={`/help/${c.slug}`}
-                                                    onClick={() => setOpen(false)}
-                                                    className="inline-flex min-h-[44px] items-center gap-2 rounded-box-sm border-2 border-black bg-white px-3 text-sm font-semibold text-black hover:bg-black hover:text-white"
-                                                >
-                                                    {c.icon && <span aria-hidden="true">{c.icon}</span>}
-                                                    {c.title}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {fallback?.escalation && (
-                                        <div className="mt-4">
-                                            <StillNeedHelp escalation={fallback.escalation} compact />
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </>
-                    )}
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
+
+            <HelpChatPanel
+                open={chatOpen}
+                question={chatQuestion}
+                onClose={() => setChatOpen(false)}
+                maxQuestion={maxQuestion}
+                resultsHint={resultsRef.current}
+            />
         </div>
+    );
+}
+
+/** A keycap, for the caption's keyboard hint. */
+function Key({ children }) {
+    return (
+        <kbd className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-box-xs border border-black/30 bg-white px-1 font-sans text-[10px] font-semibold text-black">
+            {children}
+        </kbd>
     );
 }

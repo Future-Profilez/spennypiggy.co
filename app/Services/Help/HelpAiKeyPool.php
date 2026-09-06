@@ -115,6 +115,40 @@ class HelpAiKeyPool
         return self::keys() !== [];
     }
 
+    /**
+     * A key whose PREFIX says it belongs to a different provider than
+     * `base_url` points at — the misconfiguration that actually happened:
+     * four `gsk_` Groq keys pasted into `HELP_AI_API_KEYS` with the host left at
+     * OpenAI, so every one 401'd and stood down as "refused". The 401 message
+     * ("Incorrect API key provided") is true and useless; this names the fix.
+     *
+     * Prefixes are a hint, not an authority — an unknown prefix says nothing.
+     *
+     * @return array<int, string> one sentence per mismatched key, empty when fine
+     */
+    public static function hostMismatches(): array
+    {
+        $host = (string) parse_url((string) config('help.ai.base_url'), PHP_URL_HOST);
+
+        $expects = [
+            'gsk_' => ['groq.com', 'Groq (set HELP_AI_BASE_URL=https://api.groq.com/openai/v1)'],
+            'sk-' => ['openai.com', 'OpenAI (set HELP_AI_BASE_URL=https://api.openai.com/v1)'],
+            'AIza' => ['googleapis.com', 'Gemini (set HELP_AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai)'],
+        ];
+
+        $problems = [];
+
+        foreach (self::keys() as $key) {
+            foreach ($expects as $prefix => [$domain, $advice]) {
+                if (str_starts_with($key['key'], $prefix) && ! str_contains($host, $domain)) {
+                    $problems[] = "Key {$key['label']} looks like a {$advice} key, but HELP_AI_BASE_URL points at ".($host ?: 'nothing').'.';
+                }
+            }
+        }
+
+        return $problems;
+    }
+
     public static function count(): int
     {
         return count(self::keys());
@@ -127,10 +161,15 @@ class HelpAiKeyPool
      */
     public static function scopes(): array
     {
-        return array_values(array_unique(array_filter([
-            (string) config('help.ai.answer_model'),
-            (string) config('help.ai.embedding_model'),
-        ])));
+        $models = [(string) config('help.ai.answer_model')];
+
+        // On the keyword retriever nothing is ever embedded, so a row for the
+        // embedding model is a row about a call that never happens.
+        if (config('help.ai.retriever') !== 'keyword') {
+            $models[] = (string) config('help.ai.embedding_model');
+        }
+
+        return array_values(array_unique(array_filter($models)));
     }
 
     /**
@@ -168,7 +207,15 @@ class HelpAiKeyPool
             return array_values(array_filter($all, fn ($k) => ! self::isCooling($k['fingerprint'], $scope)));
         }
 
-        $start = self::advanceCursor() % count($all);
+        // 🚨 THE CURSOR IS PER MODEL. One shared cursor with an EVEN number of
+        // keys locks into a fixed split, because an ask makes two pooled calls
+        // (embed, then chat): embed takes cursor 1 → key A, chat takes cursor 2
+        // → key B, and the next ask lands on 3 → A, 4 → B again — for ever. Key
+        // B then carries every chat call (the ~1,800-token one) while key A's
+        // chat quota sits unused, and "two accounts doubles capacity" is false
+        // for exactly the call that spends the quota. Verified by test: two
+        // full asks on two keys put both chat calls on the same key.
+        $start = self::advanceCursor($scope) % count($all);
 
         // Walk the whole ring from the cursor, so a skipped key is passed over
         // rather than shortening the rotation.
@@ -244,7 +291,25 @@ class HelpAiKeyPool
         // whoever reads the alerts (the `sentry` log channel carries error and
         // above). Logged once per cooldown, not once per request.
         if ($reason === self::REASON_AUTH) {
-            Log::error('Help AI: a key was refused by the provider', $context);
+            // ⚠️ ONCE PER KEY PER 24H at error level — the `sentry` channel
+            // carries error and above, and a revoked key re-cools every hour
+            // for as long as it sits in the env, which is 24 identical alerts a
+            // day per dead key (the `ensureManualPayoutSchedule` noise, at a
+            // smaller scale). `Cache::add` is atomic; a `has()`+`put()` pair
+            // lets two concurrent refusals both alert.
+            $claimed = false;
+
+            try {
+                $claimed = Cache::add('help:ai:autherr:'.$key['fingerprint'], 1, 86400);
+            } catch (\Throwable $e) {
+                $claimed = true; // cannot dedupe → say it, rather than stay silent
+            }
+
+            if ($claimed) {
+                Log::error('Help AI: a key was refused by the provider', $context);
+            } else {
+                Log::warning('Help AI: a refused key is still refused', $context);
+            }
         } else {
             Log::warning('Help AI: key stood down', $context);
         }
@@ -365,11 +430,13 @@ class HelpAiKeyPool
      * ⚠️ `Cache::increment` needs the key to exist on some drivers, so it is
      * seeded with `add` (which is itself atomic and a no-op when present).
      */
-    private static function advanceCursor(): int
+    private static function advanceCursor(?string $scope): int
     {
+        $key = self::CURSOR_KEY.':'.self::scopeKey($scope);
+
         try {
-            Cache::add(self::CURSOR_KEY, 0, 86400);
-            $value = Cache::increment(self::CURSOR_KEY);
+            Cache::add($key, 0, 86400);
+            $value = Cache::increment($key);
 
             if (is_numeric($value)) {
                 return (int) $value;

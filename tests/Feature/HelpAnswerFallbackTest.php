@@ -195,18 +195,28 @@ class HelpAnswerFallbackTest extends TestCase
      */
     public function test_the_component_still_recognises_every_technical_reason(): void
     {
-        $jsx = file_get_contents(resource_path('js/Components/Help/HelpSearchBar.jsx'));
+        // ⚠️ Answers are rendered by the chat panel since 5 Sep 2026 — the bar
+        // only searches. The pin follows the component that owns the copy.
+        $jsx = file_get_contents(resource_path('js/Components/Help/HelpChatPanel.jsx'));
 
         foreach (['request_failed', 'exception', 'embedding_unavailable', 'no_articles_embedded', 'rate_limited'] as $reason) {
             $this->assertStringContainsString(
                 '"'.$reason.'"',
                 $jsx,
-                "HelpSearchBar no longer recognises the [{$reason}] reason, so it will tell the reader the answer does not exist."
+                "HelpChatPanel no longer recognises the [{$reason}] reason, so it will tell the reader the answer does not exist."
             );
         }
 
-        // And it must hand over the results it already has rather than [].
-        $this->assertStringContainsString('resultsRef.current ?? []', $jsx);
+        // A refused turn is its own state, not a service failure and not a gap.
+        $this->assertStringContainsString('"conversation_limit"', $jsx);
+
+        // And a failed FIRST generation must hand over the results the bar
+        // already fetched rather than [].
+        $this->assertStringContainsString('resultsHint ?? []', $jsx);
         $this->assertStringNotContainsString('results: [], reason: "request_failed"', $jsx);
+
+        // The bar must not have kept a second copy of the answer branch.
+        $bar = file_get_contents(resource_path('js/Components/Help/HelpSearchBar.jsx'));
+        $this->assertStringNotContainsString('TECHNICAL_REASONS', $bar);
     }
 }

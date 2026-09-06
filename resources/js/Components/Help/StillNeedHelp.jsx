@@ -13,6 +13,20 @@ import { openLiveChat } from "@/lib/liveChat";
  *
  * The `escalation` payload is built server-side (HelpController::escalation) so
  * the branch cannot drift from what the routes actually allow.
+ *
+ * 🚨 `compact` IS A DIFFERENT ELEMENT, NOT A SMALLER CARD (5 Sep 2026).
+ *
+ * It used to be the same yellow panel with the same heading and the same three
+ * filled buttons, `p-4` instead of `p-6`. Every compact mount is NESTED inside a
+ * surface whose page ALREADY renders the full panel at the foot — the chat
+ * fallback and the article feedback block both sit above `Help/Index`,
+ * `Help/Article` and `Help/Category`'s own `<StillNeedHelp>` — so the reader got
+ * the identical loud card twice on one screen, which is what it was reported as.
+ *
+ * The compact form is therefore a QUIET ROW: a hairline, a short label and text
+ * links. It says the same three things without competing with the panel below it
+ * or with the answer above it. **Never give it a background, a heading level or
+ * a filled button** — the moment it looks like a card it is a duplicate again.
  */
 export default function StillNeedHelp({ escalation, compact = false }) {
     if (!escalation) return null;
@@ -23,9 +37,45 @@ export default function StillNeedHelp({ escalation, compact = false }) {
     // early for guests) this button cancelled its own mailto: and opened nothing.
     // See lib/liveChat.js; the href below is the fallback and must stay real.
 
+    if (compact) {
+        return (
+            <div className="border-t border-black/15 pt-3">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]">
+                    <span className="font-semibold text-black/60">Still stuck?</span>
+
+                    {escalation.chat && (
+                        <a
+                            href={`mailto:${escalation.email}`}
+                            onClick={openLiveChat}
+                            className="font-semibold text-black underline decoration-black/30 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
+                        >
+                            Chat with us
+                        </a>
+                    )}
+
+                    {escalation.purchases_url && (
+                        <Link
+                            href={escalation.purchases_url}
+                            className="font-semibold text-black underline decoration-black/30 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
+                        >
+                            About a purchase
+                        </Link>
+                    )}
+
+                    <a
+                        href={`mailto:${escalation.email}`}
+                        className="font-semibold text-black underline decoration-black/30 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
+                    >
+                        {escalation.email}
+                    </a>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <section
-            className={`rounded-box border-[3px] border-black bg-[#E6EA7B] ${compact ? "p-4" : "p-6"}`}
+            className="rounded-box border-[3px] border-black bg-[#E6EA7B] p-6"
             aria-labelledby="still-need-help-heading"
         >
             <h2 id="still-need-help-heading" className="text-lg font-black uppercase tracking-tight text-black">

@@ -388,6 +388,13 @@ class Kernel extends ConsoleKernel
         // so this table grows faster than any payment table. The same pass
         // settles rows the mail transport never confirmed, which would otherwise
         // read as "still on its way" forever.
+        // Observer-written `{MODEL}_{EVENT}` rows in audit_logs (never a decision — see
+        // PruneSystemAuditRows) are kept 180 days. Admin and explicit system rows are
+        // never pruned. 03:35 sits with the other prunes.
+        $schedule->command('audit:prune-system --apply')
+            ->dailyAt('03:35')
+            ->withoutOverlapping(30);
+
         $schedule->command('notification-logs:prune')
             ->dailyAt('03:40')
             ->withoutOverlapping(30);

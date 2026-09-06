@@ -344,7 +344,13 @@ class HelpAiAnswerTest extends TestCase
 
             $system = $request->data()['messages'][0]['content'] ?? '';
 
-            return ($request->data()['max_tokens'] ?? 9999) <= 250
+            // The cap is the CONFIGURED one, and it is a ceiling in the low
+            // hundreds — not a literal. It moved 200 → 400 on 5 Sep 2026
+            // because a reasoning model (Groq gpt-oss) spends the same budget
+            // on thinking first and was cutting four-sentence answers mid-word.
+            // The visible length is held by the prompt's style rules.
+            return ($request->data()['max_tokens'] ?? 9999) === (int) config('help.ai.max_tokens')
+                && ($request->data()['max_tokens'] ?? 9999) <= 500
                 && str_contains($system, 'MAXIMUM 4 sentences')
                 && str_contains($system, 'ANSWER NOTHING THAT IS NOT ABOUT SPENNY PIGGY');
         });
@@ -532,5 +538,115 @@ class HelpAiAnswerTest extends TestCase
         Http::assertSent(fn ($r) => $r->url() === 'https://api.groq.com/openai/v1/embeddings');
         Http::assertSent(fn ($r) => $r->url() === 'https://api.groq.com/openai/v1/chat/completions');
         Http::assertNotSent(fn ($r) => str_contains($r->url(), 'api.openai.com'));
+    }
+
+    // ---------------------------------------------- the answer is prose
+
+    /**
+     * Client direction, 5 Sep 2026: the answer comes from the articles' CONTENT
+     * and the articles are SUGGESTED beneath it. An answer that is a list of
+     * links is what search already does, and it is what Ask AI exists to avoid.
+     */
+    public function test_the_model_is_told_to_answer_in_prose_and_leave_the_links_to_the_chips(): void
+    {
+        $this->article([], [1.0, 0.0, 0.0]);
+        $this->fakeOpenAi([1.0, 0.0, 0.0], 'Part of each sale is held.');
+
+        HelpAnswer::ask('why is money held');
+
+        Http::assertSent(function ($request) {
+            if (! str_ends_with($request->url(), '/chat/completions')) {
+                return false;
+            }
+
+            $system = $request->data()['messages'][0]['content'];
+
+            return str_contains($system, 'Do NOT put links, URLs or article titles in your answer')
+                && str_contains($system, 'shown to the reader beneath your answer')
+                // A wrong assumption is corrected, not refused — "10% every
+                // month" is the question this help centre was built for.
+                && str_contains($system, 'EXCEPTION — a wrong assumption');
+        });
+    }
+
+    // ------------------------------------------------ reasoning models
+
+    /**
+     * `reasoning_effort` ships ONLY when configured. An unknown parameter is a
+     * 400 on OpenAI's chat models — and a 400 is "our request", which the
+     * client correctly refuses to retry on another key, so a default that sent
+     * it would take Ask AI down on every host that does not take it.
+     */
+    public function test_reasoning_effort_is_sent_only_when_configured(): void
+    {
+        $this->article([], [1.0, 0.0, 0.0]);
+        $this->fakeOpenAi([1.0, 0.0, 0.0], 'Held.');
+
+        HelpAnswer::ask('why is money held');
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/chat/completions') && ! array_key_exists('reasoning_effort', $r->data()));
+
+        Cache::flush();
+        config(['help.ai.reasoning_effort' => 'low']);
+
+        HelpAnswer::ask('when do i get paid');
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/chat/completions') && ($r->data()['reasoning_effort'] ?? null) === 'low');
+    }
+
+    // ------------------------------------ vectors from another model (B)
+
+    /**
+     * 🚨 After switching embedding model, every stored vector has the wrong
+     * dimension. similarity() scored those 0.0, which read as "nothing is close
+     * enough" → `below_similarity_threshold` → CACHED for a week. Every question
+     * asked before the hourly re-embed landed was frozen as unanswerable. A
+     * mismatched vector is not a candidate; an empty ranking is
+     * `no_articles_embedded`, which is never cached.
+     */
+    public function test_vectors_from_another_model_are_not_candidates_and_nothing_is_cached(): void
+    {
+        config(['help.ai.cache_ttl' => 604800, 'help.ai.min_similarity' => 0.28]);
+        $this->article([], [1.0, 0.0, 0.0]); // three dimensions, the OLD model
+
+        $calls = 0;
+        Http::fake(function ($request) use (&$calls) {
+            if (str_ends_with($request->url(), '/embeddings')) {
+                $calls++;
+
+                // First ask: the NEW model answers two dimensions. Second ask: the
+                // article has been re-embedded, dimensions agree again.
+                return Http::response(['data' => [['index' => 0, 'embedding' => $calls === 1 ? [1.0, 0.0] : [1.0, 0.0, 0.0]]]]);
+            }
+
+            return Http::response(['choices' => [['message' => ['content' => 'Held for a while.']]]]);
+        });
+
+        $first = HelpAnswer::ask('why is money held');
+        $this->assertSame('no_articles_embedded', $first['reason']);
+        $this->assertNotSame('below_similarity_threshold', $first['reason']);
+
+        $second = HelpAnswer::ask('why is money held');
+        $this->assertTrue($second['answered'], 'The stale-model verdict must not have been cached.');
+    }
+
+    // ------------------------------ a cached answer is free to the visitor (E)
+
+    public function test_a_cached_answer_does_not_spend_the_hourly_allowance(): void
+    {
+        config(['help.ai.cache_ttl' => 604800, 'help.ai.rate_limit_per_hour' => 1]);
+        $this->article([], [1.0, 0.0, 0.0]);
+        $this->fakeOpenAi([1.0, 0.0, 0.0], 'Part of each sale is held.');
+
+        $first = $this->postJson('/help/ask', ['q' => 'why is money held']);
+        $first->assertOk()->assertJsonPath('answered', true);
+
+        // The allowance is 1 and it was spent. A repeat is served from cache and
+        // must not be refused for it.
+        $second = $this->postJson('/help/ask', ['q' => 'why is money held']);
+        $second->assertOk()->assertJsonPath('answered', true);
+        $this->assertNotSame('rate_limited', $second->json('reason'));
+
+        // A NEW question is a generation, and that one IS refused.
+        $third = $this->postJson('/help/ask', ['q' => 'when do i get paid']);
+        $third->assertOk()->assertJsonPath('reason', 'rate_limited');
     }
 }

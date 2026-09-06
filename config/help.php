@@ -131,6 +131,24 @@ return [
         ],
 
         'embedding_model' => env('HELP_AI_EMBEDDING_MODEL', 'text-embedding-3-small'),
+
+        /*
+         * How the articles for a question are found.
+         *
+         *   vector   — embeddings + cosine similarity (needs an embedding model
+         *              on the same host, and `help:embed` to have run)
+         *   keyword  — the help centre's own search (HelpSearch) picks the
+         *              articles; the chat model writes the answer from them
+         *
+         * 🚨 GROQ HAS NO EMBEDDING MODEL (measured 5 Sep 2026 — 14 models on the
+         * free tier, none of them embeddings). On Groq this MUST be `keyword`,
+         * or every question fails at the embedding step and Ask AI only ever
+         * shows links. The grounding rules are identical either way: the model
+         * still answers only from the retrieved articles, and NO_ANSWER still
+         * guards relevance. What changes is the retriever's tolerance for
+         * phrasing — keyword search stems lightly, vectors understand meaning.
+         */
+        'retriever' => env('HELP_AI_RETRIEVER', 'vector'),
         'answer_model' => env('HELP_AI_ANSWER_MODEL', 'gpt-4o-mini'),
 
         // Longest question accepted. A genuine help question fits easily; the
@@ -161,10 +179,28 @@ return [
         // material content change, or a stale answer survives the week.
         'cache_ttl' => (int) env('HELP_AI_CACHE_TTL', 604800),
 
-        // Hard ceiling on the generated answer. It is a short answer that points
-        // at articles, never a replacement for reading them — roughly 4 short
-        // sentences.
-        'max_tokens' => (int) env('HELP_AI_MAX_TOKENS', 200),
+        /*
+         * Hard ceiling on the generated answer. The answer's LENGTH is set by
+         * the prompt's style rules (four sentences); this is a safety stop.
+         *
+         * 🚨 A REASONING MODEL SPENDS THIS ON THINKING FIRST. On Groq,
+         * `openai/gpt-oss-*` counts its reasoning tokens against `max_tokens`,
+         * so at 200 the visible answer was cut mid-sentence ("held for 30 ")
+         * while the thinking used the budget — measured live, 5 Sep 2026. 400
+         * leaves room for low-effort reasoning plus four sentences; the prompt
+         * keeps the visible part short either way.
+         */
+        'max_tokens' => (int) env('HELP_AI_MAX_TOKENS', 400),
+
+        /*
+         * `low` | `medium` | `high` | null. Sent as `reasoning_effort` ONLY
+         * when set — OpenAI's chat models reject unknown parameters with a
+         * 400, so it must never be sent to a model that does not take it. For
+         * Groq's gpt-oss it is what stops a four-sentence answer costing a
+         * thousand tokens of thinking; `low` is right for "read three articles,
+         * answer in prose".
+         */
+        'reasoning_effort' => env('HELP_AI_REASONING_EFFORT') ?: null,
 
         // Seconds, per attempt. A help search that hangs is worse than one that
         // falls back.
@@ -184,6 +220,29 @@ return [
         // Per-IP hourly cap on generated answers. Each one costs money and the
         // endpoint is public and unauthenticated.
         'rate_limit_per_hour' => (int) env('HELP_AI_RATE_LIMIT', 15),
+
+        /*
+         * Follow-up questions — the chat panel.
+         *
+         * 🚨 NOTHING IS STORED. The browser sends the conversation so far with
+         * each follow-up, bounded here, and the server keeps no copy. Every
+         * turn is answered from freshly retrieved articles; earlier turns are
+         * CONTEXT for what "it" and "that" refer to, never a source of facts.
+         *
+         * ⚠️ A follow-up is never cached (it depends on the conversation), so
+         * every one is a paid generation. `max_turns` is what stops one chat
+         * from spending a free tier's day.
+         */
+        'chat' => [
+            // User questions per conversation, including the current one.
+            'max_turns' => (int) env('HELP_AI_CHAT_MAX_TURNS', 6),
+            // Total characters of earlier turns sent as context, trimmed from
+            // the OLDEST. Roughly 400 tokens on top of the articles.
+            'max_history_chars' => (int) env('HELP_AI_CHAT_HISTORY_CHARS', 1500),
+            // Per message, validated at the edge. An assistant turn is at most
+            // four sentences; a user turn is the question cap.
+            'max_message_chars' => 600,
+        ],
     ],
 
 ];

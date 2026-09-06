@@ -225,6 +225,18 @@ class HelpEmbeddings
                 continue;
             }
 
+            // 🚨 A VECTOR FROM ANOTHER MODEL IS NOT A CANDIDATE, it is stale data.
+            // similarity() answers 0.0 on a dimension mismatch, which reads as
+            // "nothing is close enough" → `below_similarity_threshold` → CACHED
+            // for a week. So in the gap between switching embedding model and
+            // the next `help:embed`, every question asked was frozen as
+            // unanswerable for seven days. Skipping them makes the true state
+            // visible instead: an empty ranking is `no_articles_embedded`, which
+            // is never cached and clears itself the moment the re-embed lands.
+            if (count($vector) !== count($questionVector)) {
+                continue;
+            }
+
             $scored[] = [
                 'article' => $article,
                 'score' => self::similarity($questionVector, $vector),
