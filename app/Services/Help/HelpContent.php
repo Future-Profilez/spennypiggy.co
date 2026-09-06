@@ -147,11 +147,49 @@ class HelpContent
             'summary' => HelpTokens::render($category->summary),
             'icon' => $category->icon,
             'articles' => $matching->map(fn (HelpArticle $a) => self::card($a))->all(),
+            // 🚨 The only way out of a section used to be the browser's Back
+            // button. A reader who opened the wrong shelf is one tap from the
+            // right one now, without returning to the directory and re-scanning
+            // nine tiles. Audience-filtered like everything else on the page.
+            'siblings' => self::siblingSections($category, $audience),
             // ⚠️ Reported so the page can offer "show the N written for creators"
             // rather than silently hiding them. A filter the reader cannot see is
             // indistinguishable from missing content.
             'hidden_by_audience' => $all->count() - $matching->count(),
         ];
+    }
+
+    /**
+     * Every OTHER published section, for the "keep looking" strip.
+     *
+     * ⚠️ Reads the same cached `tree()` the directory reads, so it costs no
+     * extra query, and an empty-for-this-viewer section is dropped for the same
+     * reason the directory drops it: a tile leading to "nothing filed here" is a
+     * dead end wearing a signpost.
+     *
+     * @return array<int, array{slug: string, title: string, icon: ?string, article_count: int}>
+     */
+    public static function siblingSections(HelpCategory $category, ?string $audience): array
+    {
+        return self::tree()
+            ->reject(fn (HelpCategory $c) => $c->id === $category->id)
+            ->filter(fn (HelpCategory $c) => self::matchesAudience($c, $audience))
+            ->map(function (HelpCategory $c) use ($audience) {
+                $count = $c->publishedArticles
+                    ->filter(fn (HelpArticle $a) => self::matchesAudience($a, $audience))
+                    ->count();
+
+                return [
+                    'slug' => $c->slug,
+                    'title' => $c->title,
+                    'icon' => $c->icon,
+                    'audience' => $c->audience,
+                    'article_count' => $count,
+                ];
+            })
+            ->filter(fn (array $c) => $c['article_count'] > 0)
+            ->values()
+            ->all();
     }
 
     /** The list shape used by cards, search results and suggestions. */
@@ -163,6 +201,10 @@ class HelpContent
             'summary' => HelpTokens::render($article->summary),
             'audience' => $article->audience,
             'category_slug' => $article->category?->slug ?? $article->getRelationValue('category')?->slug,
+            // The search dropdown prints this as the row's eyebrow, so a reader
+            // scanning results sees WHICH part of the help centre each answer
+            // sits in before reading the title. Additive; nothing keys on it.
+            'category_title' => $article->category?->title ?? $article->getRelationValue('category')?->title,
         ];
     }
 
@@ -184,12 +226,80 @@ class HelpContent
             'toc' => $rendered['toc'],
             'audience' => $article->audience,
             'updated_at' => $article->updated_at?->toIso8601String(),
+            // How long the answer takes to read. A reader deciding whether to
+            // open this now or contact support instead is answering exactly that
+            // question, and "4 min" settles it before they scroll.
+            'reading_minutes' => self::readingMinutes($article->body),
             'category' => [
                 'slug' => $article->category->slug,
                 'title' => $article->category->title,
                 'icon' => $article->category->icon,
             ],
             'related' => self::related($article),
+            // 🚨 The pager is the SECTION's own order (`sort_order`), not
+            // relevance — a help section is written to be read through, and
+            // `related` already answers "what else is like this". Without it the
+            // only way on from an answer is Back, which is where a reader stops.
+            'pager' => self::pager($article),
+        ];
+    }
+
+    /**
+     * Reading time in whole minutes, floor 1.
+     *
+     * ⚠️ Counted on the MARKDOWN SOURCE, not the rendered HTML — `strip_tags` on
+     * the render would still count link URLs and heading anchors as words, and
+     * the difference on a link-heavy article is a minute.
+     *
+     * 200 words a minute is the usual figure for screen prose and is deliberately
+     * not tuned: an estimate that claims precision it does not have is worse than
+     * a round one.
+     */
+    public static function readingMinutes(?string $body): int
+    {
+        $words = str_word_count(strip_tags((string) $body));
+
+        return max(1, (int) ceil($words / 200));
+    }
+
+    /**
+     * The previous and next article in this article's own category.
+     *
+     * ⚠️ Live features only, same as every other list — an article documenting a
+     * kill-switched feature 404s at its own URL, so linking to it from a pager
+     * would be a next step into a 404.
+     *
+     * ⚠️ Ordered by `sort_order` then id, matching `categoryPayload` exactly. If
+     * the two ever disagree, the pager walks a different sequence than the list
+     * the reader just came from, which reads as articles going missing.
+     *
+     * @return array{prev: ?array, next: ?array}
+     */
+    public static function pager(HelpArticle $article): array
+    {
+        $siblings = HelpArticle::withLiveFeatures(
+            HelpArticle::query()
+                ->visible()
+                ->with('category:id,slug,title')
+                ->where('help_category_id', $article->help_category_id)
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get()
+        )->values();
+
+        $index = $siblings->search(fn (HelpArticle $a) => $a->id === $article->id);
+
+        // The article itself is not live-feature filtered out of its own list
+        // (it rendered), but a false here would silently make both ends null.
+        if ($index === false) {
+            return ['prev' => null, 'next' => null];
+        }
+
+        $at = fn (int $i) => $siblings->get($i) ? self::card($siblings->get($i)) : null;
+
+        return [
+            'prev' => $index > 0 ? $at($index - 1) : null,
+            'next' => $at($index + 1),
         ];
     }
 

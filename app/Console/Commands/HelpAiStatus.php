@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\Help\HelpAiKeyPool;
+use App\Services\Help\HelpAnswer;
 use Illuminate\Console\Command;
 
 /**
@@ -38,9 +39,17 @@ class HelpAiStatus extends Command
 
         $this->line('Host    '.config('help.ai.base_url'));
         $this->line('Answer  '.config('help.ai.answer_model'));
-        $this->line('Embed   '.config('help.ai.embedding_model'));
+        // On the keyword retriever nothing is embedded, and printing a model
+        // name here reads as "this model is in use" — it is not.
+        $this->line('Embed   '.(HelpAnswer::retriever() === 'keyword' ? '— (keyword retriever: nothing is embedded)' : config('help.ai.embedding_model')));
         $this->line('Keys    '.HelpAiKeyPool::count().' (quota is per provider ACCOUNT — one account, several keys, one quota)');
         $this->newLine();
+
+        $this->line('Retriever  '.HelpAnswer::retriever().(HelpAnswer::retriever() === 'keyword' ? '  (help centre search picks the articles; no embeddings)' : ''));
+
+        foreach (HelpAiKeyPool::hostMismatches() as $problem) {
+            $this->error($problem);
+        }
 
         $status = HelpAiKeyPool::status();
 

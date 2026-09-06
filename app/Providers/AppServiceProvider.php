@@ -59,9 +59,15 @@ class AppServiceProvider extends ServiceProvider
     protected $activityLogModels = [
         WishItem::class,
         WishItemSubscription::class,
-        MonthlyCharge::class,
+        /*
+         * 🚨 MonthlyCharge, SubscriptionEvent and PostLike were REMOVED 6 Sep 2026.
+         * The observer wrote a row for every save, and a cron flipping
+         * `monthly_charges.status` produced 150,423 `MONTHLYCHARGE_UPDATED` rows —
+         * 98% of `audit_logs` — none of them a decision anybody took. Payments,
+         * subscriptions and deliverables keep their own rows; the platform charge
+         * is already visible on `monthly_charges` itself.
+         */
         Subscription::class,
-        SubscriptionEvent::class,
         // \App\Models\StripePaymentDetail::class,
         // \App\Models\StripePaymentItems::class,
         TipGoal::class,
@@ -77,7 +83,6 @@ class AppServiceProvider extends ServiceProvider
         User::class,
         UserCategory::class,
         GifterCardVerification::class,
-        PostLike::class,
         Follow::class,
         PostComment::class,
         PostCommentReplies::class,

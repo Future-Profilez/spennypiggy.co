@@ -67,6 +67,18 @@ class WhaleRetentionAlerts extends Command
         }
 
         $adminEmails = AlertRouter::recipients('whale_retention');
+
+        /*
+         * Before the claim loop, deliberately: NotificationDispatcher::claim()
+         * consumes this risk episode, so claiming with nobody to tell means the
+         * episode is never re-alerted once the channel is switched back on.
+         */
+        if (empty($adminEmails) && ! $dryRun) {
+            $this->warn('whale_retention channel has no recipients — nothing sent, nothing claimed.');
+
+            return self::SUCCESS;
+        }
+
         $sent = 0;
 
         foreach ($atRisk as $row) {

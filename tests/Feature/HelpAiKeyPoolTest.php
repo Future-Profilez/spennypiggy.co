@@ -522,4 +522,108 @@ class HelpAiKeyPoolTest extends TestCase
         $this->assertFalse($result['ok']);
         $this->assertSame('rate_limited', $result['reason']);
     }
+
+    // ------------------------------------------------- the parity lock (A)
+
+    /**
+     * 🚨 One shared cursor with an EVEN number of keys locks into a fixed split:
+     * an ask is two pooled calls (embed, chat), so embed always lands on A and
+     * chat — the ~1,800-token call that spends the quota — always on B. Key A's
+     * chat quota is never touched and "two accounts doubles capacity" is false.
+     * The cursor is per model now; this failed against the shared one.
+     */
+    public function test_two_full_asks_on_two_keys_spread_the_chat_calls(): void
+    {
+        $category = HelpCategory::create(['slug' => 'money', 'title' => 'Money', 'sort_order' => 1, 'is_published' => true, 'audience' => 'both']);
+        HelpArticle::create([
+            'help_category_id' => $category->id, 'slug' => 'payouts', 'title' => 'Payouts',
+            'summary' => 'When you get paid.', 'body' => 'Payouts run weekly.', 'audience' => 'both',
+            'status' => HelpArticle::STATUS_PUBLISHED, 'published_at' => now()->subDay(), 'sort_order' => 1,
+            'embedding' => [1.0, 0.0, 0.0], 'embedding_hash' => 'x', 'embedded_at' => now(),
+        ]);
+
+        Http::fake(function ($request) {
+            if (str_ends_with($request->url(), '/embeddings')) {
+                return Http::response(['data' => [['index' => 0, 'embedding' => [1.0, 0.0, 0.0]]]]);
+            }
+
+            return Http::response(['choices' => [['message' => ['content' => 'Weekly.']]]]);
+        });
+
+        // Two DIFFERENT questions — a repeat would be served from cache.
+        HelpAnswer::ask('when do i get paid');
+        HelpAnswer::ask('how often are payouts');
+
+        $chatKeys = Http::recorded()
+            ->filter(fn ($pair) => str_ends_with($pair[0]->url(), '/chat/completions'))
+            ->map(fn ($pair) => $pair[0]->header('Authorization')[0] ?? null)
+            ->unique()
+            ->values();
+
+        $this->assertCount(2, $chatKeys, 'Both keys must carry chat calls, or one account\'s chat quota is never used.');
+    }
+
+    // --------------------------------------- an embedding 429 keeps its name (C)
+
+    public function test_a_spent_quota_on_the_embedding_call_reports_rate_limited(): void
+    {
+        config(['help.ai.keys' => [self::KEY_A]]);
+
+        Http::fake([
+            'api.openai.com/v1/embeddings' => Http::response(['error' => ['message' => 'Rate limit reached']], 429, ['Retry-After' => '600']),
+        ]);
+
+        $result = HelpAnswer::ask('why is money held');
+
+        $this->assertFalse($result['answered']);
+        $this->assertSame('rate_limited', $result['reason'], 'An embedding-side 429 must not be flattened into embedding_unavailable.');
+    }
+
+    // ------------------------------------------- a dead key alerts once a day (D)
+
+    /**
+     * A revoked key re-cools every hour for as long as it sits in the env. At
+     * error level every time, that is 24 Sentry issues a day per dead key.
+     */
+    public function test_a_refused_key_is_reported_at_error_level_once_per_day(): void
+    {
+        Log::spy();
+
+        $key = HelpAiKeyPool::keys()[0];
+
+        HelpAiKeyPool::cool($key, 3600, HelpAiKeyPool::REASON_AUTH, self::CHAT);
+        HelpAiKeyPool::reset();
+        HelpAiKeyPool::cool($key, 3600, HelpAiKeyPool::REASON_AUTH, self::CHAT);
+        HelpAiKeyPool::reset();
+        HelpAiKeyPool::cool($key, 3600, HelpAiKeyPool::REASON_AUTH, self::CHAT);
+
+        Log::shouldHaveReceived('error')->once();
+        Log::shouldHaveReceived('warning')->twice();
+    }
+
+    // ------------------------------------------------ the wrong host (found live)
+
+    /**
+     * Four Groq keys pasted in with HELP_AI_BASE_URL left at OpenAI: every one
+     * 401'd and stood down as "refused", and the provider's message — "Incorrect
+     * API key provided" — sent the person to re-paste keys that were fine.
+     */
+    public function test_a_key_from_another_provider_is_named_before_it_is_sent(): void
+    {
+        config(['help.ai.keys' => ['gsk_groqkey1234567890'], 'help.ai.base_url' => 'https://api.openai.com/v1']);
+
+        $problems = HelpAiKeyPool::hostMismatches();
+
+        $this->assertCount(1, $problems);
+        $this->assertStringContainsString('looks like a Groq', $problems[0]);
+        $this->assertStringContainsString('api.groq.com', $problems[0]);
+        $this->assertStringNotContainsString('groqkey1234567890', $problems[0], 'Never the key itself.');
+
+        config(['help.ai.base_url' => 'https://api.groq.com/openai/v1']);
+        $this->assertSame([], HelpAiKeyPool::hostMismatches());
+
+        // An unknown prefix says nothing either way.
+        config(['help.ai.keys' => ['test-key'], 'help.ai.base_url' => 'https://api.openai.com/v1']);
+        $this->assertSame([], HelpAiKeyPool::hostMismatches());
+    }
 }

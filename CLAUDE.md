@@ -2519,17 +2519,26 @@ fourth was a JSX edit, which is why there was nothing stopping a fifth.
   `founder_bonus` while the creator's own `FounderProgressTracker` is on screen — that
   card carries their real figures, so it wins, and showing both told one creator the same
   thing twice in two tones four inches apart.
-- 🚨 **`border-[#000]` DOES NOT COMPILE IN THIS PROJECT, and it fails SILENTLY.**
-  Verified against the built stylesheet: `.border-\[#000\]` appears **zero** times while
-  every other arbitrary class on the same component (`h-[250px]`, `w-[250px]`,
-  `leading-[0.86]`) is present. An element built on it renders with a **transparent
-  border and no frame at all** — which is how the first pass of these cards shipped, and
-  it is invisible in review because the markup says `border-2 border-[#000]`. Tailwind is
-  3.4.19, so this is not a version limitation; do not "fix" it by adding the class back.
-  **Use `border-black` alone, with NO width class** — `resources/css/index.css` defines it
-  as the full `border: 2px solid var(--black)` shorthand, which is exactly the house
-  frame. Where only one side needs a rule, set it **inline** (`borderLeft: "2px solid
-  #000"`); an inline border cannot be dropped by the compiler.
+- ✅ **CORRECTED 6 Sep 2026 — `border-[#000]` COMPILES FINE. The claim below was wrong.**
+  This bullet used to say the class "DOES NOT COMPILE … and it fails SILENTLY", verified
+  against a built stylesheet where `.border-\[#000\]` appeared zero times. Re-measured
+  against today's build, it is present and correct
+  (`.border-\[\#000\]{border-color:rgb(0 0 0 / …)}`) and **153 call sites across
+  `resources/` depend on it**. The likeliest reading of the original measurement is a grep
+  that did not account for Tailwind escaping the `#` as `\#` in the emitted selector —
+  the same mistake was made again while checking this, and it reports **zero** for
+  `bg-[#FF007F]` too, a class this app obviously ships. 🚨 **Grep the compiled CSS with
+  `grep -F 'border-\[\#000\]'`, never with an unescaped `#`.**
+  - ⚠️ **`border-[#000]` sets the COLOUR ONLY, so it needs a width class beside it**
+    (`border-2 border-[#000]`, `border-[3px] border-[#000]`). That is the correct idiom and
+    is what those 153 sites use.
+  - 🚨 **The REAL trap in this area is unchanged and was hit again on 6 Sep 2026:**
+    `resources/css/index.css` defines `.border-black` as the full
+    `border: 2px solid var(--black)` SHORTHAND, so `border-b-2 border-black` paints **all
+    four sides** and `border-[3px] border-black` renders at 2px. Use `border-black`
+    **alone**, or `border-[#000]` **with** a width class. Where only one side needs a rule,
+    set it **inline** (`borderBottom: "2px solid #000"`) — an inline border cannot be
+    overridden by the shorthand.
 - 🚨 **In a fixed-height flex column, every child needs `shrink-0`.** The card's body copy
   is `line-clamp-2`, and without `shrink-0` the flex parent compressed it below its own
   two lines — `line-clamp` hides the overflow, so nothing looked broken, the sentence just
@@ -5304,6 +5313,66 @@ a good day.
     even if a later key answered 502 — a spent quota is the one signal meaning "add an account".
   - ⚠️ **`help:embed` exits SUCCESS on a spent quota** (it is hourly; red every hour is how a
     real failure stops being noticed). `auth` / `bad_request` / bad shape still fail.
+  - 🚨 **THE CURSOR IS PER MODEL.** A shared cursor with an EVEN key count locked into a fixed
+    split — an ask is two calls (embed, chat), so chat ALWAYS landed on the same key and the
+    other account's chat quota was never used. `help:ai:cursor:{model}`; pinned red-first.
+  - 🚨 **A vector from another model is NOT a candidate** (`rank()` skips dimension
+    mismatches). Scoring them 0.0 turned the gap between a model switch and the next
+    `help:embed` into a week of cached "unanswerable" verdicts.
+  - ⚠️ A refused key alerts at error **once per 24h** (`Cache::add` claim), warning after.
+  - ⚠️ `HelpController::ask` checks `HelpAnswer::cached()` before the per-IP limiter — a cached
+    answer spends no allowance (review finding #6, closed).
+- 🚨 **GROQ HAS NO EMBEDDING MODEL — on Groq `HELP_AI_RETRIEVER=keyword`** (5 Sep 2026,
+  measured: 14 models on the free tier, none embeddings; the `nomic-embed-text-v1_5` name that
+  circulated 404s). `keyword` makes `HelpSearch::rankArticles()` the retriever — the search
+  box's own candidates and scorer, with light query stemming (`HelpSearch::stem`, crude on
+  purpose: "reserving" → "reserv", "payout" untouched) — and the model writes the answer from
+  those articles; the grounding rules do not change. `help:embed` is a quiet no-op there.
+  Chat model on this account is `openai/gpt-oss-120b` (measured limits: 8k tokens/**minute**,
+  1,000 requests/day, per account); 🚨 **never `groq/compound*`** — web search built in, i.e.
+  answers from outside the articles by design. A key whose prefix belongs to another provider
+  (`gsk_`/`sk-`/`AIza`) is named by `help:embed` and `help:ai-status` BEFORE any request — four
+  Groq keys with the host left at OpenAI was the live fault. `HelpKeywordRetrieverTest` (7).
+- **Ask AI is a conversation (5 Sep 2026).** `Components/Help/HelpChatPanel.jsx` owns the
+  transcript and opens **in the flow under the bar on every screen — never floating** (client
+  direction; a fixed mobile sheet was built and reversed the same day). `HelpSearchBar` only
+  searches. `POST /help/ask` takes `history[]` and returns `turns_left`.
+  🚨 **Nothing is stored** — the browser's state is the only copy. 🚨 **Retrieval is on the
+  LATEST question alone every turn**; earlier turns are context for pronouns, never facts.
+  🚨 **History goes into the user message as an "untrusted" transcript, NEVER as real
+  `assistant` messages** — a forged assistant turn as a genuine message is the strongest
+  injection there is; the request is always exactly two messages. 🚨 **Follow-ups are never
+  cached and never read the first-question cache**, so each is a paid generation — the
+  server-side cap `help.ai.chat.max_turns` (6) is what stops one open page spending a free
+  tier's day; a refused turn (`conversation_limit`) costs no call. Bounded at the edge AND in
+  `HelpAnswer::normaliseHistory()` (oldest turns trimmed first). `HelpChatTest` (11).
+  🚨 **The turn cap is counted on the RAW history, before trimming** (fixed 6 Sep 2026) —
+  `normaliseHistory()` drops the oldest turns to fit `max_history_chars`, so counting after it
+  let a long chat run for ever: a padded transcript always trimmed back under the cap.
+- **Search or ask is decided by WORD COUNT (6 Sep 2026, client direction).**
+  `HelpSearchBar.AUTO_ASK_WORDS = 4`. Under it, what was typed is a lookup: Enter opens the top
+  article and **the AI is never called** unless the reader presses Ask AI, the pink Ask row or
+  ⌘↵. At or over it, it is a question and the Ask row becomes what Enter commits to.
+  🚨 **NOTHING OPENS THE CONVERSATION ON A TIMER — reversed the same day.** A 4+ word query
+  used to open the panel by itself 1.4s after the last keystroke. The panel is IN THE FLOW
+  (the client's own earlier direction), so it appeared under the bar and shoved the directory
+  down the page **while the reader was still typing**. Client: *"page ko hila dete h."* The
+  word count still picks the default row; **the reader always commits.** The dropdown is a `role="listbox"` (↑/↓, yellow `#E6EA7B` active row,
+  category eyebrow per row from the new additive `category_title` on `HelpContent::card()`);
+  the panel is a ledger transcript (label column + prose, no bubbles). ⚠️ Both components use
+  `border-black` ALONE (the 2px shorthand) and `divide-*` for internal rules.
+- 🚨 **THE BAR HANDS OVER TO THE CONVERSATION, AND THE DROPDOWN NEVER RENDERS OVER IT**
+  (client, 6 Sep 2026: *"ak baar in chat aa gaya tab chat me hi karo sab handle"*). While
+  `chatOpen`, `showPanel` is false and the field is replaced by a one-line strip naming the
+  question with a single **New search** control. The panel has its own composer, history and
+  sources; two inputs six pixels apart is a reader choosing between two things that do the
+  same job. ⚠️ Dropping the `!chatOpen` guard from `showPanel` is what let a floating results
+  layer stack on top of the transcript.
+- 🚨 **THE SEARCH BAR IS ONE HEIGHT, ALWAYS — `min-h-[52px]` ON THE FIELD ROW, NOT `py-3`.**
+  Padding let the row be sized by its tallest child, so the 44px Clear button appearing on the
+  **first keystroke** grew the bar 20px and pushed the whole page down: a twitch on every
+  search, caused by the reader's own typing, measured at 805px → 825px. A control that appears
+  on input must never be what decides its container's height.
 - Tests: `tests/Feature/HelpAnswerFallbackTest.php` (4). ⚠️ **Both fixes were verified
   failing against their own bugs**; the two controls (the endpoint's fallback, and a genuine
   miss still being cached) correctly stay green. Three traps the first version of this file
@@ -5315,6 +5384,143 @@ a good day.
     `no_articles_embedded`** and all three tests pass for the wrong reason.
   - 🚨 **Assert `answered === true` after recovery, never "the reason changed"** — the
     failure modes share a shape, so a reason comparison passes against the bug.
+
+## 🚨 The help centre is one design across three pages, and it reads on a phone (6 Sep 2026)
+
+Client direction: *"is page ka design or achha banao mobile or pwa app koi bhi dhayn rakhna,
+functionality wise bhi improvement karo."* The three pages were in three visual languages —
+the directory on a dark hero, the section on `bg-gray-100` behind a soup of `!border-*-[0px]`
+overrides fighting a border nothing had set, and an answer on `bg-gray-200`. They share one
+cream ground (`#FFF6EC`, the app's own), white framed cards and one breadcrumb now.
+
+- 🚨 **`pb-28` ON A HELP PAGE WRAPPER WAS THE THIRD COPY OF THE SAME CLEARANCE.**
+  `AuthenticatedLayout`'s own `<main>` carries `pb-28 md:pb-0` **and**
+  `retro-bottombar.css` adds `calc(var(--sp-bottombar-h) + 16px + var(--sp-bottombar-inset))`
+  to every `main` on a signed-in phone. All three pages carried a fourth on their own
+  wrapper — ~112px of dead screen under the last element, on the pages people open when
+  something has already gone wrong. **A page never sets its own bottom-bar clearance.**
+- 🚨 **`--sp-help-header-h` IS DEFINED ONCE, IN `help.css`, AND TWO THINGS READ IT.** The
+  sticky contents bar's `top` and a heading's `scroll-margin-top` must be the same number
+  plus the bar's own height, or an anchor jump lands the heading UNDER the bar — and the
+  failure is silent: the page scrolls, the reader sees the paragraph after the heading they
+  asked for and concludes the link is wrong. The value mirrors `includes/Header.jsx`'s own
+  clearance spacer (65/66/80px) plus `env(safe-area-inset-top)` and `--sp-topbanner-h`,
+  because the installed iOS app and the install banner both push the header down. Measured
+  in a browser at 390px with the banner up: bar `top: 128px`, heading `scroll-margin-top:
+  196px`, heading clears the bar. ⚠️ **`.help-sticky-top` OVERRIDES the flat `6rem`
+  `scroll-margin-top` that predates the bar** — do not "restore" it.
+- 🚨 **requestAnimationFrame ALONE WEDGES A SCROLL HANDLER PERMANENTLY.** The contents
+  bar's scroll spy used the usual "skip if a frame is already pending" flag. rAF is
+  throttled to **zero** in a background tab, in an occluded iframe and under some low-power
+  modes, so one dropped callback never clears the flag, every later scroll returns early,
+  and the bar silently stops tracking for the rest of the session. **Nothing errors and the
+  component still renders**, which is why only a scroll measurement found it: the label
+  simply stayed on the first heading. `ArticleToc.jsx` now races rAF against a **180ms
+  `setTimeout` floor** — whichever fires first does the work and releases the flag, so the
+  recalc never runs twice for one scroll. ⚠️ Any new rAF-throttled scroll handler in this
+  app needs the same floor.
+- 🚨 **`truncate` INSIDE A FLEX OR GRID CHILD FORCES ITS PARENT TO THE FULL TEXT WIDTH.**
+  `truncate` is `white-space: nowrap`, and a flex/grid item defaults to `min-width: auto`,
+  so the parent grows to the longest untruncated line instead of clipping it. Measured on
+  the directory at 320px: a **371px category tile inside a 288px column**, clipped by the
+  page's own `overflow-x: hidden` so there was no scrollbar to show it. Pre-existing, and
+  invisible at 390px, which is where a phone check usually stops. **`min-w-0` on every
+  ancestor between the scroll container and the `truncate`.**
+- ⚠️ **A rail that is MEANT to run off the edge must be excluded from an overflow sweep.**
+  The popular-answer chips and the recents list are `overflow-x-auto` scrollers, so their
+  children legitimately sit past the viewport; a detector that does not skip descendants of
+  a scroll container reports them as faults and buries the real one.
+- **Measured, not eyeballed: 3 pages × 15 widths** (320 · 360 · 390 · 414 · 540 · **639 ·
+  640** · 700 · **767 · 768** · 834 · 1024 · 1180 · 1280 · 1440) — 0 elements crossing the
+  viewport, 0 shadows, 0 interaction scale, header borders `0/0/2px/0`.
+  🚨 **Include the breakpoint boundaries in PAIRS.** ⚠️ **The help pages cannot be framed
+  directly** — `SecurityHeaders` sends `X-Frame-Options: DENY` on every response — so the
+  harness `curl`s each page to a temporary static file under `public/`, rewrites the asset
+  URLs to absolute and frames THAT (React still hydrates inside the frame). **Delete those
+  files afterwards: Vapor uploads `public/` to S3/CloudFront.**
+
+**Audit + polish pass, same day — five things measurement found that reading did not:**
+
+- 🚨 **`.help-prose a` WAS `#FF007F` — 3.78:1 ON WHITE, i.e. EVERY LINK IN EVERY ONE OF THE
+  79 ARTICLES FAILED AA.** It is `#D1006A` now (5.36:1 on white, 5.01:1 on the cream
+  ground), the darker pink this codebase already carries for exactly this reason. ⚠️ Brand
+  pink stays correct **on a dark ground**, where it measures 5.21:1 — the rule is about the
+  ground, not the hue.
+- 🚨 **FIVE CHROME STYLES WERE UNDER AA, ALL OF THEM SMALL CAPS LABELS.** Measured in the
+  browser, not guessed: `text-black/40` **2.85:1** (section count chip), `text-black/45`
+  **3.32–3.35** (answer counts, "Updated {date}"), `text-black/50` **3.98** (pager
+  eyebrows). **On this app's grounds, `text-black/55` (4.64–4.74) is the floor and `/60`
+  (5.55–5.74) is the safe step; `/50` and below FAIL, and 10–12px small print gets no
+  exemption.** After: **0 contrast failures on all three pages.**
+- 🚨 **TWO `<main>` LANDMARKS PER PAGE.** `AuthenticatedLayout` renders the page's one
+  `main`, and each help page added its own — so "skip to main content" had two destinations
+  and neither was the whole page. The page-level one is a `<div>`. ⚠️ Pre-existing on all
+  three; **check the layout before adding a landmark to a page.**
+- 🚨 **`hidden lg:block` MOUNTS THE COMPONENT — IT ONLY HIDES IT.** Both contents forms ran
+  their own `useReadingPosition`, so **two IntersectionObservers and two scroll+resize
+  listener pairs** tracked the same headings for the whole session, one of them for a rail
+  nobody could see. The page owns ONE hook and passes `activeId` / `progress` / `jump` down.
+  ⚠️ A docblock had claimed the opposite as the *reason* for `lg:block`; a comment asserting
+  a behaviour the classes do not produce is worse than none.
+- ⚠️ **This app defines NO `:focus-visible` styling anywhere**, so every new control fell
+  back to the user agent's 1px auto ring — the weakest possible mark on a surface built from
+  2px black frames, and invisible against the frame itself. `.help-focus` (2px black) and
+  `.help-focus-invert` (mint, for the dark hero) are in `help.css`. **`:focus-visible`, never
+  `:focus`** — a mouse click should not leave a ring behind it.
+- ⚠️ **Two craft-floor defaults were removed rather than softened:** the article summary's
+  3px pink left border (a thick coloured spine is the stock callout costume — the lead earns
+  its separation with a type step now), and the "HELP CENTRE" eyebrow above the directory's
+  own heading (a label restating the page the reader is already on). ⚠️ The contents rail's
+  active marker went the same way: a 1px track with a 6px square ON it, not a 2px coloured
+  border competing with the frames that carry real structure.
+- ⚠️ **`ShareArticle`'s `compact` prop was set by neither call site** — the documented
+  dead-prop class, caught before it could look like a feature nobody wanted.
+
+🚨 **`DESIGN.md` / `PRODUCT.md` AT THE APP ROOT ARE STALE AND WERE NOT FOLLOWED.** They
+prescribe hard offset shadows (`shadow-[4px_4px_0px_0px_…]`), Anton as the display face
+everywhere, mint `#A2E4B8` page grounds and a strict `rounded-[30px]`/`rounded-[20px]` scale.
+Measured against the code: `scripts/checks/check-no-shadows.mjs` **gates the build** and
+would reject the shadows outright, `font-gulfs` has **595** uses against Anton's 30, and the
+radii are the responsive `rounded-box` tokens. This file plus the compiled stylesheet is what
+was followed, per this file's own precedence rule. **Reported, not repaired — reconciling
+those two documents is its own decision.**
+
+**Functionality that shipped with it, and the rule each carries:**
+
+- **A reading time and a last-updated date** on every answer. `HelpContent::readingMinutes()`
+  counts the **Markdown source**, not the rendered HTML — `strip_tags` on the render still
+  counts link URLs and heading anchors as words. Floor 1: "0 min read" beside an answer
+  reads as a broken page, and an empty body is the only case that reaches it.
+- **A pager to the previous and next answer in the section** (`HelpContent::pager()`),
+  ordered by `sort_order` then id — **the same order `categoryPayload` uses**, or the pager
+  walks a different sequence than the list the reader just came from, which reads as
+  articles going missing. 🚨 Live-feature filtered: an article behind an off flag 404s at
+  its own URL, so offering it is a next step into a 404.
+- **The other sections, from a section page** (`HelpContent::siblingSections()`). The only
+  way out used to be the browser's Back button. Reads the same cached `tree()` the directory
+  reads, so it costs no query, and drops a section that is empty for this viewer.
+- **`ShareArticle`** — `navigator.share` on a phone or an installed app, clipboard
+  otherwise. 🚨 **A PWA in standalone display mode has NO URL BAR**, so before this the link
+  to an answer was genuinely unreachable from inside the app. ⚠️ `navigator.share` is
+  feature-detected **in an effect**, never during render: SSR is on for /help, and a label
+  that differs between server and first paint is a hydration mismatch. ⚠️ A dismissed share
+  sheet rejects with `AbortError` and **is not a failure** — falling through to "copied"
+  there tells somebody we did the thing they cancelled.
+- **`lib/helpRecents.js` — "you were reading", device-local, never sent anywhere.** 🚨 A
+  list of the help articles somebody opened is a list of the problems they are having with
+  their own account; on a shared machine that is the last thing a help centre should keep.
+  There is no endpoint and no cookie, there is a **Clear** control, and every read and write
+  goes through `safeStorage` (touching the `localStorage` property itself throws a
+  `SecurityError` when the browser refuses site data, and this sits on the article page's
+  mount path). ⚠️ The stored shape is re-validated **on the way out**, because the value
+  survives deploys.
+- **`AudienceFilter` is one segmented control, not three pills.** As three 44px pills it
+  wrapped onto two lines at 320px and read as three unrelated buttons, so the fact that it
+  is one either/or choice with one always on was invisible. ⚠️ The hairline is `divide-x`,
+  never a border per cell — adjacent borders double to 4px.
+- Tests: `HelpCentreTest` (40, +5 — pager both ends, kill-switched skip, reading-time floor,
+  sibling sections; **three verified red against planted bugs**),
+  `tests/javascript/helpRecents.test.js` (9).
 
 ## The help centre covers the features that shipped (4 Sep 2026)
 
@@ -5427,3 +5633,24 @@ same text, moved, not rewritten.
 - **`spco-notifications-engagement`** — spennypiggy.co engagement and creator money notices: the engagement engine (reactivation, creator events, milestones, whale alerts), push reachability, payout notifications, and the Revenue Opportunity Centre. Load when working on engagement campaigns, push, payout emails or creator revenue prompts.
 - **`spco-site-content`** — spennypiggy.co public and informational surfaces: the Help Centre (/help), the SEO discovery layer, the brand email-signature handover page, the landing page "sells only what is BUILT" rule, Support History, Earnings Statements, and the creator financial dashboard. Load when working on marketing pages, SEO/meta, help articles or the earnings dashboard.
 - **`spco-platform-ops`** — spennypiggy.co platform operations: the System Diagnostics screen (severity, history, log redaction) and queue reliability — one-shot jobs must be retryable. Load when working on diagnostics, queued jobs, retries or scheduled commands.
+
+## 🚨 `audit_logs` has a retention rule and an immutability guard (6 Sep 2026, BOTH apps)
+
+The admin app gained an Audit Explorer (`../admin.spennypiggy.co/CLAUDE.md`); this is the
+website's half of the same table.
+
+- 🚨 **`ActivityObserver` NO LONGER OBSERVES `MonthlyCharge`, `SubscriptionEvent` or `PostLike`.**
+  A cron flipping `monthly_charges.status` had written **150,423 `MONTHLYCHARGE_UPDATED` rows —
+  98% of `audit_logs`** — none of them a decision anybody took. Payments, subscriptions and
+  deliverables keep their own rows. Pinned by a source scan of `AppServiceProvider::$activityLogModels`.
+- **`audit:prune-system {--days=180} {--apply} {--chunk=}`** (scheduled 03:35 with `--apply`)
+  deletes observer-shaped rows (`actor = system`, code `{MODEL}_{CREATED|UPDATED|DELETED|RESTORED}`)
+  older than the window. 🚨 **Never an admin row, never a user-actor row, never an explicit
+  system code** (`RISK_DECISION`, `PLATFORM_STATE_CHANGE`, `EARLY_FRAUD_WARNING`) — those are the
+  record. Dry run by default. ⚠️ The shape test runs in PHP over the ~90 distinct codes, not as
+  SQL `REGEXP`: the test database is sqlite, which has none.
+- 🚨 **`App\Models\AuditLog` refuses `update()`/`delete()`** (`LogicException`) — mirrored in the
+  admin model. `audit:scrub-secrets` and the prune go through the query builder on purpose.
+- ⚠️ `admin_id` on `audit_logs` is an ADMIN-app migration; the website's sqlite test schema lacks
+  it, so nothing here may reference the column.
+- Tests: `tests/Feature/AuditLogRetentionTest.php` (4).

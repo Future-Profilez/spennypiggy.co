@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\HelpArticle;
 use App\Services\Help\HelpAiKeyPool;
+use App\Services\Help\HelpAnswer;
 use App\Services\Help\HelpEmbeddings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
@@ -34,6 +35,15 @@ class EmbedHelpArticles extends Command
     {
         if (! Schema::hasTable('help_articles') || ! Schema::hasColumn('help_articles', 'embedding')) {
             $this->warn('Help centre embedding columns not present — nothing to do.');
+
+            return self::SUCCESS;
+        }
+
+        if (HelpAnswer::retriever() === 'keyword') {
+            // Not a failure and not a warning: on this retriever there is
+            // nothing to embed, by design. Scheduled hourly, so it must be
+            // quiet about it.
+            $this->info('Retriever is `keyword` — Ask AI uses the help centre search, nothing to embed.');
 
             return self::SUCCESS;
         }
@@ -99,6 +109,19 @@ class EmbedHelpArticles extends Command
             $this->info('Every article is already embedded and unchanged.');
 
             return self::SUCCESS;
+        }
+
+        // ⚠️ Said BEFORE the first request. The provider's 401 for a key sent
+        // to the wrong host is "Incorrect API key provided" — true, and it sends
+        // somebody to re-paste a key that was fine.
+        foreach (HelpAiKeyPool::hostMismatches() as $problem) {
+            $this->error('  '.$problem);
+        }
+
+        if (HelpAiKeyPool::hostMismatches() !== []) {
+            $this->line('  Set HELP_AI_BASE_URL, HELP_AI_ANSWER_MODEL and HELP_AI_EMBEDDING_MODEL together, then `php artisan config:clear`.');
+
+            return self::FAILURE;
         }
 
         $this->line(count($pending).' article(s) need embedding.');

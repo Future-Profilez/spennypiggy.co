@@ -41,6 +41,19 @@ class AuditLog extends Model
 
     protected static function booted(): void
     {
+        /*
+         * 🚨 AN AUDIT ROW IS WRITTEN ONCE AND NEVER CHANGED. The scrub command and
+         * the system-row prune go through the query builder deliberately (a row is
+         * never re-dated, and a prune is a policy, not an edit); everything else
+         * that reaches the model is refused. Mirrored in the admin app's model.
+         */
+        static::updating(function (): void {
+            throw new \LogicException('audit_logs rows are immutable — write a new row instead of changing one.');
+        });
+        static::deleting(function (): void {
+            throw new \LogicException('audit_logs rows are immutable — a deletion here is a hole in the record.');
+        });
+
         static::creating(function (self $model) {
             if (! $model->id) {
                 $model->id = (string) Str::uuid();

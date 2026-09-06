@@ -45,8 +45,13 @@
     line-height: 1.65;
 }
 
+/* 🚨 #D1006A, NOT THE BRAND #FF007F. Measured: brand pink on white is
+   **3.78:1** and on this page's cream ground 3.53:1 — under AA for body text, on
+   EVERY link in EVERY article. The darker pink is 5.36:1 / 5.01:1 and is already
+   house vocabulary (the bio page's Piglet theme carries it for exactly this
+   reason). Brand pink stays correct on a dark ground, where it reads 5.21:1. */
 .help-prose a {
-    color: #FF007F;
+    color: #d1006a;
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 2px;
@@ -136,4 +141,98 @@
     background: rgba(0, 0, 0, 0.04);
     font-weight: 700;
     color: #000;
+}
+
+/* ---------------------------------------------------------------------------
+   Sticky offsets — ONE definition, read by two things that must agree.
+
+   🚨 THE STICKY CONTENTS BAR AND A HEADING'S `scroll-margin-top` ARE THE SAME
+   NUMBER. The site header is `position: fixed` and the contents bar sticks
+   directly beneath it, so a heading jumped to with an anchor lands UNDER both
+   unless it clears them — and the failure is silent: the page scrolls, the
+   reader sees the paragraph after the heading they asked for and concludes the
+   link went to the wrong place. Defining the header height once here is what
+   keeps them in step.
+
+   ⚠️ The values mirror `includes/Header.jsx`'s own clearance spacer
+   (h-[65px] sm:h-[66px] md:h-[80px]) plus the two things that push the header
+   down: the iOS safe area in an installed app, and the install banner.
+   --------------------------------------------------------------------------- */
+:root {
+    --sp-help-header-h: 65px;
+}
+
+@media (min-width: 640px) {
+    :root {
+        --sp-help-header-h: 66px;
+    }
+}
+
+@media (min-width: 768px) {
+    :root {
+        --sp-help-header-h: 80px;
+    }
+}
+
+.help-sticky-top {
+    top: calc(
+        env(safe-area-inset-top, 0px) + var(--sp-topbanner-h, 0px) +
+            var(--sp-help-header-h)
+    );
+}
+
+/* 🚨 OVERRIDES the flat 6rem above, which predates the sticky contents bar.
+   Phone: header + the 51px bar + a little air. */
+.help-prose h2,
+.help-prose h3 {
+    scroll-margin-top: calc(
+        env(safe-area-inset-top, 0px) + var(--sp-topbanner-h, 0px) +
+            var(--sp-help-header-h) + 68px
+    );
+}
+
+/* The bar is `lg:hidden`, so from there the heading only has to clear the site
+   header. Anything more leaves the answer starting halfway down the screen. */
+@media (min-width: 1024px) {
+    .help-prose h2,
+    .help-prose h3 {
+        scroll-margin-top: calc(
+            env(safe-area-inset-top, 0px) + var(--sp-topbanner-h, 0px) +
+                var(--sp-help-header-h) + 20px
+        );
+    }
+}
+
+/* ⚠️ A long URL, a Stripe id or an unbroken slug in prose is the other way this
+   page forces horizontal scroll on a phone — the table above was only the one
+   we had already hit. */
+.help-prose p,
+.help-prose li,
+.help-prose h2,
+.help-prose h3 {
+    overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------------------
+   Focus.
+
+   ⚠️ This app defines NO `:focus-visible` styling anywhere, so every control
+   here fell back to the user agent's 1px auto ring — visible, but the weakest
+   possible mark on a surface whose whole vocabulary is a 2px black frame, and
+   invisible against the black frame itself.
+
+   `:focus-visible`, never `:focus` — a mouse click on a link should not leave a
+   ring behind it, which is the reason the pseudo-class exists.
+   --------------------------------------------------------------------------- */
+.help-focus:focus-visible {
+    outline: 2px solid #000;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* On the dark hero the black ring disappears into the ground. */
+.help-focus-invert:focus-visible {
+    outline: 2px solid #05efb8;
+    outline-offset: 2px;
+    border-radius: 4px;
 }

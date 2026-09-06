@@ -263,12 +263,24 @@ class HelpController extends Controller
         // and an expensive prompt.
         $maxQuestion = max(20, (int) config('help.ai.max_question_length', 200));
 
+        $maxMessage = (int) config('help.ai.chat.max_message_chars', 600);
+
         $data = $request->validate([
             'q' => ['required', 'string', 'min:3', 'max:'.$maxQuestion],
             'audience' => ['nullable', 'in:creator,supporter,both'],
+            // The conversation so far, from the browser. Shape and size are
+            // bounded HERE; HelpAnswer bounds it again before it reaches a
+            // prompt. Ten messages is five exchanges — one more than the turn
+            // cap can ever produce, so a legitimate client never trips this.
+            'history' => ['nullable', 'array', 'max:10'],
+            'history.*.role' => ['required_with:history', 'in:user,assistant'],
+            'history.*.content' => ['required_with:history', 'string', 'max:'.$maxMessage],
         ]);
 
         $audience = $data['audience'] ?? HelpContent::viewerAudience();
+        // Raw (validated) history. HelpAnswer normalises it itself, and the
+        // turn cap is counted on THIS list, not the trimmed one — see ask().
+        $history = array_values(array_filter($data['history'] ?? [], 'is_array'));
 
         // Keyword results are computed either way. They are the answer when the
         // model declines, and the "read the full article" list when it does not.
@@ -287,10 +299,20 @@ class HelpController extends Controller
 
         // Generation costs money on a public endpoint, so it is capped per
         // caller on top of the route's own throttle.
+        //
+        // ⚠️ A CACHED ANSWER IS NOT COUNTED. It costs no provider quota, and
+        // counting it meant fifteen repeats of one popular question locked an IP
+        // out of Ask AI for an hour at zero cost to us — the review finding
+        // that lived in TASKS as "cached answers still consume the AI rate
+        // limit". The allowance is for generations, so it is spent on the miss.
         $key = 'help:ai:'.sha1((string) $request->ip());
         $limit = (int) config('help.ai.rate_limit_per_hour', 30);
 
-        if (RateLimiter::tooManyAttempts($key, $limit)) {
+        // A follow-up is never cached — it depends on the turns before it.
+        $hasHistory = HelpAnswer::normaliseHistory($history) !== [];
+        $result = $hasHistory ? null : HelpAnswer::cached($data['q'], $audience);
+
+        if ($result === null && RateLimiter::tooManyAttempts($key, $limit)) {
             return response()->json([
                 'status' => true,
                 'ai' => false,
@@ -302,9 +324,11 @@ class HelpController extends Controller
             ]);
         }
 
-        RateLimiter::hit($key, 3600);
+        if ($result === null) {
+            RateLimiter::hit($key, 3600);
 
-        $result = HelpAnswer::ask($data['q'], $audience);
+            $result = HelpAnswer::ask($data['q'], $audience, $history);
+        }
 
         return response()->json([
             'status' => true,
@@ -327,6 +351,9 @@ class HelpController extends Controller
             'reason' => $result['reason'],
             'results' => $keyword['results'],
             'escalation' => $result['answered'] ? null : $this->escalation(),
+            // Follow-ups the browser may still send. Counted AFTER this one, so
+            // the panel can offer "Start a new question" before the refusal.
+            'turns_left' => HelpAnswer::turnsLeft(array_merge($history, [['role' => 'user', 'content' => $data['q']]])),
         ]);
     }
 

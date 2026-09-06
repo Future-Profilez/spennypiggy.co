@@ -37,6 +37,26 @@ class AlertRouter
     private const CACHE_SECONDS = 60;
 
     /**
+     * 🚨 --force ONLY. When true, the master switch and a row's own `enabled`
+     * are ignored for the rest of THIS process, so a deliberate manual run can
+     * actually produce mail — without it, a command's --force bypassed its own
+     * gate and then recipients() answered [] anyway, and "force" sent nothing.
+     * Never set from a web request; the flag dies with the process.
+     */
+    private static bool $ignoreSwitches = false;
+
+    public static function ignoreSwitchesForThisRun(): void
+    {
+        self::$ignoreSwitches = true;
+    }
+
+    /** Undo the --force override — the flag is static, so tests must reset it. */
+    public static function obeySwitches(): void
+    {
+        self::$ignoreSwitches = false;
+    }
+
+    /**
      * The addresses an alert on this channel should go to, right now.
      *
      * @return array<int, string>
@@ -44,7 +64,7 @@ class AlertRouter
     public static function recipients(string $channel): array
     {
         try {
-            if (! self::masterEnabled()) {
+            if (! self::masterEnabled() && ! self::$ignoreSwitches) {
                 Log::info('AlertRouter: ALERTS_ENABLED is off on this host', ['channel' => $channel]);
 
                 return [];
@@ -56,7 +76,7 @@ class AlertRouter
                 return self::fallback();
             }
 
-            if (! ($route['enabled'] ?? true)) {
+            if (! ($route['enabled'] ?? true) && ! self::$ignoreSwitches) {
                 // A deliberate silence, not a fault. Logged at info so
                 // "why did nobody get paged?" has an answer.
                 Log::info('AlertRouter: channel is switched off', ['channel' => $channel]);

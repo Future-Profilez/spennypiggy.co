@@ -11,6 +11,16 @@ import { Link } from "@inertiajs/react";
  * option that appears and disappears as content is published means the reader
  * cannot learn where anything is, and "for supporters" simply vanishing reads as
  * the page being broken rather than as nothing being filed there yet.
+ *
+ * 🚨 ONE SEGMENTED CONTROL, NOT THREE PILLS (6 Sep 2026). As three separate
+ * 44px pills it wrapped onto two lines at 320px and read as three unrelated
+ * buttons — so the fact that they are one either/or choice, and that one of them
+ * is always on, was invisible. It is one frame with hairline divisions now (the
+ * house abutting device), which also makes the selected cell obvious without
+ * needing a tick.
+ *
+ * ⚠️ The hairline is `divide-x`, never a border per cell: adjacent borders
+ * double to 4px and need a per-position reset at every breakpoint.
  */
 const OPTIONS = [
     { value: null, label: "Everything", param: "all" },
@@ -18,34 +28,44 @@ const OPTIONS = [
     { value: "supporter", label: "For supporters", param: "supporter" },
 ];
 
-export default function AudienceFilter({ current, viewerAudience, basePath }) {
-    return (
-        <nav aria-label="Filter by who the answer is for" className="flex flex-wrap gap-2">
-            {OPTIONS.map((opt) => {
-                const active = current === opt.value;
+export default function AudienceFilter({ current, viewerAudience, basePath, className = "" }) {
+    const activeIsYours = OPTIONS.some((o) => o.value && o.value === current && o.value === viewerAudience);
 
-                return (
-                    <Link
-                        key={opt.param}
-                        href={`${basePath}?for=${opt.param}`}
-                        preserveScroll
-                        aria-current={active ? "true" : undefined}
-                        className={[
-                            "inline-flex min-h-[44px] items-center rounded-box-sm border-2 border-black px-4 py-2 text-sm font-bold",
-                            active ? "bg-black text-white" : "bg-white text-black hover:bg-black hover:text-white",
-                        ].join(" ")}
-                    >
-                        {opt.label}
-                        {/* Says why the page opened filtered — an unexplained
-                            default filter reads as missing content. */}
-                        {active && opt.value && opt.value === viewerAudience && (
-                            <span className="ml-2 text-xs font-semibold uppercase tracking-wider opacity-70">
-                                your account
-                            </span>
-                        )}
-                    </Link>
-                );
-            })}
-        </nav>
+    return (
+        <div className={className}>
+            <nav
+                aria-label="Filter by who the answer is for"
+                className="grid grid-cols-3 divide-x-2 divide-black overflow-hidden rounded-box-sm border-black bg-white"
+            >
+                {OPTIONS.map((opt) => {
+                    const active = current === opt.value;
+
+                    return (
+                        <Link
+                            key={opt.param}
+                            href={`${basePath}?for=${opt.param}`}
+                            preserveScroll
+                            aria-current={active ? "true" : undefined}
+                            className={[
+                                "help-focus flex min-h-[44px] items-center justify-center px-2 text-center text-[12px] font-bold leading-[1.2] transition-colors duration-200 sm:text-[13px]",
+                                active ? "bg-black text-white" : "text-black/70 hover:bg-[#F4F4F5] hover:text-black",
+                            ].join(" ")}
+                        >
+                            {opt.label}
+                        </Link>
+                    );
+                })}
+            </nav>
+
+            {/* Says why the page opened filtered — an unexplained default filter
+                reads as missing content. Below the control rather than inside a
+                cell, where it used to squeeze the label it was explaining. */}
+            {activeIsYours && (
+                <p className="mt-1.5 text-[12px] text-black/55">
+                    Filtered to your account. Pick <span className="font-semibold text-black">Everything</span> to see the
+                    rest.
+                </p>
+            )}
+        </div>
     );
 }

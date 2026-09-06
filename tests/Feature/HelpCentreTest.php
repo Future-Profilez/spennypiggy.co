@@ -686,4 +686,111 @@ class HelpCentreTest extends TestCase
         $this->assertDatabaseHas('help_article_slug_history', ['slug' => 'renamed']);
         $this->assertSame(1, HelpArticleSlugHistory::count());
     }
+
+    /**
+     * 🚨 THE PAGER WALKS THE SECTION'S OWN ORDER — the same order the category
+     * page numbers. An answer used to have no way onward but the browser's Back
+     * button, which is where a reader stops.
+     */
+    public function test_an_article_carries_its_neighbours_in_the_section(): void
+    {
+        $category = $this->category();
+        $this->article($category, ['slug' => 'first', 'title' => 'First', 'sort_order' => 0]);
+        $this->article($category, ['slug' => 'second', 'title' => 'Second', 'sort_order' => 1]);
+        $this->article($category, ['slug' => 'third', 'title' => 'Third', 'sort_order' => 2]);
+
+        $payload = HelpContent::articlePayload(
+            HelpArticle::query()->with('category')->where('slug', 'second')->firstOrFail()
+        );
+
+        $this->assertSame('first', $payload['pager']['prev']['slug']);
+        $this->assertSame('third', $payload['pager']['next']['slug']);
+    }
+
+    /** The ends of a section are ends, not a wrap-around to the other end. */
+    public function test_the_pager_stops_at_both_ends_of_a_section(): void
+    {
+        $category = $this->category();
+        $this->article($category, ['slug' => 'only-one', 'title' => 'Only one', 'sort_order' => 0]);
+
+        $payload = HelpContent::articlePayload(
+            HelpArticle::query()->with('category')->where('slug', 'only-one')->firstOrFail()
+        );
+
+        $this->assertNull($payload['pager']['prev']);
+        $this->assertNull($payload['pager']['next']);
+    }
+
+    /**
+     * 🚨 An article documenting a kill-switched feature 404s at its own URL, so
+     * a pager offering it is a next step into a 404.
+     */
+    public function test_the_pager_skips_an_article_behind_an_off_feature_flag(): void
+    {
+        config(['growth_bonus.enabled' => false]);
+
+        $category = $this->category();
+        $this->article($category, ['slug' => 'alpha', 'title' => 'Alpha', 'sort_order' => 0]);
+        $this->article($category, [
+            'slug' => 'dark-feature',
+            'title' => 'Dark feature',
+            'sort_order' => 1,
+            'feature_flag' => 'growth_bonus.enabled',
+        ]);
+        $this->article($category, ['slug' => 'omega', 'title' => 'Omega', 'sort_order' => 2]);
+
+        $payload = HelpContent::articlePayload(
+            HelpArticle::query()->with('category')->where('slug', 'alpha')->firstOrFail()
+        );
+
+        $this->assertSame('omega', $payload['pager']['next']['slug']);
+    }
+
+    /**
+     * ⚠️ Counted on the Markdown SOURCE. Counting the rendered HTML would count
+     * link URLs and heading anchors as words.
+     */
+    public function test_reading_time_is_reported_and_never_reads_as_zero(): void
+    {
+        $category = $this->category();
+        $short = $this->article($category, ['slug' => 'short-one', 'body' => 'Two words.']);
+        $long = $this->article($category, [
+            'slug' => 'long-one',
+            'body' => str_repeat('word ', 1000),
+        ]);
+
+        $this->assertSame(1, HelpContent::articlePayload($short->fresh()->load('category'))['reading_minutes']);
+        $this->assertSame(5, HelpContent::articlePayload($long->fresh()->load('category'))['reading_minutes']);
+
+        // 🚨 THE EMPTY BODY IS THE CASE THE FLOOR EXISTS FOR, AND THE ONLY ONE.
+        // `ceil(2 / 200)` is already 1, so the short article above passes with
+        // or without it; only a body with no words reaches zero, and
+        // "0 min read" beside an answer reads as a broken page.
+        $empty = $this->article($category, ['slug' => 'no-body', 'body' => '']);
+        $this->assertSame(1, HelpContent::articlePayload($empty->fresh()->load('category'))['reading_minutes']);
+    }
+
+    /**
+     * 🚨 The only way out of a section used to be the browser's Back button.
+     * A sibling with nothing in it for this viewer is dropped for the same
+     * reason the directory drops it: a signpost to a dead end.
+     */
+    public function test_a_section_lists_the_other_sections_and_drops_the_empty_ones(): void
+    {
+        $here = $this->category();
+        $this->article($here);
+
+        $other = $this->category(['slug' => 'content-rules', 'title' => 'Content rules', 'sort_order' => 1]);
+        $this->article($other, ['slug' => 'words', 'title' => 'Words']);
+
+        // Published, and empty for every audience — never offered.
+        $this->category(['slug' => 'empty-shelf', 'title' => 'Empty shelf', 'sort_order' => 2]);
+
+        $payload = HelpContent::categoryPayload($here->fresh(), null);
+        $slugs = array_column($payload['siblings'], 'slug');
+
+        $this->assertContains('content-rules', $slugs);
+        $this->assertNotContains('empty-shelf', $slugs);
+        $this->assertNotContains('money-and-payouts', $slugs, 'A section must not list itself as somewhere else to look.');
+    }
 }

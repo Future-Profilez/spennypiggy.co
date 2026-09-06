@@ -132,6 +132,32 @@ class SuspendedAccountAccessTest extends TestCase
         $this->assertFalse(auth()->check());
     }
 
+    /**
+     * 🚨 A suspended account can ASK. Every reason's copy says "contact
+     * support", and the Help Centre is where that person goes to learn what a
+     * suspension means for them — its ask and feedback endpoints are POSTs
+     * only because a question does not belong in a URL. Found live: typing a
+     * question answered "We suspended your account" instead of an answer.
+     */
+    public function test_a_suspended_account_can_still_ask_the_help_centre(): void
+    {
+        $user = $this->suspended();
+
+        $this->assertContains('help.ask', (array) config('suspension.allowed_write_routes'));
+        $this->assertContains('help.feedback', (array) config('suspension.allowed_write_routes'));
+
+        $ask = $this->actingAs($user)->postJson(route('help.ask'), ['q' => 'why is my account suspended']);
+
+        $ask->assertOk();
+        $this->assertNotTrue($ask->json('suspended'), 'The middleware must not answer the question with the suspension notice.');
+        $this->assertTrue($ask->json('status'));
+
+        $feedback = $this->actingAs($user)->postJson(route('help.feedback'), ['slug' => 'nothing', 'helpful' => true]);
+
+        $feedback->assertOk();
+        $this->assertNotTrue($feedback->json('suspended'));
+    }
+
     public function test_an_unsuspended_account_is_untouched(): void
     {
         $user = User::factory()->create(['role' => 1, 'suspended_account' => 0]);
