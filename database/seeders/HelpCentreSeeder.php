@@ -6,6 +6,7 @@ use App\Models\HelpArticle;
 use App\Models\HelpCategory;
 use App\Services\Help\HelpContent;
 use App\Support\HelpTokens;
+use Database\Seeders\Help\CoverageArticles;
 use Database\Seeders\Help\ExtraArticles;
 use Database\Seeders\Help\FeatureArticles;
 use Illuminate\Database\Seeder;
@@ -65,7 +66,8 @@ class HelpCentreSeeder extends Seeder
             $articles = array_merge(
                 $category['articles'],
                 ExtraArticles::forCategory($category['slug']),
-                FeatureArticles::forCategory($category['slug'])
+                FeatureArticles::forCategory($category['slug']),
+                CoverageArticles::forCategory($category['slug'])
             );
 
             foreach ($articles as $i => $article) {
