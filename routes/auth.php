@@ -1472,7 +1472,23 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
 
-        Route::get('/update-profile-lock-status', [ProfileController::class, 'updateProfileLockStatus'])->name('update.profile.lock.status');
+        /*
+         * 🚨 POST, NEVER GET (7 Sep 2026). This route puts a creator into the review
+         * queue, and as a bare GET it was submitted for them by anything that fetches
+         * a URL — a browser link-preload, a hover prerender, an extension link
+         * scanner, a back/forward restore. Measured live: krystal555 was submitted at
+         * 12:36:34 from an ADMIN EMULATION session that clicked nothing, thirteen
+         * seconds after the same session accepted her terms; the audit row records
+         * `"method": "GET"` on `/update-profile-lock-status`. The nudge bar made it
+         * worse than one page — `OnboardingNudge` rendered the same URL as an <a href>
+         * at the top of EVERY page for a creator on the `review` step.
+         *
+         * A prefetch of a POST route is a 405 and changes nothing, which is the whole
+         * point. Every CTA (`CreatorVerification`'s Submit link, `CreatorJourneyCard`,
+         * `OnboardingNudge`) reads its verb from `CreatorJourneyService::STEPS['method']`
+         * so the three cannot drift from the route.
+         */
+        Route::post('/update-profile-lock-status', [ProfileController::class, 'updateProfileLockStatus'])->name('update.profile.lock.status');
 
         Route::post('/user-follow-unfollow', [PwaNotification::class, 'userFollowUnFollow'])->name('user.follow.unfollow');
         Route::post('send-pwa-to-follower', [PwaNotification::class, 'sendPwaToFollower'])->name('send.pwa.to.follower');

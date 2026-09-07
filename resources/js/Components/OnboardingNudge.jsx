@@ -55,6 +55,20 @@ export default function OnboardingNudge() {
           ? null
           : route("dashboard");
 
+    /*
+     * 🚨 THIS BAR WAS THE WORST OF THE THREE CTAs (7 Sep 2026).
+     *
+     * `update.profile.lock.status` was a GET, and this component rendered it as a plain
+     * <a href> at the top of EVERY page for a creator on the `review` step — so a browser
+     * link-preload, a hover prerender or an extension link scanner submitted the profile
+     * for them, from anywhere on the site. It is a POST now, and `as="button"` means
+     * there is no fetchable href left on the element at all.
+     *
+     * The verb comes from the server (`CreatorJourneyService::methodFor()`, read off the
+     * route itself) so it cannot drift from the route or from the other two CTAs.
+     */
+    const isPost = journey.method === "post" && Boolean(journey.route);
+
     const Body = (
         <span className="flex min-w-0 items-center gap-2 text-white">
             <span className="text-base leading-none">🐷</span>
@@ -76,7 +90,18 @@ export default function OnboardingNudge() {
             }
         >
             <div className="containerbox mx-auto flex items-center justify-between gap-3 px-4 py-2">
-                {href ? <Link href={href}>{Body}</Link> : Body}
+                {href ? (
+                    <Link
+                        href={href}
+                        method={isPost ? "post" : "get"}
+                        as={isPost ? "button" : "a"}
+                        className={isPost ? "min-w-0 text-left" : undefined}
+                    >
+                        {Body}
+                    </Link>
+                ) : (
+                    Body
+                )}
                 <button
                     onClick={dismiss}
                     aria-label="Hide this reminder"

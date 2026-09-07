@@ -379,7 +379,7 @@ MD,
                 'slug' => 'shipping-physical-products',
                 'title' => 'Selling and shipping physical products',
                 'audience' => 'creator',
-                'keywords' => 'physical, shipping, postage, tracking, delivery, parcel, stock, shop, courier',
+                'keywords' => 'physical, shipping, postage, post it, posting to a buyer, send to buyer, mail, package, tracking, delivery, parcel, stock, shop, courier',
                 'summary' => 'Physical Shop products need shipping details and a tracking number when you send them. Payment clears after delivery is confirmed.',
                 'related' => ['what-can-i-sell', 'when-do-i-get-paid', 'edit-or-delete-a-listing'],
                 'body' => <<<'MD'

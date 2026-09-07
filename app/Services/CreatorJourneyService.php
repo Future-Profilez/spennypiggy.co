@@ -11,6 +11,7 @@ use App\Support\ReviewSubmission;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 
 /**
  * "What is this creator supposed to do next?" — answered in exactly one place.
@@ -407,7 +408,10 @@ class CreatorJourneyService
 
         $waiting = $this->isAwaitingReview($creator, $step);
 
-        return ['key' => $step] + $this->copyFor($creator, $step, $waiting) + [
+        $copy = $this->copyFor($creator, $step, $waiting);
+
+        return ['key' => $step] + $copy + [
+            'method' => self::methodFor($copy['route'] ?? null),
             'position' => array_search($step, array_keys(self::STEPS), true) + 1,
             'total' => count(self::STEPS),
 
@@ -422,6 +426,27 @@ class CreatorJourneyService
             // them the next move, not the other way round.
             'awaiting_review' => $waiting,
         ];
+    }
+
+    /**
+     * The HTTP verb a step's CTA must use.
+     *
+     * 🚨 READ OFF THE ROUTE, never listed here (7 Sep 2026). `update.profile.lock.status`
+     * became a POST because as a GET it was submitted for creators by anything that
+     * fetches a URL, and three separate surfaces render its CTA — `CreatorVerification`'s
+     * Submit link, `CreatorJourneyCard`'s button and `OnboardingNudge`'s bar. A hardcoded
+     * list here is a fourth place to forget: derive it, and a verb change on the route
+     * moves every CTA with it. A GET-capable route stays 'get', so nothing else changes.
+     */
+    public static function methodFor(?string $routeName): string
+    {
+        if (! $routeName || ! Route::has($routeName)) {
+            return 'get';
+        }
+
+        $methods = Route::getRoutes()->getByName($routeName)->methods();
+
+        return in_array('GET', $methods, true) ? 'get' : 'post';
     }
 
     /**

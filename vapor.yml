@@ -101,6 +101,23 @@ environments:
       # not the other is a difference nobody remembers until an article is
       # missing on dev and everyone assumes the seeder is broken.
       - "php artisan db:seed --class=HelpCentreSeeder --force"
+      # Embeddings follow the content. ⚠️ This is a CONVENIENCE, not the safety
+      # net: `help:embed` is already scheduled hourly (Kernel, hourlyAt(24)) and
+      # only re-embeds articles whose text actually changed, so all this line
+      # buys is closing the ≤1 hour gap between a content deploy and the
+      # assistant seeing it.
+      #
+      # ⚠️ On `HELP_AI_RETRIEVER=keyword` it is a deliberate quiet no-op —
+      # there is nothing to embed, the search itself is the retriever.
+      #
+      # 🚨 `|| true` IS DELIBERATE AND MUST STAY. The command returns FAILURE on
+      # a provider misconfiguration and on any article that failed to embed, and
+      # a failed deploy hook fails the WHOLE deployment — so without this, one
+      # transient error at an AI provider blocks an unrelated release. The
+      # hourly run is what reports a genuine embedding failure; a deploy is the
+      # wrong place to find out. Vapor executes deploy hooks through
+      # Process::fromShellCommandline (vapor-core CliHandler), so `||` is real.
+      - "php artisan help:embed || true"
 
   production:
     # ⚠️ Lambda gives CPU IN PROPORTION TO MEMORY, so this is a speed dial and not
@@ -229,6 +246,23 @@ environments:
       #    file — the same trap that shipped a schedule without its command on
       #    7 Sep 2026. Add new batch files by name.
       - "php artisan db:seed --class=HelpCentreSeeder --force"
+      # Embeddings follow the content. ⚠️ This is a CONVENIENCE, not the safety
+      # net: `help:embed` is already scheduled hourly (Kernel, hourlyAt(24)) and
+      # only re-embeds articles whose text actually changed, so all this line
+      # buys is closing the ≤1 hour gap between a content deploy and the
+      # assistant seeing it.
+      #
+      # ⚠️ On `HELP_AI_RETRIEVER=keyword` it is a deliberate quiet no-op —
+      # there is nothing to embed, the search itself is the retriever.
+      #
+      # 🚨 `|| true` IS DELIBERATE AND MUST STAY. The command returns FAILURE on
+      # a provider misconfiguration and on any article that failed to embed, and
+      # a failed deploy hook fails the WHOLE deployment — so without this, one
+      # transient error at an AI provider blocks an unrelated release. The
+      # hourly run is what reports a genuine embedding failure; a deploy is the
+      # wrong place to find out. Vapor executes deploy hooks through
+      # Process::fromShellCommandline (vapor-core CliHandler), so `||` is real.
+      - "php artisan help:embed || true"
       #
       # ⚠️ NOT HERE EITHER: `php artisan cache:clear`. It used to sit at the end of
       # the BUILD list, where the container has no VPC route to

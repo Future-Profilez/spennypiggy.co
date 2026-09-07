@@ -134,6 +134,17 @@ class FinishYourSetup extends Mailable
      * which an email cannot do, so it sends them to their own public page (the thing they
      * are being asked to share). A step whose route cannot be resolved falls back to the
      * dashboard rather than throwing: a missing Ziggy-style name must not stop a reminder.
+     *
+     * 🚨 AN EMAIL MAY NEVER LINK TO AN ACTION ROUTE (7 Sep 2026). `review`'s route is
+     * `update.profile.lock.status`, and while that was a GET this mail's button SUBMITTED
+     * the creator's profile — not only when they clicked it, but whenever anything
+     * fetched the URL: Outlook Safe Links, a Gmail link check, a spam filter, a link
+     * preview. So the reminder asking somebody to submit could submit for them, from an
+     * inbox, with nothing to see anywhere. It is a POST now, which would make the same
+     * button a 405 — so a POST-only step is sent to the PAGE that carries the button
+     * (their own dashboard, where `CreatorVerification` renders the Submit step) and the
+     * creator presses it themselves. `CreatorJourneyService::methodFor()` reads the verb
+     * off the route, so this follows a verb change on any step automatically.
      */
     private function ctaUrl(?array $copy, ?User $user): string
     {
@@ -147,6 +158,12 @@ class FinishYourSetup extends Mailable
             }
 
             if (! empty($copy['route'])) {
+                if (CreatorJourneyService::methodFor($copy['route']) === 'post') {
+                    return $user && $user->username
+                        ? route('user.show', $user->username)
+                        : $dashboard;
+                }
+
                 return route($copy['route'], $copy['params'] ?? []);
             }
         } catch (\Throwable $e) {

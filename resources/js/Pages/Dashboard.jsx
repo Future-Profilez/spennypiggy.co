@@ -113,6 +113,7 @@ import PendingChangesNotice from "@/Components/PendingChangesNotice";
 import SuspendedBanner from "@/Components/SuspendedBanner";
 import SetupCompleteCelebration from "@/Components/SetupCompleteCelebration";
 import ListingProgressStrip from "@/Components/ListingProgressStrip";
+import BecomeCreatorCard from "@/Components/BecomeCreatorCard";
 import lazyRetry from "@/utils/lazyRetry";
 
 const CreatorRiskBanner = lazyRetry(
@@ -1197,6 +1198,19 @@ export default function Dashboard(props) {
                                 The component itself renders nothing until the server says
                                 celebrate, so a finished creator mounts an empty component. */}
                             {IsloggedIn && <SetupCompleteCelebration />}
+
+                            {/* 🚨 "Start selling from this account" — the gifter's own
+                                page, and BOTH halves of the gate are load-bearing.
+                                This route is also the PUBLIC profile, so without
+                                `IsloggedIn` every visitor to a fan's page is invited to
+                                convert an account that is not theirs; without the role
+                                check a creator is offered a conversion they have already
+                                made. Directly under the cover, same as the two notices
+                                above it, because it is a fact about this account rather
+                                than part of what the page sells. */}
+                            {IsloggedIn && !isCreatorProfile && (
+                                <BecomeCreatorCard className="mb-4" />
+                            )}
 
                             {/* Profile layout: identity rail (left) · cover + content (center) · overview rail (right, xl) */}
                             <div className="profileLayout grid grid-cols-1 items-start gap-4 lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]">

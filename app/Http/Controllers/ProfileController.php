@@ -10,7 +10,6 @@ use App\Models\AccountDeletionFeedback;
 use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\Currency;
-use App\Models\DeletedUser;
 use App\Models\Deliverable;
 use App\Models\FinancialTransaction;
 use App\Models\Logs;
@@ -706,9 +705,13 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the user's profile lock status.
+     * Submit the creator's profile for review — `profile_status_lock` 0 → 1.
+     *
+     * 🚨 POST ONLY (7 Sep 2026). See the reasoning on the route declaration: as a GET
+     * this was submitted for creators by things that merely fetch a URL, and the one
+     * measured case came from an admin emulation session that clicked nothing.
      */
-    public function updateProfileLockStatus()
+    public function updateProfileLockStatus(Request $request)
     {
         try {
             $user = User::where('id', Auth::id())->first();
@@ -718,14 +721,37 @@ class ProfileController extends Controller
             }
 
             /*
+             * 🚨 AN EMULATING ADMIN MAY NOT SUBMIT SOMEBODY ELSE'S PROFILE.
+             *
+             * Emulation carries no write guard of its own (`EnforceEmulationTimeBox`
+             * only expires the session), so an admin browsing a creator's own steps
+             * page holds full write access as that creator. Submitting for review is
+             * the creator's own declaration that they are ready — an admin making it
+             * for them puts a profile in the queue its owner never sent, and the
+             * reviewer cannot tell the difference. Measured live 7 Sep 2026:
+             * krystal555's submission was made under `emulated_by_admin: true`.
+             *
+             * ⚠️ Refused, not silently ignored — an admin who meant to do it needs to
+             * know it did not happen. Logged at warning: it is an attempt to act as
+             * somebody else, whether or not it was deliberate.
+             */
+            if ($request->session()->get('emulated_by_admin')) {
+                Log::warning('Profile submit refused: emulation session', [
+                    'user_id' => $user->id,
+                    'admin_id' => $request->session()->get('emulation_admin_id'),
+                ]);
+
+                return back()->with('error', 'You are viewing this account as an admin. Only the creator can submit their own profile for review.');
+            }
+
+            /*
              * 🚨 CHECKED HERE, NOT ONLY IN THE BROWSER (19 Aug 2026).
              *
-             * The journey card disables its button until these four are done,
-             * but this route is a bare GET with no validation — so anybody could
-             * put an empty profile into the review queue by opening the URL, and
-             * an admin would then be mailed to approve a creator with nothing to
-             * approve. The four are the client's own list: photo, bio, a social
-             * handle and a card.
+             * The journey card disables its button until these are done, but the
+             * server must not take the browser's word for it — otherwise an empty
+             * profile lands in the review queue and an admin is mailed to approve a
+             * creator with nothing to approve. The list is the client's own: photo,
+             * bio and a social handle.
              */
             $missing = $this->missingForReview($user);
 

@@ -211,36 +211,100 @@ class HelpCentreSeeder extends Seeder
                 'title' => 'How do I start selling?',
                 'audience' => 'creator',
                 'keywords' => 'get started, setup, onboarding, new creator, begin, first steps, sign up',
-                'summary' => 'Six steps, in this order: profile → card on file → payouts → identity → first listing → first sale.',
-                'related' => ['why-is-my-profile-still-in-review', 'what-does-the-subscription-cost', 'connect-your-payouts'],
+                'summary' => 'Six setup steps, in this order: profile → social account → review → card on file → payouts → identity. Then your first listing and your first sale.',
+                'related' => ['why-is-my-profile-still-in-review', 'what-does-the-subscription-cost', 'connect-your-payouts', 'i-already-have-a-supporter-account'],
                 'body' => <<<'MD'
 Setting up runs in a fixed order, and each step unlocks the next. Your dashboard always shows the one step you are on, so you never have to remember where you got to.
 
 ## 1. Your profile
 
-Add a photo, a banner and a bio. A real person reviews all three before they go public — that review is part of why this platform's payments stay switched on.
+Add a photo, a banner and a bio.
 
-## 2. Card on file
+## 2. A social account
 
-Add a card for the creator subscription. Nothing is charged {{subscription.when_charged}} — see [what the subscription costs](/help/getting-started-creators/what-does-the-subscription-cost).
+Add one account you post on. It is how our team checks the page is really yours, and it stays private unless you choose to show it.
 
-## 3. Connect your payouts
+## 3. Submit for review
+
+A real person reads your photo and bio before they go public — that review is part of why this platform's payments stay switched on. Your profile is not in the queue until you press Submit.
+
+## 4. Card on file
+
+Once your profile is approved, add a card for the creator subscription. Nothing is charged {{subscription.when_charged}} — see [what the subscription costs](/help/getting-started-creators/what-does-the-subscription-cost).
+
+## 5. Connect your payouts
 
 Set up your Stripe account so money can reach your bank. This is your own account, in your name.
 
-## 4. Verify your identity
+## 6. Verify your identity
 
 A passport check through Stripe Identity. It happens after payouts are connected, not before.
 
-## 5. Publish your first listing
+## Then: your first listing
 
 You cannot put anything up for sale until identity verification is done. Browsing the whole platform before that is fine — only publishing is blocked.
 
-## 6. Your first sale
+## And: your first sale
 
 This is the step that starts your subscription billing, and it is the point at which the platform starts earning anything from you at all.
 
 If a step says it is being reviewed, there is nothing for you to do — you will be told when it clears.
+MD,
+            ],
+            [
+                'slug' => 'i-already-have-a-supporter-account',
+                'title' => 'I already have an account — can I sell from it?',
+                'audience' => 'both',
+                'keywords' => 'become a creator, turn into creator, switch to creator, convert account, sell from my account, second account, do I need a new account, upgrade account, start selling on my existing account, gifter to creator, supporter to creator',
+                'summary' => 'Yes. You can turn the account you already have into a creator account, and you keep everything you have bought. You do not need to sign up again.',
+                'related' => ['how-do-i-start-selling', 'why-is-my-profile-still-in-review', 'what-can-i-sell'],
+                'body' => <<<'MD'
+Yes — and you should, rather than signing up again. One person, one account: a second account splits your purchase history across two logins and is against the Terms.
+
+## Where to find it
+
+Two places, both on your own account:
+
+- **Account settings** — the "Become a creator" card at the top.
+- **Your own profile page** — the same card, under your banner.
+
+Either one opens a short form. Nothing changes until you finish it.
+
+## What it asks for
+
+The same things a new creator answers when they sign up:
+
+- **Badges** — what you make, so supporters can find you.
+- **A social account** — one account you post on. It is how our team checks the page is really yours, and it stays private unless you choose to show it.
+- **The creator Terms**, and that you understand your creator email address can appear on supporter transaction records and receipts. Most creators set up an address just for this.
+
+## What happens straight away
+
+Your account becomes a creator account the moment you submit. You can start setting your page up immediately.
+
+**Your profile photo and bio go to our review team.** Nothing is deleted — they are still on your page exactly as you left them. As a supporter they were never reviewed, because a supporter's picture is not shown on a page anybody buys from; as a creator they are, and a real person reads both before they go public. If your banner was one of ours it stays as it is.
+
+You will then work through the rest of the setup — a card on file, your payouts, and an identity check. [How do I start selling?](/help/getting-started-creators/how-do-i-start-selling) walks through all of it in order.
+
+## What you keep
+
+Everything. Your purchases, your subscriptions, the creators you follow, your saved items and your order history all stay on this account. If you have already been through card verification, that carries over too — you will not be asked for it again.
+
+Nothing you bought is affected, and nothing is refunded or cancelled.
+
+## If it will not let you
+
+The form will tell you which of these it is:
+
+- **Your email address is not confirmed yet.** Confirm it and come straight back. Your creator email appears on supporter receipts, so it has to be an address we know reaches you.
+- **There is a restriction on your account.** While one is in place we cannot change what the account is.
+- **A payment on your account is still being looked at** — an open dispute or chargeback on something you bought. We settle those before an account starts selling.
+
+For the last two, use the button on that page to talk to our team and somebody will look at it with you.
+
+## Going back
+
+There is no way to turn a creator account back into a supporter-only one. You can stop listing things at any time, and you can still buy from other creators exactly as before — becoming a creator adds to what your account can do, it does not take anything away.
 MD,
             ],
             [
@@ -468,7 +532,7 @@ MD,
                 'slug' => 'what-can-i-sell',
                 'title' => 'What can I sell?',
                 'audience' => 'creator',
-                'keywords' => 'products, wishes, shop, paid requests, piggy pot, memberships, bills, piggy bank, ways to earn',
+                'keywords' => 'what can i sell, things to sell, what to sell, sell here, allowed to sell, products, wishes, shop, paid requests, piggy pot, memberships, bills, piggy bank, ways to earn, ideas',
                 'summary' => 'Seven ways to be paid — one-off content, custom work, physical goods, group products, and two recurring options.',
                 'related' => ['what-is-a-reward', 'why-is-my-listing-under-review', 'price-limits'],
                 'body' => <<<'MD'
@@ -653,9 +717,17 @@ MD,
             ],
             [
                 'slug' => 'price-limits',
-                'title' => 'Why can I not set that price?',
+                // ⚠️ TITLED FOR THE COMMONER INTENT. "Why can I not set that
+                // price?" only serves a reader who has already been refused;
+                // everybody pricing a listing for the first time asks how much
+                // they may charge, and a title earns 20 points a term against
+                // keywords' 14. The refusal wording moved into `keywords` so
+                // both questions still land here — verified in
+                // HelpAnswerCasesTest, which is how the collision with
+                // "chargebacks" was found in the first place.
+                'title' => 'How much can I charge for a listing?',
                 'audience' => 'creator',
-                'keywords' => 'price limit, minimum, maximum, too high, too low, price rejected, 4.99',
+                'keywords' => 'price limit, how much can i charge, cheapest, most i can charge, lowest price, highest price, minimum, maximum, too high, too low, price rejected, cannot set that price, price refused, why can i not set, 4.99',
                 'summary' => 'Every product has a minimum of {{price.min}} and its own maximum, checked in GBP whatever currency you list in.',
                 'related' => ['what-can-i-sell', 'what-fees-are-deducted'],
                 'body' => <<<'MD'
@@ -827,7 +899,7 @@ MD,
                 'slug' => 'what-fees-are-deducted',
                 'title' => 'What fees come out of my sales?',
                 'audience' => 'creator',
-                'keywords' => 'fees, commission, platform fee, deduction, keep 100%, what do i keep, charges',
+                'keywords' => 'fees, what gets taken off, taken off my sale, what do you take, taken out, cut, commission, platform fee, deduction, keep 100%, what do i keep, charges',
                 'summary' => 'You keep the price you list. Supporters cover the platform fees at checkout and see the full total before they pay.',
                 'related' => ['when-do-i-get-paid', 'what-does-the-subscription-cost', 'why-is-the-total-more-than-the-price'],
                 'body' => <<<'MD'

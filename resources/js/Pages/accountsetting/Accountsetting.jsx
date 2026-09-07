@@ -394,11 +394,21 @@ export default function Accountsetting(props) {
                         </p>
                     </div>
 
-                    {/* BECOME A CREATOR */}
+                    {/* BECOME A CREATOR
+                        🚨 A LINK TO THE PAGE, NEVER AT THE WRITE. The conversion
+                        itself is a POST to `become.creator.store`; a GET that flips
+                        a role and re-opens a profile for review needs nothing to
+                        click it, which is the fault that put creators into the admin
+                        review queue on 7 Sep 2026.
+
+                        ⚠️ It was a `<div onClick>` opening Intercom, so the whole
+                        offer was unreachable by keyboard and the answer was "contact
+                        support" — every conversion was a role flip done by hand,
+                        with none of the review resets `GifterToCreator` performs. */}
                     {!isCreator && (
                         <div className="mb-10 animate-fade-in-up">
-                            <div 
-                                onClick={contactSupport}
+                            <Link
+                                href="/become-creator"
                                 className="relative group w-full flex items-center justify-between p-6 bg-gradient-to-r from-pink-500 to-purple-600 border-2 border-black !rounded-box transition-all cursor-pointer mb-3"
                             >
                                 <div className="flex items-center gap-4 text-left text-white">
@@ -410,12 +420,12 @@ export default function Accountsetting(props) {
                                             Become a Creator
                                         </h3>
                                         <p className="text-sm text-pink-100 font-medium mt-0.5">
-                                            Start selling content and memberships. Contact support to get started!
+                                            Sell content, memberships and requests from this account. Your purchases stay exactly where they are.
                                         </p>
                                     </div>
                                 </div>
                                 <ChevronRightIcon size={24} className="text-white/70 group-hover:text-white" />
-                            </div>
+                            </Link>
                         </div>
                     )}
 
