@@ -12,9 +12,11 @@ use App\Models\UserVerificationStatus;
 use App\Services\UserProfileService;
 use App\Support\InvisibleText;
 use App\Support\ProfileAssetVisibility;
+use App\Support\SocialVisibility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Ramsey\Uuid\Uuid;
 
@@ -56,6 +58,31 @@ class SocialLinksController extends Controller
         return is_scalar($value) ? (string) $value : null;
     }
 
+    /**
+     * Write the creator's show/hide choice to the live row.
+     *
+     * ⚠️ The query builder, not `save()`. `social_links.updated_at` is what the admin
+     * review queue ages and orders on, so a creator hiding a handle would otherwise
+     * jump to the top of a reviewer's list with nothing for them to decide — the same
+     * reason `StripeChargesFlag::sync()` avoids Eloquent.
+     *
+     * ⚠️ No row yet means there is nothing to show either way; the create branch writes
+     * the column itself.
+     */
+    private static function persistVisibility(?SocialLinks $existing, array $visibility): void
+    {
+        if (! $existing) {
+            return;
+        }
+
+        // 🚨 `DB::table`, never the Eloquent builder — `Builder::update()` stamps
+        // `updated_at` for you (addUpdatedAtColumn), which is the one thing this method
+        // exists to avoid.
+        DB::table('social_links')
+            ->where('id', $existing->getKey())
+            ->update(['public_platforms' => json_encode($visibility)]);
+    }
+
     public function saveSocialLinks(Request $request)
     {
         $redirectUrl = $request->redirect_url;
@@ -82,23 +109,14 @@ class SocialLinksController extends Controller
             // These three are what verification is actually performed against:
             // an account with a public post history and a profile photo a human
             // reviewer can compare to a passport.
-            $socialPlatforms = SocialLinks::ACCEPTED_PLATFORMS;
-
-            // ✅ Enforce at least one filled field
-            $hasAtLeastOne = false;
-            foreach ($socialPlatforms as $platform) {
-                if ($request->filled($platform)) {
-                    $hasAtLeastOne = true;
-                    break;
-                }
-            }
-
-            if (! $hasAtLeastOne) {
-                return response([
-                    'status' => 422,
-                    'message' => 'Please add at least one social media link.',
-                ], 422);
-            }
+            // Read BEFORE the payload is turned into a proposal: it is both the
+            // fallback for a field the form did not send and the thing this save
+            // is compared against.
+            //
+            // ⚠️ `uuid` used to be regenerated here on every save, because it is
+            // fillable and was passed in the VALUES array rather than the match array.
+            // The row's public identifier changed each time a creator edited a handle.
+            $existing = SocialLinks::where('user_id', $userId)->first();
 
             // ✅ Prepare data (ALLOW NULLS)
             //
@@ -113,16 +131,6 @@ class SocialLinksController extends Controller
             //
             // Nothing new can be written to them, which is the whole point; what
             // is already there is theirs.
-
-            // Read BEFORE the payload is turned into a proposal: it is both the
-            // fallback for a field the form did not send and the thing this save
-            // is compared against.
-            //
-            // ⚠️ `uuid` used to be regenerated here on every save, because it is
-            // fillable and was passed in the VALUES array rather than the match array.
-            // The row's public identifier changed each time a creator edited a handle.
-            $existing = SocialLinks::where('user_id', $userId)->first();
-
             $data = [
                 'whoyouinto' => self::submittedValue($request, 'whoyouinto', $existing),
                 'updated_at' => now(),
@@ -130,6 +138,28 @@ class SocialLinksController extends Controller
 
             foreach (SocialLinks::ACCEPTED_PLATFORMS as $platform) {
                 $data[$platform] = self::submittedValue($request, $platform, $existing);
+            }
+
+            // ✅ Enforce at least one filled field across proposed handles and existing retired handles.
+            // A creator cannot remove their last handle (Gate #2: 422 "Please add at least one social media link."),
+            // but an existing creator updating their visibility alone or keeping a legacy handle (e.g. facebook)
+            // must not be rejected.
+            $allProposedHandles = Arr::only($data, SocialVisibility::platforms())
+                + Arr::only($existing?->getAttributes() ?? [], SocialVisibility::platforms());
+
+            $hasAtLeastOne = false;
+            foreach ($allProposedHandles as $val) {
+                if (filled($val)) {
+                    $hasAtLeastOne = true;
+                    break;
+                }
+            }
+
+            if (! $hasAtLeastOne) {
+                return response([
+                    'status' => 422,
+                    'message' => 'Please add at least one social media link.',
+                ], 422);
             }
 
             /*
@@ -153,6 +183,31 @@ class SocialLinksController extends Controller
             // reviewer reading "From signup" on it would be told something untrue.
             // See the 2026_08_25_120000 migration — the column gates nothing.
             $data['source'] = null;
+
+            /*
+             * 🚨 VISIBILITY IS NOT REVIEWABLE CONTENT, so it is kept OUT of `$data`.
+             *
+             * Turning a handle on or off changes nothing an admin decided — the handle,
+             * and therefore the verification, is identical either way. Folding it into
+             * the diff below would mean pressing "show my Instagram" re-opened the whole
+             * row for review, zeroed `status`, mailed the creator and superseded any
+             * request already pending: the creator would hide a handle and lose their
+             * place in the queue for it. It is written DIRECTLY to the row instead, on
+             * every save, including the "nothing changed" early return.
+             *
+             * ⚠️ Narrowed against the handles THIS save proposes, not the stored row —
+             * a creator types a handle and shows it in the same submit.
+             */
+            // ⚠️ `$data` carries ONLY the three accepted platforms, so narrowing against
+            // it alone made every RETIRED handle (facebook, youtube, …) unpublishable for
+            // ever — the stored row is merged UNDER the submission so a legacy handle the
+            // creator still renders can be shown, while a handle cleared in this save
+            // (explicit null in `$data`) still wins over its stored value.
+            $visibility = SocialVisibility::forStorage(
+                $request->input('public_platforms'),
+                Arr::only($data, SocialVisibility::platforms())
+                    + Arr::only($existing?->getAttributes() ?? [], SocialVisibility::platforms()),
+            );
 
             $user = Auth::user();
 
@@ -185,11 +240,26 @@ class SocialLinksController extends Controller
                 && InvisibleText::sameMap($data, $current, ProfileChangeRequest::SOCIAL_FIELDS);
 
             if ($unchanged) {
+                /*
+                 * ⚠️ "The handles did not change" is the COMMONEST way a visibility
+                 * change arrives — the creator opened the editor to hide a handle and
+                 * touched nothing else. Returning here without writing it would make
+                 * the toggle look saved and do nothing.
+                 *
+                 * ⚠️ Written through the query builder so `updated_at` is untouched: the
+                 * admin review queue orders on it, and a display choice must not
+                 * reshuffle a reviewer's list.
+                 */
+                self::persistVisibility($existing, $visibility);
+
+                $this->userProfileService->clearUserCaches($user->username, $user->id);
+
                 return response([
                     'status' => 200,
                     'message' => 'Social links updated successfully.',
                     'url' => $redirectUrl ?? null,
                     'socialCheck' => true,
+                    'public_platforms' => $visibility,
                 ]);
             }
 
@@ -207,12 +277,18 @@ class SocialLinksController extends Controller
                     Arr::except($data, ['status', 'reason', 'updated_at', 'source']),
                     $existing ? Arr::only($existing->getAttributes(), ProfileChangeRequest::SOCIAL_FIELDS) : [],
                 );
+
+                // The published handles stay on the profile while the edit is reviewed,
+                // so the creator's show/hide choice has to reach the LIVE row now — it
+                // governs what is on the page today, not what the reviewer is deciding.
+                self::persistVisibility($existing, $visibility);
             } else {
                 // ✅ Update or create (DO NOT filter nulls)
                 SocialLinks::updateOrCreate(
                     ['user_id' => $userId],
                     array_merge($data, [
                         'uuid' => $existing->uuid ?? Uuid::uuid4(),
+                        'public_platforms' => $visibility,
                     ])
                 );
             }
@@ -255,6 +331,7 @@ class SocialLinksController extends Controller
                 'message' => 'Social links updated successfully.',
                 'url' => $redirectUrl ?? null,
                 'socialCheck' => true,
+                'public_platforms' => $visibility,
             ]);
         } catch (\Throwable $th) {
             Log::error('Failed to save social links', ['error' => $th->getMessage()]);

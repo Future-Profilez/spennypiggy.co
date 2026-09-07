@@ -9,17 +9,19 @@ import userphoto from '../../../assets/siteicon.png';
 import Avatar from '@/includes/Avatar';
 
 export default function FounderBonusIndex() {
-    const { auth, leaderboard, userInRace, userProgress, userMissed, founderBonusData, programStats, previousMonthStats, previousMonthWinners, recentWinners } = usePage().props;
+    const { auth, leaderboard, userInRace, userProgress, userMissed, founderBonusData, founderMonthlyData, programStats, previousMonthStats, previousMonthWinners, recentWinners } = usePage().props;
     const [allTimeWinners, setAllTimeWinners] = useState([]);
     const [allTimeLoading, setAllTimeLoading] = useState(false);
     
     const qualificationDays = programStats?.qualificationDays || 30;
     const minEarnings = programStats?.minEarnings || 2500;
+    const minMonthlyEarnings = programStats?.minMonthlyEarnings || 2500;
+    const maxMonthlyEarnings = programStats?.maxMonthlyEarnings || 10000;
     const bonusPercentage = programStats?.bonusPercentage || 10;
     const currencySymbol = '£';
     const maxSeats = programStats?.maxSeats || 150;
     const totalFounders = programStats?.totalFounders || 0;
-    const availableSeats = programStats?.availableSeats || 150;
+    const availableSeats = programStats?.availableSeats ?? Math.max(0, maxSeats - totalFounders);
     const currentMonth = programStats?.currentMonth || new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
     
     const user = auth?.user;
@@ -60,7 +62,7 @@ export default function FounderBonusIndex() {
             user={auth.user}
         >
             <Head title="Founder Program - Current Month Race" >
-                <meta name="description" content="Compete in our Founder Program to earn a special badge and exclusive rewards. New creators must earn £2,500 in their first 30 days to join." />
+                <meta name="description" content={`Compete in our Founder Program to earn a special badge and exclusive rewards. New creators must earn £${minEarnings.toLocaleString()} in their first ${qualificationDays} days to join.`} />
             </Head>
 
             
@@ -179,6 +181,49 @@ export default function FounderBonusIndex() {
                                         </div>
                                     </div>
                                 </div>
+
+                                {founderMonthlyData && (
+                                    <div className="fading bg-black/10 rounded-box p-4 backdrop-blur-sm mb-3 border border-white/20">
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                                            <div>
+                                                <h3 className="text-lg font-black flex items-center gap-2">
+                                                    <span>💰</span> Ongoing Monthly Bonus — {founderMonthlyData.current_month}
+                                                </h3>
+                                                <p className="text-xs opacity-80 mt-0.5">
+                                                    Earn {bonusPercentage}% on top of monthly earnings between {formatMultiPrice(founderMonthlyData.min_monthly_earnings, 'GBP')} and {formatMultiPrice(founderMonthlyData.max_monthly_earnings, 'GBP')}.
+                                                </p>
+                                            </div>
+                                            <Link
+                                                href="/dashboard/finances"
+                                                className="self-start sm:self-center px-3 py-1.5 bg-white text-gray-900 rounded-full text-xs font-bold hover:bg-gray-100 transition-colors border border-gray-200"
+                                            >
+                                                Finances & Payouts ↗
+                                            </Link>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                                            <div className="bg-black/10 rounded-box-sm p-2.5">
+                                                <div className="text-[11px] uppercase tracking-wider font-bold opacity-75">Month Earnings</div>
+                                                <div className="text-lg font-black mt-0.5">{formatMultiPrice(founderMonthlyData.current_month_earnings, 'GBP')}</div>
+                                                <div className="text-[10px] opacity-75 mt-0.5">Target: {formatMultiPrice(founderMonthlyData.min_monthly_earnings, 'GBP')}</div>
+                                            </div>
+                                            <div className="bg-black/10 rounded-box-sm p-2.5">
+                                                <div className="text-[11px] uppercase tracking-wider font-bold opacity-75">Est. Bonus So Far</div>
+                                                <div className="text-lg font-black text-yellow-300 mt-0.5">{formatMultiPrice(founderMonthlyData.current_month_bonus, 'GBP')}</div>
+                                                <div className="text-[10px] opacity-75 mt-0.5">{bonusPercentage}% of qualifying volume</div>
+                                            </div>
+                                            <div className="bg-black/10 rounded-box-sm p-2.5">
+                                                <div className="text-[11px] uppercase tracking-wider font-bold opacity-75">Monthly Status</div>
+                                                <div className="text-sm font-black mt-1.5">
+                                                    {founderMonthlyData.meets_threshold ? '🎯 Threshold Met' : `${founderMonthlyData.progress_pct}% to Goal`}
+                                                </div>
+                                                <div className="text-[10px] opacity-75 mt-0.5">
+                                                    {founderMonthlyData.meets_threshold ? 'Active for next payout' : `${formatMultiPrice(Math.max(0, founderMonthlyData.min_monthly_earnings - founderMonthlyData.current_month_earnings), 'GBP')} to qualify`}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 
                                 {founderBonusData.payout_status === 'pending' && (
  <div className="text-center bg-black/5 rounded-box p-3 backdrop-blur-sm">
@@ -741,8 +786,8 @@ export default function FounderBonusIndex() {
                                     <FaGift className="w-8 h-8 text-green-600" />
                                 </div>
                                 <h3 className="font-semibold text-gray-900 mb-2">Monthly Bonus</h3>
- <p className="text-sm text-black/80">
-                                    Qualified Founders earn {bonusPercentage}% extra on monthly earnings between £500-£10,000.
+                                <p className="text-sm text-black/80">
+                                    Qualified Founders earn {bonusPercentage}% extra on monthly earnings between £{minMonthlyEarnings.toLocaleString()}-£{maxMonthlyEarnings.toLocaleString()}.
                                 </p>
                             </div>
  <div className="text-center bg-white fading p-6 rounded-box ">
@@ -759,8 +804,8 @@ export default function FounderBonusIndex() {
 
                            {/* {availableSeats} */}
                     <div className="mt-8 text-center">
- <p className="text-sm text-black/60">
-                                    Hit £2,500 in your first 30 days and receive a year-long 10% platform-fee bonus (150 seats only; new creators from Nov 1st). We only confirm eligibility on the 1st of each month — so your first bonus pays on the 7th of the next month, no matter when you qualify during the month.
+                        <p className="text-sm text-black/60">
+                            Hit £{minEarnings.toLocaleString()} in your first {qualificationDays} days and receive a year-long {bonusPercentage}% platform-fee bonus ({maxSeats} seats only; new creators from Nov 1st). We only confirm eligibility on the 1st of each month — so your first bonus pays on the 7th of the next month, no matter when you qualify during the month.
                         </p>
                     </div>
                 </div>

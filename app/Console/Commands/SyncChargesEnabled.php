@@ -70,25 +70,43 @@ class SyncChargesEnabled extends Command
             }
 
             $enabled = ($account->charges_enabled ?? false) ? 1 : 0;
+            $moved = (int) $user->charges_enabled !== $enabled;
 
-            if ((int) $user->charges_enabled === $enabled) {
-                continue;
+            /*
+             * 🚨 AN UNCHANGED VALUE IS STILL STAMPED, AND SKIPPING IT DEFEATED
+             * THE WHOLE FIX.
+             *
+             * This used to `continue` here whenever the stored value already
+             * matched Stripe. Every row on the live database was 0, so the 15
+             * healthy creators were written and the 12 whom Stripe genuinely
+             * reports as FALSE were stepped over — leaving `charges_checked_at`
+             * null on exactly the accounts the column exists to identify. The
+             * admin console then read them as "Stripe has not told us" instead
+             * of "Stripe says this creator cannot take payments", which is the
+             * one distinction `charges_checked_at` was added to make.
+             *
+             * `StripeChargesFlag::sync()` already writes the timestamp on every
+             * call and returns whether the VALUE moved — its docblock says so in
+             * as many words. The command must not re-implement that decision.
+             */
+            if ($moved) {
+                $this->line(sprintf(
+                    '  %s @%s (#%d) %d → %d',
+                    $dry ? 'would update' : 'updating',
+                    $user->username ?? '—',
+                    $user->id,
+                    (int) $user->charges_enabled,
+                    $enabled
+                ));
             }
-
-            $this->line(sprintf(
-                '  %s @%s (#%d) %d → %d',
-                $dry ? 'would update' : 'updating',
-                $user->username ?? '—',
-                $user->id,
-                (int) $user->charges_enabled,
-                $enabled
-            ));
 
             if (! $dry) {
                 StripeChargesFlag::sync($user, $account);
             }
 
-            $changed++;
+            if ($moved) {
+                $changed++;
+            }
         }
 
         $this->newLine();

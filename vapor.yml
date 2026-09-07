@@ -107,6 +107,11 @@ environments:
     # 2048 all along, which is part of why it has never felt as slow as production.
     memory: 2048
     queue-memory: 512
+    # Cap on concurrent queue Lambdas — every worker holds a pinned DB connection
+    # through the RDS Proxy, and the shared 1 GB database cannot take an unbounded
+    # burst (6 Sep 2026 outage, see root CLAUDE.md). Website queue runs ~1 job per
+    # 5 minutes normally; ten is headroom, not a ceiling anyone will feel.
+    queue-concurrency: 10
     cli-memory: 1024
     nodejs: 18
     scheduler: true

@@ -301,6 +301,29 @@ class Kernel extends ConsoleKernel
             ->dailyAt('09:40')
             ->withoutOverlapping();
 
+        /*
+         * Remind creators whose profile is SUBMITTED but held out of the admin queue by
+         * something they can fix. Weekly, because the reminder ladder is measured in
+         * fortnights and months — a daily run would re-examine the same rows to send
+         * nothing six days out of seven.
+         *
+         * Monday 09:50: after `creators:nudge-journey` (09:40) so the two cannot land in
+         * the same minute and share a cli-timeout budget on Vapor.
+         */
+        $schedule->command('review:nudge-blocked')
+            ->weeklyOn(1, '09:50')
+            ->withoutOverlapping();
+
+        /*
+         * Invite REJECTED creators back — every two months ×3, then yearly (client
+         * decision, 7 Sep 2026). Reason-gated, never lock-gated: lock 0 is also the
+         * default, and mailing 280 drafts "come back and fix it" would name a
+         * rejection that never happened. Monday 09:55, clear of the two above.
+         */
+        $schedule->command('profiles:nudge-rejected')
+            ->weeklyOn(1, '09:55')
+            ->withoutOverlapping();
+
         // Recompute where each creator has got to. This must run BEFORE the admin app's
         // onboarding drip (10:00 and 20:00) reads `users.journey_step`, or the drip coaches
         // creators on a step they finished yesterday. Hourly rather than daily because the
@@ -388,6 +411,13 @@ class Kernel extends ConsoleKernel
         // so this table grows faster than any payment table. The same pass
         // settles rows the mail transport never confirmed, which would otherwise
         // read as "still on its way" forever.
+        // Observer-written `{MODEL}_{EVENT}` rows in audit_logs (never a decision — see
+        // PruneSystemAuditRows) are kept 180 days. Admin and explicit system rows are
+        // never pruned. 03:35 sits with the other prunes.
+        $schedule->command('audit:prune-system --apply')
+            ->dailyAt('03:35')
+            ->withoutOverlapping(30);
+
         $schedule->command('notification-logs:prune')
             ->dailyAt('03:40')
             ->withoutOverlapping(30);

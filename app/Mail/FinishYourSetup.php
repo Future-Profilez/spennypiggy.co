@@ -29,11 +29,14 @@ class FinishYourSetup extends Mailable
 {
     use Queueable, SerializesModels;
 
+    // ⚠️ `protected`, not public — Mailable::buildViewData() merges PUBLIC properties OVER
+    // Content(with:), so a public one silently overwrites the computed value under the
+    // same key (the documented collision). Still serialises for the queue.
     public function __construct(
-        public int $userId,
-        public string $creatorName,
-        public string $step,
-        public int $stage = 2,
+        protected int $userId,
+        protected string $creatorName,
+        protected string $step,
+        protected int $stage = 3,
     ) {}
 
     /**
@@ -42,12 +45,14 @@ class FinishYourSetup extends Mailable
      */
     public static function subjectFor(string $step, int $stage): string
     {
-        $second = $stage >= 7;
+        // Stages are CreatorJourneyService::NUDGE_STAGES — 3, 13, 23 days into the step
+        // (7 Sep 2026; was 2 and 7). The first reminder asks; the later two say "still".
+        $second = $stage >= 13;
 
         return match ($step) {
             'profile' => $second ? 'Your page is still missing a photo' : 'Finish your Spenny Piggy page',
             'social' => $second ? 'Your page still has no social handle' : 'Add a social handle to your page',
-            'subscription' => $second ? 'One step left before you can sell' : 'Add your card to finish setting up',
+            'subscription' => $second ? 'Your payouts are still locked' : 'Your page is approved — add a card to unlock payouts',
             'review' => $second ? 'Your profile is still waiting to be submitted' : 'Send your profile for review',
             'stripe' => $second ? 'Your earnings have nowhere to go yet' : 'Connect your payouts',
             'identity' => $second ? 'Your identity check is still unfinished' : 'Finish your identity check',
@@ -69,8 +74,8 @@ class FinishYourSetup extends Mailable
         return match ($step) {
             'profile' => 'Supporters decide whether to buy from a page that looks finished, and this is the fastest thing you can do today.',
             'social' => 'The review team checks one account you post on to confirm the page is yours — it is the quickest thing standing between you and approval.',
-            'subscription' => 'Nothing is charged until your first sale — this is only so we can bill you once you are earning.',
-            'review' => 'Everything the review needs is on your page. It is not in the queue until you press Submit — nothing is checked, and payouts stay locked, until you do.',
+            'subscription' => 'Your profile has been approved. A card on file is what unlocks your payouts — nothing is charged until your first sale.',
+            'review' => 'Your photo, bio and handle are on your page. It is not in the queue until you press Submit — nothing is checked, and payouts stay locked, until you do.',
             'stripe' => 'Until your bank details are connected, anything you sell has nowhere to be paid out to.',
             'identity' => 'You started this check but it was never completed, so it is still open. Nothing on your page can be listed for sale until it is finished — it takes about two minutes with your passport.',
             'first_post' => 'Posts are what your members see after they buy, and one is enough to give a subscriber a reason to stay.',

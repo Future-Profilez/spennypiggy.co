@@ -2519,17 +2519,26 @@ fourth was a JSX edit, which is why there was nothing stopping a fifth.
   `founder_bonus` while the creator's own `FounderProgressTracker` is on screen — that
   card carries their real figures, so it wins, and showing both told one creator the same
   thing twice in two tones four inches apart.
-- 🚨 **`border-[#000]` DOES NOT COMPILE IN THIS PROJECT, and it fails SILENTLY.**
-  Verified against the built stylesheet: `.border-\[#000\]` appears **zero** times while
-  every other arbitrary class on the same component (`h-[250px]`, `w-[250px]`,
-  `leading-[0.86]`) is present. An element built on it renders with a **transparent
-  border and no frame at all** — which is how the first pass of these cards shipped, and
-  it is invisible in review because the markup says `border-2 border-[#000]`. Tailwind is
-  3.4.19, so this is not a version limitation; do not "fix" it by adding the class back.
-  **Use `border-black` alone, with NO width class** — `resources/css/index.css` defines it
-  as the full `border: 2px solid var(--black)` shorthand, which is exactly the house
-  frame. Where only one side needs a rule, set it **inline** (`borderLeft: "2px solid
-  #000"`); an inline border cannot be dropped by the compiler.
+- ✅ **CORRECTED 6 Sep 2026 — `border-[#000]` COMPILES FINE. The claim below was wrong.**
+  This bullet used to say the class "DOES NOT COMPILE … and it fails SILENTLY", verified
+  against a built stylesheet where `.border-\[#000\]` appeared zero times. Re-measured
+  against today's build, it is present and correct
+  (`.border-\[\#000\]{border-color:rgb(0 0 0 / …)}`) and **153 call sites across
+  `resources/` depend on it**. The likeliest reading of the original measurement is a grep
+  that did not account for Tailwind escaping the `#` as `\#` in the emitted selector —
+  the same mistake was made again while checking this, and it reports **zero** for
+  `bg-[#FF007F]` too, a class this app obviously ships. 🚨 **Grep the compiled CSS with
+  `grep -F 'border-\[\#000\]'`, never with an unescaped `#`.**
+  - ⚠️ **`border-[#000]` sets the COLOUR ONLY, so it needs a width class beside it**
+    (`border-2 border-[#000]`, `border-[3px] border-[#000]`). That is the correct idiom and
+    is what those 153 sites use.
+  - 🚨 **The REAL trap in this area is unchanged and was hit again on 6 Sep 2026:**
+    `resources/css/index.css` defines `.border-black` as the full
+    `border: 2px solid var(--black)` SHORTHAND, so `border-b-2 border-black` paints **all
+    four sides** and `border-[3px] border-black` renders at 2px. Use `border-black`
+    **alone**, or `border-[#000]` **with** a width class. Where only one side needs a rule,
+    set it **inline** (`borderBottom: "2px solid #000"`) — an inline border cannot be
+    overridden by the shorthand.
 - 🚨 **In a fixed-height flex column, every child needs `shrink-0`.** The card's body copy
   is `line-clamp-2`, and without `shrink-0` the flex parent compressed it below its own
   two lines — `line-clamp` hides the overflow, so nothing looked broken, the sentence just
@@ -5177,6 +5186,582 @@ capture side.
 - ⚠️ `border-[#000]` does not compile in this project — the inputs use `border-black`, which is
   already the 2px house frame (`resources/css/index.css`).
 
+## 🚨 THE HELP CENTRE'S ANSWERS WERE INVISIBLE TO EVERY MACHINE (4 Sep 2026)
+
+Reported by the client fetching the live site: `/help` came back complete, and **every page
+below it — every category, every article — came back as the meta tags and the header and
+then an empty `<div id="app">`.** Same cut-off point on all of them.
+
+🚨 **ONLY `help.index` CARRIED `->middleware('ssr')`**, and the route file's own note said
+why: *"the category and article pages have not been checked for SSR safety."* Nobody ever
+checked, so ~70 answers were live and machine-unreadable with the index above them fine.
+
+- 🚨 **NOTHING ERRORS, AND A BROWSER CANNOT SEE IT.** A signed-in human's React hydrates
+  over the shell and the page is perfect. The readers who get the shell are Bing and every
+  AI assistant people now ask questions of — **which is the audience a help centre exists
+  for.** Verify in `curl`, never in a browser.
+- **Both pages WERE checked before the flag went on, not assumed:** `Article.jsx` and
+  `Category.jsx` use the same `AuthenticatedLayout` and the same Help components the index
+  already renders, and every browser global they touch (`document.addEventListener` in
+  `HelpSearchBar`/`HelpLink`, `window.Intercom` in `StillNeedHelp`) is inside a `useEffect`
+  or an event handler. Nothing reads one at module scope or during render.
+- ⚠️ **The JSON endpoints stay OUT of the group** — SSR on a route returning JSON is a
+  render-host round trip for nothing, and `/help/search` runs on a keystroke.
+- 🚨 **The SSR bundle is a SECOND, MANUAL deploy** (`npm run deploy:ssr`, and `livebuild`
+  runs it after the Vapor deploy). Adding the middleware changes nothing in production until
+  the bundle is pushed.
+- Tests: `tests/Feature/HelpCentreSsrTest.php` (4). ⚠️ It asserts the MIDDLEWARE, not
+  rendered HTML — `EnableSsr::willRender` needs a render host and a built bundle, neither of
+  which exists in the suite, so a rendering assertion would pass against the bug. Verified
+  red by removing the flag from the category route.
+
+### 🚨 `typeof window.Intercom === "function"` WAS STILL LIVE ON THE HELP PAGES
+
+The documented trap, in the two places it costs the most. `IntercomProvider` installs a
+**queueing stub**, so the check passed, `preventDefault()` ran, and nothing opened — for a
+LOGGED-OUT visitor, whom the provider returns early for, and for whom `/help` is the only
+self-serve route there is. The hero's "start a live chat" was `href="#"` with a JS redirect
+behind it, so there was not even a link left to follow.
+
+- **`resources/js/lib/liveChat.js` is the ONE definition** — `liveChatAvailable()` checks
+  `window.Intercom?.booted === true` (only the real widget sets it) and `openLiveChat(e)`
+  cancels the click **only** when it has something better to offer. Used by
+  `Help/Index.jsx`, `Components/Help/StillNeedHelp.jsx` and `includes/Footer.jsx`.
+- 🚨 **THE FALLBACK IS THE ANCHOR'S OWN `href`, NOT A SECOND THING THE HANDLER DOES.** A
+  real `mailto:` works with no JavaScript, works for a crawler, and works for the middle
+  click that opens it in a new tab. Write the fallback into the markup and let the handler
+  step aside.
+- 🚨 **The footer's "Live chat" row pointed at the HOMEPAGE** (`https://spennypiggy.co`), so
+  for exactly the reader with no other route to us it reloaded the site. It is a `mailto:`
+  with `noBlank` now; the `livechat` class still opens the launcher when Intercom is loaded.
+- ⚠️ **"© 2026 Spenny Piggy Dev" is NOT a bug** — `Footer.jsx` appends `Dev` on any
+  non-production host. A report naming it means the reporter was reading a **dev
+  environment**, so check which host their other findings came from before acting on them.
+- ⚠️ **The footer's "Fast payout" row is "Fast Start bonus"** — it opened the Fast Start
+  bonus terms, a page about a bonus on net earnings that says nothing about payout speed.
+
+## 🚨 When the answering service is down, the reader still gets the ARTICLES (4 Sep 2026)
+
+`/help/ask` was designed to degrade rather than fail — `HelpController::ask` computes the
+keyword results on **every** path and returns them alongside whatever the model did or did
+not manage. Two things were quietly undoing that, and neither is visible from a browser on
+a good day.
+
+- 🚨 **A TRANSIENT FAILURE WAS CACHED AS "WE HAVE NO ANSWER FOR THAT" — FOR A DAY.**
+  `HelpAnswer::ask` wrapped `generate()` in `Cache::remember`, which **cannot tell a
+  DECISION from a FAILURE**. One API timeout, one rate-limited key or one rotated key was
+  stored under that question's cache key for the full `help.ai.cache_ttl` (86400s), for
+  every later asker — so **the service came back and the help centre did not**, with
+  nothing in any log connecting the two.
+  - **`HelpAnswer::CACHEABLE_REASONS` is the whitelist**: `not_in_articles` and
+    `below_similarity_threshold` only — the model and the corpus genuinely answering, stable
+    until the corpus changes, which is what the TTL exists for. Everything else is a
+    failure and is re-tried on the next ask.
+  - ⚠️ **`no_articles_embedded` is deliberately NOT cacheable.** It is fixed by running
+    `help:embed`, and caching it would keep the help centre silent for a day *after*
+    somebody had already fixed it.
+- 🚨 **`HelpSearchBar`'s catch branch THREW THE ARTICLES AWAY.** It set `results: []`, so a
+  dropped connection printed *"We do not have an answer for that yet"* with **nothing under
+  it** — while the keyword search for that same query had already returned and was sitting
+  in state. The reader was told the help centre was empty because one request failed. It
+  hands over `resultsRef.current` now.
+  - ⚠️ **A ref, not a dependency.** Putting `results` in `ask`'s dependency array rebuilds
+    the callback on every debounced search, i.e. every keystroke; reading the state from the
+    closure hands it whatever was on screen when `ask` was last built.
+- 🚨 **A FAILURE TO GENERATE IS NOT "WE HAVE NO ANSWER FOR THAT".** `TECHNICAL_REASONS` in
+  `HelpSearchBar.jsx` (`request_failed` · `exception` · `embedding_unavailable` ·
+  `no_articles_embedded` · `rate_limited`) says the SERVICE did not run, and none of them
+  says anything about whether the corpus covers the question — so the copy branches, and the
+  *"questions we cannot answer are logged"* line is suppressed, because a failed request is
+  not logged as a gap and claiming it was is a small lie told to the person least able to
+  check it.
+- **The provider is an env change (5 Sep 2026).** `HELP_AI_BASE_URL` (default
+  `https://api.openai.com/v1`) is the one host both `HelpAnswer` and `HelpEmbeddings` build
+  their endpoints from; any OpenAI-compatible host works, and `.env.example` carries ready
+  blocks for **Groq** and **Gemini** free tiers. ⚠️ Off OpenAI, set `HELP_AI_API_KEY` and BOTH
+  model names — the OpenAI keys are deliberately not reused against another host (they would
+  401 and read as "the key is wrong"). Switching re-embeds everything on the next `help:embed`
+  (the hash includes the model); `min_similarity` was tuned for `text-embedding-3-small`, so
+  read the returned `confidence` before trusting it on another model. 🚨 **A free tier is not
+  free of consequences** — `/help/ask` receives supporters' own words about their own payments;
+  read the provider's data policy before pointing it there. Pinned by
+  `test_both_endpoints_follow_the_configured_base_url`.
+- **The keys are a POOL (5 Sep 2026).** `HELP_AI_API_KEYS=k1,k2,k3` — any number. `HelpAiKeyPool`
+  rotates on an atomic shared cursor (consecutive askers alternate exactly), `HelpAiClient` is
+  the ONE HTTP path both the embedding and the answer call take, and failover happens **inside
+  the request**: a 429 stands that key down for the provider's own `Retry-After` and the request
+  moves to the next key; a 401/403 stands it down for an hour and logs at **error**; a 5xx or a
+  dropped connection stands NOTHING down (the provider's bad minute, not the key's); any other
+  4xx is our request and stops after the first key with the keys untouched. Every key spent →
+  `rate_limited`, articles returned, **not cached**. 🚨 Cooldowns live in the CACHE keyed by key
+  fingerprint — never a static (Vapor warm containers), never by position (reordering the env
+  would move a cooldown to another account). 🚨 **A free quota is per ACCOUNT** — two keys from
+  one Groq account share one allowance; the pool deduplicates identical strings for the same
+  reason. `php artisan help:ai-status` (`--reset`) shows each key's state and how many times it
+  was stood down today — the number that decides whether to add an account. Tests:
+  `HelpAiKeyPoolTest` (21).
+  - 🚨 **ONE TIME BUDGET FOR THE WHOLE LOOP** (`HELP_AI_REQUEST_BUDGET`, 18s), not one timeout
+    per key — otherwise the worst case is `timeout × keys`, so **adding a key made the page
+    slower**, and `HelpAnswer`'s two pooled calls at 3 keys × 12s is 72s against a **60-second
+    Lambda**: a hard timeout instead of the search fallback. ⚠️ It is a **ceiling, never a
+    floor** — `max($perAttempt, $budget)` silently lets a large `timeout` override it, which is
+    the fault it exists to prevent.
+  - 🚨 **Cooldowns are per key AND PER MODEL** — providers meter chat and embeddings
+    separately, so a key out of embedding tokens still has chat tokens. Cache key is
+    `help:ai:cooldown:{fingerprint}:{model}`; `help:ai-status` prints a row per key per model.
+  - ⚠️ The failure reason is **ranked**: any 429 anywhere in the loop reports `rate_limited`,
+    even if a later key answered 502 — a spent quota is the one signal meaning "add an account".
+  - ⚠️ **`help:embed` exits SUCCESS on a spent quota** (it is hourly; red every hour is how a
+    real failure stops being noticed). `auth` / `bad_request` / bad shape still fail.
+  - 🚨 **THE CURSOR IS PER MODEL.** A shared cursor with an EVEN key count locked into a fixed
+    split — an ask is two calls (embed, chat), so chat ALWAYS landed on the same key and the
+    other account's chat quota was never used. `help:ai:cursor:{model}`; pinned red-first.
+  - 🚨 **A vector from another model is NOT a candidate** (`rank()` skips dimension
+    mismatches). Scoring them 0.0 turned the gap between a model switch and the next
+    `help:embed` into a week of cached "unanswerable" verdicts.
+  - ⚠️ A refused key alerts at error **once per 24h** (`Cache::add` claim), warning after.
+  - ⚠️ `HelpController::ask` checks `HelpAnswer::cached()` before the per-IP limiter — a cached
+    answer spends no allowance (review finding #6, closed).
+- 🚨 **GROQ HAS NO EMBEDDING MODEL — on Groq `HELP_AI_RETRIEVER=keyword`** (5 Sep 2026,
+  measured: 14 models on the free tier, none embeddings; the `nomic-embed-text-v1_5` name that
+  circulated 404s). `keyword` makes `HelpSearch::rankArticles()` the retriever — the search
+  box's own candidates and scorer, with light query stemming (`HelpSearch::stem`, crude on
+  purpose: "reserving" → "reserv", "payout" untouched) — and the model writes the answer from
+  those articles; the grounding rules do not change. `help:embed` is a quiet no-op there.
+  Chat model on this account is `openai/gpt-oss-120b` (measured limits: 8k tokens/**minute**,
+  1,000 requests/day, per account); 🚨 **never `groq/compound*`** — web search built in, i.e.
+  answers from outside the articles by design. A key whose prefix belongs to another provider
+  (`gsk_`/`sk-`/`AIza`) is named by `help:embed` and `help:ai-status` BEFORE any request — four
+  Groq keys with the host left at OpenAI was the live fault. `HelpKeywordRetrieverTest` (7).
+- **Ask AI is a conversation (5 Sep 2026).** `Components/Help/HelpChatPanel.jsx` owns the
+  transcript and opens **in the flow under the bar on every screen — never floating** (client
+  direction; a fixed mobile sheet was built and reversed the same day). `HelpSearchBar` only
+  searches. `POST /help/ask` takes `history[]` and returns `turns_left`.
+  🚨 **Nothing is stored** — the browser's state is the only copy. 🚨 **Retrieval is on the
+  LATEST question alone every turn**; earlier turns are context for pronouns, never facts.
+  🚨 **History goes into the user message as an "untrusted" transcript, NEVER as real
+  `assistant` messages** — a forged assistant turn as a genuine message is the strongest
+  injection there is; the request is always exactly two messages. 🚨 **Follow-ups are never
+  cached and never read the first-question cache**, so each is a paid generation — the
+  server-side cap `help.ai.chat.max_turns` (6) is what stops one open page spending a free
+  tier's day; a refused turn (`conversation_limit`) costs no call. Bounded at the edge AND in
+  `HelpAnswer::normaliseHistory()` (oldest turns trimmed first). `HelpChatTest` (11).
+  🚨 **The turn cap is counted on the RAW history, before trimming** (fixed 6 Sep 2026) —
+  `normaliseHistory()` drops the oldest turns to fit `max_history_chars`, so counting after it
+  let a long chat run for ever: a padded transcript always trimmed back under the cap.
+- **Search or ask is decided by WORD COUNT (6 Sep 2026, client direction).**
+  `HelpSearchBar.AUTO_ASK_WORDS = 4`. Under it, what was typed is a lookup: Enter opens the top
+  article and **the AI is never called** unless the reader presses Ask AI, the pink Ask row or
+  ⌘↵. At or over it, it is a question and the Ask row becomes what Enter commits to.
+  🚨 **NOTHING OPENS THE CONVERSATION ON A TIMER — reversed the same day.** A 4+ word query
+  used to open the panel by itself 1.4s after the last keystroke. The panel is IN THE FLOW
+  (the client's own earlier direction), so it appeared under the bar and shoved the directory
+  down the page **while the reader was still typing**. Client: *"page ko hila dete h."* The
+  word count still picks the default row; **the reader always commits.** The dropdown is a `role="listbox"` (↑/↓, yellow `#E6EA7B` active row,
+  category eyebrow per row from the new additive `category_title` on `HelpContent::card()`);
+  the panel is a ledger transcript (label column + prose, no bubbles). ⚠️ Both components use
+  `border-black` ALONE (the 2px shorthand) and `divide-*` for internal rules.
+- 🚨 **THE BAR HANDS OVER TO THE CONVERSATION, AND THE DROPDOWN NEVER RENDERS OVER IT**
+  (client, 6 Sep 2026: *"ak baar in chat aa gaya tab chat me hi karo sab handle"*). While
+  `chatOpen`, `showPanel` is false and the field is replaced by a one-line strip naming the
+  question with a single **New search** control. The panel has its own composer, history and
+  sources; two inputs six pixels apart is a reader choosing between two things that do the
+  same job. ⚠️ Dropping the `!chatOpen` guard from `showPanel` is what let a floating results
+  layer stack on top of the transcript.
+- 🚨 **THE SEARCH BAR IS ONE HEIGHT, ALWAYS — `min-h-[52px]` ON THE FIELD ROW, NOT `py-3`.**
+  Padding let the row be sized by its tallest child, so the 44px Clear button appearing on the
+  **first keystroke** grew the bar 20px and pushed the whole page down: a twitch on every
+  search, caused by the reader's own typing, measured at 805px → 825px. A control that appears
+  on input must never be what decides its container's height.
+- Tests: `tests/Feature/HelpAnswerFallbackTest.php` (4). ⚠️ **Both fixes were verified
+  failing against their own bugs**; the two controls (the endpoint's fallback, and a genuine
+  miss still being cached) correctly stay green. Three traps the first version of this file
+  fell into, all of which made it pass against the bug:
+  - 🚨 **A SECOND `Http::fake()` MERGES INTO THE FIRST AND EARLIER STUBS WIN THE MATCH**, so
+    a "recovery" registered after a wildcard failure never fires. Use ONE closure fake
+    flipped by a variable.
+  - 🚨 **Without a stored `help_articles.embedding` every path stops at
+    `no_articles_embedded`** and all three tests pass for the wrong reason.
+  - 🚨 **Assert `answered === true` after recovery, never "the reason changed"** — the
+    failure modes share a shape, so a reason comparison passes against the bug.
+
+## 🚨 The help centre is one design across three pages, and it reads on a phone (6 Sep 2026)
+
+Client direction: *"is page ka design or achha banao mobile or pwa app koi bhi dhayn rakhna,
+functionality wise bhi improvement karo."* The three pages were in three visual languages —
+the directory on a dark hero, the section on `bg-gray-100` behind a soup of `!border-*-[0px]`
+overrides fighting a border nothing had set, and an answer on `bg-gray-200`. They share one
+cream ground (`#FFF6EC`, the app's own), white framed cards and one breadcrumb now.
+
+- 🚨 **`pb-28` ON A HELP PAGE WRAPPER WAS THE THIRD COPY OF THE SAME CLEARANCE.**
+  `AuthenticatedLayout`'s own `<main>` carries `pb-28 md:pb-0` **and**
+  `retro-bottombar.css` adds `calc(var(--sp-bottombar-h) + 16px + var(--sp-bottombar-inset))`
+  to every `main` on a signed-in phone. All three pages carried a fourth on their own
+  wrapper — ~112px of dead screen under the last element, on the pages people open when
+  something has already gone wrong. **A page never sets its own bottom-bar clearance.**
+- 🚨 **`--sp-help-header-h` IS DEFINED ONCE, IN `help.css`, AND TWO THINGS READ IT.** The
+  sticky contents bar's `top` and a heading's `scroll-margin-top` must be the same number
+  plus the bar's own height, or an anchor jump lands the heading UNDER the bar — and the
+  failure is silent: the page scrolls, the reader sees the paragraph after the heading they
+  asked for and concludes the link is wrong. The value mirrors `includes/Header.jsx`'s own
+  clearance spacer (65/66/80px) plus `env(safe-area-inset-top)` and `--sp-topbanner-h`,
+  because the installed iOS app and the install banner both push the header down. Measured
+  in a browser at 390px with the banner up: bar `top: 128px`, heading `scroll-margin-top:
+  196px`, heading clears the bar. ⚠️ **`.help-sticky-top` OVERRIDES the flat `6rem`
+  `scroll-margin-top` that predates the bar** — do not "restore" it.
+- 🚨 **requestAnimationFrame ALONE WEDGES A SCROLL HANDLER PERMANENTLY.** The contents
+  bar's scroll spy used the usual "skip if a frame is already pending" flag. rAF is
+  throttled to **zero** in a background tab, in an occluded iframe and under some low-power
+  modes, so one dropped callback never clears the flag, every later scroll returns early,
+  and the bar silently stops tracking for the rest of the session. **Nothing errors and the
+  component still renders**, which is why only a scroll measurement found it: the label
+  simply stayed on the first heading. `ArticleToc.jsx` now races rAF against a **180ms
+  `setTimeout` floor** — whichever fires first does the work and releases the flag, so the
+  recalc never runs twice for one scroll. ⚠️ Any new rAF-throttled scroll handler in this
+  app needs the same floor.
+- 🚨 **`truncate` INSIDE A FLEX OR GRID CHILD FORCES ITS PARENT TO THE FULL TEXT WIDTH.**
+  `truncate` is `white-space: nowrap`, and a flex/grid item defaults to `min-width: auto`,
+  so the parent grows to the longest untruncated line instead of clipping it. Measured on
+  the directory at 320px: a **371px category tile inside a 288px column**, clipped by the
+  page's own `overflow-x: hidden` so there was no scrollbar to show it. Pre-existing, and
+  invisible at 390px, which is where a phone check usually stops. **`min-w-0` on every
+  ancestor between the scroll container and the `truncate`.**
+- ⚠️ **A rail that is MEANT to run off the edge must be excluded from an overflow sweep.**
+  The popular-answer chips and the recents list are `overflow-x-auto` scrollers, so their
+  children legitimately sit past the viewport; a detector that does not skip descendants of
+  a scroll container reports them as faults and buries the real one.
+- **Measured, not eyeballed: 3 pages × 15 widths** (320 · 360 · 390 · 414 · 540 · **639 ·
+  640** · 700 · **767 · 768** · 834 · 1024 · 1180 · 1280 · 1440) — 0 elements crossing the
+  viewport, 0 shadows, 0 interaction scale, header borders `0/0/2px/0`.
+  🚨 **Include the breakpoint boundaries in PAIRS.** ⚠️ **The help pages cannot be framed
+  directly** — `SecurityHeaders` sends `X-Frame-Options: DENY` on every response — so the
+  harness `curl`s each page to a temporary static file under `public/`, rewrites the asset
+  URLs to absolute and frames THAT (React still hydrates inside the frame). **Delete those
+  files afterwards: Vapor uploads `public/` to S3/CloudFront.**
+
+**Audit + polish pass, same day — five things measurement found that reading did not:**
+
+- 🚨 **`.help-prose a` WAS `#FF007F` — 3.78:1 ON WHITE, i.e. EVERY LINK IN EVERY ONE OF THE
+  79 ARTICLES FAILED AA.** It is `#D1006A` now (5.36:1 on white, 5.01:1 on the cream
+  ground), the darker pink this codebase already carries for exactly this reason. ⚠️ Brand
+  pink stays correct **on a dark ground**, where it measures 5.21:1 — the rule is about the
+  ground, not the hue.
+- 🚨 **FIVE CHROME STYLES WERE UNDER AA, ALL OF THEM SMALL CAPS LABELS.** Measured in the
+  browser, not guessed: `text-black/40` **2.85:1** (section count chip), `text-black/45`
+  **3.32–3.35** (answer counts, "Updated {date}"), `text-black/50` **3.98** (pager
+  eyebrows). **On this app's grounds, `text-black/55` (4.64–4.74) is the floor and `/60`
+  (5.55–5.74) is the safe step; `/50` and below FAIL, and 10–12px small print gets no
+  exemption.** After: **0 contrast failures on all three pages.**
+- 🚨 **TWO `<main>` LANDMARKS PER PAGE.** `AuthenticatedLayout` renders the page's one
+  `main`, and each help page added its own — so "skip to main content" had two destinations
+  and neither was the whole page. The page-level one is a `<div>`. ⚠️ Pre-existing on all
+  three; **check the layout before adding a landmark to a page.**
+- 🚨 **`hidden lg:block` MOUNTS THE COMPONENT — IT ONLY HIDES IT.** Both contents forms ran
+  their own `useReadingPosition`, so **two IntersectionObservers and two scroll+resize
+  listener pairs** tracked the same headings for the whole session, one of them for a rail
+  nobody could see. The page owns ONE hook and passes `activeId` / `progress` / `jump` down.
+  ⚠️ A docblock had claimed the opposite as the *reason* for `lg:block`; a comment asserting
+  a behaviour the classes do not produce is worse than none.
+- ⚠️ **This app defines NO `:focus-visible` styling anywhere**, so every new control fell
+  back to the user agent's 1px auto ring — the weakest possible mark on a surface built from
+  2px black frames, and invisible against the frame itself. `.help-focus` (2px black) and
+  `.help-focus-invert` (mint, for the dark hero) are in `help.css`. **`:focus-visible`, never
+  `:focus`** — a mouse click should not leave a ring behind it.
+- ⚠️ **Two craft-floor defaults were removed rather than softened:** the article summary's
+  3px pink left border (a thick coloured spine is the stock callout costume — the lead earns
+  its separation with a type step now), and the "HELP CENTRE" eyebrow above the directory's
+  own heading (a label restating the page the reader is already on). ⚠️ The contents rail's
+  active marker went the same way: a 1px track with a 6px square ON it, not a 2px coloured
+  border competing with the frames that carry real structure.
+- ⚠️ **`ShareArticle`'s `compact` prop was set by neither call site** — the documented
+  dead-prop class, caught before it could look like a feature nobody wanted.
+
+🚨 **`DESIGN.md` / `PRODUCT.md` AT THE APP ROOT ARE STALE AND WERE NOT FOLLOWED.** They
+prescribe hard offset shadows (`shadow-[4px_4px_0px_0px_…]`), Anton as the display face
+everywhere, mint `#A2E4B8` page grounds and a strict `rounded-[30px]`/`rounded-[20px]` scale.
+Measured against the code: `scripts/checks/check-no-shadows.mjs` **gates the build** and
+would reject the shadows outright, `font-gulfs` has **595** uses against Anton's 30, and the
+radii are the responsive `rounded-box` tokens. This file plus the compiled stylesheet is what
+was followed, per this file's own precedence rule. **Reported, not repaired — reconciling
+those two documents is its own decision.**
+
+**Functionality that shipped with it, and the rule each carries:**
+
+- **A reading time and a last-updated date** on every answer. `HelpContent::readingMinutes()`
+  counts the **Markdown source**, not the rendered HTML — `strip_tags` on the render still
+  counts link URLs and heading anchors as words. Floor 1: "0 min read" beside an answer
+  reads as a broken page, and an empty body is the only case that reaches it.
+- **A pager to the previous and next answer in the section** (`HelpContent::pager()`),
+  ordered by `sort_order` then id — **the same order `categoryPayload` uses**, or the pager
+  walks a different sequence than the list the reader just came from, which reads as
+  articles going missing. 🚨 Live-feature filtered: an article behind an off flag 404s at
+  its own URL, so offering it is a next step into a 404.
+- **The other sections, from a section page** (`HelpContent::siblingSections()`). The only
+  way out used to be the browser's Back button. Reads the same cached `tree()` the directory
+  reads, so it costs no query, and drops a section that is empty for this viewer.
+- **`ShareArticle`** — `navigator.share` on a phone or an installed app, clipboard
+  otherwise. 🚨 **A PWA in standalone display mode has NO URL BAR**, so before this the link
+  to an answer was genuinely unreachable from inside the app. ⚠️ `navigator.share` is
+  feature-detected **in an effect**, never during render: SSR is on for /help, and a label
+  that differs between server and first paint is a hydration mismatch. ⚠️ A dismissed share
+  sheet rejects with `AbortError` and **is not a failure** — falling through to "copied"
+  there tells somebody we did the thing they cancelled.
+- **`lib/helpRecents.js` — "you were reading", device-local, never sent anywhere.** 🚨 A
+  list of the help articles somebody opened is a list of the problems they are having with
+  their own account; on a shared machine that is the last thing a help centre should keep.
+  There is no endpoint and no cookie, there is a **Clear** control, and every read and write
+  goes through `safeStorage` (touching the `localStorage` property itself throws a
+  `SecurityError` when the browser refuses site data, and this sits on the article page's
+  mount path). ⚠️ The stored shape is re-validated **on the way out**, because the value
+  survives deploys.
+- **`AudienceFilter` is one segmented control, not three pills.** As three 44px pills it
+  wrapped onto two lines at 320px and read as three unrelated buttons, so the fact that it
+  is one either/or choice with one always on was invisible. ⚠️ The hairline is `divide-x`,
+  never a border per cell — adjacent borders double to 4px.
+- Tests: `HelpCentreTest` (40, +5 — pager both ends, kill-switched skip, reading-time floor,
+  sibling sections; **three verified red against planted bugs**),
+  `tests/javascript/helpRecents.test.js` (9).
+
+## The help centre covers the features that shipped (4 Sep 2026)
+
+Audited the corpus against the shipped feature list. **Creator Growth Bonus (live 28 Aug
+2026), Fast Start, referrals, shipping profiles, creator push, saved items, the wishlist,
+the leaderboard and account suspension had ZERO articles between them** — the Growth Bonus
+had a public page, a terms page, a dashboard widget, an admin console and no answer to
+"what is it". 70 → **79 articles**.
+
+- **`database/seeders/Help/FeatureArticles.php`** is the third batch, merged by
+  `HelpCentreSeeder` beside `ExtraArticles`, same shape and same rules. New:
+  `the-creator-leaderboard` · `tell-your-supporters` · `what-is-a-wishlist` ·
+  `reusable-shipping-rates` · `growth-bonus` · `fast-start-bonus` · `refer-a-creator` ·
+  `saving-items-for-later`.
+- 🚨 **A FEATURE CAN SHIP COMPLETE AND STAY INVISIBLE.** Nobody searches for a word we never
+  wrote, so the help centre gains no article, `help_search_misses` records nothing, and
+  support answers the same question by hand for a year. **Adding an article is part of
+  shipping a user-facing feature**, not a follow-up.
+- 🚨 **TWO ARTICLES WERE DESCRIBING BEHAVIOUR THAT HAD CHANGED, WHICH IS WORSE THAN NONE.**
+  `my-account-was-suspended` still said a suspended account cannot sign in and must contact
+  support — reversed on 3 Sep 2026, when suspension became read-only access with a banner,
+  two tones (limited vs suspended) and a self-service route for an unpaid subscription. And
+  `delete-my-account` said "contact support" after the self-service form with its reason
+  dropdown shipped the same week. Both rewritten. **When a rule changes, grep the seeder for
+  the old one.**
+- `bonuses-explained` now names four schemes and states the thing that makes them read as
+  contradictory: **Founder and Fast Start are measured NET of VAT, the Growth Bonus on the
+  listed sale value INCLUDING it**, so the two progress figures on one dashboard legitimately
+  differ. It also never quotes `{{referral.reward}}` without `{{referral.threshold}}`.
+- **New tokens** (`App\Support\HelpTokens`) — every figure in the new articles resolves from
+  the config the engine enforces: `growth.{max_reward,first_reward,top_gmv,rungs,activation_gmv,window_days,seats,expiry_months}`,
+  `faststart.{rate,window_days,settlement_days}`, `referral.threshold`,
+  `push.{per_day,per_month,max_length,window_days}`.
+  - ⚠️ **`growth.max_reward` is the SUM of the ladder, and `growth.top_gmv` the last rung's
+    own threshold** — `ladder` holds INCREMENTAL amounts, so an edited ladder can never leave
+    the help centre advertising a ceiling the engine will not pay.
+  - ⚠️ **`faststart.rate` widens to a RANGE when `enable_tiered` is on.** There is no single
+    rate then, and quoting the flat one understates it for a high earner. The promo card omits
+    the figure entirely in that state; a token cannot omit itself without leaving a gap
+    mid-sentence.
+- **`CreatorPushService::MONTH_WINDOW_DAYS`** — the rolling window was the literal `30` in
+  the query, the refusal message and the article describing the limit. `push.window_days`
+  reads the constant.
+- ⚠️ **`php artisan help:embed` MUST BE RUN AFTER SEEDING, on an environment with a working
+  key.** A new article that is not embedded is invisible to `/help/ask` while every other
+  article is answerable — worse than the feature being off. (It fails 401 on the local key.)
+- Tests: `tests/Feature/HelpCentreTest.php` (39) still green — including its own guards that
+  no body hardcodes a figure a token provides, no title carries a token, and every `related`
+  slug exists.
+
+## The creator is told checks continue, not that one is pending (4 Sep 2026)
+
+`Auth/StripeIdentity.jsx` carries one line saying verification does not stop at the Stripe
+pass — accounts are checked over time against the profile photo and the social accounts on
+the page. The full feature (the admin queue, the refusal machinery, the redaction move) is
+in the repository root `../CLAUDE.md`.
+
+- 🚨 **IT MUST NOT SAY A REVIEW IS PENDING** (client direction, 4 Sep 2026). Auto-approve
+  exists so a creator is never blocked waiting on us, and telling every verified creator
+  that another decision is coming puts them on a waiting list in their own head. The line
+  says checks CONTINUE, which is true of everybody all the time.
+- 🚨 **FRIENDLY, NEVER A THREAT** — *"friendly way me likhna, darana nhi h"*. Neutral ground,
+  no red, and it ends with what we would do rather than what would happen to them. Same
+  reasoning that took the ban warning off the avatar upload screen on 25 Aug 2026.
+- ⚠️ It is deliberately OUTSIDE the `isVerified` branch: a creator who has not finished the
+  check should read it too, before they decide which photo to use.
+
+## 🚨 The payout cycle is FIXED Friday-to-Thursday — read `PayoutCycle`, never re-derive (4 Sep 2026)
+
+The rule, the blast radius and the cross-app mirror are in the repository root `../CLAUDE.md`
+("A payout covers a fixed Friday-to-Thursday week"). This is what it means for the files here.
+
+- 🚨 **A NEW SURFACE READS `App\Support\PayoutCycle`. Never write out the dates again.** Four
+  copies of this arithmetic already drifted apart once — the engine, the ledger badge, the
+  dashboard payload and the Help tokens — and the way it showed was a creator being promised a
+  payment on a screen the payout run disagreed with.
+- 🚨 **`applyPayoutBadges` AND `Risk\PayoutService` MUST MOVE TOGETHER.** The `this_week` badge
+  on the creator's own transaction list says "in this Friday's payout"; if it and the run use a
+  different cut-off, the platform is promising money it will not send. Both read
+  `PayoutCycle::cutoffFor(PayoutCycle::nextPayoutDate())`.
+- ⚠️ **`payout_cycle` carries TWO windows now.** `window_*` is what the next payout COVERS;
+  `current_window_*` (+ `current_window_paid_at`) is the week being EARNED. Rendering the second
+  under the first is the fix — pairing "this week" with "next Friday" is what made creators read
+  this week's sales as being in Friday's payment.
+- ⚠️ **In payout copy use `{{payout.period}}` and `{{payout.wait}}`, never the bare
+  `{{payout.hold_days}}`** — that token survives for the reserve explanation and for legacy
+  article bodies, and a bare day count is no longer what the payout waits on.
+  🚨 `HelpCentreTest::test_no_article_hardcodes_a_figure_a_token_already_provides` **caught the
+  first draft of this copy** typing "Friday" and "after your first sale" as literals. It works;
+  do not route around it.
+- ⚠️ **Reserve release is untouched** — still a rolling 30 days keyed to each transaction's own
+  date, paid separately. No copy may imply it follows this cycle.
+
+## 🚨 A social handle VERIFIES a creator, it does not PUBLISH them (6 Sep 2026, BOTH apps)
+
+Reported by a creator who asked support to delete her social handles: she did not want her
+Spenny Piggy page linked to her personal accounts. **Deleting them is not available** —
+`SocialLinksController::saveSocialLinks` refuses a row with no handle,
+`ProfileController::missingForReview()` requires one before review, and the admin's
+`CreatorReviewService::whereProfileComplete()` drops a creator with none out of the review
+queue and the verified badge entirely. So the handle stays on file and the **publishing**
+became the creator's decision.
+
+- **New column `social_links.public_platforms`** (migration `2026_09_06_100000`, guarded,
+  spennypiggy.co owns the table). A JSON array of platform KEYS — a key list, not a map of
+  booleans, or "absent" and "false" become two spellings of hidden and every retired
+  platform column needs an entry it will never use.
+- 🚨 **NULL MEANS NOTHING IS PUBLIC, AND THAT IS THE POINT.** Every row that already exists
+  reads as hidden the moment this deploys — **no backfill, nothing for a creator to do**. A
+  default of "show everything" would have been the old behaviour under a new name, and
+  consent to be published is given, never assumed (the rule `marketing_emails_enabled` had
+  to be corrected for on 23 Aug 2026). **Nothing may ever read an absent value as "show
+  everything".**
+- 🚨 **`App\Support\SocialVisibility` IS THE ONE DEFINITION.** A handle is public only when
+  all three hold: the creator listed that platform, the row is APPROVED (`status = 1`), and
+  the column carries a value.
+  - ⚠️ **The approval clause is not redundant.** Turning a platform on is a display choice
+    and never a re-submission, so a creator can tick a handle that is still pending — and a
+    pending handle is one nobody has checked. Publishing it would put an unreviewed link on
+    a public page.
+  - ⚠️ **`ProfileAssetVisibility::HANDLE_COLUMNS`, never `ACCEPTED_PLATFORMS`** — a creator
+    verified on a retired platform still has a handle rendering on their profile, and it has
+    to be hideable too.
+  - ⚠️ `forVisitor()` returns an **ARRAY, never the model**: a model with its handle
+    attributes blanked is one `->save()` away from deleting the creator's handles for real,
+    and the caller sits in a profile payload that also writes caches. It answers **null**
+    when nothing is public, which is the shape every existing reader already handles
+    (`CoverIdentity`'s `slinks?.[key]`) — and tells a stranger nothing about which platforms
+    exist. `status` and `reason` are dropped with it.
+- 🚨 **VISIBILITY IS NOT REVIEWABLE CONTENT, so it is kept OUT of `$data` in
+  `saveSocialLinks`.** The handle, and therefore the verification, is identical either way.
+  Folding it into the diff would mean pressing "show my Instagram" re-opened the whole row
+  for review, zeroed `status`, mailed the creator and — because `ProfileChangeRequest::open()`
+  supersedes whatever is pending — took their own earlier submission out of the queue.
+  - It is written **directly to the live row on every save**, including the "nothing changed"
+    early return, which is the COMMONEST way a visibility change arrives (the creator opened
+    the editor to hide a handle and touched nothing else). Returning there without writing it
+    made the toggle look saved and do nothing. Pinned by test, verified red.
+  - ⚠️ **`DB::table`, never the Eloquent builder** — `Builder::update()` stamps `updated_at`
+    (`addUpdatedAtColumn`), and the admin review queue ORDERS and ages on that column, so a
+    display choice would reshuffle a reviewer's list. Same reasoning as `StripeChargesFlag::sync()`.
+  - ⚠️ **`ProfileChangeRequest::SOCIAL_FIELDS` deliberately does not carry it**, so an admin
+    approving a handle edit never overwrites the creator's own privacy choice.
+  - ⚠️ **Clearing a handle clears its visibility** (`SocialVisibility::forStorage()` narrows
+    the choice against the handles THIS save proposes, not against the stored row). Otherwise
+    a platform re-added months later comes back already public on the strength of a decision
+    made about a different account. Judging it against the submission is also what lets a
+    creator type a handle and show it in one submit.
+- **The owner always receives the whole row** (every handle, its review status, its
+  show/hide state — they cannot edit what the page will not send them);
+  `AuthenticatedSessionController` masks only for a visitor, gated on the `$isOwner` already
+  resolved there.
+- 🚨 **`UserProfileService`'s eager-load select was missing `tiktok`** — one of the three
+  platforms verification is performed against — so it rendered as "no handle" on the cached
+  public profile however the row read. **An unselected column is null, not absent.** Fixed
+  with `public_platforms` in the same list, and the cache key bumped to
+  `user_profile_basic_v2_` **with both forget sites updated** (`UserProfileService` and
+  `Auth\PwaNotification`): a v1 entry carries neither column, so every handle would read as
+  hidden for up to ten minutes after deploy.
+- **Owner UI:** a per-platform **Public / Hidden** switch in `Pages/Auth/Social.jsx`, rendered
+  only once that field has a value — a switch above an empty box asks the creator to decide
+  about a handle they have not given us.
+- 🚨 **THE COPY RULE REVERSED, AND A FIXTURE PINNED THE OLD ONE.** Until now the standing rule
+  was *"the form copy MUST NOT promise privacy"*, because an approved handle was published
+  automatically. It now must STATE the privacy, and the old wording ("before it shows on your
+  profile") is the lie in the other direction. Updated in `register/CreatorProfileStep.jsx`,
+  `Profile/CreatorVerification.jsx`'s social step and `Auth/Social.jsx`'s banner;
+  `tests/javascript/signupSocialHandle.test.jsx` required `/shows on your profile/` and was
+  **rewritten, not deleted**, with the reasoning kept in place.
+- 🚨 **THE MASK ON `slinks` WAS NOT ENOUGH — `User::$with` EAGER-LOADS `social_links`, AND THE
+  SAME PAGE SHIPS THE WHOLE `User` AS `user`** (found by the code-reviewer, 6 Sep 2026; the
+  first cut's tests asserted `slinks` alone and passed). Every hidden handle rode into
+  `data-page` as `props.user.social_links.*` for every guest — and every listing loaded
+  `with('user')` (bill/membership checkout, post pages) carried the row too. **Closed at the
+  root: `social_links` is in `User::$hidden`**, so no serialised User leaks it; exposed
+  deliberately in two places only — `HandleInertiaRequests` builds `auth.user.social_links`
+  (the VIEWER's own row) and `AuthenticatedSessionController` calls
+  `makeVisible('social_links')` on the OWNER branch (`Profile/SiteSubscription.jsx` reads
+  `user.social_links.status`, the one JS reader). ⚠️ `$hidden` is JSON-only — every PHP
+  `$user->social_links` read is unchanged. Pinned by two tests, verified red.
+- 🚨 **A RETIRED HANDLE WAS PERMANENTLY UNPUBLISHABLE** (second review finding). `$data` in
+  `saveSocialLinks` carries ONLY `ACCEPTED_PLATFORMS`, so narrowing the choice against it
+  alone dropped `facebook`/`youtube`/… on every save — the stored row is now merged UNDER the
+  submission (`Arr::only($data,…) + Arr::only($existing…)`), so a legacy handle can be shown
+  while an explicit null in this save still clears its visibility. Pinned, verified red.
+- ⚠️ **Admin app: cast only, `$fillable` in NEITHER.** The back office must keep seeing every
+  handle on file whatever the creator publishes, so nothing there filters on this column — and
+  a back office able to mass-assign it is a route by which a bulk update publishes handles
+  nobody agreed to publish (the marketing-consent rule).
+- ⚠️ **`GET /sociallinks/{username}` is public, unauthenticated, and returns only
+  `{success: true}`** — its payload lines have been commented out for a long time, so it leaks
+  nothing and needed no gate. `MemberCheckout.jsx:346` reads `resp.data.sociallinks` off it,
+  which has therefore always been undefined; left alone rather than half-maintained.
+  ⚠️ `OptimizedProfileController` sends `sociallinks`/`slinks` ungated and is **unrouted** —
+  do not "fix" it into a live path without adding the visitor mask.
+- **Where a handle is still COMPULSORY (unchanged, and why deletion is not on offer):** signup
+  for a creator (`Rule::requiredIf` + `creatorProfileStepComplete`) · the socials editor's
+  at-least-one refusal · `missingForReview()` · `CreatorJourneyService`'s `social` step, which
+  gates `review` → `stripe` → listing → selling · the admin review queue and the verified badge.
+- Tests: `spennypiggy.co/tests/Feature/SocialVisibilityTest.php` (15). ⚠️ Two flip red against
+  the original fault (an absent choice read as "show everything") and one against dropping the
+  write from the unchanged path — each verified. ⚠️ The status-reset half of that last test is a
+  **control, not a guard**: the save's diff only covers `SOCIAL_FIELDS`, so folding
+  `public_platforms` into `$data` is inert and cannot redden it.
+
+## The funnel re-cut — website half (7 Sep 2026)
+
+Cross-app rules (card after approval, rejection collapse, help tickets, nudge merge) are in
+the root `../CLAUDE.md`. What lives HERE:
+
+- 🚨 **THE EMAIL-VERIFY LINK SIGNS THE PERSON IN.** `VerifyEmailController::emailVerify` used
+  to verify and drop the creator on a login screen — the OTP path never had this problem,
+  and its 15-minute TTL is what pushed late openers onto the link. It now `Auth::login()`s,
+  regenerates the session and lands on `/{username}?verified=1`. Pinned in
+  `EmailVerificationLinkTest`.
+- **`creators:nudge-journey` stages are `[3, 13, 23]`** (`CreatorJourneyService::NUDGE_STAGES`),
+  and `NudgeStuckJourney::isDormant()` reads `journey_step_at`. `FinishYourSetup::subjectFor`
+  treats stage ≥ 13 as "still".
+- **`profiles:nudge-rejected`** (Monday 09:55) — `NudgeRejectedProfiles` + `ComeBackAndFinish`
+  + `email/come-back-and-finish.blade.php`. Env `REJECTED_NUDGE_ENABLED` / `_MAX_PER_RUN` /
+  `_STAGGER`. Ledger type `profile_rejected_nudge`, keyed on attempt number. Reason-gated.
+- **`identity:reengage-stuck [--dry-run] [--max]`** — ONE-OFF, deliberately NOT scheduled
+  (the journey nudge already coaches `identity`). Four reason-worded mails
+  (`IdentityCheckReengage`: never_opened · abandoned · document_failed · consent_declined),
+  claimed per reason so a creator hears each sentence once. 🚨 `fraud_suspected` / status 3
+  is EXCLUDED — that creator gets a help ticket. Live on 7 Sep: 5 candidates, 4 mailable.
+- **The identity page carries a TRUST PANEL** (`Auth/StripeIdentity.jsx`): documents go to
+  Stripe, never stored on Spenny Piggy; PCI Level 1; UK law requires the check; our team only
+  views a result inside Stripe's dashboard. ⚠️ Every line was checked against the code — do
+  not overstate it to "nobody ever sees it" (admin ID sign-off does, inside Stripe).
+  `IdentityFailureReason::document_unverified_other` now says it is the PHOTO, not the person.
+- **`FinishYourReviewSubmission` has no card branch** and carries `rejectReason`
+  (`ProfileRejection::latestReasonFor`). `ReviewSubmission::cardPreviouslyAdded()` is deleted.
+- **`App\Models\ProfileRejection`** here is READ-ONLY (empty `$fillable`); the admin writes it.
+- **`config/creator_help.php` + `App\Support\CreatorHelpTicket`** are the originals; the admin
+  copies mirror them. `SupportTicketController::openHelp` is the tier-2 endpoint;
+  `message()` has a help branch (→ `awaiting_admin`, admin recipients mailed, tier-3 reply);
+  `show()` sends `ticket.is_help`, which `Support/Tickets/Show.jsx` reads for labels, the
+  resolve gate and the "Spenny Piggy team" sender name.
+- ⚠️ **Needs `queue:work`** for every mail above; `schedule:work` for the two commands.
+
 ## Detailed topic index — load the skill, do not inline this content
 
 The dated feature write-ups that used to sit in this file now live as **skills**: only the
@@ -5196,3 +5781,24 @@ same text, moved, not rewritten.
 - **`spco-notifications-engagement`** — spennypiggy.co engagement and creator money notices: the engagement engine (reactivation, creator events, milestones, whale alerts), push reachability, payout notifications, and the Revenue Opportunity Centre. Load when working on engagement campaigns, push, payout emails or creator revenue prompts.
 - **`spco-site-content`** — spennypiggy.co public and informational surfaces: the Help Centre (/help), the SEO discovery layer, the brand email-signature handover page, the landing page "sells only what is BUILT" rule, Support History, Earnings Statements, and the creator financial dashboard. Load when working on marketing pages, SEO/meta, help articles or the earnings dashboard.
 - **`spco-platform-ops`** — spennypiggy.co platform operations: the System Diagnostics screen (severity, history, log redaction) and queue reliability — one-shot jobs must be retryable. Load when working on diagnostics, queued jobs, retries or scheduled commands.
+
+## 🚨 `audit_logs` has a retention rule and an immutability guard (6 Sep 2026, BOTH apps)
+
+The admin app gained an Audit Explorer (`../admin.spennypiggy.co/CLAUDE.md`); this is the
+website's half of the same table.
+
+- 🚨 **`ActivityObserver` NO LONGER OBSERVES `MonthlyCharge`, `SubscriptionEvent` or `PostLike`.**
+  A cron flipping `monthly_charges.status` had written **150,423 `MONTHLYCHARGE_UPDATED` rows —
+  98% of `audit_logs`** — none of them a decision anybody took. Payments, subscriptions and
+  deliverables keep their own rows. Pinned by a source scan of `AppServiceProvider::$activityLogModels`.
+- **`audit:prune-system {--days=180} {--apply} {--chunk=}`** (scheduled 03:35 with `--apply`)
+  deletes observer-shaped rows (`actor = system`, code `{MODEL}_{CREATED|UPDATED|DELETED|RESTORED}`)
+  older than the window. 🚨 **Never an admin row, never a user-actor row, never an explicit
+  system code** (`RISK_DECISION`, `PLATFORM_STATE_CHANGE`, `EARLY_FRAUD_WARNING`) — those are the
+  record. Dry run by default. ⚠️ The shape test runs in PHP over the ~90 distinct codes, not as
+  SQL `REGEXP`: the test database is sqlite, which has none.
+- 🚨 **`App\Models\AuditLog` refuses `update()`/`delete()`** (`LogicException`) — mirrored in the
+  admin model. `audit:scrub-secrets` and the prune go through the query builder on purpose.
+- ⚠️ `admin_id` on `audit_logs` is an ADMIN-app migration; the website's sqlite test schema lacks
+  it, so nothing here may reference the column.
+- Tests: `tests/Feature/AuditLogRetentionTest.php` (4).

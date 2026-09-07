@@ -88,6 +88,36 @@ return [
             'tone' => 'limited',
         ],
 
+        /*
+         * An admin looked at the ID check and did not accept it.
+         *
+         * 🚨 SEPARATE FROM `identity` ABOVE, AND THE DIFFERENCE IS THE ROUTE OUT.
+         * That one means the check could not be completed and needs a person;
+         * this one means a person HAS looked, so the creator has something
+         * specific to do and can do it themselves. Collapsing the two would
+         * send somebody who can fix their own account to Contact support.
+         *
+         * ⚠️ The admin's own words are NOT in this body — they are rendered
+         * beneath it from `users.identity_verification_error`, because a stored
+         * sentence cannot be reworded and a config body is the same for
+         * everybody. Same split as `suspension_note` vs the reason code.
+         */
+        'identity_rejected' => [
+            'title' => 'Your account is limited',
+            'body' => 'We looked at your ID check and could not accept it, so your page is hidden and you cannot take payments. The note below says what we need. Once you have sorted it, run the check again and we will look straight away.',
+            'tone' => 'limited',
+            'action' => ['label' => 'Run the check again', 'route' => 'stripe.identity.verification'],
+            /*
+             * 🚨 `action` IS A PAGE (a GET); starting the check is a POST from
+             * that page. Without this the banner tells the creator to run the
+             * check and the middleware refuses the button — the "banner behind
+             * a door nobody can open" fault, which this codebase has now shipped
+             * three times. `suspension:doctor` fails if it is missing from
+             * `allowed_write_routes`.
+             */
+            'requires' => ['stripe.identity.verify'],
+        ],
+
         'payout_configuration' => [
             'title' => 'Your account is limited',
             'body' => 'There is a problem with your payout setup, so your page is hidden and you cannot take payments. Contact support and our team will get it sorted with you.',
@@ -136,6 +166,8 @@ return [
      */
     'allowed_write_routes' => [
         'logout',
+        // The "Get help with this" button on the suspended banner (7 Sep 2026).
+        'support.help.open',
         /*
          * 🚨 PAYING US IS ALWAYS PERMITTED, AND THAT IS NOT A LOOPHOLE.
          * `subscription_unpaid` tells the creator to renew, and without these
@@ -152,6 +184,14 @@ return [
          */
         'mandatory.checkout',
         'mandatory.resume',
+        /*
+         * 🚨 RUNNING THE ID CHECK AGAIN IS THE WAY OUT OF `identity_rejected`.
+         * Same reasoning as the two above: the banner names this as the fix, so
+         * refusing it would trap the one creator who can clear their own
+         * restriction. It unlocks nothing on its own — Stripe still has to pass
+         * and an admin still has to sign off.
+         */
+        'stripe.identity.verify',
         'support.tickets.store',
         'support.tickets.message',
         'support.tickets.resolve',
@@ -162,6 +202,19 @@ return [
         'mark-as-read',
         'delete-all-notifications',
         'accept-terms',
+        /*
+         * 🚨 ASKING FOR HELP IS NOT A WRITE THAT NEEDS STOPPING. Every reason
+         * above says "contact support" — and the Help Centre is where a
+         * restricted account goes to find out what that means. `help.ask` and
+         * `help.feedback` are POSTs only because a question does not belong in
+         * a URL: nothing is published, no money moves, nothing on a public page
+         * changes (feedback is an aggregate counter). Refusing them put the
+         * page that explains a suspension behind the suspension — a person
+         * reading "contact support" got "we suspended your account" back the
+         * moment they typed a question. Found live, 5 Sep 2026.
+         */
+        'help.ask',
+        'help.feedback',
     ],
 
     /**

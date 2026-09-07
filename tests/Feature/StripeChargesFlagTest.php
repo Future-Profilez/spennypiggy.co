@@ -56,6 +56,45 @@ class StripeChargesFlagTest extends TestCase
     }
 
     /**
+     * 🚨 THE BACKFILL COMMAND MUST NOT RE-IMPLEMENT THE WRITER'S SKIP RULE.
+     *
+     * `SyncChargesEnabled` used to `continue` whenever the stored value already
+     * matched Stripe. Every row on the live database was 0, so the run wrote the
+     * 15 healthy creators and stepped over the 12 Stripe genuinely reports as
+     * FALSE — leaving `charges_checked_at` null on exactly the accounts the
+     * column exists to identify, and the admin console reading them as "Stripe
+     * has not told us" rather than "Stripe says this creator cannot sell".
+     *
+     * ⚠️ A SOURCE SCAN, not a behavioural test. Reaching that branch needs
+     * `StripeControl::getAccount` to answer for a live connected account, and
+     * the suite's Stripe client is deliberately offline — so a functional test
+     * would report every row as unreachable and assert nothing. What has to be
+     * pinned is that the command still hands every checked account to the
+     * writer. Comments are blanked first: the note at the call site explains the
+     * bug by describing the shape being searched for.
+     */
+    public function test_the_backfill_hands_every_checked_account_to_the_writer(): void
+    {
+        $source = file_get_contents(app_path('Console/Commands/SyncChargesEnabled.php'));
+
+        $code = preg_replace('#/\*.*?\*/#s', '', $source);
+        $code = preg_replace('#//[^\n]*#', '', (string) $code);
+
+        $this->assertStringContainsString(
+            'StripeChargesFlag::sync(',
+            (string) $code,
+            'The backfill no longer calls the one writer.'
+        );
+
+        $this->assertDoesNotMatchRegularExpression(
+            '#===\s*\$enabled\s*\)\s*\{\s*continue;#',
+            (string) $code,
+            'The backfill skips an unchanged value again, so a creator Stripe reports as '
+            .'disabled never gets charges_checked_at and reads as "not reported".'
+        );
+    }
+
+    /**
      * An account object for somebody else must never write this row — a wrong
      * `true` says a creator can sell when they cannot.
      */

@@ -110,7 +110,15 @@ class IdentityVerifySessionGateTest extends TestCase
 
         $this->assertSame(1, (int) $creator->identity_status);
         $this->assertNotNull($creator->identity_verified_at);
-        $this->assertSame(1, (int) $creator->identity_admin_status);
+        /*
+         * ⚠️ REWRITTEN 4 Sep 2026 — this asserted 1, i.e. that finding an
+         * already-passed Stripe session also granted the HUMAN sign-off. That is
+         * the fault the sign-off step exists to close: Stripe checks the
+         * document, not whether the holder is the person on the profile. 0 puts
+         * them in the review queue and blocks nothing — the listing gate reads
+         * `identity_status`, which is 1 above.
+         */
+        $this->assertSame(0, (int) $creator->identity_admin_status);
     }
 
     public function test_a_flagged_creator_is_told_to_contact_support_not_retried(): void

@@ -7,10 +7,10 @@ use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\CheckMediaModeration;
 use App\Jobs\SendBioSocialUpdateEmail;
 use App\Models\AccountDeletionFeedback;
-use App\Models\DeletedUser;
 use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\Currency;
+use App\Models\DeletedUser;
 use App\Models\Deliverable;
 use App\Models\FinancialTransaction;
 use App\Models\Logs;
@@ -61,6 +61,7 @@ use App\Support\InvisibleText;
 use App\Support\PresetCovers;
 use App\Support\ProfileAssetVisibility;
 use App\Support\ProfileSelfCheck;
+use App\Support\ReviewSubmission;
 use App\Support\SecureMedia;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -578,16 +579,16 @@ class ProfileController extends Controller
                 $user->refresh();
 
                 if (! empty($request->bio)) {
+                    // Clear rejection reason on new bio edit so ghost rejection alert disappears
+                    $user->edit_bio_reason = null;
+                    $user->save();
+                    $user->refresh();
+
                     $logs = Logs::where('edited_about_me_id', $user->id)->where('status', 'pending')->first();
                     if (! empty($logs)) {
                         // logs data save
                         $logs->status = 'updated';
                         $logs->save();
-
-                        // user data save
-                        $user->edit_bio_reason = '';
-                        $user->save();
-                        $user->refresh();
                     }
                 }
                 // SFW gate on profile media. Both are uploaded unapproved and wait
@@ -819,49 +820,16 @@ class ProfileController extends Controller
     /**
      * What a creator still has to add before anyone reviews them.
      *
-     * ⚠️ Cover and intro are deliberately absent — neither is reviewed, so
-     * neither can block a submission.
+     * 🚨 DELEGATED, NOT DUPLICATED. The same list decides whether this submit is
+     * accepted, whether the creator's own screen says "with our team" or "one thing
+     * left", and what `review:nudge-blocked` writes in the reminder mail. Three
+     * copies of it would be three answers — see App\Support\ReviewSubmission.
      *
      * @return array<int, string>
      */
     private function missingForReview(User $user): array
     {
-        $missing = [];
-
-        if (blank($user->avatar)) {
-            $missing[] = 'a profile photo';
-        }
-
-        if (blank($user->bio)) {
-            $missing[] = 'a bio';
-        }
-
-        /*
-         * 🚨 `$user->socialLinks` IS NOT A RELATION — the method is `social_links()`.
-         *
-         * Laravel resolves an unknown property to NULL rather than erroring, so
-         * this read `null`, `$hasHandle` was false for everyone, and EVERY
-         * creator was told "Add a social handle before submitting for review"
-         * with their handle on screen behind the message. Nothing appeared in
-         * any log.
-         *
-         * ⚠️ The list of columns is NOT written out here either. It was an
-         * eight-item subset of the fourteen the table has, so a creator whose
-         * only handle was on a retired platform read as empty even once the
-         * relation was right. `hasAnyHandle()` is the one definition and already
-         * answers exactly this question.
-         */
-        if (! ProfileAssetVisibility::hasAnyHandle($user->social_links)) {
-            $missing[] = 'a social handle';
-        }
-
-        // "Card added" is the active subscription — the same thing the journey
-        // card checks, so the button and this cannot disagree.
-        if (! in_array((int) $user->subscription_status, [1, 2], true)) {
-            $missing[] = 'a payment card';
-        }
-
-        return $missing;
+        return ReviewSubmission::missing($user);
     }
 
     /** "a bio and a payment card" — a list a person can read. */
@@ -907,29 +875,6 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
-
-        try {
-            DeletedUser::create([
-                'email' => $user->email,
-                'user_details' => json_encode([
-                    'id' => $user->id,
-                    'uuid' => $user->uuid,
-                    'name' => $user->name,
-                    'username' => $user->username,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'avatar' => $user->avatar,
-                    'created_at' => $user->created_at,
-                    'deletion_comment' => $request->input('deletion_comment'),
-                ], JSON_THROW_ON_ERROR),
-                'reason' => $request->input('deletion_reason'),
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('Could not record deleted user snapshot', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
 
         /*
          * 🚨 WRITTEN BEFORE ANYTHING IS DELETED, AND IT NEVER THROWS.
@@ -2925,6 +2870,7 @@ class ProfileController extends Controller
         return response()->json([
             'status' => true,
             'qr_code' => $qrCode,
+            'secret_key' => $user->tfa_key,
         ]);
     }
 
@@ -2976,10 +2922,11 @@ class ProfileController extends Controller
         $status = $request->status ?? 0;
 
         $user->is_2fa = $status;
-        $user->save();
         if ($status == 0) {
             UserBackupCode::where('user_id', $user->id)->delete();
+            $user->tfa_key = null;
         }
+        $user->save();
 
         $msg = 'Two factor authentication has been '.($status ? 'enabled.' : 'disabled.');
 

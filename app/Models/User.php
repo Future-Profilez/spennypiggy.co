@@ -116,6 +116,24 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'updated_at',
         'deleted_at',
         'stripe_id',
+        /*
+         * 🚨 `social_links` IS EAGER-LOADED ON EVERY USER (`$with` below) AND MUST
+         * NOT SERIALISE BY DEFAULT (6 Sep 2026). A creator's handles are collected to
+         * verify them, not to publish them — `App\Support\SocialVisibility` decides
+         * what a stranger may see, and it is applied to the `slinks` prop only. But
+         * the profile page ALSO ships the whole `User` as `user`, and so does every
+         * listing loaded `with('user')` (bill and membership checkout, post pages) —
+         * so with the relation visible, every hidden handle rode into `data-page`
+         * beside the masked one. Found by the reviewer, not by the tests, which
+         * asserted `slinks` alone.
+         *
+         * Hidden here, exposed DELIBERATELY where the row is the viewer's own:
+         * `HandleInertiaRequests` builds `auth.user.social_links` explicitly, and
+         * `AuthenticatedSessionController` calls `makeVisible('social_links')` on
+         * the OWNER branch only. ⚠️ `$hidden` affects JSON only — every PHP
+         * `$user->social_links` read is unchanged.
+         */
+        'social_links',
     ];
 
     protected $casts = [
@@ -157,6 +175,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         // Written by CreatorJourneyService, read by the admin app's onboarding drip.
         'journey_step_at' => 'datetime',
         'journey_completed_at' => 'datetime',
+        // When the "setup is done" celebration was shown. Write-once, and deliberately
+        // NOT in $fillable — see the column's own migration. Written with forceFill by
+        // CreatorSetupCelebrationController and by `setup:backfill-celebrated`.
+        'setup_celebrated_at' => 'datetime',
         'founder_missed_at' => 'datetime',
         'terms_accepted_at' => 'datetime',
         'creator_email_receipt_acknowledged_at' => 'datetime',

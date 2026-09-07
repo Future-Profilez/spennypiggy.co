@@ -36,7 +36,7 @@ export default function PaymentsPolicy(props) {
                         <div className="ml-6 mb-2 text-gray-700 leading-relaxed">(v)	device and geographic signals.</div>
 
                         <h2 id="sec-3-payout-schedule" className="text-xl font-black text-gray-900 mt-14 mb-4 scroll-mt-24">3.  Payout Schedule</h2>
-                        <p className="mb-5 text-gray-700 leading-relaxed">3.1  Creators are paid on a weekly payout cycle. The standard earnings period runs from Friday to Thursday, with the standard payout day being the following Friday.</p>
+                        <p className="mb-5 text-gray-700 leading-relaxed">3.1  Creators are paid on a weekly payout cycle. The standard earnings period runs from Friday to Thursday. A completed earnings period is held for a further week, and is paid on the Friday following that hold — so a period ending on a Thursday is paid eight days later. A creator&rsquo;s first payout therefore falls between 8 and 14 days after their first sale, depending on which day of the earnings period it falls on; payouts are weekly thereafter.</p>
                         <p className="mb-5 text-gray-700 leading-relaxed">3.2  Payouts are not guaranteed on any specific date and remain subject to:</p>
                         <div className="ml-6 mb-2 text-gray-700 leading-relaxed">(i)	account status;</div>
                         <div className="ml-6 mb-2 text-gray-700 leading-relaxed">(ii)	dispute activity;</div>

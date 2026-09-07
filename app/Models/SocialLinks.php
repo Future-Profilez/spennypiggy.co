@@ -32,6 +32,15 @@ class SocialLinks extends Model
     protected $appends = ['has_any_handle'];
 
     /**
+     * 🚨 `public_platforms` MUST be cast, or `SocialVisibility` reads the raw JSON
+     * string and `in_array()` against it is false for every platform — every handle
+     * silently hidden, including the ones the creator turned on.
+     */
+    protected $casts = [
+        'public_platforms' => 'array',
+    ];
+
+    /**
      * The platforms a creator may verify against (client decision, 11 Aug 2026).
      *
      * 🚨 The ONE definition — the controller, the form and the tests all read it.
@@ -83,6 +92,14 @@ class SocialLinks extends Model
         'manyvids',
         'other',
         'status',
+        // Which handles the creator has chosen to show publicly — a JSON array of
+        // platform keys. See `App\Support\SocialVisibility`; NULL means nothing is
+        // public, which is what every pre-existing row reads as.
+        //
+        // ⚠️ Fillable deliberately, unlike the marketing-consent columns: this is the
+        // creator's OWN choice, set from their own editor, and `saveSocialLinks()`
+        // narrows it through `SocialVisibility::forStorage()` before it ever gets here.
+        'public_platforms',
         // ⚠️ `reason` was missing here while `saveSocialLinks()` passes
         // `'reason' => null` on every save, so mass assignment silently dropped it
         // and a previous admin rejection reason survived the re-save — the profile

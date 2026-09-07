@@ -22,6 +22,7 @@ use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Services\Ledger\LedgerRules;
 use App\StripeControl;
+use App\Support\PayoutCycle;
 use App\Support\PayoutLock;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -183,11 +184,19 @@ class PayoutService
                 $metrics = CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
             }
 
-            $delayDays = 7;
+            // Fixed Friday-to-Thursday cycle — see App\Support\PayoutCycle, which is the
+            // only definition of this rule and is read by the creator's badges, the
+            // dashboard payload and the Help Centre tokens as well as by this run.
+            //
+            // ⚠️ A risk profile may only ever LENGTHEN the wait. PayoutCycle floors the
+            // hold at its own minimum and then walks back to a period boundary, so a
+            // THROTTLE/FREEZE delay pushes a creator into an earlier period rather than
+            // paying them a mid-week slice of a later one.
+            $delayDays = PayoutCycle::MIN_HOLD_DAYS;
             if (in_array($state, ['THROTTLE', 'FREEZE'], true)) {
                 $delayDays = max($delayDays, (int) $metrics->payout_delay_days);
             }
-            $cutoff = $runDate->copy()->subDays($delayDays);
+            $cutoff = PayoutCycle::cutoffFor($runDate, $delayDays);
 
             // Fetch Eligible Payments
             $payments = Payment::where('creator_id', $creator->uuid)
@@ -1152,7 +1161,8 @@ class PayoutService
      * Creator-facing preview of the NEXT weekly payout: which income transactions are eligible
      * for the upcoming Friday run, their net total, and the reserve held on them. FT-based and
      * self-contained — mirrors the same eligibility gate as CreatorFinancialController::
-     * applyPayoutBadges ('this_week'): income, completed, not yet paid out, past the 7-day hold,
+     * applyPayoutBadges ('this_week'): income, completed, not yet paid out, inside a closed
+     * earning period that is now due (see App\Support\PayoutCycle),
      * and fulfilled (same physical-shop / timed-task gate used by getHeldReserves).
      *
      * This is a lightweight estimate for display, NOT the authoritative run — that is
@@ -1182,7 +1192,10 @@ class PayoutService
             return ($amount / $rates[$from]) * $rates[$to];
         };
 
-        $cutoff = Carbon::now()->subDays(7);
+        // What the NEXT run will pay, so it must use that run's cut-off rather than a
+        // rolling window from today — otherwise this preview and the run that follows it
+        // disagree for six days out of seven.
+        $cutoff = PayoutCycle::cutoffFor(PayoutCycle::nextPayoutDate());
 
         $fts = FinancialTransaction::where('user_id', $creator->id)
             ->where('type', 'income')

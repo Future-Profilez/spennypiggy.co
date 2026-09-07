@@ -135,6 +135,55 @@ class CreatorSetupService
     }
 
     /**
+     * How many listings this creator owns, across all six tables, in ONE query.
+     *
+     * ⚠️ Same counting rules as `hasAnyListing()` and for the same reasons: `withScheduled()`
+     * so a prepared launch counts, and approval is ignored because approval is not in the
+     * creator's hands. A creator who has done the work is not told they have done none of it.
+     *
+     * ⚠️ Six correlated sub-selects rather than six `count()` calls — this is read on a page
+     * render, and the alternative is six round trips for a number that is decoration.
+     *
+     * ⚠️ Deliberately NOT used to answer "do they have any?". `hasAnyListingFast()` stops at
+     * the first hit and is what the hourly sweep uses; this one always visits every table, so
+     * it costs the most for the creator with the most listings — who needs it least. Use it
+     * only where the actual number is being shown.
+     */
+    public function listingCount(User $creator): int
+    {
+        $query = User::query()->whereKey($creator->id)->select('users.id');
+        $aliases = [];
+
+        foreach (self::LISTING_SOURCES as $model => $ownerColumn) {
+            $table = (new $model)->getTable();
+            $alias = 'listing_count_'.$table;
+            $aliases[] = $alias;
+
+            $query->selectSub(
+                // ⚠️ withScheduled() for the same reason as hasAnyListing(): toBase() closes
+                // the subquery, so EVERY global scope applies — right for soft deletes and
+                // wrong for scheduling. A scheduled listing is work the creator has done.
+                $model::withScheduled()
+                    ->selectRaw('count(*)')
+                    ->whereColumn($table.'.'.$ownerColumn, 'users.id')
+                    ->toBase(),
+                $alias
+            );
+        }
+
+        $row = $query->first();
+
+        if (! $row) {
+            return 0;
+        }
+
+        return array_sum(array_map(
+            fn (string $alias): int => (int) ($row->getAttribute($alias) ?? 0),
+            $aliases
+        ));
+    }
+
+    /**
      * The same answer as `needsFirstListing()`, in ONE query instead of up to six.
      *
      * ⚠️ Use this on any per-request path. `needsFirstListing()` walks the six tables with

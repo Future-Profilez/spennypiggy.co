@@ -69,29 +69,46 @@ MD,
                 'slug' => 'my-account-was-suspended',
                 'title' => 'My account has been suspended',
                 'audience' => 'creator',
-                'keywords' => 'suspended, locked out, account disabled, cannot log in, blocked account, reinstate',
-                'summary' => 'Suspension stops selling and payouts. Contact support — it is not something that clears on its own.',
-                'related' => ['what-content-is-allowed', 'stripe-is-asking-for-something'],
+                'keywords' => 'suspended, limited, restricted, account disabled, blocked account, reinstate, cannot sell, read only, banner',
+                'summary' => 'You can still sign in and read everything. Selling, publishing and payouts stop, and your dashboard shows the reason and what to do about it.',
+                'related' => ['what-content-is-allowed', 'stripe-is-asking-for-something', 'what-does-the-subscription-cost'],
                 'body' => <<<'MD'
-A suspended account cannot sell, cannot be paid out, and does not appear anywhere public.
+**You can still sign in.** You keep full access to read your own account — your history, your listings, your payment records and support. What stops is selling, publishing, changing what the public sees, and payouts.
 
-## Why it happens
+Being locked out would put the explanation behind a door you could not open, which helps nobody.
 
-- A content rule was broken.
-- A payment or identity problem the platform has to act on.
-- An unresolved issue with your connected Stripe account.
+## Look at the banner first
 
-## What to do
+A banner on your dashboard names the reason and, where there is something you can do, gives you the button to do it. Everything below is what that banner is telling you.
 
-Contact support. Suspension is a decision a person took, so it is a person who reviews it — there is no self-service route and nothing to wait out.
+## Limited, or suspended
 
-## Your money
+They restrict the account the same way. What differs is why, and it is worth reading which one you have.
 
-Earnings already recorded are not deleted by a suspension. What happens to them depends on why the account was suspended, and support will tell you.
+**Limited** means something is unfinished rather than wrong — a lapsed subscription, an identity check you started and did not complete, a payout setup that needs fixing, or terms not yet accepted. Nobody is accusing you of anything.
 
-## If you think it was a mistake
+**Suspended** means a person made a decision — a content rule, disputed payments, or suspected fraud.
 
-Say so, and say what you were doing when it happened. If an automated rule caught something it should not have, that is worth knowing about — it usually means the rule needs fixing, not just your account.
+## If it is your subscription
+
+That one clears itself. Renew it and everything comes back; the banner carries the button.
+
+## What happens to money
+
+- **Subscriptions people pay you are PAUSED, not cancelled.** Nobody is charged while you are restricted, and lifting the restriction restarts them on their own. Your supporters are not lost.
+- **Subscriptions you pay other creators are cancelled at the end of the period you have paid for.** You keep what you paid for and are not charged again. ⚠️ These are **not** restored afterwards — they have to be started again by you, because a cancelled subscription cannot be un-cancelled.
+- **Your own platform subscription runs to the end of the period and does not renew.**
+- **Payouts are frozen.** Earnings already recorded are not deleted, and they are paid once the restriction is lifted.
+
+## Your public page
+
+It is not visible while the account is restricted, and anyone with the link is told the page is unavailable — never why. Your account's business is not published to strangers.
+
+## Getting it lifted
+
+If the banner names something you can fix, fix it. Otherwise contact support — a suspension is a decision a person took, so it is a person who reviews it.
+
+If you think it is a mistake, say so, and say what you were doing when it happened. An automated rule catching something it should not is worth knowing about: it usually means the rule needs fixing, not just your account.
 MD,
             ],
             [
@@ -436,7 +453,7 @@ MD,
                 'body' => <<<'MD'
 Every deduction is shown separately on your financial dashboard, with the amount and the reason. In order of how often it turns out to be the cause:
 
-1. **The {{payout.hold_days}}-day hold.** A sale is not eligible until it is {{payout.hold_days}} days old.
+1. **The weekly cycle.** A sale is paid on the {{payout.day}} after its {{payout.period}} earning week has closed and been held for a week — {{payout.wait}} in all.
 2. **Reserve.** A percentage of each sale held for {{reserve.window_days}} days — see [why is some of my money held](/help/money-and-payouts/why-is-some-of-my-money-held).
 3. **Awaiting delivery.** Paid Requests not yet accepted, and physical orders not yet confirmed delivered.
 4. **Refunds and disputes.** A refunded sale is deducted, including its VAT — the money went back to the buyer, so it is not yours to keep.
@@ -509,25 +526,33 @@ MD,
                 'slug' => 'bonuses-explained',
                 'title' => 'Which bonuses can I earn?',
                 'audience' => 'creator',
-                'keywords' => 'bonus, fast start, referral, founder, extra money, earn more, rewards, incentive',
-                'summary' => 'Three: the Founder bonus, the Fast Start bonus, and {{referral.reward}} for referring a creator who starts earning.',
-                'related' => ['founder-bonus', 'when-do-i-get-paid'],
+                'keywords' => 'bonus, fast start, referral, founder, growth bonus, milestone, extra money, earn more, rewards, incentive',
+                'summary' => 'Four: the Founder bonus, the Creator Growth Bonus, the Fast Start bonus, and {{referral.reward}} for referring a creator who goes on to sell.',
+                'related' => ['founder-bonus', 'growth-bonus', 'fast-start-bonus', 'refer-a-creator', 'when-do-i-get-paid'],
                 'body' => <<<'MD'
 ## Founder
 
 Earn {{founder.min_earnings}} net in your first {{founder.window_days}} days after connecting payouts and you become a Founder — {{founder.seats}} seats in total. Founders then earn {{founder.monthly_pct}} of their monthly earnings, capped at {{founder.monthly_cap}} a month. See [the Founder bonus](/help/money-and-payouts/founder-bonus).
 
+## Creator Growth Bonus
+
+A ladder of milestones — up to {{growth.max_reward}} as your sales grow, for the first {{growth.seats}} creators to activate. Reach {{growth.activation_gmv}} in qualifying earnings within {{growth.window_days}} days of connecting payouts to claim a place. See [the Growth Bonus](/help/money-and-payouts/growth-bonus).
+
 ## Fast Start
 
-An early-earnings bonus, paid automatically on qualifying sales in your first period.
+{{faststart.rate}} of what you earn in your first {{faststart.window_days}} days, paid once those sales settle. See [the Fast Start bonus](/help/money-and-payouts/fast-start-bonus).
 
 ## Referral
 
-{{referral.reward}} when a creator you referred starts earning. Your referral link is on your dashboard.
+{{referral.reward}} for a creator you referred — **once that creator passes {{referral.threshold}} in lifetime sales**. The threshold is the part worth telling people about: a signup on its own earns nothing. See [referring another creator](/help/money-and-payouts/refer-a-creator).
 
 ## They pay automatically
 
 Every bonus is paid with a normal payout once it qualifies. There is no claim to make and no approval to wait on.
+
+## They stack, and they measure different things
+
+Qualifying for one does not affect any other. But the figures they report are not the same number and are not meant to be: Founder and Fast Start are measured on your earnings **after** VAT, and the Growth Bonus on your **listed sale value including** VAT. For a VAT-registered creator those legitimately differ, which is why the two progress figures on your dashboard can disagree.
 
 ## What they do not change
 
@@ -574,14 +599,14 @@ MD,
                 'title' => 'Can I be paid before Friday?',
                 'audience' => 'creator',
                 'keywords' => 'early payout, faster, instant payout, advance, urgent, need money now, weekly',
-                'summary' => 'No. Payouts run weekly on {{payout.day}} and the schedule is the same for everyone.',
+                'summary' => 'No. Payouts run weekly on {{payout.day}}, covering the {{payout.period}} week that closed the week before, and the schedule is the same for everyone.',
                 'related' => ['when-do-i-get-paid', 'why-is-some-of-my-money-held'],
                 'body' => <<<'MD'
 **No.** Payouts run on {{payout.day}}, weekly, and it is the same schedule for every creator on the platform. There is no early-payout option and no way to request one.
 
 ## Why it is fixed
 
-The {{payout.hold_days}}-day hold and the reserve exist to cover disputes and refunds, which arrive after a sale rather than with it. Paying out sooner would mean paying out money that may still have to go back — and covering that is what keeps payments switched on for everybody.
+The week-long hold on each closed earning week, and the reserve, exist to cover disputes and refunds, which arrive after a sale rather than with it. Paying out sooner would mean paying out money that may still have to go back — and covering that is what keeps payments switched on for everybody.
 
 ## What you can control
 
@@ -864,10 +889,16 @@ MD,
                 'title' => 'Deleting your account',
                 'audience' => 'both',
                 'keywords' => 'delete account, close account, remove data, gdpr, erase, cancel account, quit',
-                'summary' => 'Contact support. Some records have to be kept for tax and dispute reasons, and we will say which.',
+                'summary' => 'Delete it yourself from your account settings. Some records have to be kept for tax and dispute reasons, and we will say which.',
                 'related' => ['email-preferences', 'refunds-and-cancellations'],
                 'body' => <<<'MD'
-Contact support from the address on the account.
+Account settings, at the bottom of the page. You confirm with your password, so nobody can do it from a session you left open.
+
+## We ask why
+
+There is a short list of reasons and an optional box for anything else. It is genuinely optional detail on a required choice, it is not a step that tries to talk you out of leaving, and answering it does not delay anything.
+
+It is the only way we find out that people are leaving for a reason we could fix.
 
 ## Do this first
 

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Head } from '@inertiajs/react';
-import { router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 
 export default function FounderBonusSettings() {
     const [settings, setSettings] = useState({
@@ -104,12 +103,20 @@ export default function FounderBonusSettings() {
 
             <div className="min-h-dvh bg-gray-50 py-8">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="bg-white rounded-box ">
-                        <div className="px-6 py-4 border-b border-gray-200">
-                            <h1 className="text-2xl font-bold text-gray-900">Founder Bonus Settings</h1>
-                            <p className="mt-1 text-sm text-gray-600">
-                                Configure the founder bonus program parameters
-                            </p>
+                    <div className="bg-white rounded-box border border-gray-100">
+                        <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-900">Founder Bonus Settings</h1>
+                                <p className="mt-1 text-sm text-gray-600">
+                                    Configure the founder bonus program parameters and runtime overrides
+                                </p>
+                            </div>
+                            <Link
+                                href="/admin/founder/bonuses"
+                                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-box-sm text-xs font-bold uppercase tracking-wider text-gray-700 bg-white hover:bg-gray-50 transition-colors self-start sm:self-center"
+                            >
+                                ← Back to Dashboard
+                            </Link>
                         </div>
 
                         {message && (
@@ -131,7 +138,7 @@ export default function FounderBonusSettings() {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Minimum First Period Earnings ($)
+                                            Minimum First Period Earnings (£)
                                         </label>
                                         <input
                                             type="number"
@@ -144,7 +151,7 @@ export default function FounderBonusSettings() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Minimum Monthly Earnings ($)
+                                            Minimum Monthly Earnings (£)
                                         </label>
                                         <input
                                             type="number"
@@ -157,7 +164,7 @@ export default function FounderBonusSettings() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Maximum Monthly Earnings ($)
+                                            Maximum Monthly Earnings (£)
                                         </label>
                                         <input
                                             type="number"
@@ -236,7 +243,7 @@ export default function FounderBonusSettings() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Maximum Bonus Per Month ($)
+                                            Maximum Bonus Per Month (£)
                                         </label>
                                         <input
                                             type="number"

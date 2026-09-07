@@ -90,9 +90,12 @@
 
             <div class="info-box">
                 <h3>Payout Details</h3>
-                <p><strong>Bonus Period:</strong> {{ $founderBonus->bonus_month->format('F Y') }}</p>
-                <p><strong>Bonus Amount:</strong> <span class="amount">£{{ $founderBonus->getFormattedBonusAmount() }}</span></p>
+                <p><strong>Bonus Period:</strong> {{ $bonusPeriod ?? ($founderBonus->month ?? ($founderBonus->qualification_date ? \Carbon\Carbon::parse($founderBonus->qualification_date)->format('F Y') : now()->format('F Y'))) }}</p>
+                <p><strong>Bonus Amount:</strong> <span class="amount">£{{ number_format((float) ($founderBonus->bonus_amount ?? 0), 2) }}</span></p>
                 <p><strong>Status:</strong> Payment Rejected</p>
+                @if(!empty($founderBonus->payout_rejection_reason))
+                <p style="margin-top: 8px; color: #742a2a;"><strong>Reason:</strong> {{ $founderBonus->payout_rejection_reason }}</p>
+                @endif
             </div>
 
             <div class="steps">

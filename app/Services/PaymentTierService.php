@@ -147,6 +147,13 @@ class PaymentTierService
             if ($disputed) {
                 return false;
             }
+
+            $blockedEmail = BlockedPayment::recent(90)
+                ->where('payer_info->email', $email)
+                ->exists();
+            if ($blockedEmail) {
+                return false;
+            }
         }
 
         return true;

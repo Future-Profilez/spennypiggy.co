@@ -12,6 +12,8 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
+        // RFC 8058 one-click unsubscribe: the mail client POSTs with no session.
+        'outreach/unsubscribe/*',
         '/stripe/webhook',
         '/rye-webhook',
         '/mandatory-status',

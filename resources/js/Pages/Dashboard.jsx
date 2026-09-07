@@ -110,6 +110,9 @@ const GrowthBonusTracker = lazyRetry(
 );
 const FounderBadge = lazyRetry(() => import("@/Components/FounderBadge"));
 import PendingChangesNotice from "@/Components/PendingChangesNotice";
+import SuspendedBanner from "@/Components/SuspendedBanner";
+import SetupCompleteCelebration from "@/Components/SetupCompleteCelebration";
+import ListingProgressStrip from "@/Components/ListingProgressStrip";
 import lazyRetry from "@/utils/lazyRetry";
 
 const CreatorRiskBanner = lazyRetry(
@@ -1178,6 +1181,23 @@ export default function Dashboard(props) {
                                 </div>
                             </div>
 
+                            {/* 🚨 THE ACCOUNT-STATE NOTICE, DIRECTLY UNDER THE COVER, OWNER ONLY.
+                                `auth.user.suspension` is the SIGNED-IN user's state, so without
+                                the owner gate a suspended gifter browsing a stranger's profile
+                                would read their own notice under somebody else's cover. Same
+                                width and frame as the cover so the two read as one block.
+                                Moved here from AuthenticatedLayout (client direction, 5 Sep 2026). */}
+                            {IsloggedIn && <SuspendedBanner className="mb-4" />}
+
+                            {/* 🚨 THE OWNER GATE IS LOAD-BEARING, exactly as it is on the
+                                banner above. `auth.setup_celebration` describes the SIGNED-IN
+                                creator's own account, and this route is also the public
+                                profile — without the gate a creator browsing somebody else's
+                                page would get their own confetti under a stranger's cover.
+                                The component itself renders nothing until the server says
+                                celebrate, so a finished creator mounts an empty component. */}
+                            {IsloggedIn && <SetupCompleteCelebration />}
+
                             {/* Profile layout: identity rail (left) · cover + content (center) · overview rail (right, xl) */}
                             <div className="profileLayout grid grid-cols-1 items-start gap-4 lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]">
                                 {/* Sticky sidebar: capped to viewport + own scroll, so the lower cards stay reachable */}
@@ -1282,6 +1302,19 @@ export default function Dashboard(props) {
                                             {IsloggedIn && (
                                                 <div className="mb-3">
                                                     <CreatorJourneyCard />
+                                                </div>
+                                            )}
+
+                                            {/* What is left of the setup celebration once it
+                                                has been dismissed. The popup fires once and is
+                                                spent; this is the standing version of the same
+                                                ask and comes back until the target is met, so
+                                                closing the popup loses the confetti and none
+                                                of the instruction. Self-gates on the payload
+                                                and disappears at the target. */}
+                                            {IsloggedIn && (
+                                                <div className="mb-3">
+                                                    <ListingProgressStrip />
                                                 </div>
                                             )}
 

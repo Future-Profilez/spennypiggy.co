@@ -13,6 +13,7 @@ use App\Models\UkTaxSetting;
 use App\Models\User;
 use App\Services\Ledger\LedgerRules;
 use App\Services\Risk\PayoutService;
+use App\Support\PayoutCycle;
 use Carbon\Carbon;
 
 class FinancialService
@@ -239,7 +240,11 @@ class FinancialService
         // Calculate Expected Next Payout using PayoutService directly.
         // Scoped to this creator: the platform-wide call walked every creator on the
         // platform to read a single entry, and each creator's figures are independent.
-        $payoutData = $payoutService->calculatePayouts(null, [$user->uuid]);
+        // 🚨 THE NEXT RUN'S DATE, NOT `now()`. `calculatePayouts()` defaults to today,
+        // and today's cut-off is a week behind the upcoming Friday's on most days —
+        // so "Expected next payout" reported what a run TODAY would pay, which is
+        // money the previous Friday already sent. See App\Support\PayoutCycle.
+        $payoutData = $payoutService->calculatePayouts(PayoutCycle::nextPayoutDate(), [$user->uuid]);
         $payoutInfo = $payoutData['payouts'][$user->uuid] ?? null;
         $netPayoutMinor = $payoutInfo['net_payout'] ?? 0;
         $netPayoutMajor = $netPayoutMinor / 100;

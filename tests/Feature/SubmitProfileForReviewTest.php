@@ -95,7 +95,7 @@ class SubmitProfileForReviewTest extends TestCase
         $this->assertStringContainsString('a social handle', session('error'));
     }
 
-    public function test_the_other_three_requirements_still_block(): void
+    public function test_the_other_two_requirements_still_block(): void
     {
         $user = $this->creator(['avatar' => null, 'bio' => null], withCard: false);
 
@@ -106,8 +106,24 @@ class SubmitProfileForReviewTest extends TestCase
         $error = session('error');
         $this->assertStringContainsString('a profile photo', $error);
         $this->assertStringContainsString('a bio', $error);
-        $this->assertStringContainsString('a payment card', $error);
+        $this->assertStringNotContainsString('a payment card', $error);
         $this->assertStringNotContainsString('a social handle', $error);
+    }
+
+    /**
+     * 🚨 THE CARD COMES AFTER APPROVAL (client decision, 7 Sep 2026). A creator with
+     * no card on file submits like anyone else — the card is asked once a person has
+     * approved the profile, before payouts. Verified red against the old gate.
+     */
+    public function test_a_creator_with_no_card_can_submit_for_review(): void
+    {
+        $user = $this->creator(withCard: false);
+
+        $this->handles($user, ['instagram' => 'ben_lewis']);
+
+        $this->actingAs($user)->get('/update-profile-lock-status');
+
+        $this->assertSame(1, (int) $user->fresh()->profile_status_lock);
     }
 
     /**
@@ -158,5 +174,51 @@ class SubmitProfileForReviewTest extends TestCase
         $this->actingAs($user)
             ->get('/update-profile-lock-status')
             ->assertSessionHas('success');
+    }
+
+    public function test_rejected_bio_blocks_submit_until_creator_edits_it(): void
+    {
+        $user = $this->creator(['bio_approved' => 2, 'edit_bio_reason' => 'Too short.']);
+        $this->handles($user, ['instagram' => 'ben_lewis']);
+
+        // Attempting to submit without fixing the bio must be refused
+        $this->actingAs($user)
+            ->get('/update-profile-lock-status');
+
+        $this->assertSame(0, (int) $user->fresh()->profile_status_lock);
+        $this->assertStringContainsString('a bio', (string) session('error'));
+
+        // Once the creator updates their bio, edit_bio_reason is cleared and submit succeeds
+        $this->actingAs($user)
+            ->post('/edit-profile', [
+                'name' => $user->name,
+                'username' => $user->username,
+                'email' => $user->email,
+                'bio' => 'Updated bio with more detail about music.',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $fresh = $user->fresh();
+        $this->assertNull($fresh->edit_bio_reason);
+        $this->assertSame(0, (int) $fresh->bio_approved);
+
+        $this->actingAs($user)
+            ->get('/update-profile-lock-status')
+            ->assertSessionHas('success');
+
+        $this->assertSame(1, (int) $user->fresh()->profile_status_lock);
+    }
+
+    public function test_rejected_social_handle_blocks_submit_until_updated(): void
+    {
+        $user = $this->creator();
+        $this->handles($user, ['instagram' => 'ben_lewis']);
+        $user->social_links()->update(['status' => SocialLinks::STATUS_REJECTED]);
+
+        $this->actingAs($user)
+            ->get('/update-profile-lock-status');
+
+        $this->assertSame(0, (int) $user->fresh()->profile_status_lock);
+        $this->assertStringContainsString('a social handle', (string) session('error'));
     }
 }

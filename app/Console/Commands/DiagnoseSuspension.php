@@ -330,12 +330,24 @@ class DiagnoseSuspension extends Command
         $sends = str_contains($middleware, "'suspension' => SuspendedAccount::payload(");
         $reads = str_contains($component, 'auth?.user?.suspension');
 
-        $sends && $reads
+        /*
+         * 🚨 A COMPONENT NOTHING MOUNTS IS THE SAME FAULT AS A PROP NOTHING SETS.
+         * The notice moved from AuthenticatedLayout to the profile page on
+         * 5 Sep 2026; a later "tidy-up" that removes the Dashboard line leaves a
+         * perfectly correct component that renders nowhere, with no error. It
+         * must also be gated on the owner, or a suspended gifter reads their own
+         * notice under a stranger's cover.
+         */
+        $dashboard = (string) @file_get_contents(base_path('resources/js/Pages/Dashboard.jsx'));
+        $mounted = preg_match('/IsloggedIn\s*&&\s*<SuspendedBanner/', $dashboard) === 1;
+
+        $sends && $reads && $mounted
             ? $this->pass('Banner contract')
             : $this->fail(
                 'Banner contract',
                 (! $sends ? 'the shared payload no longer sends `suspension`. ' : '').
-                (! $reads ? 'the banner does not read `auth.user.suspension` — it will render nothing.' : '')
+                (! $reads ? 'the banner does not read `auth.user.suspension` — it will render nothing. ' : '').
+                (! $mounted ? 'Pages/Dashboard.jsx does not mount <SuspendedBanner> behind the owner gate — it renders nowhere.' : '')
             );
     }
 

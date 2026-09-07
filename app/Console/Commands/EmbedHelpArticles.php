@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\HelpArticle;
+use App\Services\Help\HelpAiKeyPool;
+use App\Services\Help\HelpAnswer;
 use App\Services\Help\HelpEmbeddings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
@@ -37,6 +39,15 @@ class EmbedHelpArticles extends Command
             return self::SUCCESS;
         }
 
+        if (HelpAnswer::retriever() === 'keyword') {
+            // Not a failure and not a warning: on this retriever there is
+            // nothing to embed, by design. Scheduled hourly, so it must be
+            // quiet about it.
+            $this->info('Retriever is `keyword` — Ask AI uses the help centre search, nothing to embed.');
+
+            return self::SUCCESS;
+        }
+
         if (! HelpEmbeddings::enabled()) {
             // ⚠️ Name WHICH prerequisite is missing. "AI is disabled" is true of
             // two completely different situations — a flag nobody set and a key
@@ -52,9 +63,15 @@ class EmbedHelpArticles extends Command
                 $this->line('  · HELP_AI_ENABLED is not true (config: help.ai.enabled)');
             }
 
-            if (! config('help.ai.api_key')) {
-                $this->line('  · No OpenAI key (set OPENAI_API_KEY, or the legacy DALLE_SECRET_KEY)');
-                $this->line('    One OpenAI key covers images, chat and embeddings — there is no separate key.');
+            if (! HelpAiKeyPool::configured()) {
+                $host = parse_url((string) config('help.ai.base_url'), PHP_URL_HOST) ?: 'the AI provider';
+
+                if (str_contains($host, 'api.openai.com')) {
+                    $this->line('  · No OpenAI key (set OPENAI_API_KEY, or the legacy DALLE_SECRET_KEY)');
+                    $this->line('    One OpenAI key covers images, chat and embeddings — there is no separate key.');
+                } else {
+                    $this->line("  · No key for {$host} (set HELP_AI_API_KEYS, comma-separated, or HELP_AI_API_KEY — the OpenAI keys are not used against another host)");
+                }
             }
 
             $this->line('  Set both in .env, then run `php artisan config:clear`.');
@@ -94,6 +111,19 @@ class EmbedHelpArticles extends Command
             return self::SUCCESS;
         }
 
+        // ⚠️ Said BEFORE the first request. The provider's 401 for a key sent
+        // to the wrong host is "Incorrect API key provided" — true, and it sends
+        // somebody to re-paste a key that was fine.
+        foreach (HelpAiKeyPool::hostMismatches() as $problem) {
+            $this->error('  '.$problem);
+        }
+
+        if (HelpAiKeyPool::hostMismatches() !== []) {
+            $this->line('  Set HELP_AI_BASE_URL, HELP_AI_ANSWER_MODEL and HELP_AI_EMBEDDING_MODEL together, then `php artisan config:clear`.');
+
+            return self::FAILURE;
+        }
+
         $this->line(count($pending).' article(s) need embedding.');
 
         if ($dryRun) {
@@ -107,6 +137,7 @@ class EmbedHelpArticles extends Command
 
         $done = 0;
         $failed = 0;
+        $quotaSpent = false;
 
         foreach (array_chunk($pending, self::BATCH) as $batch) {
             $inputs = array_map(fn ($row) => HelpEmbeddings::textFor($row['article']), $batch);
@@ -118,18 +149,25 @@ class EmbedHelpArticles extends Command
                 // batch. Re-running picks up exactly where this left off,
                 // because the hash of what succeeded is already stored.
                 $failed += count($batch);
+                $quotaSpent = HelpEmbeddings::lastReason() === 'rate_limited';
 
                 // ⚠️ SURFACE THE REASON. Reporting only "request failed" and
                 // logging the cause meant re-running the same broken thing was
                 // the obvious next move — which is what happened with a
                 // truncated API key and a 401 nobody could see.
-                $this->error('Embedding request failed — stopping.');
+                if ($quotaSpent) {
+                    $this->warn('Every AI key is out of quota for the embedding model — stopping.');
+                } else {
+                    $this->error('Embedding request failed — stopping.');
+                }
 
                 if ($reason = HelpEmbeddings::lastError()) {
                     $this->line('  '.$reason);
                 }
 
-                $this->line('  Fix the cause, then re-run — completed articles are not re-embedded.');
+                $this->line($quotaSpent
+                    ? '  Nothing to fix — the next scheduled run picks these up when a key frees up.'
+                    : '  Fix the cause, then re-run — completed articles are not re-embedded.');
                 break;
             }
 
@@ -156,6 +194,19 @@ class EmbedHelpArticles extends Command
         }
 
         $this->info("Embedded {$done} article(s)".($failed ? ", {$failed} failed." : '.'));
+
+        /*
+         * 🚨 A SPENT FREE-TIER QUOTA IS NOT A RED RUN. This is scheduled hourly,
+         * and a run that exits FAILURE every hour until midnight is how a
+         * genuinely broken embed run stops being noticed. Same reasoning as the
+         * AI-off branch above, which returns SUCCESS for exactly this reason.
+         *
+         * `auth`, `bad_request` and an unexpected response shape still fail —
+         * none of those clears on its own.
+         */
+        if ($quotaSpent) {
+            return self::SUCCESS;
+        }
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }

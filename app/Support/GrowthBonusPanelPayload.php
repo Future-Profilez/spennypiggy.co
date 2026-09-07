@@ -6,7 +6,6 @@ use App\Models\GrowthBonusProfile;
 use App\Models\GrowthBonusReward;
 use App\Models\User;
 use App\Services\GrowthBonusService;
-use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -312,12 +311,16 @@ class GrowthBonusPanelPayload
     /**
      * The Friday this reward should arrive on.
      *
-     * 🚨 IT IS DERIVED FROM THE PAYOUT RUN'S OWN RULE, NOT GUESSED. `payout:run-weekly`
-     * goes out every Friday and pays every transaction completed on or before the
-     * PREVIOUS Friday — each one waits its own seven days — so the first run that can
-     * carry this bonus is the first Friday falling on or after the crossing sale's
-     * date + 7 days. That is why a milestone lands 7–13 days after it is crossed,
-     * depending on the weekday, and why no copy anywhere names a fixed day.
+     * 🚨 IT IS DERIVED FROM THE PAYOUT RUN'S OWN RULE, NOT GUESSED — and it reads that
+     * rule from `App\Support\PayoutCycle` rather than restating it. The bonus rides
+     * the crossing sale, so it arrives on whatever Friday pays that sale: its
+     * Friday-to-Thursday earning week closes, is held a week, and is paid the Friday
+     * after. That is why a milestone lands 8–14 days after it is crossed, depending on
+     * the weekday, and why no copy anywhere names a fixed day.
+     *
+     * ⚠️ It was `crossedAt + 7 days, rounded up to a Friday` until 4 Sep 2026, which
+     * matched the old rolling sweep. Left as it was, it would have told a creator a
+     * date a week before the run that actually pays them, on every Friday-dated sale.
      *
      * ⚠️ NULL when there is no crossing sale — an admin GMV amendment can unlock a
      * milestone with no transaction behind it, and there is no run to point at.
@@ -335,10 +338,6 @@ class GrowthBonusPanelPayload
             return null;
         }
 
-        $eligible = $crossedAt->copy()->startOfDay()->addDays(7);
-
-        // Carbon's next(FRIDAY) always moves forward, so a date that IS a Friday
-        // would be pushed a week — the seven-day wait is already satisfied then.
-        return ($eligible->isFriday() ? $eligible : $eligible->next(Carbon::FRIDAY))->toDateString();
+        return PayoutCycle::payoutDateFor($crossedAt->copy())->toDateString();
     }
 }

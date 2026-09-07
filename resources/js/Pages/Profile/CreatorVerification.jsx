@@ -1,4 +1,5 @@
 import { Link, usePage } from "@inertiajs/react";
+import GetHelpButton from "@/Components/Help/GetHelpButton";
 import axios from "axios";
 import { useState, useEffect, useRef } from "react";
 import EditProfile from "../account/EditProfile";
@@ -145,6 +146,14 @@ function ActionCard({ step, selfCheck }) {
                         {step.reason ||
                             "Our team asked for a change. Update it and submit again."}
                     </p>
+                    {/* A rejection is the moment a creator objects — give them a
+                        person, not a mailto (config/creator_help.php, tier 2). */}
+                    <div className="mt-2">
+                        <GetHelpButton
+                            code={step.key === "identity" ? "identity_help" : "rejected_assets"}
+                            label="Ask our team about this"
+                        />
+                    </div>
 
                     {step.note && (
                         <p className="mt-2 text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-box-sm p-2">
@@ -319,12 +328,34 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const profileStatusLock = creatorUser?.profile_status_lock;
     const profileRejectReason =
         creatorUser?.profile_reject_reason || user?.profile_reject_reason;
+    // 🚨 NO CARD CLAUSE (client decision, 7 Sep 2026). The card is asked AFTER the
+    // profile is approved, before payouts — see the `trial` step below. Mirrors
+    // `ReviewSubmission::missing()` on the server: if that gate gains a clause,
+    // this list gains it in the same commit, or the button and the refusal disagree.
     const hasBasicDetails =
-        hasAnySocialMedia &&
-        creatorUser?.avatar &&
-        creatorUser?.bio &&
-        hasSubscription;
-    const isSubmittedForReview = profileStatusLock == 1;
+        hasAnySocialMedia && creatorUser?.avatar && creatorUser?.bio;
+    /*
+     * 🚨 "SUBMITTED" IS NOT "WITH THE REVIEW TEAM", AND READING THE BARE LOCK
+     * PUT 22 CREATORS IN A WAIT THAT COULD NEVER END (6 Sep 2026).
+     *
+     * The admin queue also requires a photo, a bio, a handle and a card, so a
+     * creator carrying `profile_status_lock = 1` with one of those missing sits
+     * in NO queue — no admin can see them and nobody will ever decide. This
+     * screen told them "our team is checking it now… there is nothing else to
+     * do", which was the exact opposite of the truth.
+     *
+     * The server answers it now (App\Support\ReviewSubmission), because the
+     * admin queue's own rule is what has to agree — a copy of it derived here
+     * would drift the first time that rule changes.
+     */
+    const reviewSubmission = auth?.user?.review_submission;
+    const isSubmittedForReview = reviewSubmission
+        ? reviewSubmission.state === "with_team"
+        : profileStatusLock == 1;
+    const submissionBlocked = reviewSubmission?.state === "blocked";
+    const blockedMissing = submissionBlocked
+        ? reviewSubmission?.missing || []
+        : [];
     const canSubmitForReview =
         profileStatusLock != 1 &&
         profileStatusLock != 2 &&
@@ -419,14 +450,14 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         creatorUser?.identity_verification_error,
     );
 
-    // "Submit for review" stays locked until socials, photo and bio are APPROVED
-    // and the trial is active. Name what's still outstanding — a bare "Locked"
-    // tells the creator nothing about why, or what would unlock it.
+    // "Submit for review" stays locked until socials, photo and bio are in and
+    // nothing is rejected. Name what's still outstanding — a bare "Locked" tells
+    // the creator nothing about why, or what would unlock it. ⚠️ The card is NOT
+    // a blocker here (7 Sep 2026) — it is asked after approval.
     const submitBlockers = [
         !hasAnySocialMedia && "socials",
         !creatorUser?.avatar && "photo",
         !creatorUser?.bio && "bio",
-        !hasSubscription && "payment method",
         (isSocialRejected || avatarStatus == 2 || bioStatus == 2) &&
             "fixes for rejected items",
     ].filter(Boolean);
@@ -460,7 +491,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const editorBtn =
         "inline-block bg-gray-100 hover:bg-gray-200 border-2 border-black rounded-box-sm px-4 py-2.5 text-sm font-bold text-black transition-colors";
     const primaryBtn =
-        "inline-block bg-[#FF007F] text-white border-2 border-black rounded-box-sm px-4 py-2.5 text-sm font-bold active:translate-x-0.5 active:translate-y-0.5 transition-all";
+        // Black on brand pink — white measures 3.78:1 and fails AA (house rule).
+        "inline-block bg-[#FF007F] text-black border-2 border-black rounded-box-sm px-4 py-2.5 text-sm font-bold hover:brightness-110 active:brightness-95 active:translate-x-0.5 active:translate-y-0.5 transition-all";
 
     /*
      * ⚠️ Kept for the SUBMIT step only. It used to sit on every asset, which
@@ -478,12 +510,21 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             label: "Socials",
             title: "Add a social handle",
             mins: 1,
+            /*
+             * 🚨 "SO FANS CAN FIND YOU" WAS THE OLD BEHAVIOUR AND IS NO LONGER TRUE
+             * (6 Sep 2026). An approved handle used to be published on the profile
+             * automatically; `social_links.public_platforms` means nothing is public
+             * until the creator chooses it, so the reason we ask is verification and
+             * the copy has to say so. The step's own editor carries the per-platform
+             * switch.
+             */
             description:
-                "Add at least one social account so fans can find and trust you.",
+                "Add at least one social account so our team can check you are really you.",
             hint: [
                 "At least one handle you actually post on",
                 "Account must be active and older than 6 months",
-                "Profile must be publicly visible",
+                "Profile must be publicly visible so we can check it",
+                "Kept private on your page unless you choose to show it",
             ],
             state: isSocialApproved
                 ? "done"
@@ -577,24 +618,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             ),
         },
         {
-            key: "trial",
-            label: "Payment method",
-            title: "Add your card",
-            mins: 1,
-            description: `${SUBSCRIPTION_COPY.promise} — then ${PRICE_FORMATTED} + VAT a month. Needed before we can verify you.`,
-            hint: [
-                SUBSCRIPTION_COPY.reassurance,
-                "Cancel any time from your account settings",
-            ],
-            state: hasSubscription ? "done" : "todo",
-            approvedState: hasSubscription,
-            action: (
-                <Link className={primaryBtn} href="/activate-subscription">
-                    Add your card
-                </Link>
-            ),
-        },
-        {
             key: "submit",
             label: "Submit",
             title: "Submit profile for review",
@@ -617,7 +640,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             approvedState: profileStatusLock == 2,
             reason: profileRejectReason,
             reviewNote: REVIEW_NOTE,
-            locked: !canSubmitForReview && !profileRejectReason,
+            locked: !canSubmitForReview,
             lockReason: submitBlockers.length
                 ? `Unlocks once you add or fix your ${listItems(submitBlockers)}.`
                 : null,
@@ -628,6 +651,34 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     method="get"
                 >
                     {profileRejectReason ? "Submit again" : "Submit for review"}
+                </Link>
+            ),
+        },
+        {
+            key: "trial",
+            label: "Payment method",
+            title: "Add your card",
+            mins: 1,
+            /*
+             * 🚨 THE CARD COMES AFTER APPROVAL (client decision, 7 Sep 2026). It sat
+             * before Submit and was the step most creators stopped on — asked of
+             * somebody no human had looked at yet. It still gates Connect
+             * (`StripeController::subscriptionGate()`), so it sits right before it.
+             * ⚠️ No deadlock by construction: Submit no longer asks for a card, and
+             * this step asks only for approval — never for a Submit.
+             */
+            description: `Your page is approved. Add a card to unlock payouts — ${SUBSCRIPTION_COPY.promise}, then ${PRICE_FORMATTED} + VAT a month.`,
+            hint: [
+                SUBSCRIPTION_COPY.reassurance,
+                "Cancel any time from your account settings",
+            ],
+            state: hasSubscription ? "done" : "todo",
+            approvedState: hasSubscription,
+            locked: profileStatusLock != 2,
+            lockReason: "Unlocks once your profile is approved.",
+            action: (
+                <Link className={primaryBtn} href="/activate-subscription">
+                    Add your card
                 </Link>
             ),
         },
@@ -652,7 +703,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             lockReason:
                 profileStatusLock != 2
                     ? "Unlocks once your profile is approved."
-                    : "Needs an active subscription.",
+                    : "Add your card first — it unlocks payouts.",
             action: (
                 <Link className={primaryBtn} href="/stripe/authorize">
                     Connect with Stripe
@@ -804,6 +855,37 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         Fix the point above, then submit again — you do not have
                         to redo anything else.
                     </p>
+                </div>
+            ) : null}
+
+            {/*
+                Submitted, and held out of the queue by something the creator can
+                fix. Amber, never red — nothing was refused and nobody said no.
+                It names the missing items rather than saying "incomplete", so
+                the fix is on screen instead of behind a search.
+            */}
+            {submissionBlocked ? (
+                <div className="mb-4 rounded-box-sm border-2 border-black bg-[#FFF6D6] p-4">
+                    <p className="text-[13px] font-bold uppercase tracking-wide text-black">
+                        One thing left before we can review you
+                    </p>
+                    <p className="mt-1 text-sm text-black/80">
+                        Your profile is submitted. We cannot start the review
+                        until you add{" "}
+                        {blockedMissing.length > 1
+                            ? `${blockedMissing.slice(0, -1).join(", ")} and ${blockedMissing[blockedMissing.length - 1]}`
+                            : blockedMissing[0] || "the last missing detail"}
+                        . Add it and your profile goes to the team on its own —
+                        there is nothing to submit again.
+                    </p>
+                    {blockedMissing.includes("a payment card") ? (
+                        <Link
+                            href="/activate-subscription"
+                            className="mt-3 inline-block rounded-box-sm border-2 border-black bg-[#FF007F] px-4 py-2 text-sm font-bold text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
+                        >
+                            Add your card
+                        </Link>
+                    ) : null}
                 </div>
             ) : null}
 

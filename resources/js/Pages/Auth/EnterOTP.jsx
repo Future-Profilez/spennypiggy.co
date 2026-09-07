@@ -77,7 +77,7 @@ function base64urlToUint8Array(base64url) {
 export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }) {
     const [open, setOpen] = useState(false);
     useEffect(() => {
-        if (action === "open") {
+        if (action === "open" || action === true) {
             setOpen(true);
             // Automatically trigger passkey if available
             if (hasPasskey) {
@@ -85,10 +85,11 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
                     handlePasskeyAction();
                 }, 100); // Shorter delay to preserve user gesture context
             }
-        } else {
-            setOpen();
+        } else if (action === false) {
+            setOpen(false);
         }
     }, [action, hasPasskey]);
+
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
@@ -100,23 +101,63 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
     const [bCode, setBcode] = useState("");
     const [otp, setOtp] = useState(new Array(6).fill(""));
 
+    useEffect(() => {
+        if (open && !backup && inputRefs.current[0]) {
+            setTimeout(() => inputRefs.current[0]?.focus(), 150);
+        }
+    }, [open, backup]);
+
     const enterBCode = (e) => {
         setBcode(e.target.value);
         setOtp(new Array(6).fill(""));
     };
-    const handleChange = (element, index) => {
-        if (isNaN(element.value)) return;
+
+    const handlePaste = (e) => {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+        if (!pasted) return;
         const newOtp = [...otp];
-        newOtp[index] = element.value;
+        for (let i = 0; i < pasted.length; i++) {
+            newOtp[i] = pasted[i];
+        }
         setOtp(newOtp);
-        if (element.nextSibling && element.value) {
-            element.nextSibling.focus();
+        const nextIndex = Math.min(pasted.length, 5);
+        inputRefs.current[nextIndex]?.focus();
+        if (pasted.length === 6) {
+            submitVerification(pasted);
+        }
+    };
+
+    const handleChange = (val, index) => {
+        const cleaned = val.replace(/\D/g, "");
+        if (!cleaned && val !== "") return;
+        const char = cleaned.slice(-1);
+        const newOtp = [...otp];
+        newOtp[index] = char;
+        setOtp(newOtp);
+
+        if (char && index < 5) {
+            inputRefs.current[index + 1]?.focus();
+        }
+
+        const full = newOtp.join("");
+        if (full.length === 6 && !newOtp.includes("")) {
+            submitVerification(full);
         }
     };
 
     const handleKeyDown = (e, index) => {
-        if (e.key === "Backspace" && !otp[index] && index !== 0) {
-            inputRefs.current[index - 1].focus();
+        if (e.key === "Backspace") {
+            if (!otp[index] && index > 0) {
+                const newOtp = [...otp];
+                newOtp[index - 1] = "";
+                setOtp(newOtp);
+                inputRefs.current[index - 1]?.focus();
+            } else if (otp[index]) {
+                const newOtp = [...otp];
+                newOtp[index] = "";
+                setOtp(newOtp);
+            }
         }
     };
 
@@ -179,18 +220,21 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
         }
     };
 
-    const verify = (e) => {
-        e.preventDefault();
+    const submitVerification = (otpCode, backupCode) => {
         if (loading) return;
-        if (!bCode && otp.join("").length !== 6) {
+        const codeToVerify = otpCode !== undefined ? otpCode : otp.join("");
+        const backupToVerify = backupCode !== undefined ? backupCode : bCode;
+
+        if (!backupToVerify && codeToVerify.length !== 6) {
             errorAlert("Enter the 6-digit code from your authenticator app.");
             return;
         }
+
         setLoading(true);
         axios
             .post(route("verify2FA"), {
-                otp: otp.join(""),
-                backup_code: bCode || "",
+                otp: codeToVerify,
+                backup_code: backupToVerify || "",
                 email: user.email,
                 password: user.password,
                 // Persistent login: forward the Remember-me choice from the login form
@@ -229,6 +273,11 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
             });
     };
 
+    const verify = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        submitVerification();
+    };
+
     return (
         <>
             <Popup space="2 md:p-4" action={open} modalclass="" text={<></>} onHide={onHide}>
@@ -242,13 +291,13 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
                             authenticator app.
                         </p>
                     </header>
-                    <form>
+                    <form onSubmit={verify}>
                         {backup ? (
                             <>
                                 <div className="flex items-center justify-center gap-3">
                                     <input
                                         type="text"
-                                        className="w-full  text-center text-md text-slate-900 bg-slate-100 border border-transparent hover:border-slate-200 appearance-none rounded-box   p-3 max-w-[85%] outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"
+                                        className="w-full text-center text-md text-slate-900 bg-slate-100 border border-transparent hover:border-slate-200 appearance-none rounded-box p-3 max-w-[85%] outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"
                                         pattern="\d*"
                                         onChange={enterBCode}
                                         placeholder="Enter backup code..."
@@ -258,7 +307,8 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
                                     <button
                                         disabled={loading}
                                         onClick={verify}
-                                        className="pinkbg-i text-white px-3 py-2 w-full rounded-box  "
+                                        type="button"
+                                        className="pinkbg-i text-white px-3 py-2 w-full rounded-box"
                                     >
                                         {processing || loading
                                             ? "processing..."
@@ -280,19 +330,18 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
                         ) : (
                             <>
                                 {" "}
-                                <div className="flex items-center justify-center  gap-1">
+                                <div className="flex items-center justify-center gap-1.5" onPaste={handlePaste}>
                                     {otp.map((data, index) => (
                                         <input
                                             key={index}
                                             type="text"
-                                            className="border-gray-300  text-center bg-gray-200 
-                                    text-black rounded-box-sm 
-                                    md:rounded-box-sm  w-full   text-xl font-bold
-                                     max-w-[50px] min-h-[50px] otp-input  px-1 py-1 "
+                                            inputMode="numeric"
+                                            autoComplete="one-time-code"
+                                            className="border-gray-300 text-center bg-gray-100 text-black rounded-box-sm w-full text-xl font-bold max-w-[50px] min-h-[50px] otp-input px-1 py-1 focus:ring-2 focus:ring-pink-500 focus:border-[#FF007F] transition-all"
                                             maxLength="1"
                                             value={data}
                                             onChange={(e) =>
-                                                handleChange(e.target, index)
+                                                handleChange(e.target.value, index)
                                             }
                                             onKeyDown={(e) =>
                                                 handleKeyDown(e, index)
@@ -308,7 +357,7 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
                                         type="button"
                                         disabled={loading}
                                         onClick={verify}
-                                        className="pinkbg-i text-white px-6 w-full py-3 my-3 rounded-box  "
+                                        className="pinkbg-i text-white px-6 w-full py-3 my-3 rounded-box"
                                     >
                                         {loading
                                             ? "processing..."

@@ -4,6 +4,7 @@ import ActivityStatusBanner from "@/Components/Creator/ActivityStatusBanner";
 import CadenceChecklist from "@/Components/Creator/CadenceChecklist";
 import { Head, Link, router } from "@inertiajs/react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
+import GetHelpButton from "@/Components/Help/GetHelpButton";
 
 /* Status → presentation. `error` is a real backend state (validation temporarily
    unavailable) and used to fall through to a bare "Unknown" chip with no explanation. */
@@ -573,6 +574,9 @@ const ActivityStatus = ({
                                         : "posts"}{" "}
                                     to Members or Subscribers and they resume
                                     automatically.
+                                    <span className="mt-2 block">
+                                        <GetHelpButton code="cadence_pause" label="Something not right? Get help" />
+                                    </span>
                                 </Note>
                             ) : postingCadence.status === "at_risk" ? (
                                 <Note tone="yellow">
@@ -715,6 +719,9 @@ const ActivityStatus = ({
                                         <span className="font-bold text-red-700">
                                             {blockedPayments.count}
                                         </span>
+                                    </div>
+                                    <div className="mt-3">
+                                        <GetHelpButton code="blocked_payment" label="Ask our team about these" />
                                     </div>
 
                                     {/* Never summed across currencies — one number

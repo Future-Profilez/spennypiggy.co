@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\MonthlyCharge;
+use App\Models\SocialLinks;
 use App\Models\User;
 use App\Services\CreatorJourneyService;
 use App\Services\Stripe\StripeAccountState;
@@ -124,6 +125,16 @@ class StripeOnboardingFlowTest extends TestCase
             'avatar_approved' => 0,
             'bio' => 'Hello',
             'bio_approved' => 0,
+        ]);
+
+        // ⚠️ A handle is part of "complete" (ReviewSubmission::queueBlockers, 6 Sep
+        // 2026) — a lock-1 creator with no handle is `blocked`, not with the team,
+        // and this fixture pinned the bare-lock reading until 7 Sep 2026.
+        SocialLinks::create([
+            'uuid' => (string) Str::uuid(),
+            'user_id' => $creator->id,
+            'status' => 0,
+            'instagram' => 'ben_lewis',
         ]);
 
         // `review` is the step that waits on an admin (31 Aug 2026); `profile` is

@@ -190,6 +190,32 @@ class EmailDomainPolicy
                 return true;
             }
 
+            /*
+             * 🚨 A TEST NEVER ASKS A REAL RESOLVER.
+             *
+             * `checkdnsrr()` takes NO timeout — PHP exposes none — so on a
+             * resolver that is slow, filtered or black-holed it blocks for that
+             * resolver's whole retry budget, three queries deep (MX, then A,
+             * then AAAA), for every domain a test registers with. That is not a
+             * slow suite, it is a HUNG one: `php artisan test` stops dead and
+             * never reports, which is exactly what it did here — the run sat on
+             * `MarketingConsentTest`'s three `POST /register` calls and produced
+             * no summary at all.
+             *
+             * ⚠️ This is the same answer the method already promises one line
+             * up — it FAILS OPEN, an unanswerable question is "yes" — arrived at
+             * without the wait. A test that wants either verdict seeds
+             * `email_mx_ok:{domain}` and never reaches this closure, which is
+             * how `EmailDomainPolicyTest` exercises both branches today.
+             *
+             * ⚠️ `testing` ONLY. `local` is deliberately not on the list: a
+             * developer signing up against a real domain should get the real
+             * answer, and it is the suite, not the machine, that must be hermetic.
+             */
+            if (app()->environment('testing')) {
+                return true;
+            }
+
             try {
                 if (checkdnsrr($domain, 'MX')) {
                     return true;

@@ -136,6 +136,7 @@ class PwaNotification extends Controller
         Cache::forget('user_followers_count_'.$followed_id);
         Cache::forget('user_following_count_'.Auth::id());
         Cache::forget('profile_cache_token_v1_'.$followed_id);
+        Cache::forget('user_profile_basic_v2_'.$followedUser->username);
         Cache::forget('user_profile_basic_'.$followedUser->username);
 
         return redirect()->back()->with('success', "You have $status $userName.");

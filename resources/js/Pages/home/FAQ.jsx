@@ -37,7 +37,7 @@ export default function FAQ() {
     ? `Nothing until your first sale. After that it's ${PRICE_FORMATTED} + VAT a month — flat, whatever you earn, cancel any time. There's no commission on your sales. Supporters cover the platform fee at checkout and see the full total before they pay.`
     : `${PRICE_FORMATTED} + VAT a month — flat, whatever you earn, cancel any time. There's no commission on your sales. Supporters cover the platform fee at checkout and see the full total before they pay.`;
 
-  const payoutAnswer = 'Every Friday. Your earnings run Friday to Thursday and go out the following Friday, usually landing in your bank on Monday. Paid straight into your own Stripe account, in your name.'
+  const payoutAnswer = 'Every Friday. Your earnings run Friday to Thursday, that week is held for a week, and it is paid on the Friday after — so earnings from Fri 4 to Thu 10 September go out on Friday 18 September. Your first payout takes 8 to 14 days depending on the day you sell; after that you are paid weekly. Paid straight into your own Stripe account, in your name.'
     + (STABLECOIN_TIPS_ANNOUNCED
       ? (STABLECOIN_TIPS_LIVE
         ? ' Stablecoin Tips settle on their own rail, separately from your Stripe earnings.'

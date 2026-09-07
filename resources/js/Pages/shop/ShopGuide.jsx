@@ -24,7 +24,7 @@ export default function ShopGuide() {
                         </li>
                         <li className="flex gap-3">
                             <span className="font-black text-[#FF007F]">04.</span>
-                            <p className="text-sm font-bold text-gray-700">Earnings appear in your balance straight away, then clear after the standard 7-day hold (a reserve may be held longer) and go out in the next payout run.</p>
+                            <p className="text-sm font-bold text-gray-700">Earnings appear in your balance straight away. They are paid on the Friday after their Friday-to-Thursday earning week has closed and been held for a week (a reserve may be held longer).</p>
                         </li>
                     </ul>
                 </div>

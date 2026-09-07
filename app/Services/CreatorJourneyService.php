@@ -7,6 +7,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Support\IdentityCheckState;
 use App\Support\ProfileAssetVisibility;
+use App\Support\ReviewSubmission;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
@@ -68,16 +69,9 @@ class CreatorJourneyService
             'route' => 'dashboard',
             'params' => [],
         ],
-        'subscription' => [
-            'title' => 'Add your card',
-            'body' => 'Takes a minute, and you are not charged until your first sale.',
-            'cta' => 'Add your card',
-            'route' => 'activate-subscription',
-            'params' => [],
-        ],
         'review' => [
             'title' => 'Submit your profile for review',
-            'body' => 'Photo, bio, handle and card are in — send it to the team. Payouts unlock once it is approved.',
+            'body' => 'Photo, bio and handle are in — send it to the team. Payouts unlock once it is approved.',
             'cta' => 'Submit for review',
             // 🚨 THIS STEP IS WHAT WAS MISSING (31 Aug 2026). `ProfileController::
             // updateProfileLockStatus` is the only thing that puts a creator in the review
@@ -87,6 +81,20 @@ class CreatorJourneyService
             // while sitting in no queue at all. Measured on the live DB: that was the
             // stall for most of the August ad-campaign signups.
             'route' => 'update.profile.lock.status',
+            'params' => [],
+        ],
+        'subscription' => [
+            'title' => 'Add your card',
+            // 🚨 AFTER approval, BEFORE payouts (client decision, 7 Sep 2026). It was
+            // step 3 of 9, asked of somebody no human had looked at yet, and it was
+            // the step most creators stopped on — see ReviewSubmission::missing().
+            // Approval is free and is the real filter; the card is what unlocks
+            // Connect (`StripeController::subscriptionGate()`), so it sits right
+            // before it. A creator can add it at ANY point — `activate-subscription`
+            // carries no gate — so nothing here can deadlock against the review.
+            'body' => 'Your page is approved. Add a card to unlock payouts — you are not charged until your first sale.',
+            'cta' => 'Add your card',
+            'route' => 'activate-subscription',
             'params' => [],
         ],
         'stripe' => [
@@ -135,6 +143,23 @@ class CreatorJourneyService
             'params' => [],
         ],
     ];
+
+    /**
+     * The steps that make an account READY, as opposed to the ones that make it EARN.
+     *
+     * 🚨 THIS IS NOT `STEP_DONE`, AND THE DIFFERENCE IS THE WHOLE POINT. The journey runs
+     * nine steps deep and only reports itself finished after `first_sale` — a moment that
+     * depends on a supporter, not on the creator. But the creator has *finished their own
+     * setup* six steps earlier, the instant the ID check passes, and that is the moment
+     * worth marking: everything the platform asked of them is done, and from here the
+     * remaining work is theirs to choose. Reading `STEP_DONE` for that moment would
+     * congratulate them only after somebody had already bought something, which is far too
+     * late to be encouragement and reads as sarcasm to a creator with no sales.
+     *
+     * ⚠️ Order matters and mirrors STEPS. A step added to STEPS before `first_listing` must
+     * be added here too, or the celebration fires while a real setup task is outstanding.
+     */
+    public const SETUP_STEPS = ['profile', 'social', 'review', 'subscription', 'stripe', 'identity'];
 
     /**
      * What a step says once the creator has done their part and it is with an admin.
@@ -223,7 +248,11 @@ class CreatorJourneyService
      * payout notice. Moving to a new step resets the clock (`journey_step_at`), so the
      * cap is per step, not per creator.
      */
-    public const NUDGE_STAGES = [2, 7];
+    // 🚨 THREE, TEN DAYS APART, THEN SILENCE ON THAT STEP (client, 7 Sep 2026): the
+    // first while they still remember signing up, then two more a fortnight-ish apart.
+    // Finishing the step restarts the clock, so somebody who returns after two months
+    // and moves on hears about the NEW step — that is the point, not a leak.
+    public const NUDGE_STAGES = [3, 13, 23];
 
     /**
      * ⚠️ `first_listing` is DELIBERATELY ABSENT. It already has its own two-stage nudge
@@ -279,7 +308,15 @@ class CreatorJourneyService
             ->whereNotNull('journey_step_at');
 
         if (! $includeDormant) {
-            $query->where('created_at', '>=', now()->subDays(self::NUDGE_FRESH_WINDOW_DAYS));
+            /*
+             * 🚨 MEASURED FROM THE LAST MOVEMENT, NOT FROM SIGNUP (7 Sep 2026).
+             * `created_at` made a creator who signed up in June and finished a
+             * step YESTERDAY "dormant" — exactly the person a nudge is for. Live:
+             * 25 creators had moved a step inside 30 days on a signup older than
+             * that, and every one of them was being skipped. `journey_step_at` is
+             * when they entered the CURRENT step, i.e. the last time they acted.
+             */
+            $query->where('journey_step_at', '>=', now()->subDays(self::NUDGE_FRESH_WINDOW_DAYS));
         }
 
         return $query;
@@ -468,7 +505,14 @@ class CreatorJourneyService
         return match ($step) {
             // 1 = submitted by the creator, not yet decided. 🚨 Keyed on the LOCK, never on
             // "photo and bio are filled in" — uploading both puts nobody in a queue.
-            'review' => (int) ($creator->profile_status_lock ?? 0) === 1,
+            //
+            // 🚨 AND THE LOCK ALONE IS NOT ENOUGH EITHER (6 Sep 2026). The admin queue
+            // also requires a photo, bio, handle and card, so a creator carrying the lock
+            // with one of those missing is in NO queue and nobody will ever decide. Saying
+            // "awaiting review" there is a wait with no end — measured live, all 22
+            // creators at lock 1 were in exactly that state. ReviewSubmission is the one
+            // definition the queue, this and the nudge mail all read.
+            'review' => ReviewSubmission::isWithReviewTeam($creator),
 
             // 🚨 2 alone is NOT "with us". It is written when the Stripe session is
             // CREATED, so it also covers a creator who opened the check and walked away
@@ -524,6 +568,35 @@ class CreatorJourneyService
     {
         return (int) ($creator->role ?? 0) === 1
             && (int) ($creator->suspended_account ?? 0) !== 1;
+    }
+
+    /**
+     * Has the creator finished everything the PLATFORM asked of them?
+     *
+     * True the instant the ID check passes, whether or not they have listed, posted or sold
+     * anything. Read by the setup celebration and by the listings progress strip.
+     *
+     * ⚠️ Costs NO query. Every one of the six is a plain column read or an already-loaded
+     * relation, which is why this can sit on the shared Inertia payload — the three steps
+     * that do hit the database (`first_listing`, `first_post`, `first_sale`) are exactly the
+     * ones this deliberately does not look at.
+     *
+     * ⚠️ Returns false for a fan and for a suspended account, through `applies()`. A
+     * suspended creator is not being congratulated on an account they cannot sell from.
+     */
+    public function setupComplete(User $creator): bool
+    {
+        if (! $this->applies($creator)) {
+            return false;
+        }
+
+        foreach (self::SETUP_STEPS as $step) {
+            if (! $this->isDone($creator, $step)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function isDone(User $creator, string $step): bool

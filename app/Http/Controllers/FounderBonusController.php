@@ -54,7 +54,13 @@ class FounderBonusController extends Controller
         ];
 
         $recentWinners = FounderBonus::with('creator')
-            ->where('qualification_date', '>=', now()->subDays(7)->toDateString())
+            ->whereHas('creator', function ($q) {
+                $q->where('name', 'NOT LIKE', '%Test%')
+                    ->where('name', 'NOT LIKE', '%test%')
+                    ->where('name', 'NOT LIKE', '%dummy%')
+                    ->where('role', 1);
+            })
+            ->where('qualification_date', '>=', now()->subDays(30)->toDateString())
             ->orderByDesc('qualification_date')
             ->limit(10)
             ->get()
@@ -87,6 +93,7 @@ class FounderBonusController extends Controller
         $userInRace = false;
         $userProgress = null;
         $founderBonusData = null;
+        $founderMonthlyData = null;
         $userMissed = null;
 
         if ($user) {
@@ -102,10 +109,47 @@ class FounderBonusController extends Controller
                         'estimated_payout_date' => $founderBonus->estimated_payout_date,
                         'paid_date' => $founderBonus->paid_date,
                         'payout_status' => $founderBonus->payout_status,
+                        'payment_reference' => $founderBonus->payment_reference,
                         'rejection_reason' => $founderBonus->payout_rejection_reason,
                         'formatted_paid_date' => $founderBonus->formatted_paid_date,
                     ];
                 }
+
+                // Monthly bonus progress for current month
+                $currentMonthStart = now()->startOfMonth();
+                $currentMonthEarnings = (float) FounderBonus::calculateCompletedNetEarnings($user, $currentMonthStart, now(), 'GBP');
+                $minMonthly = (float) FounderBonus::getMinMonthlyEarnings();
+                $maxMonthly = (float) FounderBonus::getMaxMonthlyEarnings();
+                $bonusPct = (float) FounderBonus::getBonusPercentage();
+                $maxBonus = (float) FounderBonus::getMaxBonusPerMonth();
+
+                $currentMonthBonus = 0.0;
+                if ($currentMonthEarnings >= $minMonthly) {
+                    $capped = min($currentMonthEarnings, $maxMonthly);
+                    $currentMonthBonus = round(min($capped * $bonusPct, $maxBonus), 2);
+                }
+
+                $lastMonthKey = now()->subMonthNoOverflow()->format('Y-m');
+                $lastMonthRow = \App\Models\FounderBonusMonthly::where('creator_id', $user->id)
+                    ->where('month', $lastMonthKey)
+                    ->first();
+
+                $founderMonthlyData = [
+                    'current_month' => now()->format('F Y'),
+                    'current_month_earnings' => $currentMonthEarnings,
+                    'min_monthly_earnings' => $minMonthly,
+                    'max_monthly_earnings' => $maxMonthly,
+                    'current_month_bonus' => $currentMonthBonus,
+                    'progress_pct' => min(100, $minMonthly > 0 ? round(($currentMonthEarnings / $minMonthly) * 100, 1) : 0),
+                    'meets_threshold' => $currentMonthEarnings >= $minMonthly,
+                    'last_month' => $lastMonthRow ? [
+                        'month' => $lastMonthRow->month,
+                        'monthly_earnings' => (float) $lastMonthRow->monthly_earnings,
+                        'bonus_amount' => (float) $lastMonthRow->bonus_amount,
+                        'payout_status' => $lastMonthRow->payout_status,
+                        'payment_reference' => $lastMonthRow->payment_reference,
+                    ] : null,
+                ];
             } else {
                 // Check if user is within their 30-day qualification window
                 $qualificationDays = FounderBonus::getQualificationDays();
@@ -167,6 +211,7 @@ class FounderBonusController extends Controller
             'userProgress' => $userProgress,
             'userMissed' => $userMissed,
             'founderBonusData' => $founderBonusData,
+            'founderMonthlyData' => $founderMonthlyData,
             'previousMonthStats' => $previousMonthStats,
             'previousMonthWinners' => $previousMonthBonuses->map(function ($bonus) {
                 return [
@@ -192,6 +237,9 @@ class FounderBonusController extends Controller
                 'maxSeats' => $maxSeats,
                 'minEarnings' => $minEarnings,
                 'bonusPercentage' => $bonusPercentage * 100,
+                'minMonthlyEarnings' => FounderBonus::getMinMonthlyEarnings(),
+                'maxMonthlyEarnings' => FounderBonus::getMaxMonthlyEarnings(),
+                'maxBonusPerMonth' => FounderBonus::getMaxBonusPerMonth(),
                 'qualificationDays' => FounderBonus::getQualificationDays(),
                 'currentMonth' => now()->format('F Y'),
             ],
@@ -204,6 +252,12 @@ class FounderBonusController extends Controller
         $limit = max(1, min(100, $limit));
 
         $winners = FounderBonus::with('creator')
+            ->whereHas('creator', function ($q) {
+                $q->where('name', 'NOT LIKE', '%Test%')
+                    ->where('name', 'NOT LIKE', '%test%')
+                    ->where('name', 'NOT LIKE', '%dummy%')
+                    ->where('role', 1);
+            })
             ->orderByDesc('first_30d_earnings')
             ->limit($limit)
             ->get()
@@ -279,6 +333,7 @@ class FounderBonusController extends Controller
                 'bonusPercentage' => FounderBonus::getBonusPercentage() * 100,
                 'minMonthlyEarnings' => FounderBonus::getMinMonthlyEarnings(),
                 'maxMonthlyEarnings' => FounderBonus::getMaxMonthlyEarnings(),
+                'maxBonusPerMonth' => FounderBonus::getMaxBonusPerMonth(),
                 'qualificationDays' => FounderBonus::getQualificationDays(),
             ],
         ]);
@@ -337,13 +392,24 @@ class FounderBonusController extends Controller
         $userPosition = null;
         $userInRace = false;
 
-        if ($user && $user->stripe_connected_at && $user->stripe_connected_at->isCurrentMonth()) {
-            $userInRace = true;
-            $userEntry = collect($leaderboard)->firstWhere('creator.id', $user->id);
-            if ($userEntry) {
-                $userPosition = collect($leaderboard)->search(function ($item) use ($user) {
-                    return $item['creator']->id === $user->id;
-                }) + 1;
+        if ($user && $user->stripe_connected_at) {
+            $qualificationDays = FounderBonus::getQualificationDays();
+            $joinDate = $user->stripe_connected_at;
+            $thirtyDaysLater = $joinDate->copy()->addDays($qualificationDays);
+
+            if (now()->lessThan($thirtyDaysLater)) {
+                $userInRace = true;
+                $userEntry = collect($leaderboard)->first(function ($item) use ($user) {
+                    return ($item['creator']['id'] ?? null) === $user->id;
+                });
+                if ($userEntry) {
+                    $foundIndex = collect($leaderboard)->search(function ($item) use ($user) {
+                        return ($item['creator']['id'] ?? null) === $user->id;
+                    });
+                    if ($foundIndex !== false) {
+                        $userPosition = $foundIndex + 1;
+                    }
+                }
             }
         }
 

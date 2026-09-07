@@ -131,17 +131,23 @@ describe('signup social handle', () => {
     });
 
     /**
-     * 🚨 THE COPY MUST NOT PROMISE PRIVACY. The handle goes for review and then onto
-     * the creator's profile like any other — an earlier draft said it was never shown
-     * there, which was true of the contact-only design this replaced.
+     * 🚨 THIS FIXTURE PINNED THE OLD BEHAVIOUR AND WAS REWRITTEN, NOT DELETED
+     * (6 Sep 2026). It used to require the copy to say the handle "shows on your
+     * profile" and to forbid any promise of privacy, because an approved handle was
+     * published automatically. `social_links.public_platforms` reversed that: nothing
+     * is public until the creator chooses it, so the old assertion now demands the
+     * page state something untrue.
+     *
+     * What has to hold either way is that the copy describes the SHIPPED behaviour —
+     * so it must say the handle stays private, and must not claim it will appear.
      */
-    it('does not claim the handle stays off the profile', () => {
+    it('says the handle stays private unless the creator shows it', () => {
         const html = renderToStaticMarkup(
             <CreatorProfileStep {...stepProps()} />,
         );
 
-        expect(html).not.toMatch(/not shown on your profile/i);
-        expect(html).toMatch(/shows on your profile/i);
+        expect(html).toMatch(/stays private/i);
+        expect(html).not.toMatch(/shows on your profile/i);
     });
 
     /**

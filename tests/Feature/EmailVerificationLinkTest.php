@@ -62,4 +62,23 @@ class EmailVerificationLinkTest extends TestCase
 
         $this->assertNull($user->fresh()->email_verified_at);
     }
+
+    /**
+     * 🚨 THE LINK SIGNS THEM IN (7 Sep 2026). It is opened on whatever device the
+     * mailbox is on — usually not the one they registered from — and this endpoint
+     * is unauthenticated, so it used to drop the person, logged out, on their own
+     * PUBLIC profile: a blank page with no dashboard and no sign-in prompt. Measured
+     * live, 155 of 272 verified creators then uploaded nothing.
+     */
+    public function test_a_signed_link_signs_the_person_in_and_lands_on_their_dashboard(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => null]);
+        $url = URL::temporarySignedRoute('email.verify.uuid', now()->addDay(), ['uuid' => $user->uuid]);
+
+        $response = $this->get($url);
+
+        $response->assertRedirect(route('user.show', [$user->username]).'?verified=1');
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotNull($user->fresh()->email_verified_at);
+    }
 }

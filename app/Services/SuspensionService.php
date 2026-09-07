@@ -6,7 +6,9 @@ use App\Models\BillPayment;
 use App\Models\MembershipPayment;
 use App\Models\MonthlyCharge;
 use App\Models\User;
+use App\Models\WishItemSubscription;
 use App\StripeControl;
+use App\Support\CreatorHelpTicket;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -75,6 +77,16 @@ class SuspensionService
         ])->save();
 
         $this->freezePayouts($user);
+
+        /*
+         * Tier 1 help ticket (config/creator_help.php) — only for a SUSPENSION
+         * (tone `suspended`), never a `limited` account: an unpaid subscription
+         * has a button that fixes it, a policy suspension has a person. Never
+         * throws; the suspension is already written.
+         */
+        if ((config("suspension.reasons.{$reasonCode}.tone") ?? 'suspended') === 'suspended') {
+            CreatorHelpTicket::openFor($user, 'policy_suspension');
+        }
 
         return true;
     }
@@ -180,7 +192,26 @@ class SuspensionService
             ->pluck('membership_payments.stripe_id')
             ->all();
 
-        return $this->onlySubscriptionIds(array_merge($bill, $membership));
+        /*
+         * 🚨 RECURRING WISHES WERE MISSING FROM THIS LIST (4 Sep 2026, found
+         * while wiring the ID sign-off). A wish sold as `recurring_for =
+         * continue` is a Stripe subscription on the creator's own connected
+         * account exactly like a bill or a membership — so a suspended creator
+         * went on being paid every month by every recurring-wish supporter,
+         * silently, while their bills and memberships were correctly paused. The
+         * client's instruction was the whole platform: no subscription renews
+         * while a creator is suspended.
+         */
+        $wish = WishItemSubscription::query()
+            ->join('wish_items', 'wish_items.id', '=', 'wish_item_subscriptions.wish_item_id')
+            ->where('wish_items.user_id', $creator->id)
+            ->where('wish_item_subscriptions.status', 'paid')
+            ->where('wish_item_subscriptions.recurring_for', 'continue')
+            ->whereNotNull('wish_item_subscriptions.stripe_id')
+            ->pluck('wish_item_subscriptions.stripe_id')
+            ->all();
+
+        return $this->onlySubscriptionIds(array_merge($bill, $membership, $wish));
     }
 
     private function pauseIncomingSubscriptions(User $creator): int

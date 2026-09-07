@@ -62,12 +62,16 @@ class IdentityFailureReason
             ],
         ],
         'document_unverified_other' => [
-            'title' => 'Your passport couldn’t be read',
-            'what_happened' => 'Stripe couldn’t confirm the document from the photos it received.',
+            'title' => 'Your passport couldn’t be read — nothing is wrong with you',
+            // ⚠️ Reworded 7 Sep 2026. Stripe's own text is "The document is invalid",
+            // which two live creators read as "my passport is fake" and stopped. The
+            // usual cause is a photo Stripe cannot read, and it says so now.
+            'what_happened' => 'Stripe could not read the document from the photos it received. This is almost always the photo, not the passport — glare, a cropped edge, or a document that is not a passport.',
             'what_to_do' => [
-                'Photograph the full page — no cropped edges',
-                'Use bright, even light and avoid glare from the plastic',
-                'Keep the passport flat and the phone steady',
+                'Use the PHOTO PAGE of your passport — a driving licence or ID card is not accepted',
+                'Photograph the whole page with all four corners in frame',
+                'Use bright, even light and tilt the passport slightly to kill the glare',
+                'Keep it flat, hold the phone steady, and let the camera focus before you tap',
             ],
         ],
         'document_type_not_supported' => [

@@ -336,16 +336,27 @@ class CheckDisasterRecoveryPosture extends Command
 
     private function awsConfig(string $region): array
     {
-        $config = ['version' => 'latest', 'region' => $region];
-
-        $key = (string) env('AWS_ACCESS_KEY_ID');
-        $secret = (string) env('AWS_SECRET_ACCESS_KEY');
-
-        if ($key !== '' && $secret !== '') {
-            $config['credentials'] = ['key' => $key, 'secret' => $secret];
-        }
-
-        return $config;
+        /*
+         * 🚨 NEVER BUILD AWS CREDENTIALS BY HAND HERE. The SDK's own default
+         * provider chain already reads AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+         * **and AWS_SESSION_TOKEN** from the environment, then the shared
+         * credentials file, then the container/instance role.
+         *
+         * Passing only key+secret is not "the same thing minus a fallback" — on
+         * Lambda it is actively WRONG. The runtime injects all three variables for
+         * the execution role, and those are TEMPORARY credentials: an `ASIA…` key
+         * presented without its session token is rejected outright with
+         * `InvalidClientTokenId — the security token included in the request is
+         * invalid`. Measured in production 5 Sep 2026: it blinded the RDS posture
+         * half of `infra:dr-check`, which is the half that catches configuration
+         * drift.
+         *
+         * ⚠️ The old guard here tested for EMPTY variables overriding the role.
+         * That case cannot happen on Lambda — the variables are always set, just
+         * incomplete when read two-thirds of the way. Hand-rolling this can only
+         * ever lose information the chain already had.
+         */
+        return ['version' => 'latest', 'region' => $region];
     }
 
     private function add(string $severity, string $message): void

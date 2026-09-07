@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('first_30d_earnings', 10, 2); // Earnings in first 30 days
             $table->decimal('bonus_amount', 10, 2); // 10% bonus amount
             $table->date('estimated_payout_date'); // When bonus will be paid
-            $table->enum('payout_status', ['pending', 'paid'])->default('pending');
+            $table->enum('payout_status', ['pending', 'approved', 'paid', 'rejected'])->default('pending');
             $table->timestamps();
 
             // Ensure each creator can only qualify once

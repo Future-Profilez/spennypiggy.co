@@ -23,10 +23,15 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
 
   const canActOnRefund = ticket?.type === 'refund' && !['refund_initiated', 'refunded', 'rejected', 'escalated'].includes(ticket?.status);
 
+  const isHelp = Boolean(ticket?.is_help);
+
   const statusLabel = useMemo(() => {
     const s = String(ticket?.status || '');
+    // Help-ticket statuses read for the creator, not as the raw enum.
+    if (s === 'open') return isHelp ? 'OPEN · REPLY ANY TIME' : 'OPEN';
+    if (s === 'awaiting_admin') return 'WITH OUR TEAM';
     return s.replaceAll('_', ' ').toUpperCase();
-  }, [ticket?.status]);
+  }, [ticket?.status, isHelp]);
 
   const ticketNumber = useMemo(() => {
     return ticket?.uuid ? ticket.uuid.split('-')[0].toUpperCase() : 'UNKNOWN';
@@ -185,7 +190,10 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
     switch (ticket?.status) {
       case 'awaiting_creator':
       case 'awaiting_supporter':
+      case 'awaiting_admin':
         return 'bg-orange-300';
+      case 'open':
+        return 'bg-[#A2E4B8]';
       case 'escalated':
         return 'bg-red-400';
       case 'refunded':
@@ -221,6 +229,11 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                   <h1 className="text-lg text-black md:text-2xl font-black uppercase tracking-wide flex items-center gap-2">
                     Ticket <span className="text-[#FF007F]">#{ticketNumber}</span>
                   </h1>
+                  {isHelp ? (
+                    <p className="text-[12px] font-bold text-black/70">
+                      {ticket?.reason || 'Help from the Spenny Piggy team'} · a conversation with our team
+                    </p>
+                  ) : null}
                 </div>
               </div>
               <div className={`text-center px-2 md:px-4 py-2 rounded-full border-[3px] border-black text-black text-[12px] md:text-[12px] font-black uppercase tracking-widest ${getStatusColor()}`}>
@@ -341,7 +354,7 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                       </div>
                     )}
 
-                    {ticket.type === 'contact' && !['resolved', 'refunded', 'rejected'].includes(ticket.status) && (viewer?.role !== 'creator' || (localMessages || []).some(m => m.sender_role === 'creator')) && (
+                    {(ticket.type === 'contact' || isHelp) && !['resolved', 'refunded', 'rejected'].includes(ticket.status) && (isHelp || viewer?.role !== 'creator' || (localMessages || []).some(m => m.sender_role === 'creator')) && (
                       <div className="pt-4 mt-4 border-t-2 border-dashed border-gray-200">
                         <button
                           type="button"
@@ -422,7 +435,7 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                           <div className={`max-w-[80%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                             <div className={`flex items-baseline gap-2 mb-1 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                               <span className="text-[12px] font-black uppercase tracking-widest text-gray-800">
-                                {m.sender_role === 'admin' ? 'Admin / Support' : m?.sender?.username ? `@${m.sender.username}` : (m.sender_role === 'supporter' ? 'Guest Supporter' : m.sender_role)}
+                                {m.sender_role === 'admin' ? (isHelp ? 'Spenny Piggy team' : 'Admin / Support') : m?.sender?.username ? `@${m.sender.username}` : (m.sender_role === 'supporter' ? 'Guest Supporter' : m.sender_role)}
                               </span>
                               <span className="text-[12px] font-bold text-black/60">
                                 {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}

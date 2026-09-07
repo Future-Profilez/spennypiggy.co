@@ -64,6 +64,17 @@
                 <td style="padding:0 0 24px 0;">
                     <table cellspacing="0" cellpadding="0" border="0" role="presentation" width="100%"
                            style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#4A4A4A;">
+                        {{-- The earning week this payout covers. Rendered only when it could be
+                             derived — a payment receipt naming the wrong week is worse than one
+                             naming none. --}}
+                        @if (! empty($earningWeek))
+                            <tr>
+                                <td style="padding:8px 0;border-bottom:1px solid #EEEEEE;color:#7A7A7A;">Covers</td>
+                                <td align="right" style="padding:8px 0;border-bottom:1px solid #EEEEEE;color:#1A1A1A;font-weight:600;">
+                                    {{ $earningWeek }}
+                                </td>
+                            </tr>
+                        @endif
                         <tr>
                             <td style="padding:8px 0;border-bottom:1px solid #EEEEEE;color:#7A7A7A;">Sent on</td>
                             <td align="right" style="padding:8px 0;border-bottom:1px solid #EEEEEE;color:#1A1A1A;font-weight:600;">

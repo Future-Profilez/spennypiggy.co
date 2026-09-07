@@ -75,7 +75,55 @@ class HelpSearch
 
         // A query made entirely of stopwords ("how do I") still has to search
         // something — falling through to an empty term list returns everything.
-        return $meaningful ?: $words;
+        return array_map([self::class, 'stem'], $meaningful ?: $words);
+    }
+
+    /**
+     * Light stemming on the QUERY side only. Every match is `str_contains`, so
+     * shortening the term is what lets "reserving" find "reserve", "reserved"
+     * and "reserves" — the first question this help centre was ever asked
+     * ("why everymonth 10% is reserving") found nothing for exactly this
+     * reason. Article text is never stemmed: a shorter needle matches a longer
+     * haystack, never the other way round.
+     *
+     * ⚠️ Deliberately crude — three suffixes and a length floor. A real stemmer
+     * over-strips ("payout" → "pay") and pulls unrelated articles into the
+     * retriever's context, which is worse than missing one.
+     */
+    public static function stem(string $word): string
+    {
+        if (mb_strlen($word) < 5) {
+            return $word;
+        }
+
+        foreach (['ing', 'ed', 'es', 's'] as $suffix) {
+            if (str_ends_with($word, $suffix) && mb_strlen($word) - mb_strlen($suffix) >= 4) {
+                return mb_substr($word, 0, -mb_strlen($suffix));
+            }
+        }
+
+        return $word;
+    }
+
+    /**
+     * The ranked ARTICLES for a question — the keyword retriever behind Ask AI.
+     *
+     * Same normalisation, candidates and scorer as the search box, so the
+     * articles the model answers from are the ones the reader would have found
+     * themselves. Returns models (with category), not cards: the answer needs
+     * the body.
+     *
+     * @return Collection<int, HelpArticle>
+     */
+    public static function rankArticles(string $query, ?string $audience, int $limit): Collection
+    {
+        $normalised = self::normalise($query);
+
+        if (mb_strlen($normalised) < self::MIN_QUERY_LENGTH) {
+            return collect();
+        }
+
+        return self::score(self::candidates($normalised), $normalised, $audience)->take(max(1, $limit))->values();
     }
 
     /**

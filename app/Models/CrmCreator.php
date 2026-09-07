@@ -43,6 +43,13 @@ class CrmCreator extends Model
     ];
 
     protected $casts = [
+        // Outreach columns are OWNED and WRITTEN by the admin app (cold-outreach
+        // sequences). Cast here so the unsubscribe route reads them typed; never
+        // $fillable — this app only ever writes them via forceFill on that one route.
+        'outreach_meta' => 'array',
+        'do_not_contact_at' => 'datetime',
+        'bounced_at' => 'datetime',
+        'last_outreach_at' => 'datetime',
         'last_contact_date' => 'datetime',
         'next_follow_up_date' => 'datetime',
         'invite_token_used_at' => 'datetime',

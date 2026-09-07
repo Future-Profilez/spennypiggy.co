@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\WishItem;
+use App\Models\WishItemSubscription;
 use App\Services\PostingCadenceService;
 use App\Services\SuspensionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -179,5 +182,59 @@ class SuspensionEnforcementTest extends TestCase
             $creator->refresh()->content_posting_paused_at,
             'The cadence flag must stay set while the account is suspended.'
         );
+    }
+
+    public function test_a_recurring_wish_is_stopped_alongside_bills_and_memberships(): void
+    {
+        /*
+         * 🚨 RECURRING WISHES WERE MISSING FROM THE PAUSE LIST until 4 Sep 2026,
+         * so a suspended creator went on being paid every month by every
+         * recurring-wish supporter while their bills and memberships were
+         * correctly stopped. Nothing errored — the money simply kept arriving
+         * for an account that could not sell.
+         */
+        $creator = User::factory()->create(['role' => 1]);
+        $supporter = User::factory()->create(['role' => 0]);
+
+        $wish = WishItem::factory()->create(['user_id' => $creator->id]);
+
+        WishItemSubscription::create([
+            'uuid' => (string) Str::uuid(),
+            'wish_item_id' => $wish->id,
+            'user_id' => $supporter->id,
+            'stripe_id' => 'sub_wish_recurring',
+            'status' => 'paid',
+            'recurring_for' => 'continue',
+            'amount' => 10,
+            'total_paid' => 10,
+            'tax' => 0,
+            'currency' => 'GBP',
+        ]);
+
+        $ids = app(SuspensionService::class)->incomingSubscriptionIds($creator);
+
+        $this->assertContains('sub_wish_recurring', $ids);
+    }
+
+    public function test_a_one_off_wish_is_not_treated_as_a_subscription(): void
+    {
+        // ⚠️ The control. A one-time wish has no renewal to stop, and pausing a
+        // finished payment at Stripe is a call that can only fail.
+        $creator = User::factory()->create(['role' => 1]);
+        $wish = WishItem::factory()->create(['user_id' => $creator->id]);
+
+        WishItemSubscription::create([
+            'uuid' => (string) Str::uuid(),
+            'wish_item_id' => $wish->id,
+            'stripe_id' => 'pi_one_off',
+            'status' => 'paid',
+            'recurring_for' => 'onetime',
+            'amount' => 10,
+            'total_paid' => 10,
+            'tax' => 0,
+            'currency' => 'GBP',
+        ]);
+
+        $this->assertNotContains('pi_one_off', app(SuspensionService::class)->incomingSubscriptionIds($creator));
     }
 }

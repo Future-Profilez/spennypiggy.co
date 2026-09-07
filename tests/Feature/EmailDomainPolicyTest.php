@@ -40,6 +40,43 @@ class EmailDomainPolicyTest extends TestCase
         Cache::put('email_mx_ok:'.$domain, $exists, now()->addDay());
     }
 
+    /**
+     * 🚨 THE SUITE NEVER ASKS A REAL RESOLVER.
+     *
+     * `checkdnsrr()` takes no timeout, so a filtered or black-holed resolver
+     * blocks it for that resolver's whole retry budget — three queries deep —
+     * for every domain a test registers with. That is not a slow suite but a
+     * hung one: the run stops dead and prints no summary. Seen live, sitting on
+     * `MarketingConsentTest`'s three `POST /register` calls.
+     *
+     * ⚠️ This asserts the OPEN answer for a domain that can never resolve. It
+     * is red without the guard — a resolver that answers NXDOMAIN quickly
+     * returns false — and it is the fast answer that proves no lookup ran.
+     */
+    public function test_no_live_dns_lookup_is_made_while_testing(): void
+    {
+        $started = microtime(true);
+
+        $this->assertTrue(
+            Policy::canReceiveMail('nx-'.bin2hex(random_bytes(8)).'.invalid'),
+            'an unseeded domain must fail OPEN without asking a resolver'
+        );
+
+        $this->assertLessThan(
+            1.0,
+            microtime(true) - $started,
+            'canReceiveMail() reached the network — the suite is not hermetic'
+        );
+    }
+
+    /** ⚠️ And a seeded verdict still wins, so both branches stay testable. */
+    public function test_a_seeded_verdict_still_beats_the_testing_default(): void
+    {
+        $this->mailServer('nomail.example', false);
+
+        $this->assertFalse(Policy::canReceiveMail('nomail.example'));
+    }
+
     /** The blocklist works on a database that has never been seeded. */
     public function test_a_baseline_disposable_domain_is_refused_with_no_rows_at_all(): void
     {

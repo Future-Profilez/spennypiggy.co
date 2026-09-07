@@ -23,7 +23,7 @@ import { FaCheck, FaLock } from "react-icons/fa";
  *
  * ⚠️ Payout timing copy says "on the same payout as the earnings that qualified
  * you" and must NOT say "the following Friday". The bonus rides the qualifying
- * transaction through its own 7-day hold, so it lands 7–13 days after the
+ * transaction through the payout cycle, so it lands 8-14 days after the
  * milestone is crossed depending on the day of the week — a named day would be
  * wrong for most creators (client-confirmed, 26 Aug 2026).
  *

@@ -1,5 +1,6 @@
 import { Link } from "@inertiajs/react";
 import { MessageCircle, Mail, Receipt } from "lucide-react";
+import { openLiveChat } from "@/lib/liveChat";
 
 /**
  * What a reader does when the help centre did not answer them.
@@ -12,24 +13,69 @@ import { MessageCircle, Mail, Receipt } from "lucide-react";
  *
  * The `escalation` payload is built server-side (HelpController::escalation) so
  * the branch cannot drift from what the routes actually allow.
+ *
+ * 🚨 `compact` IS A DIFFERENT ELEMENT, NOT A SMALLER CARD (5 Sep 2026).
+ *
+ * It used to be the same yellow panel with the same heading and the same three
+ * filled buttons, `p-4` instead of `p-6`. Every compact mount is NESTED inside a
+ * surface whose page ALREADY renders the full panel at the foot — the chat
+ * fallback and the article feedback block both sit above `Help/Index`,
+ * `Help/Article` and `Help/Category`'s own `<StillNeedHelp>` — so the reader got
+ * the identical loud card twice on one screen, which is what it was reported as.
+ *
+ * The compact form is therefore a QUIET ROW: a hairline, a short label and text
+ * links. It says the same three things without competing with the panel below it
+ * or with the answer above it. **Never give it a background, a heading level or
+ * a filled button** — the moment it looks like a card it is a duplicate again.
  */
 export default function StillNeedHelp({ escalation, compact = false }) {
     if (!escalation) return null;
 
-    const openChat = (e) => {
-        // ⚠️ Only preventDefault when the messenger is genuinely loaded.
-        // IntercomProviderFixed returns early for logged-out visitors, so a bare
-        // Intercom() call would be a dead button for the audience most likely to
-        // need it — the email link underneath must stay reachable.
-        if (typeof window !== "undefined" && typeof window.Intercom === "function") {
-            e.preventDefault();
-            window.Intercom("showNewMessage");
-        }
-    };
+    // ⚠️ Only preventDefault when the messenger is genuinely loaded. The guard
+    // used to be `typeof window.Intercom === "function"`, which the provider's
+    // QUEUEING STUB satisfies — so for a logged-out visitor (the provider returns
+    // early for guests) this button cancelled its own mailto: and opened nothing.
+    // See lib/liveChat.js; the href below is the fallback and must stay real.
+
+    if (compact) {
+        return (
+            <div className="border-t border-black/15 pt-3">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]">
+                    <span className="font-semibold text-black/60">Still stuck?</span>
+
+                    {escalation.chat && (
+                        <a
+                            href={`mailto:${escalation.email}`}
+                            onClick={openLiveChat}
+                            className="font-semibold text-black underline decoration-black/30 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
+                        >
+                            Chat with us
+                        </a>
+                    )}
+
+                    {escalation.purchases_url && (
+                        <Link
+                            href={escalation.purchases_url}
+                            className="font-semibold text-black underline decoration-black/30 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
+                        >
+                            About a purchase
+                        </Link>
+                    )}
+
+                    <a
+                        href={`mailto:${escalation.email}`}
+                        className="font-semibold text-black underline decoration-black/30 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
+                    >
+                        {escalation.email}
+                    </a>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <section
-            className={`rounded-box border-[3px] border-black bg-[#E6EA7B] ${compact ? "p-4" : "p-6"}`}
+            className="rounded-box border-[3px] border-black bg-[#E6EA7B] p-6"
             aria-labelledby="still-need-help-heading"
         >
             <h2 id="still-need-help-heading" className="text-lg font-black uppercase tracking-tight text-black">
@@ -45,7 +91,7 @@ export default function StillNeedHelp({ escalation, compact = false }) {
                 {escalation.chat && (
                     <a
                         href={`mailto:${escalation.email}`}
-                        onClick={openChat}
+                        onClick={openLiveChat}
                         className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-box-sm border-2 border-black bg-black px-4 py-2 text-sm font-bold text-white hover:bg-black/85"
                     >
                         <MessageCircle className="h-4 w-4" aria-hidden="true" />

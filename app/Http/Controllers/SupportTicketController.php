@@ -21,6 +21,7 @@ use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Services\MagicBellService;
 use App\Services\SupportTicketRefundService;
+use App\Support\CreatorHelpTicket;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -154,6 +155,66 @@ class SupportTicketController extends Controller
         ]);
     }
 
+    /**
+     * Tier 2: a creator opens a help conversation from a "Get help with this"
+     * button (config/creator_help.php). The opener enforces one open ticket per
+     * code and reuses it, so pressing the button twice lands in one conversation.
+     */
+    public function openHelp(Request $request)
+    {
+        $codes = (array) config('creator_help.codes', []);
+        $tier2 = array_keys(array_filter($codes, fn ($c) => (int) ($c['tier'] ?? 0) === 2));
+
+        $request->validate([
+            'code' => ['required', 'string', 'in:'.implode(',', $tier2)],
+            'message' => 'nullable|string|max:2000',
+            'source' => 'nullable|string|max:64',
+            'source_id' => 'nullable|string|max:64',
+        ]);
+
+        $user = Auth::user();
+        if (! $user || (int) $user->role !== 1) {
+            throw new AuthorizationException('Unauthorized');
+        }
+
+        $ticket = CreatorHelpTicket::openFor(
+            $user,
+            $request->code,
+            null,
+            ['source' => $request->source, 'source_id' => $request->source_id],
+            auto: false
+        );
+
+        if (! $ticket) {
+            return response()->json(['status' => false, 'message' => 'Could not open a conversation right now.'], 422);
+        }
+
+        // The creator's own words, when they gave any, go in as THEIR first reply.
+        if (filled($request->message)) {
+            $last = SupportTicketMessage::where('ticket_id', $ticket->id)->orderByDesc('id')->first();
+
+            if (! $last || $last->sender_role !== 'creator' || $last->message !== trim($request->message)) {
+                SupportTicketMessage::create([
+                    'ticket_id' => $ticket->id,
+                    'sender_role' => 'creator',
+                    'sender_user_id' => $user->id,
+                    'message' => trim($request->message),
+                    'attachments' => null,
+                ]);
+                $ticket->status = config('creator_help.status_awaiting_admin', 'awaiting_admin');
+                $ticket->last_message_at = now();
+                $ticket->last_creator_message_at = now();
+                $ticket->save();
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'ticket_uuid' => $ticket->uuid,
+            'redirect' => route('support.tickets.show', $ticket->uuid),
+        ]);
+    }
+
     public function show(string $uuid)
     {
         $user = Auth::user();
@@ -236,6 +297,8 @@ class SupportTicketController extends Controller
                 'resolved_at' => optional($ticket->resolved_at)?->toISOString(),
                 'creator_id' => $ticket->creator_id,
                 'supporter_id' => $ticket->supporter_id,
+                // A help conversation with the Spenny Piggy team (config/creator_help.php).
+                'is_help' => $ticket->type === config('creator_help.type', 'help'),
             ],
             'transaction' => $transaction,
             'messages' => $messages,
@@ -515,7 +578,13 @@ class SupportTicketController extends Controller
             ->limit(3)
             ->get();
 
-        if ($recentMessages->count() === 3 && $recentMessages->every(fn ($m) => $m->sender_role === $senderRole)) {
+        // ⚠️ A HELP ticket is a queue to the team, not a live exchange — nobody but an
+        // admin will ever reply, on no schedule the creator can see, so "wait for a
+        // reply" would lock a genuine multi-part question after three lines. The route
+        // throttle still bounds the volume (review finding, 7 Sep 2026).
+        $isHelpTicket = $ticket->type === config('creator_help.type', 'help');
+
+        if (! $isHelpTicket && $recentMessages->count() === 3 && $recentMessages->every(fn ($m) => $m->sender_role === $senderRole)) {
             return response()->json(['status' => false, 'message' => 'You can only send up to 3 consecutive messages. Please wait for a reply.'], 422);
         }
 
@@ -534,6 +603,40 @@ class SupportTicketController extends Controller
         ]);
 
         $ticket->last_message_at = now();
+
+        /*
+         * 🚨 A HELP TICKET HAS NO SUPPORTER. The other side is the Spenny Piggy
+         * team, so a creator's message moves it to `awaiting_admin`, tells the
+         * admin recipients, and — for the money questions the Help Centre already
+         * answers — gets an AUTOMATIC first reply, clearly marked, that never
+         * closes the ticket (tier 3, config/creator_help.php).
+         */
+        if ($ticket->type === config('creator_help.type', 'help')) {
+            $ticket->last_creator_message_at = now();
+            $ticket->status = config('creator_help.status_awaiting_admin', 'awaiting_admin');
+
+            if ($auto = CreatorHelpTicket::autoReplyFor((string) $request->message)) {
+                SupportTicketMessage::create([
+                    'ticket_id' => $ticket->id,
+                    'sender_role' => 'admin',
+                    'sender_user_id' => null,
+                    'message' => $auto,
+                    'attachments' => null,
+                ]);
+            }
+
+            $ticket->save();
+
+            try {
+                Mail::to((array) config('support.ticket_admin_recipients', []))
+                    ->send(new SupportTicketUpdatedMail($ticket));
+            } catch (\Throwable $e) {
+                Log::warning('Help ticket: admin notification failed', ['ticket' => $ticket->id, 'error' => $e->getMessage()]);
+            }
+
+            return response()->json(['status' => true]);
+        }
+
         if ($senderRole === 'creator') {
             $ticket->last_creator_message_at = now();
             if ($ticket->status === 'awaiting_creator') {

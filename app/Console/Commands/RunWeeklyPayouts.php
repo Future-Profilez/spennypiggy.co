@@ -7,6 +7,7 @@ use App\Mail\CommandFailed;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\Risk\PayoutService;
+use App\Support\PayoutCycle;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -210,9 +211,12 @@ class RunWeeklyPayouts extends Command
                 ->whereIn('status', ['succeeded', 'review_hold'])
                 ->count();
 
+            // ⚠️ The SAME cut-off the run just used, not a rolling 7 days — this line
+            // explains why the run paid nobody, so a different rule here explains the
+            // wrong thing and sends whoever reads it looking in the wrong place.
             $insideHold = Payment::whereNull('payout_run_id')
                 ->where('status', 'succeeded')
-                ->where('created_at', '>', now()->subDays(7))
+                ->where('created_at', '>', PayoutCycle::cutoffFor(PayoutCycle::nextPayoutDate()))
                 ->count();
 
             $paused = User::whereNotNull('payout_paused_at')->count();
@@ -223,7 +227,7 @@ class RunWeeklyPayouts extends Command
             }
 
             return "There are {$unpaid} unpaid payment(s), but none qualified. "
-                ."Of those, {$insideHold} are still inside the 7-day hold. "
+                ."Of those, {$insideHold} are still inside an earning week that has not closed and been held. "
                 ."{$paused} creator(s) have payouts paused. "
                 .'Remaining reasons are per-payment: a physical shop order not yet delivered, '
                 .'a timed task not yet accepted, or a net below the £1 minimum.';
