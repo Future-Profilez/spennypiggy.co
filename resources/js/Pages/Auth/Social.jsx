@@ -236,11 +236,16 @@ export default function AddSocial({
                 // (`SocialVisibility::forStorage`) — clearing a handle must also clear
                 // its visibility, or re-adding that platform months later comes back
                 // already public on the strength of an old decision.
-                public_platforms: publicPlatforms.filter(
-                    (key) =>
-                        submissionData[key] &&
-                        String(submissionData[key]).trim() !== "",
-                ),
+                public_platforms: publicPlatforms.filter((key) => {
+                    if (Object.prototype.hasOwnProperty.call(submissionData, key)) {
+                        return (
+                            submissionData[key] &&
+                            String(submissionData[key]).trim() !== ""
+                        );
+                    }
+                    const source = sLinks || links || {};
+                    return source?.[key] && String(source[key]).trim() !== "";
+                }),
                 redirect_url,
             })
             .then((res) => {

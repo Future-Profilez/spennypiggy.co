@@ -4,6 +4,7 @@ import RewardHint from "@/Pages/discover/components/RewardHint";
 import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
 import ScheduledBadge from "@/Components/ScheduledBadge";
 import SaveButton from "@/Components/SaveButton";
+import GetHelpButton from "@/Components/Help/GetHelpButton";
 
 export default function TaskItem({ task, IsloggedIn, profileUser }) {
     const { auth, platform_fee_percentage, transaction_fee_percentage } =
@@ -211,13 +212,28 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                     )}
                 </div>
                 {isRejected ? (
-                    <p className="!pt-3 block text-red-600 font-bold text-sm">
-                        Action Required: {reviewMessage}
-                    </p>
+                    <div className="!pt-3">
+                        <p className="block text-red-600 font-bold text-sm">
+                            Action Required: {reviewMessage}
+                        </p>
+                        {IsloggedIn ? (
+                            <div className="mt-2">
+                                <GetHelpButton code="moderation_hold" source="tasks" sourceId={task?.uuid} />
+                            </div>
+                        ) : null}
+                    </div>
                 ) : isPending ? (
-                    <p className="!pt-3 block text-yellow-700 font-bold text-sm">
-                        Under Review: {reviewMessage}
-                    </p>
+                    <div className="!pt-3">
+                        <p className="block text-yellow-700 font-bold text-sm">
+                            Under Review: {reviewMessage}
+                        </p>
+                        {/* `IsloggedIn` here means the OWNER is viewing (documented). */}
+                        {IsloggedIn && task?.moderation_reason ? (
+                            <div className="mt-2">
+                                <GetHelpButton code="moderation_hold" source="tasks" sourceId={task?.uuid} />
+                            </div>
+                        ) : null}
+                    </div>
                 ) : (
                     ""
                 )}

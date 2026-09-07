@@ -340,6 +340,11 @@ class AuthenticatedSessionController extends Controller
             $sociallinks = $user->social_links;
             if (! $isOwner) {
                 $sociallinks = SocialVisibility::forVisitor($sociallinks);
+            } else {
+                // `social_links` is in `User::$hidden` so no serialised User leaks it;
+                // the owner's own page-level `user` prop is the one place it is exposed
+                // (`Profile/SiteSubscription.jsx` reads `user.social_links.status`).
+                $user->makeVisible('social_links');
             }
             // Loaded on EVERY tab, not just About. The intro card moved out of the
             // About tab into the sticky identity rail (31 July 2026), so it renders

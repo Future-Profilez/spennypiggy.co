@@ -95,7 +95,7 @@ class SubmitProfileForReviewTest extends TestCase
         $this->assertStringContainsString('a social handle', session('error'));
     }
 
-    public function test_the_other_three_requirements_still_block(): void
+    public function test_the_other_two_requirements_still_block(): void
     {
         $user = $this->creator(['avatar' => null, 'bio' => null], withCard: false);
 
@@ -106,8 +106,24 @@ class SubmitProfileForReviewTest extends TestCase
         $error = session('error');
         $this->assertStringContainsString('a profile photo', $error);
         $this->assertStringContainsString('a bio', $error);
-        $this->assertStringContainsString('a payment card', $error);
+        $this->assertStringNotContainsString('a payment card', $error);
         $this->assertStringNotContainsString('a social handle', $error);
+    }
+
+    /**
+     * 🚨 THE CARD COMES AFTER APPROVAL (client decision, 7 Sep 2026). A creator with
+     * no card on file submits like anyone else — the card is asked once a person has
+     * approved the profile, before payouts. Verified red against the old gate.
+     */
+    public function test_a_creator_with_no_card_can_submit_for_review(): void
+    {
+        $user = $this->creator(withCard: false);
+
+        $this->handles($user, ['instagram' => 'ben_lewis']);
+
+        $this->actingAs($user)->get('/update-profile-lock-status');
+
+        $this->assertSame(1, (int) $user->fresh()->profile_status_lock);
     }
 
     /**
@@ -206,4 +222,3 @@ class SubmitProfileForReviewTest extends TestCase
         $this->assertStringContainsString('a social handle', (string) session('error'));
     }
 }
-

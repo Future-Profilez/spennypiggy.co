@@ -5690,6 +5690,22 @@ became the creator's decision.
   `Profile/CreatorVerification.jsx`'s social step and `Auth/Social.jsx`'s banner;
   `tests/javascript/signupSocialHandle.test.jsx` required `/shows on your profile/` and was
   **rewritten, not deleted**, with the reasoning kept in place.
+- 🚨 **THE MASK ON `slinks` WAS NOT ENOUGH — `User::$with` EAGER-LOADS `social_links`, AND THE
+  SAME PAGE SHIPS THE WHOLE `User` AS `user`** (found by the code-reviewer, 6 Sep 2026; the
+  first cut's tests asserted `slinks` alone and passed). Every hidden handle rode into
+  `data-page` as `props.user.social_links.*` for every guest — and every listing loaded
+  `with('user')` (bill/membership checkout, post pages) carried the row too. **Closed at the
+  root: `social_links` is in `User::$hidden`**, so no serialised User leaks it; exposed
+  deliberately in two places only — `HandleInertiaRequests` builds `auth.user.social_links`
+  (the VIEWER's own row) and `AuthenticatedSessionController` calls
+  `makeVisible('social_links')` on the OWNER branch (`Profile/SiteSubscription.jsx` reads
+  `user.social_links.status`, the one JS reader). ⚠️ `$hidden` is JSON-only — every PHP
+  `$user->social_links` read is unchanged. Pinned by two tests, verified red.
+- 🚨 **A RETIRED HANDLE WAS PERMANENTLY UNPUBLISHABLE** (second review finding). `$data` in
+  `saveSocialLinks` carries ONLY `ACCEPTED_PLATFORMS`, so narrowing the choice against it
+  alone dropped `facebook`/`youtube`/… on every save — the stored row is now merged UNDER the
+  submission (`Arr::only($data,…) + Arr::only($existing…)`), so a legacy handle can be shown
+  while an explicit null in this save still clears its visibility. Pinned, verified red.
 - ⚠️ **Admin app: cast only, `$fillable` in NEITHER.** The back office must keep seeing every
   handle on file whatever the creator publishes, so nothing there filters on this column — and
   a back office able to mass-assign it is a route by which a bulk update publishes handles
@@ -5704,11 +5720,47 @@ became the creator's decision.
   for a creator (`Rule::requiredIf` + `creatorProfileStepComplete`) · the socials editor's
   at-least-one refusal · `missingForReview()` · `CreatorJourneyService`'s `social` step, which
   gates `review` → `stripe` → listing → selling · the admin review queue and the verified badge.
-- Tests: `spennypiggy.co/tests/Feature/SocialVisibilityTest.php` (12). ⚠️ Two flip red against
+- Tests: `spennypiggy.co/tests/Feature/SocialVisibilityTest.php` (15). ⚠️ Two flip red against
   the original fault (an absent choice read as "show everything") and one against dropping the
   write from the unchanged path — each verified. ⚠️ The status-reset half of that last test is a
   **control, not a guard**: the save's diff only covers `SOCIAL_FIELDS`, so folding
   `public_platforms` into `$data` is inert and cannot redden it.
+
+## The funnel re-cut — website half (7 Sep 2026)
+
+Cross-app rules (card after approval, rejection collapse, help tickets, nudge merge) are in
+the root `../CLAUDE.md`. What lives HERE:
+
+- 🚨 **THE EMAIL-VERIFY LINK SIGNS THE PERSON IN.** `VerifyEmailController::emailVerify` used
+  to verify and drop the creator on a login screen — the OTP path never had this problem,
+  and its 15-minute TTL is what pushed late openers onto the link. It now `Auth::login()`s,
+  regenerates the session and lands on `/{username}?verified=1`. Pinned in
+  `EmailVerificationLinkTest`.
+- **`creators:nudge-journey` stages are `[3, 13, 23]`** (`CreatorJourneyService::NUDGE_STAGES`),
+  and `NudgeStuckJourney::isDormant()` reads `journey_step_at`. `FinishYourSetup::subjectFor`
+  treats stage ≥ 13 as "still".
+- **`profiles:nudge-rejected`** (Monday 09:55) — `NudgeRejectedProfiles` + `ComeBackAndFinish`
+  + `email/come-back-and-finish.blade.php`. Env `REJECTED_NUDGE_ENABLED` / `_MAX_PER_RUN` /
+  `_STAGGER`. Ledger type `profile_rejected_nudge`, keyed on attempt number. Reason-gated.
+- **`identity:reengage-stuck [--dry-run] [--max]`** — ONE-OFF, deliberately NOT scheduled
+  (the journey nudge already coaches `identity`). Four reason-worded mails
+  (`IdentityCheckReengage`: never_opened · abandoned · document_failed · consent_declined),
+  claimed per reason so a creator hears each sentence once. 🚨 `fraud_suspected` / status 3
+  is EXCLUDED — that creator gets a help ticket. Live on 7 Sep: 5 candidates, 4 mailable.
+- **The identity page carries a TRUST PANEL** (`Auth/StripeIdentity.jsx`): documents go to
+  Stripe, never stored on Spenny Piggy; PCI Level 1; UK law requires the check; our team only
+  views a result inside Stripe's dashboard. ⚠️ Every line was checked against the code — do
+  not overstate it to "nobody ever sees it" (admin ID sign-off does, inside Stripe).
+  `IdentityFailureReason::document_unverified_other` now says it is the PHOTO, not the person.
+- **`FinishYourReviewSubmission` has no card branch** and carries `rejectReason`
+  (`ProfileRejection::latestReasonFor`). `ReviewSubmission::cardPreviouslyAdded()` is deleted.
+- **`App\Models\ProfileRejection`** here is READ-ONLY (empty `$fillable`); the admin writes it.
+- **`config/creator_help.php` + `App\Support\CreatorHelpTicket`** are the originals; the admin
+  copies mirror them. `SupportTicketController::openHelp` is the tier-2 endpoint;
+  `message()` has a help branch (→ `awaiting_admin`, admin recipients mailed, tier-3 reply);
+  `show()` sends `ticket.is_help`, which `Support/Tickets/Show.jsx` reads for labels, the
+  resolve gate and the "Spenny Piggy team" sender name.
+- ⚠️ **Needs `queue:work`** for every mail above; `schedule:work` for the two commands.
 
 ## Detailed topic index — load the skill, do not inline this content
 

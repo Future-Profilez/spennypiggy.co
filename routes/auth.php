@@ -1397,6 +1397,9 @@ Route::middleware('auth')->group(function () {
         Route::get('gifter-access-posts/{username}', [ProfileController::class, 'gifterAccessPosts'])->name('gifter-access-posts');
 
         Route::post('support/tickets', [SupportTicketController::class, 'store'])->name('support.tickets.store');
+        // A creator opens a help conversation with the team (tier 2, config/creator_help.php).
+        // ⚠️ On the suspension write-allowlist — a suspended creator is who presses it.
+        Route::post('support/help', [SupportTicketController::class, 'openHelp'])->middleware('throttle:10,1')->name('support.help.open');
         Route::get('support/transaction-details', [SupportTicketController::class, 'transactionDetails'])->name('support.transaction-details');
         Route::get('support/tickets/{uuid}', [SupportTicketController::class, 'show'])->name('support.tickets.show');
         /*

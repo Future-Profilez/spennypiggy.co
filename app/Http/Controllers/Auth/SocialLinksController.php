@@ -109,23 +109,14 @@ class SocialLinksController extends Controller
             // These three are what verification is actually performed against:
             // an account with a public post history and a profile photo a human
             // reviewer can compare to a passport.
-            $socialPlatforms = SocialLinks::ACCEPTED_PLATFORMS;
-
-            // ✅ Enforce at least one filled field
-            $hasAtLeastOne = false;
-            foreach ($socialPlatforms as $platform) {
-                if ($request->filled($platform)) {
-                    $hasAtLeastOne = true;
-                    break;
-                }
-            }
-
-            if (! $hasAtLeastOne) {
-                return response([
-                    'status' => 422,
-                    'message' => 'Please add at least one social media link.',
-                ], 422);
-            }
+            // Read BEFORE the payload is turned into a proposal: it is both the
+            // fallback for a field the form did not send and the thing this save
+            // is compared against.
+            //
+            // ⚠️ `uuid` used to be regenerated here on every save, because it is
+            // fillable and was passed in the VALUES array rather than the match array.
+            // The row's public identifier changed each time a creator edited a handle.
+            $existing = SocialLinks::where('user_id', $userId)->first();
 
             // ✅ Prepare data (ALLOW NULLS)
             //
@@ -140,16 +131,6 @@ class SocialLinksController extends Controller
             //
             // Nothing new can be written to them, which is the whole point; what
             // is already there is theirs.
-
-            // Read BEFORE the payload is turned into a proposal: it is both the
-            // fallback for a field the form did not send and the thing this save
-            // is compared against.
-            //
-            // ⚠️ `uuid` used to be regenerated here on every save, because it is
-            // fillable and was passed in the VALUES array rather than the match array.
-            // The row's public identifier changed each time a creator edited a handle.
-            $existing = SocialLinks::where('user_id', $userId)->first();
-
             $data = [
                 'whoyouinto' => self::submittedValue($request, 'whoyouinto', $existing),
                 'updated_at' => now(),
@@ -157,6 +138,28 @@ class SocialLinksController extends Controller
 
             foreach (SocialLinks::ACCEPTED_PLATFORMS as $platform) {
                 $data[$platform] = self::submittedValue($request, $platform, $existing);
+            }
+
+            // ✅ Enforce at least one filled field across proposed handles and existing retired handles.
+            // A creator cannot remove their last handle (Gate #2: 422 "Please add at least one social media link."),
+            // but an existing creator updating their visibility alone or keeping a legacy handle (e.g. facebook)
+            // must not be rejected.
+            $allProposedHandles = Arr::only($data, SocialVisibility::platforms())
+                + Arr::only($existing?->getAttributes() ?? [], SocialVisibility::platforms());
+
+            $hasAtLeastOne = false;
+            foreach ($allProposedHandles as $val) {
+                if (filled($val)) {
+                    $hasAtLeastOne = true;
+                    break;
+                }
+            }
+
+            if (! $hasAtLeastOne) {
+                return response([
+                    'status' => 422,
+                    'message' => 'Please add at least one social media link.',
+                ], 422);
             }
 
             /*
@@ -195,9 +198,15 @@ class SocialLinksController extends Controller
              * ⚠️ Narrowed against the handles THIS save proposes, not the stored row —
              * a creator types a handle and shows it in the same submit.
              */
+            // ⚠️ `$data` carries ONLY the three accepted platforms, so narrowing against
+            // it alone made every RETIRED handle (facebook, youtube, …) unpublishable for
+            // ever — the stored row is merged UNDER the submission so a legacy handle the
+            // creator still renders can be shown, while a handle cleared in this save
+            // (explicit null in `$data`) still wins over its stored value.
             $visibility = SocialVisibility::forStorage(
                 $request->input('public_platforms'),
-                Arr::only($data, SocialVisibility::platforms()),
+                Arr::only($data, SocialVisibility::platforms())
+                    + Arr::only($existing?->getAttributes() ?? [], SocialVisibility::platforms()),
             );
 
             $user = Auth::user();

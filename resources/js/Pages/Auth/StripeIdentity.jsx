@@ -1,4 +1,5 @@
 import LoaderButton from "@/Components/LoaderButton";
+import GetHelpButton from "@/Components/Help/GetHelpButton";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import { useState } from "react";
 import axios from "axios";
@@ -130,6 +131,77 @@ export default function StripeIdentity({ auth }) {
                                 </p>
                             </div>
 
+                            {/*
+                             * 🚨 THE TRUST PANEL (client decision, 7 Sep 2026).
+                             * Measured on the live database: of the creators who
+                             * reached this step with an approved profile and a
+                             * connected Stripe account, a third never pressed the
+                             * button, and the ones who wrote in asked the same
+                             * thing — "where does my passport go?". The answer is
+                             * Stripe, and it was nowhere on this screen.
+                             *
+                             * ⚠️ Every line is TRUE of the shipped system, checked
+                             * against the code: the document is uploaded to
+                             * Stripe's own hosted flow (`createVerificationSession`
+                             * hands the browser a Stripe URL), nothing lands on our
+                             * servers, and the only way a person here sees it is
+                             * through Stripe's own dashboard on a 30-second link
+                             * (admin ID sign-off). Do not overstate it to "nobody
+                             * ever sees it" — an admin does, inside Stripe.
+                             */}
+                            <div className="mb-4 bg-white p-4 rounded-box-sm border-black">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="inline-flex items-center rounded-box-xs bg-[#635BFF] px-2 py-0.5 text-[11px] font-bold tracking-wide text-white">
+                                        stripe
+                                    </span>
+                                    <p className="text-sm font-bold text-black">
+                                        Your ID is checked by Stripe, not stored by us
+                                    </p>
+                                </div>
+                                <ul className="text-sm text-gray-800 space-y-1.5 list-none pl-0">
+                                    <li className="flex gap-2">
+                                        <span aria-hidden="true">🔒</span>
+                                        <span>
+                                            Your passport photo and selfie go straight to
+                                            Stripe’s secure servers. They are never uploaded
+                                            to or stored on Spenny Piggy.
+                                        </span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                        <span aria-hidden="true">🏦</span>
+                                        <span>
+                                            Stripe is a PCI Level 1 certified payments
+                                            company and runs ID checks for millions of
+                                            businesses worldwide.
+                                        </span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                        <span aria-hidden="true">⚖️</span>
+                                        <span>
+                                            UK law requires us to confirm who receives
+                                            payouts before money can be sent — this is
+                                            that check, done once.
+                                        </span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                        <span aria-hidden="true">👀</span>
+                                        <span>
+                                            Our team only ever views a check result inside
+                                            Stripe’s own dashboard — we never download or
+                                            keep a copy.
+                                        </span>
+                                    </li>
+                                </ul>
+                                <a
+                                    href="https://stripe.com/privacy"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-3 inline-block text-sm font-semibold underline text-black hover:opacity-70 transition-opacity duration-200"
+                                >
+                                    How Stripe handles your data →
+                                </a>
+                            </div>
+
                             {isProcessing && (
                                 <div className="mb-4 text-yellow-900 bg-yellow-50 p-4 rounded-box-sm border border-yellow-200">
                                     <p className="font-bold mb-1">
@@ -230,12 +302,16 @@ export default function StripeIdentity({ auth }) {
                             {/* A flagged check can't be retried, so it gets a route
                                 to a human instead of a button that cannot help. */}
                             {isFlagged ? (
-                                <a
-                                    href="mailto:support@spennypiggy.co?subject=Identity%20verification%20review"
-                                    className="mt-6 block text-center text-xl px-4 py-[10px] bg-black !text-white w-full rounded-box-sm hover:!bg-[#FF007F] hover:!text-black font-bold"
-                                >
-                                    CONTACT SUPPORT
-                                </a>
+                                /* A flagged check already has a support ticket
+                                   opened FOR the creator (tier 1); this button
+                                   reaches the same conversation, never a mailto. */
+                                <div className="mt-6">
+                                    <GetHelpButton
+                                        code="identity_help"
+                                        label="Talk to our team about this"
+                                        className="w-full !text-base"
+                                    />
+                                </div>
                             ) : (
                                 <div className="mt-6">
                                     <LoaderButton
@@ -278,12 +354,11 @@ export default function StripeIdentity({ auth }) {
                                 >
                                     Back to profile
                                 </Link>
-                                <a
-                                    href="mailto:support@spennypiggy.co"
-                                    className="text-[#FF007F] hover:underline font-semibold"
-                                >
-                                    support@spennypiggy.co
-                                </a>
+                                <GetHelpButton
+                                    code="identity_help"
+                                    variant="link"
+                                    label="Need help? Ask our team"
+                                />
                             </div>
                         </div>
                     </div>

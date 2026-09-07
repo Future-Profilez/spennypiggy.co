@@ -57,27 +57,27 @@ class JourneyNudgeTest extends TestCase
         ], $overrides));
     }
 
-    public function test_a_creator_two_days_into_a_step_is_due_the_first_reminder(): void
+    public function test_a_creator_three_days_into_a_step_is_due_the_first_reminder(): void
     {
-        $creator = $this->stuckCreator('identity', 2);
+        $creator = $this->stuckCreator('identity', 3);
 
-        $this->assertSame(2, app(CreatorJourneyService::class)->nudgeStageFor($creator));
+        $this->assertSame(3, app(CreatorJourneyService::class)->nudgeStageFor($creator));
     }
 
-    public function test_a_creator_one_day_in_is_not_due_anything_yet(): void
+    public function test_a_creator_two_days_in_is_not_due_anything_yet(): void
     {
-        $creator = $this->stuckCreator('identity', 1);
+        $creator = $this->stuckCreator('identity', 2);
 
         $this->assertNull(app(CreatorJourneyService::class)->nudgeStageFor($creator));
     }
 
-    public function test_a_creator_past_day_seven_gets_the_second_reminder_not_the_first(): void
+    public function test_a_creator_past_the_last_stage_gets_the_last_reminder_not_the_first(): void
     {
-        // Newest threshold first. Somebody already weeks past both when this shipped must
-        // receive exactly ONE message, not a backlog of two.
+        // Newest threshold first. Somebody already weeks past every stage when this shipped
+        // must receive exactly ONE message, not a backlog of three.
         $creator = $this->stuckCreator('identity', 30);
 
-        $this->assertSame(7, app(CreatorJourneyService::class)->nudgeStageFor($creator));
+        $this->assertSame(23, app(CreatorJourneyService::class)->nudgeStageFor($creator));
     }
 
     public function test_first_listing_is_never_nudged_by_this_command(): void
@@ -116,7 +116,7 @@ class JourneyNudgeTest extends TestCase
     public function test_the_command_queues_one_reminder_and_never_repeats_it(): void
     {
         Queue::fake();
-        $creator = $this->stuckCreator('identity', 2);
+        $creator = $this->stuckCreator('identity', 3);
 
         $this->artisan('creators:nudge-journey')->assertSuccessful();
         Queue::assertPushed(SendEngagementNotification::class, 1);
@@ -128,20 +128,20 @@ class JourneyNudgeTest extends TestCase
         $this->assertDatabaseHas('engagement_notifications', [
             'user_id' => $creator->id,
             'type' => 'journey_nudge',
-            'dedup_key' => 'identity:2',
+            'dedup_key' => 'identity:3',
         ]);
     }
 
     public function test_moving_to_a_new_step_earns_a_fresh_reminder(): void
     {
         Queue::fake();
-        $creator = $this->stuckCreator('stripe', 2);
+        $creator = $this->stuckCreator('stripe', 3);
 
         $this->artisan('creators:nudge-journey')->assertSuccessful();
 
         $creator->forceFill([
             'journey_step' => 'identity',
-            'journey_step_at' => now()->subDays(2),
+            'journey_step_at' => now()->subDays(3),
         ])->saveQuietly();
 
         $this->artisan('creators:nudge-journey')->assertSuccessful();
@@ -152,12 +152,28 @@ class JourneyNudgeTest extends TestCase
     public function test_a_dry_run_sends_nothing_and_claims_nothing(): void
     {
         Queue::fake();
-        $creator = $this->stuckCreator('identity', 2);
+        $creator = $this->stuckCreator('identity', 3);
 
         $this->artisan('creators:nudge-journey', ['--dry-run' => true])->assertSuccessful();
 
         Queue::assertNothingPushed();
         $this->assertDatabaseMissing('engagement_notifications', ['user_id' => $creator->id]);
+    }
+
+    /**
+     * 🚨 DORMANCY IS COUNTED FROM THE LAST MOVEMENT, NOT FROM SIGNUP (client decision,
+     * 7 Sep 2026). 25 live creators had signed up months ago and moved a step this
+     * week — the old `created_at` window wrote them off as dormant while they were
+     * actively coming back. Verified red against the `created_at` window.
+     */
+    public function test_an_old_signup_who_just_moved_a_step_is_not_dormant(): void
+    {
+        Queue::fake();
+        $this->stuckCreator('identity', 3, ['created_at' => now()->subDays(200)]);
+
+        $this->artisan('creators:nudge-journey')->assertSuccessful();
+
+        Queue::assertPushed(SendEngagementNotification::class, 1);
     }
 
     public function test_a_dormant_creator_is_left_alone_unless_asked_for(): void
@@ -229,7 +245,7 @@ class JourneyNudgeTest extends TestCase
     {
         // $marketing = false bypasses the consent gate, so the preference has to be
         // honoured here or the unsubscribe link in the email is decorative.
-        $creator = $this->stuckCreator('identity', 2, ['creator_updates_enabled' => false]);
+        $creator = $this->stuckCreator('identity', 3, ['creator_updates_enabled' => false]);
 
         $channels = (new \ReflectionClass(NudgeStuckJourney::class))
             ->getMethod('channelsFor');
@@ -245,11 +261,11 @@ class JourneyNudgeTest extends TestCase
     public function test_the_email_copy_comes_from_the_journey_steps_never_a_second_copy(): void
     {
         // If these drift, the email tells a creator something the dashboard does not.
-        $creator = $this->stuckCreator('identity', 2);
+        $creator = $this->stuckCreator('identity', 3);
 
-        $payload = app(NudgeStuckJourney::class)->payloadFor($creator, 2);
+        $payload = app(NudgeStuckJourney::class)->payloadFor($creator, 3);
 
-        $this->assertSame(FinishYourSetup::subjectFor('identity', 2), $payload['title']);
+        $this->assertSame(FinishYourSetup::subjectFor('identity', 3), $payload['title']);
         $this->assertSame(CreatorJourneyService::STEPS['identity']['body'], $payload['body']);
         $this->assertSame(FinishYourSetup::class, $payload['mailable']);
     }
@@ -259,7 +275,7 @@ class JourneyNudgeTest extends TestCase
         // A step added to the journey with no copy here would mail the default line, which
         // says nothing about what the creator is supposed to do.
         foreach (CreatorJourneyService::nudgeableSteps() as $step) {
-            $this->assertNotSame('Finish setting up your Spenny Piggy page', FinishYourSetup::subjectFor($step, 2), $step);
+            $this->assertNotSame('Finish setting up your Spenny Piggy page', FinishYourSetup::subjectFor($step, 3), $step);
             $this->assertNotSame('You are part-way through setting up your page.', FinishYourSetup::contextFor($step), $step);
         }
     }

@@ -4,9 +4,7 @@ namespace App\Mail;
 
 use App\Http\Controllers\EmailPreferenceController;
 use App\Models\User;
-use App\Services\SubscriptionActivationService;
 use App\Support\ReviewSubmission;
-use App\Support\SubscriptionPlan;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
@@ -47,7 +45,12 @@ class FinishYourReviewSubmission extends Mailable
         protected string $creatorName,
         /** @var array<int, string> Human phrases, e.g. "a payment card". */
         protected array $missing,
-        protected bool $cardPreviouslyAdded = false,
+        /**
+         * Why the profile was turned down LAST time, when it was (client
+         * decision, 7 Sep 2026). The live column is cleared on resubmit, so this
+         * comes from `ProfileRejection::latestReasonFor()`.
+         */
+        protected ?string $rejectReason = null,
     ) {}
 
     /**
@@ -81,24 +84,12 @@ class FinishYourReviewSubmission extends Mailable
     {
         $user = User::find($this->userId);
 
-        $needsCard = in_array('a payment card', $this->missing, true);
-
         /*
-         * 🚨 THE FREE-UNTIL-FIRST-SALE PROMISE IS NOT UNIVERSAL, AND PRINTING IT
-         * AT A CREATOR WHO HAS ALREADY SOLD IS A LIE ABOUT THEIR OWN BILL.
-         *
-         * `SubscriptionActivationService::hasEverMadeSale()` is what the
-         * subscription screen already branches on for exactly this reason. The
-         * copy itself comes from `config/creator_subscription.php` through
-         * SubscriptionPlan, never typed here — the same figure is printed on a
-         * dozen other surfaces and one of them being retyped is how a mail ends
-         * up quoting a price the platform does not charge.
+         * ⚠️ NO CARD BRANCH ANY MORE (7 Sep 2026). The card left the review queue's
+         * requirements, so `queueBlockers()` never names it and the free-period /
+         * lapsed-card copy that lived here had nothing left to say. The mail is now
+         * WHY (last rejection reason) + WHAT (the missing list) + one route.
          */
-        $freePeriod = $needsCard
-            && SubscriptionPlan::freeUntilFirstSale()
-            && $user
-            && ! app(SubscriptionActivationService::class)->hasEverMadeSale($user);
-
         return new Content(
             view: 'email.finish-review-submission',
             with: [
@@ -106,20 +97,9 @@ class FinishYourReviewSubmission extends Mailable
                 'creatorName' => $this->creatorName,
                 'missing' => $this->missing,
                 'missingSentence' => ReviewSubmission::readableList($this->missing),
-                'needsCard' => $needsCard,
-                // "Add your card" reads as though we lost it, to somebody whose
-                // payment simply failed. Different sentence, same action.
-                'cardLapsed' => $needsCard && $this->cardPreviouslyAdded,
-                'freePeriod' => $freePeriod,
-                'promise' => $freePeriod ? SubscriptionPlan::copy('promise_long') : '',
-                'reassurance' => $freePeriod ? SubscriptionPlan::copy('reassurance') : '',
-                'priceLine' => SubscriptionPlan::copy($freePeriod ? 'price_line' : 'active_price_line'),
-                'actionUrl' => $needsCard
-                    ? url('/activate-subscription')
-                    : url('/'.($user->username ?? '')),
-                'actionLabel' => $needsCard
-                    ? ($this->cardPreviouslyAdded ? 'Update your card' : 'Add your card')
-                    : 'Finish your profile',
+                'rejectReason' => $this->rejectReason ? trim($this->rejectReason) : null,
+                'actionUrl' => url('/'.($user->username ?? '')),
+                'actionLabel' => 'Finish your profile',
                 'unsubscribeUrl' => $user
                     ? EmailPreferenceController::generateUnsubscribeToken($user, 'creator_updates_enabled')
                     : null,

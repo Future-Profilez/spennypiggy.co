@@ -2,7 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\FounderBonus;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Mail\Mailable;
@@ -44,9 +44,9 @@ class FounderPayoutRejection extends Mailable
     {
         $period = null;
         if (! empty($this->founderBonus->month)) {
-            $period = \Carbon\Carbon::parse($this->founderBonus->month)->format('F Y');
+            $period = Carbon::parse($this->founderBonus->month)->format('F Y');
         } elseif (! empty($this->founderBonus->qualification_date)) {
-            $period = \Carbon\Carbon::parse($this->founderBonus->qualification_date)->format('F Y');
+            $period = Carbon::parse($this->founderBonus->qualification_date)->format('F Y');
         } else {
             $period = now()->format('F Y');
         }

@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Models\MonthlyCharge;
 use App\Models\SocialLinks;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -104,43 +103,19 @@ final class ReviewSubmission
             $missing[] = 'a social handle';
         }
 
-        // "Card added" is the active subscription — the same thing the journey card and
-        // the admin queue check, so the button and the queue behind it cannot disagree.
-        if (! in_array((int) $user->subscription_status, [1, 2], true)) {
-            $missing[] = 'a payment card';
-        }
-
+        /*
+         * 🚨 THE CARD IS NOT HERE ANY MORE (client decision, 7 Sep 2026).
+         *
+         * It used to be the third of four requirements, asked before a human had
+         * looked at the profile. Measured live: 21 creators ever started the card
+         * checkout, 11 abandoned it, and the creator's OWN card is checked against
+         * nothing — no fingerprint, no duplicate detection — so it filtered
+         * motivation, not fraud. Every real gate (human review, Stripe Connect KYC,
+         * Stripe Identity) sits AFTER it and nothing can be listed or paid without
+         * them. The card is now asked once the profile is APPROVED, before payouts:
+         * `StripeController::subscriptionGate()` still refuses Connect without one.
+         */
         return $missing;
-    }
-
-    /**
-     * The admin queue's own card test, mirrored EXACTLY.
-     *
-     * 🚨 THIS IS NOT `subscription_status`, AND THE DIFFERENCE IS THE POINT.
-     * `CreatorReviewService::whereProfileComplete()` (admin) treats ANY
-     * `monthly_charges` row carrying one of these statuses as a card on file, with
-     * **no date-range check**. `User::$subscription_status` additionally validates
-     * the trial and subscription end dates, so a stale `trialing` row whose trial
-     * end has passed reads as 0 there and as a card here.
-     *
-     * The queue query is what decides whether an admin can see the creator, so for
-     * THAT question the admin's looser test is the correct one. Measured on the live
-     * database 6 Sep 2026: zero rows differ today, so this is a drift with no live
-     * impact — which is exactly the kind that surfaces months later as "the console
-     * says they are waiting and their own page says they are not".
-     *
-     * ⚠️ Mirrors `User::scopeHasActiveSubscription()`'s status list; keep them in
-     * step. `orWhere('users.is_subscribed', 1)` is the admin's second clause.
-     */
-    private static function hasCardTheQueueAccepts(User $user): bool
-    {
-        if ((int) ($user->is_subscribed ?? 0) === 1) {
-            return true;
-        }
-
-        return MonthlyCharge::where('user_id', $user->id)
-            ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'trial_ending'])
-            ->exists();
     }
 
     /**
@@ -154,7 +129,8 @@ final class ReviewSubmission
      *     row), which is right: the creator has to fix it before asking again.
      *   - This is the QUEUE gate. `CreatorReviewService::whereProfileComplete()`
      *     checks PRESENCE only — `whereNotNull('users.avatar')`, `whereNotNull('users.bio')`,
-     *     any handle column non-null — and never looks at an approval status. So a
+     *     any handle column non-null — and never looks at an approval status. (A card
+     *     was a fourth clause until 7 Sep 2026; it is asked after approval now.) So a
      *     creator holding a rejected handle and a card **IS** in the admin queue.
      *
      * Reading `missing()` here told 17 live creators "we cannot start the review
@@ -188,10 +164,8 @@ final class ReviewSubmission
             $blockers[] = 'a social handle';
         }
 
-        if (! self::hasCardTheQueueAccepts($user)) {
-            $blockers[] = 'a payment card';
-        }
-
+        // ⚠️ No card clause — `whereProfileComplete()` dropped it on 7 Sep 2026
+        // (card moved after approval). Same commit, both apps, or the two disagree.
         return $blockers;
     }
 
@@ -248,21 +222,6 @@ final class ReviewSubmission
     public static function isBlocked(User $user): bool
     {
         return self::state($user) === self::STATE_BLOCKED;
-    }
-
-    /**
-     * Had this creator EVER got a card on file?
-     *
-     * Separates "never added one" from "added one and it lapsed or was declined", which
-     * are different sentences to a person — telling somebody whose payment failed to
-     * "add your card" reads as though we lost it.
-     *
-     * ⚠️ Any row at all, including `expired` and `past_due`: the question is whether a
-     * card was ever attached, not whether it is live now.
-     */
-    public static function cardPreviouslyAdded(User $user): bool
-    {
-        return MonthlyCharge::where('user_id', $user->id)->exists();
     }
 
     /**

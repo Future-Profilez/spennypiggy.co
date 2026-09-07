@@ -280,11 +280,11 @@ MD,
 
 ## When you are charged
 
-Billing starts {{subscription.when_charged}}. Your card is collected at the same point in setup either way, but it is not charged until then.
+Billing starts {{subscription.when_charged}}. Your card is collected once your profile has been approved, before your payouts are connected — but it is not charged until then.
 
 ## Why we take the card before charging it
 
-The card is the filter that keeps automated sign-ups away from identity verification, which costs the platform money on every check, and away from the review queue. It is not a hold on your funds — nothing is taken.
+Your card is asked for after a person has approved your profile and before your payouts are set up. It is the filter that keeps automated accounts away from identity verification, which costs the platform money on every check. It is not a hold on your funds — nothing is taken.
 
 ## Cancelling
 

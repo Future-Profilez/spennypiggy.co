@@ -69,16 +69,9 @@ class CreatorJourneyService
             'route' => 'dashboard',
             'params' => [],
         ],
-        'subscription' => [
-            'title' => 'Add your card',
-            'body' => 'Takes a minute, and you are not charged until your first sale.',
-            'cta' => 'Add your card',
-            'route' => 'activate-subscription',
-            'params' => [],
-        ],
         'review' => [
             'title' => 'Submit your profile for review',
-            'body' => 'Photo, bio, handle and card are in — send it to the team. Payouts unlock once it is approved.',
+            'body' => 'Photo, bio and handle are in — send it to the team. Payouts unlock once it is approved.',
             'cta' => 'Submit for review',
             // 🚨 THIS STEP IS WHAT WAS MISSING (31 Aug 2026). `ProfileController::
             // updateProfileLockStatus` is the only thing that puts a creator in the review
@@ -88,6 +81,20 @@ class CreatorJourneyService
             // while sitting in no queue at all. Measured on the live DB: that was the
             // stall for most of the August ad-campaign signups.
             'route' => 'update.profile.lock.status',
+            'params' => [],
+        ],
+        'subscription' => [
+            'title' => 'Add your card',
+            // 🚨 AFTER approval, BEFORE payouts (client decision, 7 Sep 2026). It was
+            // step 3 of 9, asked of somebody no human had looked at yet, and it was
+            // the step most creators stopped on — see ReviewSubmission::missing().
+            // Approval is free and is the real filter; the card is what unlocks
+            // Connect (`StripeController::subscriptionGate()`), so it sits right
+            // before it. A creator can add it at ANY point — `activate-subscription`
+            // carries no gate — so nothing here can deadlock against the review.
+            'body' => 'Your page is approved. Add a card to unlock payouts — you are not charged until your first sale.',
+            'cta' => 'Add your card',
+            'route' => 'activate-subscription',
             'params' => [],
         ],
         'stripe' => [
@@ -152,7 +159,7 @@ class CreatorJourneyService
      * ⚠️ Order matters and mirrors STEPS. A step added to STEPS before `first_listing` must
      * be added here too, or the celebration fires while a real setup task is outstanding.
      */
-    public const SETUP_STEPS = ['profile', 'social', 'subscription', 'review', 'stripe', 'identity'];
+    public const SETUP_STEPS = ['profile', 'social', 'review', 'subscription', 'stripe', 'identity'];
 
     /**
      * What a step says once the creator has done their part and it is with an admin.
@@ -241,7 +248,11 @@ class CreatorJourneyService
      * payout notice. Moving to a new step resets the clock (`journey_step_at`), so the
      * cap is per step, not per creator.
      */
-    public const NUDGE_STAGES = [2, 7];
+    // 🚨 THREE, TEN DAYS APART, THEN SILENCE ON THAT STEP (client, 7 Sep 2026): the
+    // first while they still remember signing up, then two more a fortnight-ish apart.
+    // Finishing the step restarts the clock, so somebody who returns after two months
+    // and moves on hears about the NEW step — that is the point, not a leak.
+    public const NUDGE_STAGES = [3, 13, 23];
 
     /**
      * ⚠️ `first_listing` is DELIBERATELY ABSENT. It already has its own two-stage nudge
@@ -297,7 +308,15 @@ class CreatorJourneyService
             ->whereNotNull('journey_step_at');
 
         if (! $includeDormant) {
-            $query->where('created_at', '>=', now()->subDays(self::NUDGE_FRESH_WINDOW_DAYS));
+            /*
+             * 🚨 MEASURED FROM THE LAST MOVEMENT, NOT FROM SIGNUP (7 Sep 2026).
+             * `created_at` made a creator who signed up in June and finished a
+             * step YESTERDAY "dormant" — exactly the person a nudge is for. Live:
+             * 25 creators had moved a step inside 30 days on a signup older than
+             * that, and every one of them was being skipped. `journey_step_at` is
+             * when they entered the CURRENT step, i.e. the last time they acted.
+             */
+            $query->where('journey_step_at', '>=', now()->subDays(self::NUDGE_FRESH_WINDOW_DAYS));
         }
 
         return $query;

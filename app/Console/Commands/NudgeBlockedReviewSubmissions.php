@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Mail\FinishYourReviewSubmission;
 use App\Models\EngagementNotification;
+use App\Models\ProfileRejection;
 use App\Models\User;
 use App\Services\NotificationDispatcher;
 use App\Support\ReviewSubmission;
@@ -15,8 +16,8 @@ use Illuminate\Support\Facades\Log;
  * "You submitted, and one thing is still missing" — the reminder nobody else can send.
  *
  * 🚨 THESE CREATORS ARE INVISIBLE TO THE ADMIN CONSOLE, WHICH IS WHY THIS EXISTS.
- * `CreatorReviewService::whereProfileComplete()` requires a photo, a bio, a handle and a
- * card, so a creator carrying `profile_status_lock = 1` without one of those is in no
+ * `CreatorReviewService::whereProfileComplete()` requires a photo, a bio and a handle
+ * (a card too, until 7 Sep 2026), so a creator at `profile_status_lock = 1` missing one is in no
  * queue at all — nobody was ever going to notice them by hand, and their own screen used
  * to tell them there was nothing left to do. Measured on the live database 6 Sep 2026:
  * ALL 22 creators at lock 1 were in exactly that state, one of them for 36 days.
@@ -253,21 +254,21 @@ class NudgeBlockedReviewSubmissions extends Command
      */
     public function payloadFor(User $user, array $missing): array
     {
-        $needsCard = in_array('a payment card', $missing, true);
-
         return [
             'title' => FinishYourReviewSubmission::subjectLine(),
             'body' => 'Your profile is submitted. We cannot start the review until you add '
                 .ReviewSubmission::readableList($missing)
                 .'. Add it and it goes to the team on its own.',
-            'url' => $needsCard ? '/activate-subscription' : '/'.($user->username ?? ''),
+            'url' => '/'.($user->username ?? ''),
             'module' => 'profile',
             'mailable' => FinishYourReviewSubmission::class,
             'mailable_args' => [
                 'userId' => $user->id,
                 'creatorName' => $user->name ?: ($user->username ?? 'Creator'),
                 'missing' => $missing,
-                'cardPreviouslyAdded' => $needsCard && ReviewSubmission::cardPreviouslyAdded($user),
+                // WHY they were turned down last time, when they were (7 Sep 2026).
+                // The live column is cleared on resubmit; the history table is not.
+                'rejectReason' => ProfileRejection::latestReasonFor($user),
             ],
         ];
     }

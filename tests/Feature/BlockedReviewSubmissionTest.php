@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\SubscriptionActivationService;
 use App\Support\ReviewSubmission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -20,7 +21,7 @@ use Tests\TestCase;
  *
  * 🚨 The bug these were written for: `profile_status_lock = 1` was read as "with
  * the review team" everywhere, while the admin queue ALSO requires a photo, bio,
- * handle and card — so 22 creators were told "our team is checking it now, there
+ * handle (and, until 7 Sep 2026, a card) — so 22 creators were told "our team is checking it now, there
  * is nothing else to do" while sitting in no queue at all.
  */
 class BlockedReviewSubmissionTest extends TestCase
@@ -74,12 +75,14 @@ class BlockedReviewSubmissionTest extends TestCase
     }
 
     /**
-     * 🚨 The whole fault. Lock 1 with no card is invisible to the admin queue, so
-     * calling it "with the review team" is a wait that can never end.
+     * 🚨 The whole fault. Lock 1 with something the queue requires missing is
+     * invisible to the admin queue, so calling it "with the review team" is a wait
+     * that can never end. (When found, the missing thing was a card on all 22; the
+     * card left the queue on 7 Sep 2026 and the photo stands in for it here.)
      */
-    public function test_a_submission_missing_a_card_is_blocked_not_with_the_team(): void
+    public function test_a_submission_missing_a_photo_is_blocked_not_with_the_team(): void
     {
-        $user = $this->creator(cardStatus: null);
+        $user = $this->creator(['avatar' => null]);
 
         $this->assertFalse(ReviewSubmission::isWithReviewTeam($user));
         $this->assertTrue(ReviewSubmission::isBlocked($user));
@@ -87,19 +90,26 @@ class BlockedReviewSubmissionTest extends TestCase
         $payload = ReviewSubmission::payload($user);
 
         $this->assertSame(ReviewSubmission::STATE_BLOCKED, $payload['state']);
-        $this->assertSame(['a payment card'], $payload['missing']);
+        $this->assertSame(['a profile photo'], $payload['missing']);
     }
 
     /**
-     * ⚠️ Not a one-off backlog. `past_due` is not a live subscription period, so a
-     * creator whose card is declined mid-review drops out of the queue silently.
+     * 🚨 THE CARD IS NOT A QUEUE REQUIREMENT ANY MORE (client decision, 7 Sep 2026).
+     * It is asked after approval, before payouts. A creator with no card, or with a
+     * declined one, is genuinely with the review team — mirrors the admin's
+     * `whereProfileComplete()`, which dropped its card clause in the same commit.
+     * Verified red against the old gate.
      */
-    public function test_a_declined_card_blocks_a_submission_that_was_already_in_the_queue(): void
+    public function test_a_card_no_longer_decides_whether_they_are_with_the_team(): void
     {
-        $user = $this->creator(cardStatus: 'past_due');
+        $noCard = $this->creator(cardStatus: null);
+        $declined = $this->creator(cardStatus: 'past_due');
 
-        $this->assertTrue(ReviewSubmission::isBlocked($user));
-        $this->assertContains('a payment card', ReviewSubmission::missing($user));
+        foreach ([$noCard, $declined] as $user) {
+            $this->assertTrue(ReviewSubmission::isWithReviewTeam($user));
+            $this->assertSame([], ReviewSubmission::queueBlockers($user));
+            $this->assertNotContains('a payment card', ReviewSubmission::missing($user));
+        }
     }
 
     /**
@@ -130,27 +140,17 @@ class BlockedReviewSubmissionTest extends TestCase
     }
 
     /**
-     * ⚠️ The card test mirrors the admin queue's SECOND clause too —
-     * `orWhere('users.is_subscribed', 1)` — which `subscription_status` knows
-     * nothing about. A creator carrying that flag and no `monthly_charges` row is
-     * in the queue, so telling them to add a card names the wrong problem.
-     *
-     * 🚨 A behavioural test, not a source scan: the two apps are in two
-     * repositories and only a rendered verdict can show they agree.
+     * The submit gate and the queue gate name the SAME three things now (photo,
+     * bio, handle) — the difference between them is only the rejected-asset
+     * clause the submit gate carries. Pinned so a card clause cannot creep back
+     * into either one on its own.
      */
-    public function test_the_queue_accepts_the_subscribed_flag_as_a_card(): void
+    public function test_neither_gate_names_a_card(): void
     {
-        $user = $this->creator(cardStatus: null);
+        $user = $this->creator(['avatar' => null, 'bio' => null], cardStatus: null);
 
-        $user->forceFill(['is_subscribed' => 1])->save();
-        $user = $user->fresh();
-
-        // The submit gate reads the live subscription period and finds none.
-        $this->assertContains('a payment card', ReviewSubmission::missing($user));
-
-        // The queue accepts the flag, so the creator is genuinely visible to an admin.
-        $this->assertSame([], ReviewSubmission::queueBlockers($user));
-        $this->assertTrue(ReviewSubmission::isWithReviewTeam($user));
+        $this->assertSame(['a profile photo', 'a bio'], ReviewSubmission::missing($user));
+        $this->assertSame(['a profile photo', 'a bio'], ReviewSubmission::queueBlockers($user));
     }
 
     public function test_an_unsubmitted_creator_gets_no_payload_at_all(): void
@@ -177,18 +177,14 @@ class BlockedReviewSubmissionTest extends TestCase
      * The whole point of leaving the lock at 1: adding the missing thing puts the
      * creator in the queue on their own, with nothing to submit again.
      */
-    public function test_adding_the_card_moves_them_to_the_review_team_with_no_resubmission(): void
+    public function test_adding_the_photo_moves_them_to_the_review_team_with_no_resubmission(): void
     {
-        $user = $this->creator(cardStatus: null);
+        $user = $this->creator(['avatar' => null]);
 
         $this->assertTrue(ReviewSubmission::isBlocked($user));
 
-        MonthlyCharge::create([
-            'user_id' => $user->id,
-            'status' => 'trialing',
-            'current_start_trial_date' => now()->subDay(),
-            'current_end_trial_date' => now()->addYear(),
-        ]);
+        // DB::table, not save() — `updated_at` orders the admin queue.
+        DB::table('users')->where('id', $user->id)->update(['avatar' => 'https://ucarecdn.com/avatar/']);
 
         $user = $user->fresh();
 
@@ -198,7 +194,7 @@ class BlockedReviewSubmissionTest extends TestCase
 
     public function test_the_shared_payload_carries_the_state_for_the_creators_own_screen(): void
     {
-        $user = $this->creator(cardStatus: null);
+        $user = $this->creator(['avatar' => null]);
 
         $this->actingAs($user)
             ->get('/account')
@@ -235,7 +231,7 @@ class BlockedReviewSubmissionTest extends TestCase
     {
         Queue::fake();
 
-        $user = $this->creator(cardStatus: null);
+        $user = $this->creator(['avatar' => null]);
 
         $this->artisan('review:nudge-blocked')->assertSuccessful();
 
@@ -264,7 +260,7 @@ class BlockedReviewSubmissionTest extends TestCase
     {
         Queue::fake();
 
-        $user = $this->creator(['suspended_account' => 1], cardStatus: null);
+        $user = $this->creator(['suspended_account' => 1, 'avatar' => null]);
 
         $this->artisan('review:nudge-blocked')->assertSuccessful();
 
@@ -282,7 +278,7 @@ class BlockedReviewSubmissionTest extends TestCase
     {
         Queue::fake();
 
-        $user = $this->creator(cardStatus: null);
+        $user = $this->creator(['avatar' => null]);
 
         $this->artisan('review:nudge-blocked')->assertSuccessful();
         $this->artisan('review:nudge-blocked')->assertSuccessful();
@@ -296,7 +292,7 @@ class BlockedReviewSubmissionTest extends TestCase
     {
         Queue::fake();
 
-        $user = $this->creator(cardStatus: null);
+        $user = $this->creator(['avatar' => null]);
 
         $this->artisan('review:nudge-blocked')->assertSuccessful();
 
@@ -333,7 +329,7 @@ class BlockedReviewSubmissionTest extends TestCase
     {
         Queue::fake();
 
-        $user = $this->creator(cardStatus: null);
+        $user = $this->creator(['avatar' => null]);
 
         $this->artisan('review:nudge-blocked', ['--dry-run' => true])->assertSuccessful();
 
@@ -349,16 +345,39 @@ class BlockedReviewSubmissionTest extends TestCase
      */
     public function test_the_mail_names_the_missing_thing_and_offers_the_route(): void
     {
-        $user = $this->creator(cardStatus: null);
+        $user = $this->creator(['avatar' => null]);
 
         $html = (new FinishYourReviewSubmission(
             $user->id,
             'Ben',
-            ['a payment card'],
+            ['a profile photo'],
         ))->render();
 
-        $this->assertStringContainsString('a payment card', $html);
-        $this->assertStringContainsString('/activate-subscription', $html);
+        $this->assertStringContainsString('a profile photo', $html);
+        $this->assertStringContainsString('/'.$user->username, $html);
+    }
+
+    /**
+     * 🚨 THE MAIL NAMES WHY THE PROFILE WAS TURNED DOWN LAST TIME, when it was
+     * (client decision, 7 Sep 2026). "Something is missing" to somebody who was
+     * rejected for a reason sends them to fix the wrong thing.
+     */
+    public function test_the_mail_carries_the_last_rejection_reason_when_there_is_one(): void
+    {
+        $user = $this->creator(['avatar' => null]);
+
+        $html = (new FinishYourReviewSubmission(
+            $user->id,
+            'Ben',
+            ['a profile photo'],
+            'Your photo did not show your face clearly.',
+        ))->render();
+
+        $this->assertStringContainsString('Your photo did not show your face clearly.', $html);
+
+        $plain = (new FinishYourReviewSubmission($user->id, 'Ben', ['a profile photo']))->render();
+
+        $this->assertStringNotContainsString('turned down', $plain);
     }
 
     /**
@@ -367,7 +386,7 @@ class BlockedReviewSubmissionTest extends TestCase
      */
     public function test_the_free_period_promise_is_absent_for_a_creator_who_has_sold(): void
     {
-        $user = $this->creator(cardStatus: null);
+        $user = $this->creator(['avatar' => null]);
 
         $this->mock(SubscriptionActivationService::class, function ($mock) {
             $mock->shouldReceive('hasEverMadeSale')->andReturn(true);

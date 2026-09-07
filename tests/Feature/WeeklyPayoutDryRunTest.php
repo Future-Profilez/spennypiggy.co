@@ -83,8 +83,8 @@ class WeeklyPayoutDryRunTest extends TestCase
             'status' => 'succeeded',
         ]);
 
-        // Only payable once past the 7-day hold.
-        Payment::where('stripe_session_id', $sessionId)->update(['created_at' => now()->subDays(10)]);
+        // Only payable once past the earning-period cutoff.
+        Payment::where('stripe_session_id', $sessionId)->update(['created_at' => now()->subDays(20)]);
 
         $tip = TipGoalsPayment::create([
             'tip_goal_id' => $tipGoalId,

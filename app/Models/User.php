@@ -116,6 +116,24 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'updated_at',
         'deleted_at',
         'stripe_id',
+        /*
+         * 🚨 `social_links` IS EAGER-LOADED ON EVERY USER (`$with` below) AND MUST
+         * NOT SERIALISE BY DEFAULT (6 Sep 2026). A creator's handles are collected to
+         * verify them, not to publish them — `App\Support\SocialVisibility` decides
+         * what a stranger may see, and it is applied to the `slinks` prop only. But
+         * the profile page ALSO ships the whole `User` as `user`, and so does every
+         * listing loaded `with('user')` (bill and membership checkout, post pages) —
+         * so with the relation visible, every hidden handle rode into `data-page`
+         * beside the masked one. Found by the reviewer, not by the tests, which
+         * asserted `slinks` alone.
+         *
+         * Hidden here, exposed DELIBERATELY where the row is the viewer's own:
+         * `HandleInertiaRequests` builds `auth.user.social_links` explicitly, and
+         * `AuthenticatedSessionController` calls `makeVisible('social_links')` on
+         * the OWNER branch only. ⚠️ `$hidden` affects JSON only — every PHP
+         * `$user->social_links` read is unchanged.
+         */
+        'social_links',
     ];
 
     protected $casts = [

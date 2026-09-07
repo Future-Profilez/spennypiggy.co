@@ -314,6 +314,16 @@ class Kernel extends ConsoleKernel
             ->weeklyOn(1, '09:50')
             ->withoutOverlapping();
 
+        /*
+         * Invite REJECTED creators back — every two months ×3, then yearly (client
+         * decision, 7 Sep 2026). Reason-gated, never lock-gated: lock 0 is also the
+         * default, and mailing 280 drafts "come back and fix it" would name a
+         * rejection that never happened. Monday 09:55, clear of the two above.
+         */
+        $schedule->command('profiles:nudge-rejected')
+            ->weeklyOn(1, '09:55')
+            ->withoutOverlapping();
+
         // Recompute where each creator has got to. This must run BEFORE the admin app's
         // onboarding drip (10:00 and 20:00) reads `users.journey_step`, or the drip coaches
         // creators on a step they finished yesterday. Hourly rather than daily because the

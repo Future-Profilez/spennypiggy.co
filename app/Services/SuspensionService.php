@@ -8,6 +8,7 @@ use App\Models\MonthlyCharge;
 use App\Models\User;
 use App\Models\WishItemSubscription;
 use App\StripeControl;
+use App\Support\CreatorHelpTicket;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -76,6 +77,16 @@ class SuspensionService
         ])->save();
 
         $this->freezePayouts($user);
+
+        /*
+         * Tier 1 help ticket (config/creator_help.php) — only for a SUSPENSION
+         * (tone `suspended`), never a `limited` account: an unpaid subscription
+         * has a button that fixes it, a policy suspension has a person. Never
+         * throws; the suspension is already written.
+         */
+        if ((config("suspension.reasons.{$reasonCode}.tone") ?? 'suspended') === 'suspended') {
+            CreatorHelpTicket::openFor($user, 'policy_suspension');
+        }
 
         return true;
     }

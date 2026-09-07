@@ -8,6 +8,7 @@ use App\Services\CreatorJourneyService;
 use App\Services\NotificationDispatcher;
 use App\Support\MarketingConsent;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -209,8 +210,11 @@ class NudgeStuckJourney extends Command
 
     private function isDormant(User $user): bool
     {
-        return $user->created_at
-            && $user->created_at->lt(now()->subDays(CreatorJourneyService::NUDGE_FRESH_WINDOW_DAYS));
+        // Same clock as nudgeCandidateQuery(): the last time they MOVED, not signup.
+        $movedAt = $user->journey_step_at ? Carbon::parse($user->journey_step_at) : null;
+
+        return $movedAt === null
+            || $movedAt->lt(now()->subDays(CreatorJourneyService::NUDGE_FRESH_WINDOW_DAYS));
     }
 
     /**

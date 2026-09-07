@@ -85,6 +85,7 @@ use App\Services\UserProfileService;
 use App\StripeControl;
 use App\StripeControl as AppStripeControl;
 use App\Support\AlertRouter;
+use App\Support\CreatorHelpTicket;
 use App\Support\IdentityCheckState;
 use App\Support\IdentityFailureReason;
 use App\Support\IdentityReverifiedAlert;
@@ -949,6 +950,17 @@ class StripeWebhookController extends Controller
         ] + IdentityCheckState::attributes($sessionStatus));
 
         SendIdentityVerificationEmail::dispatch($user, $isFraudulent ? 'fraud' : 'failed');
+
+        /*
+         * Tier 1 help ticket (config/creator_help.php): a fraud flag cannot be
+         * retried and a declined consent screen is an objection, not a failure —
+         * both get a conversation with a person opened FOR them. Never throws.
+         */
+        if ($isFraudulent) {
+            CreatorHelpTicket::openFor($user, 'fraud_suspected');
+        } elseif ($code === 'consent_declined') {
+            CreatorHelpTicket::openFor($user, 'consent_declined');
+        }
 
         $explained = IdentityFailureReason::explain($payload);
 

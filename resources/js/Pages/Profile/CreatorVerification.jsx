@@ -1,4 +1,5 @@
 import { Link, usePage } from "@inertiajs/react";
+import GetHelpButton from "@/Components/Help/GetHelpButton";
 import axios from "axios";
 import { useState, useEffect, useRef } from "react";
 import EditProfile from "../account/EditProfile";
@@ -145,6 +146,14 @@ function ActionCard({ step, selfCheck }) {
                         {step.reason ||
                             "Our team asked for a change. Update it and submit again."}
                     </p>
+                    {/* A rejection is the moment a creator objects — give them a
+                        person, not a mailto (config/creator_help.php, tier 2). */}
+                    <div className="mt-2">
+                        <GetHelpButton
+                            code={step.key === "identity" ? "identity_help" : "rejected_assets"}
+                            label="Ask our team about this"
+                        />
+                    </div>
 
                     {step.note && (
                         <p className="mt-2 text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-box-sm p-2">
@@ -319,11 +328,12 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const profileStatusLock = creatorUser?.profile_status_lock;
     const profileRejectReason =
         creatorUser?.profile_reject_reason || user?.profile_reject_reason;
+    // 🚨 NO CARD CLAUSE (client decision, 7 Sep 2026). The card is asked AFTER the
+    // profile is approved, before payouts — see the `trial` step below. Mirrors
+    // `ReviewSubmission::missing()` on the server: if that gate gains a clause,
+    // this list gains it in the same commit, or the button and the refusal disagree.
     const hasBasicDetails =
-        hasAnySocialMedia &&
-        creatorUser?.avatar &&
-        creatorUser?.bio &&
-        hasSubscription;
+        hasAnySocialMedia && creatorUser?.avatar && creatorUser?.bio;
     /*
      * 🚨 "SUBMITTED" IS NOT "WITH THE REVIEW TEAM", AND READING THE BARE LOCK
      * PUT 22 CREATORS IN A WAIT THAT COULD NEVER END (6 Sep 2026).
@@ -440,14 +450,14 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         creatorUser?.identity_verification_error,
     );
 
-    // "Submit for review" stays locked until socials, photo and bio are APPROVED
-    // and the trial is active. Name what's still outstanding — a bare "Locked"
-    // tells the creator nothing about why, or what would unlock it.
+    // "Submit for review" stays locked until socials, photo and bio are in and
+    // nothing is rejected. Name what's still outstanding — a bare "Locked" tells
+    // the creator nothing about why, or what would unlock it. ⚠️ The card is NOT
+    // a blocker here (7 Sep 2026) — it is asked after approval.
     const submitBlockers = [
         !hasAnySocialMedia && "socials",
         !creatorUser?.avatar && "photo",
         !creatorUser?.bio && "bio",
-        !hasSubscription && "payment method",
         (isSocialRejected || avatarStatus == 2 || bioStatus == 2) &&
             "fixes for rejected items",
     ].filter(Boolean);
@@ -481,7 +491,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const editorBtn =
         "inline-block bg-gray-100 hover:bg-gray-200 border-2 border-black rounded-box-sm px-4 py-2.5 text-sm font-bold text-black transition-colors";
     const primaryBtn =
-        "inline-block bg-[#FF007F] text-white border-2 border-black rounded-box-sm px-4 py-2.5 text-sm font-bold active:translate-x-0.5 active:translate-y-0.5 transition-all";
+        // Black on brand pink — white measures 3.78:1 and fails AA (house rule).
+        "inline-block bg-[#FF007F] text-black border-2 border-black rounded-box-sm px-4 py-2.5 text-sm font-bold hover:brightness-110 active:brightness-95 active:translate-x-0.5 active:translate-y-0.5 transition-all";
 
     /*
      * ⚠️ Kept for the SUBMIT step only. It used to sit on every asset, which
@@ -607,24 +618,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             ),
         },
         {
-            key: "trial",
-            label: "Payment method",
-            title: "Add your card",
-            mins: 1,
-            description: `${SUBSCRIPTION_COPY.promise} — then ${PRICE_FORMATTED} + VAT a month. Needed before we can verify you.`,
-            hint: [
-                SUBSCRIPTION_COPY.reassurance,
-                "Cancel any time from your account settings",
-            ],
-            state: hasSubscription ? "done" : "todo",
-            approvedState: hasSubscription,
-            action: (
-                <Link className={primaryBtn} href="/activate-subscription">
-                    Add your card
-                </Link>
-            ),
-        },
-        {
             key: "submit",
             label: "Submit",
             title: "Submit profile for review",
@@ -662,6 +655,34 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             ),
         },
         {
+            key: "trial",
+            label: "Payment method",
+            title: "Add your card",
+            mins: 1,
+            /*
+             * 🚨 THE CARD COMES AFTER APPROVAL (client decision, 7 Sep 2026). It sat
+             * before Submit and was the step most creators stopped on — asked of
+             * somebody no human had looked at yet. It still gates Connect
+             * (`StripeController::subscriptionGate()`), so it sits right before it.
+             * ⚠️ No deadlock by construction: Submit no longer asks for a card, and
+             * this step asks only for approval — never for a Submit.
+             */
+            description: `Your page is approved. Add a card to unlock payouts — ${SUBSCRIPTION_COPY.promise}, then ${PRICE_FORMATTED} + VAT a month.`,
+            hint: [
+                SUBSCRIPTION_COPY.reassurance,
+                "Cancel any time from your account settings",
+            ],
+            state: hasSubscription ? "done" : "todo",
+            approvedState: hasSubscription,
+            locked: profileStatusLock != 2,
+            lockReason: "Unlocks once your profile is approved.",
+            action: (
+                <Link className={primaryBtn} href="/activate-subscription">
+                    Add your card
+                </Link>
+            ),
+        },
+        {
             key: "stripe",
             label: "Payouts",
             title: "Connect payments",
@@ -682,7 +703,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             lockReason:
                 profileStatusLock != 2
                     ? "Unlocks once your profile is approved."
-                    : "Needs an active subscription.",
+                    : "Add your card first — it unlocks payouts.",
             action: (
                 <Link className={primaryBtn} href="/stripe/authorize">
                     Connect with Stripe

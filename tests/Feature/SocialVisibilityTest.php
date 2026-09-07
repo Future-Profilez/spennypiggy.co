@@ -198,6 +198,68 @@ class SocialVisibilityTest extends TestCase
     }
 
     /**
+     * 🚨 THE MASK ON `slinks` IS NOT ENOUGH — the same page ships the whole `User`
+     * as `user`, and `User::$with` eager-loads `social_links`. Found in review: every
+     * hidden handle rode into `data-page` beside the masked prop. The relation is now
+     * in `User::$hidden`; the owner alone gets it back via `makeVisible`.
+     */
+    public function test_the_user_prop_carries_no_handles_for_a_visitor(): void
+    {
+        $user = $this->creator([
+            'instagram' => 'https://instagram.com/jane',
+            'public_platforms' => ['instagram'],
+        ]);
+
+        $this->get('/'.$user->username)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->missing('user.social_links'));
+
+        $this->actingAs($user)
+            ->get('/'.$user->username)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('user.social_links'));
+    }
+
+    /**
+     * 🚨 Every OTHER serialised User is covered by the same `$hidden` entry — bill
+     * and membership checkout load the listing `with('user')`, post pages ship the
+     * author. One assertion on `toArray()` covers all of them.
+     */
+    public function test_a_serialised_user_never_carries_the_relation_by_default(): void
+    {
+        $user = $this->creator(['instagram' => 'https://instagram.com/jane']);
+
+        $array = User::with('social_links')->find($user->id)->toArray();
+
+        $this->assertArrayNotHasKey('social_links', $array);
+    }
+
+    /**
+     * ⚠️ The save posts only the three ACCEPTED platforms, so a retired handle
+     * (facebook, youtube, …) is never in the submission — narrowing against the
+     * submission alone made those permanently unpublishable. Found in review.
+     */
+    public function test_a_retired_platform_can_be_made_public_through_the_save(): void
+    {
+        $user = $this->creator([
+            'instagram' => 'https://instagram.com/jane',
+            'facebook' => 'https://facebook.com/jane',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('save_social_links'), [
+                'instagram' => 'https://instagram.com/jane',
+                'public_platforms' => ['instagram', 'facebook'],
+            ])
+            ->assertOk();
+
+        $this->assertEqualsCanonicalizing(
+            ['instagram', 'facebook'],
+            $this->linksFor($user)->public_platforms,
+        );
+    }
+
+    /**
      * 🚨 Visibility is NOT reviewable content: hiding a handle must not re-open the
      * row for review, zero its status or supersede a request already pending.
      */
@@ -219,5 +281,69 @@ class SocialVisibilityTest extends TestCase
 
         $this->assertSame([], $links->public_platforms);
         $this->assertSame(SocialLinks::STATUS_APPROVED, (int) $links->status);
+    }
+
+    /**
+     * ⚠️ A creator verified on a retired platform (e.g. facebook) with no accepted platform
+     * must be able to toggle visibility without triggering a 422 "Please add at least one social media link".
+     */
+    public function test_a_creator_with_only_a_retired_platform_can_toggle_visibility(): void
+    {
+        $user = $this->creator([
+            'facebook' => 'https://facebook.com/jane',
+            'public_platforms' => [],
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('save_social_links'), [
+                'public_platforms' => ['facebook'],
+            ])
+            ->assertOk();
+
+        $this->assertSame(['facebook'], $this->linksFor($user)->public_platforms);
+    }
+
+    /**
+     * 🚨 Gate #2: A creator cannot remove their last handle — attempting to clear all
+     * handles must return 422.
+     */
+    public function test_clearing_the_last_handle_is_still_rejected_with_422(): void
+    {
+        $user = $this->creator([
+            'instagram' => 'https://instagram.com/jane',
+            'public_platforms' => ['instagram'],
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('save_social_links'), [
+                'instagram' => null,
+                'public_platforms' => [],
+            ])
+            ->assertStatus(422)
+            ->assertJsonFragment(['message' => 'Please add at least one social media link.']);
+    }
+
+    /**
+     * 🚨 UserProfileService must eager-load ALL 14 handle columns defined in
+     * ProfileAssetVisibility::HANDLE_COLUMNS, including onlyfans, loyalfans, fansly, manyvids.
+     */
+    public function test_user_profile_service_eager_loads_all_handle_columns(): void
+    {
+        $user = $this->creator([
+            'onlyfans' => 'https://onlyfans.com/jane',
+            'fansly' => 'https://fansly.com/jane',
+            'loyalfans' => 'https://loyalfans.com/jane',
+            'manyvids' => 'https://manyvids.com/jane',
+            'public_platforms' => ['onlyfans', 'fansly'],
+        ]);
+
+        $loaded = app(\App\Services\UserProfileService::class)->getUserWithRelations($user->username);
+
+        $this->assertNotNull($loaded);
+        $this->assertNotNull($loaded->social_links);
+        $this->assertSame('https://onlyfans.com/jane', $loaded->social_links->onlyfans);
+        $this->assertSame('https://fansly.com/jane', $loaded->social_links->fansly);
+        $this->assertSame('https://loyalfans.com/jane', $loaded->social_links->loyalfans);
+        $this->assertSame('https://manyvids.com/jane', $loaded->social_links->manyvids);
     }
 }

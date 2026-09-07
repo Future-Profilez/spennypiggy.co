@@ -88,6 +88,16 @@ class UserProfileService
                 'edit_bio_reason',
                 'profile_status_lock',
                 'is_subscribed',
+                // 🚨 WITHOUT THIS THE SETUP CELEBRATION FIRES ON EVERY SINGLE LOAD, FOR EVER.
+                // This select is a column ALLOWLIST and the result is cached for 10 minutes,
+                // and an unloaded attribute reads as NULL rather than throwing
+                // (`preventAccessingMissingAttributes()` is off) — so
+                // `SetupCelebrationPayload` saw a null timestamp on a creator who had already
+                // been shown the popup and answered `celebrate: true` again. Nothing errors,
+                // and the DB column is written correctly the whole time. Same class as the
+                // `avatar_cdn_modifier` fault: a partial select that omits a column the
+                // consumer reads is silent in every log.
+                'setup_celebrated_at',
                 'is_founder',
                 'show_piggy_bank',
                 'created_at',
@@ -101,7 +111,7 @@ class UserProfileService
                     // decides whether ANY of them may be shown at all
                     // (App\Support\SocialVisibility) — without it every handle reads
                     // as hidden, including the ones the creator turned on.
-                    'social_links:id,user_id,instagram,twitter,tiktok,twitch,facebook,youtube,tumblr,reddit,discord,other,status,reason,public_platforms',
+                    'social_links:id,user_id,instagram,twitter,tiktok,twitch,facebook,youtube,tumblr,reddit,discord,onlyfans,loyalfans,fansly,manyvids,other,status,reason,public_platforms',
                     'user_categories:id,user_id,category,created_at',
                     // Include uuid so perma_link accessor can build a playable URL
                     'intro:id,user_id,uuid,poster,poster_token,height,width,approved,created_at',

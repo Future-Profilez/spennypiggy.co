@@ -1,4 +1,5 @@
-import { usePage } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
+import axios from "axios";
 
 /*
  * The account-state notice a suspended or limited creator reads on their OWN
@@ -61,9 +62,28 @@ export default function SuspendedBanner({ className = "" }) {
             }
         }
 
-        window.location.href =
-            "mailto:support@spennypiggy.co?subject=" +
-            encodeURIComponent(limited ? "Limited account" : "Suspended account review");
+        /*
+         * 🚨 NOT A mailto ANY MORE (7 Sep 2026). Inside the installed app a
+         * mailto opens nothing, and a mail is a conversation the back office
+         * cannot see. A help ticket is opened (or the open one reused) and the
+         * creator lands in it. `support.help.open` is on the suspension
+         * write-allowlist — the door this button opens must not be refused.
+         */
+        axios
+            .post("/support/help", {
+                code: "suspension",
+                message: limited
+                    ? "My account is limited and I need help getting it back."
+                    : "My account is suspended and I would like it reviewed.",
+            })
+            .then(({ data }) => {
+                if (data?.redirect) router.visit(data.redirect);
+            })
+            .catch(() => {
+                window.location.href =
+                    "mailto:support@spennypiggy.co?subject=" +
+                    encodeURIComponent(limited ? "Limited account" : "Suspended account review");
+            });
     };
 
     /*

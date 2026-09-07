@@ -57,6 +57,7 @@ export default function PotVisibilityNotice({
     moderationReason = null,
     onFix = null,
     fixLabel = null,
+    potUuid = null,
 }) {
     if (!visibility || visibility.visible) return null;
 
@@ -83,6 +84,15 @@ export default function PotVisibilityNotice({
             <p className={`mt-1 text-xs font-medium leading-relaxed ${tone.body}`}>
                 {moderationReason || visibility.message}
             </p>
+            {visibility.code === 'moderation_hold' && (
+                <div className="mt-2">
+                    <GetHelpButton
+                        code="moderation_hold"
+                        source="piggy_pots"
+                        sourceId={potUuid}
+                    />
+                </div>
+            )}
             {visibility.fix && !showFix && (
                 <p className={`mt-1 text-xs font-semibold ${tone.body}`}>
                     {visibility.fix}

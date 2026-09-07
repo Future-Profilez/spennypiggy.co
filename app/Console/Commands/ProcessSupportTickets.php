@@ -88,7 +88,10 @@ class ProcessSupportTickets extends Command
         }
 
         // 2. Escalate ANY ticket that has been open for > 7 days and is not yet resolved/closed
-        $overdue7Days = SupportTicket::whereIn('status', ['awaiting_creator', 'awaiting_supporter'])
+        // `open` / `awaiting_admin` are HELP tickets (config/creator_help.php) — they
+        // are never awaiting_creator, so the SLA reminders above skip them by
+        // construction, but a week without a person answering is still escalated.
+        $overdue7Days = SupportTicket::whereIn('status', ['awaiting_creator', 'awaiting_supporter', 'open', 'awaiting_admin'])
             ->where('created_at', '<', now()->subDays(7))
             ->whereNull('escalated_at')
             ->get();

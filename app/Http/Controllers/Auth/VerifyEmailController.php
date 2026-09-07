@@ -11,6 +11,7 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class VerifyEmailController extends Controller
@@ -86,7 +87,29 @@ class VerifyEmailController extends Controller
             // is one number; `source` keeps them separable.
             AnalyticsEvent::push('email_verified', ['source' => 'email_link']);
 
-            return redirect()->route('user.show', [$user->username])
+            /*
+             * 🚨 SIGN THEM IN, OR THE LINK LANDS THEM ON AN EMPTY PAGE (7 Sep 2026).
+             *
+             * This endpoint is unauthenticated and `/{username}` is ALSO the public
+             * profile, so a creator who registered on a laptop and opened the mail on
+             * a phone was marked verified and dropped, logged out, on their own public
+             * profile — no photo, no bio, no dashboard, no journey card, not even a
+             * sign-in prompt. A blank white page. Measured on the live database: 272
+             * creators verified their address and 155 of them then uploaded nothing.
+             *
+             * The link is a temporary SIGNED url (`hasValidSignature()` above) that
+             * only the mailbox owner could have received, which is a stronger proof
+             * of possession than the password they typed a minute ago — so signing
+             * them in on it gives away nothing the link did not already prove. The
+             * OTP path signs nobody in because it REQUIRES a session to begin with.
+             *
+             * ⚠️ `?verified=1` matches what the authenticated `__invoke` path sends,
+             * so the dashboard's one welcome behaviour keys on one flag.
+             */
+            Auth::login($user);
+            $request->session()->regenerate();
+
+            return redirect(route('user.show', [$user->username]).'?verified=1')
                 ->with('success', 'Email verified successfully');
         } catch (\Throwable $th) {
             Log::error('Email verification failed: '.$th->getMessage());

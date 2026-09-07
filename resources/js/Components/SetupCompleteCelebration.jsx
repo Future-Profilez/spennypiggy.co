@@ -41,6 +41,13 @@ import Popup from "@/Components/Popup";
  * so the motion is removed rather than shortened. Same rule GrowthBonusTracker's celebration
  * follows.
  */
+/**
+ * Above `Popup`'s Dialog (`z-[9995]`), and deliberately a named constant: the two numbers
+ * live in different files and a burst painted under the sheet looks exactly like a burst
+ * that never fired.
+ */
+const CONFETTI_Z_INDEX = 10000;
+
 const fireConfetti = async () => {
     try {
         if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return;
@@ -70,6 +77,16 @@ const fireConfetti = async () => {
                     scalar: 0.9,
                     colors,
                     disableForReducedMotion: true,
+                    // 🚨 THE LIBRARY'S DEFAULT z-index IS 100 AND THIS PANEL IS `z-[9995]`,
+                    // SO THE DEFAULT PUTS EVERY PIECE BEHIND AN OPAQUE FULL-SCREEN SHEET.
+                    // The confetti fires, the canvas exists, nothing errors — it is simply
+                    // painted underneath the one thing covering the whole viewport, which
+                    // reads as "the confetti did not work". The two existing call sites
+                    // (`PiggyPotWidget`, `leaderboard/Board`) fire onto an ordinary page and
+                    // are right to leave it alone; a burst over a MODAL never can.
+                    // ⚠️ The canvas is `pointer-events: none`, so raising it cannot swallow a
+                    // click on the buttons underneath.
+                    zIndex: CONFETTI_Z_INDEX,
                     ...shot,
                 });
             }, index * 140);
@@ -81,8 +98,14 @@ const fireConfetti = async () => {
 };
 
 export default function SetupCompleteCelebration() {
-    const { auth } = usePage().props;
-    const celebration = auth?.setup_celebration ?? null;
+    // 🚨 A PAGE PROP, NOT `auth.setup_celebration`. `AuthenticatedSessionController`
+    // returns it in the profile's own top-level props array beside `profile_self_check`
+    // and `growth_bonus_panel` — there is no `auth` key in that array at all. The first
+    // version read one level up, which is permanently undefined, so NOTHING RENDERED and
+    // nothing errored: exactly the `SuspendedBanner` fault (`auth.user.suspension`) this
+    // codebase has already been bitten by once. Pinned by a two-language test, because
+    // neither the build nor any scanner can see that the two halves agree.
+    const { setup_celebration: celebration = null } = usePage().props;
     const shouldCelebrate = celebration?.celebrate === true;
 
     const [open, setOpen] = useState(false);
@@ -165,7 +188,14 @@ export default function SetupCompleteCelebration() {
             modalclass="bg-[#FFF6EC]"
         >
             <div className="flex min-h-0 w-full flex-1 flex-col overflow-y-auto customScrollbar">
-                <div className="mx-auto flex w-full max-w-2xl flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-10 md:px-8 md:pt-16">
+                {/* ⚠️ The bottom padding is deliberately generous on a phone. `Popup` hides
+                    the tab bar while it is open (`body.sheet-open`), so nothing sits UNDER
+                    this — but the last control is a text button and at 24px it landed hard
+                    against the home indicator, which reads as the sheet being cut off. The
+                    inset is added TO the padding rather than max()'d against it, so a device
+                    with an indicator gets clearance on top of the breathing room, not
+                    instead of it. */}
+                <div className="mx-auto flex w-full max-w-2xl flex-col px-5 pb-[calc(env(safe-area-inset-bottom)+2.5rem)] pt-8 md:px-8 md:pb-10 md:pt-16">
                     {/* The eyebrow is the state, the headline is the news. Black on brand
                         pink at 5.56:1 — white on this fill is 3.78:1 and fails AA at label
                         size, which is the house rule everywhere a pink fill carries text. */}
@@ -203,11 +233,21 @@ export default function SetupCompleteCelebration() {
                             { label: "Payouts", value: "Connected" },
                             { label: "Identity", value: "Verified" },
                         ].map((cell) => (
-                            <div key={cell.label} className="bg-white px-3 py-4 text-center">
-                                <div className="text-[11px] font-black uppercase tracking-[0.14em] text-neutral-500">
+                            <div
+                                key={cell.label}
+                                className="min-w-0 bg-white px-1.5 py-3.5 text-center sm:px-3 sm:py-4"
+                            >
+                                <div className="text-[10px] font-black uppercase tracking-[0.1em] text-neutral-500 sm:text-[11px] sm:tracking-[0.14em]">
                                     {cell.label}
                                 </div>
-                                <div className="mt-1 text-sm font-black uppercase tracking-wider text-black">
+                                {/* 🚨 SMALLER AND UNTRACKED ON A PHONE, OR THE LONGEST WORD IS
+                                    CUT IN HALF. At 390px each of the three cells is ~116px
+                                    wide, and "CONNECTED" set at 14px black-weight with
+                                    `tracking-wider` measures ~91px against ~92px of content
+                                    box — so it clipped mid-word, on the one cell that says
+                                    the creator can be paid. Letter-spacing is what tips it
+                                    over, and it buys nothing at this size. */}
+                                <div className="mt-1 text-[11px] font-black uppercase leading-[1.2] text-black sm:text-sm sm:tracking-wider">
                                     {cell.value}
                                 </div>
                             </div>
@@ -226,20 +266,31 @@ export default function SetupCompleteCelebration() {
                         the two surfaces cannot send a creator to different places. */}
                     <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                         {options.map((option) => (
+                            /* ⚠️ A ROW ON A PHONE, A COLUMN FROM `sm` UP. Stacked three-deep,
+                               the column layout ran the sheet far past the fold — the creator
+                               scrolled through the whole message and then three tall cards
+                               before reaching anything tappable. Laid out as rows the same
+                               three choices read at a glance, and the column layout is kept
+                               where there is width for them side by side. */
                             <button
                                 key={option.title}
                                 type="button"
                                 onClick={option.go}
-                                className="group flex flex-col rounded-box-sm border-[3px] border-black bg-white p-4 text-left transition-colors duration-200 hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/50 motion-reduce:transition-none"
+                                className="group flex flex-row items-start gap-3 rounded-box-sm border-[3px] border-black bg-white p-4 text-left transition-colors duration-200 hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/50 motion-reduce:transition-none sm:flex-col sm:gap-0"
                             >
-                                <span aria-hidden="true" className="mb-2.5 text-3xl">
+                                <span
+                                    aria-hidden="true"
+                                    className="shrink-0 text-2xl leading-none sm:mb-2.5 sm:text-3xl"
+                                >
                                     {option.emoji}
                                 </span>
-                                <span className="mb-1 text-sm font-black uppercase tracking-wider text-black transition-colors group-hover:text-[#FF007F]">
-                                    {option.title}
-                                </span>
-                                <span className="text-xs font-bold leading-normal text-neutral-600">
-                                    {option.body}
+                                <span className="min-w-0">
+                                    <span className="block text-sm font-black uppercase tracking-wider text-black transition-colors group-hover:text-[#FF007F]">
+                                        {option.title}
+                                    </span>
+                                    <span className="mt-1 block text-xs font-bold leading-normal text-neutral-600">
+                                        {option.body}
+                                    </span>
                                 </span>
                             </button>
                         ))}

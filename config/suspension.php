@@ -166,6 +166,8 @@ return [
      */
     'allowed_write_routes' => [
         'logout',
+        // The "Get help with this" button on the suspended banner (7 Sep 2026).
+        'support.help.open',
         /*
          * 🚨 PAYING US IS ALWAYS PERMITTED, AND THAT IS NOT A LOOPHOLE.
          * `subscription_unpaid` tells the creator to renew, and without these

@@ -493,6 +493,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                                 <PotVisibilityNotice
                                                     visibility={pot.visibility}
                                                     moderationReason={pot.moderation_reason}
+                                                    potUuid={pot.uuid}
                                                     onFix={() => openEditModal(pot)}
                                                 />
                                                 <p className="text-black/80 font-medium text-sm mb-6 line-clamp-2 flex-grow">
