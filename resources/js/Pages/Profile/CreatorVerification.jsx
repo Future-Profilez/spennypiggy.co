@@ -645,10 +645,15 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 ? `Unlocks once you add or fix your ${listItems(submitBlockers)}.`
                 : null,
             action: (
+                /* 🚨 POST. As a GET this was a plain <a href> that anything fetching a
+                   URL submitted for the creator — a browser link-preload, a hover
+                   prerender, an extension link scanner. Measured live 7 Sep 2026. A
+                   prefetch of a POST route is a 405 and changes nothing. */
                 <Link
                     className={primaryBtn}
                     href={route("update.profile.lock.status")}
-                    method="get"
+                    method="post"
+                    as="button"
                 >
                     {profileRejectReason ? "Submit again" : "Submit for review"}
                 </Link>

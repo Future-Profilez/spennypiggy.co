@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Mail\FinishYourSetup;
 use App\Models\MonthlyCharge;
 use App\Models\SocialLinks;
 use App\Models\User;
+use App\Services\CreatorJourneyService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -62,7 +64,7 @@ class SubmitProfileForReviewTest extends TestCase
         $this->handles($user, ['instagram' => 'ben_lewis']);
 
         $this->actingAs($user)
-            ->get('/update-profile-lock-status')
+            ->post('/update-profile-lock-status')
             ->assertSessionHas('success');
 
         $this->assertSame(1, (int) $user->fresh()->profile_status_lock);
@@ -79,7 +81,7 @@ class SubmitProfileForReviewTest extends TestCase
         $this->handles($user, ['facebook' => 'ben.lewis']);
 
         $this->actingAs($user)
-            ->get('/update-profile-lock-status')
+            ->post('/update-profile-lock-status')
             ->assertSessionHas('success');
     }
 
@@ -89,7 +91,7 @@ class SubmitProfileForReviewTest extends TestCase
 
         $this->handles($user, []);
 
-        $this->actingAs($user)->get('/update-profile-lock-status');
+        $this->actingAs($user)->post('/update-profile-lock-status');
 
         $this->assertSame(0, (int) $user->fresh()->profile_status_lock);
         $this->assertStringContainsString('a social handle', session('error'));
@@ -101,7 +103,7 @@ class SubmitProfileForReviewTest extends TestCase
 
         $this->handles($user, ['instagram' => 'ben_lewis']);
 
-        $this->actingAs($user)->get('/update-profile-lock-status');
+        $this->actingAs($user)->post('/update-profile-lock-status');
 
         $error = session('error');
         $this->assertStringContainsString('a profile photo', $error);
@@ -121,7 +123,7 @@ class SubmitProfileForReviewTest extends TestCase
 
         $this->handles($user, ['instagram' => 'ben_lewis']);
 
-        $this->actingAs($user)->get('/update-profile-lock-status');
+        $this->actingAs($user)->post('/update-profile-lock-status');
 
         $this->assertSame(1, (int) $user->fresh()->profile_status_lock);
     }
@@ -155,7 +157,7 @@ class SubmitProfileForReviewTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get('/update-profile-lock-status')
+            ->post('/update-profile-lock-status')
             ->assertSessionHas('success');
 
         $this->assertSame(1, (int) $user->fresh()->profile_status_lock);
@@ -172,7 +174,7 @@ class SubmitProfileForReviewTest extends TestCase
         $this->handles($user, ['tiktok' => 'ben_lewis']);
 
         $this->actingAs($user)
-            ->get('/update-profile-lock-status')
+            ->post('/update-profile-lock-status')
             ->assertSessionHas('success');
     }
 
@@ -183,7 +185,7 @@ class SubmitProfileForReviewTest extends TestCase
 
         // Attempting to submit without fixing the bio must be refused
         $this->actingAs($user)
-            ->get('/update-profile-lock-status');
+            ->post('/update-profile-lock-status');
 
         $this->assertSame(0, (int) $user->fresh()->profile_status_lock);
         $this->assertStringContainsString('a bio', (string) session('error'));
@@ -203,7 +205,7 @@ class SubmitProfileForReviewTest extends TestCase
         $this->assertSame(0, (int) $fresh->bio_approved);
 
         $this->actingAs($user)
-            ->get('/update-profile-lock-status')
+            ->post('/update-profile-lock-status')
             ->assertSessionHas('success');
 
         $this->assertSame(1, (int) $user->fresh()->profile_status_lock);
@@ -216,9 +218,119 @@ class SubmitProfileForReviewTest extends TestCase
         $user->social_links()->update(['status' => SocialLinks::STATUS_REJECTED]);
 
         $this->actingAs($user)
-            ->get('/update-profile-lock-status');
+            ->post('/update-profile-lock-status');
 
         $this->assertSame(0, (int) $user->fresh()->profile_status_lock);
         $this->assertStringContainsString('a social handle', (string) session('error'));
+    }
+
+    /**
+     * 🚨 THE VERB IS THE FIX (7 Sep 2026).
+     *
+     * This route was a GET, so anything that merely FETCHES a URL submitted a
+     * creator's profile for them — a browser link-preload, a hover prerender, an
+     * extension link scanner, an inbox scanning the reminder email's own button.
+     * Measured live: krystal555 went into the review queue at 12:36:34 from an admin
+     * emulation session that clicked nothing, with `"method": "GET"` on the audit row.
+     *
+     * ⚠️ The assertion is about the METHOD, not about a message: a GET that answers
+     * anything other than 405 is a GET that could be prefetched, whatever it returns.
+     */
+    public function test_the_route_refuses_a_get(): void
+    {
+        $user = $this->creator();
+        $this->handles($user, ['instagram' => 'ben_lewis']);
+
+        // ⚠️ 404, not 405: `web.php`'s `/{username}/{page?}` catch-all is declared after
+        // `auth.php`, so the bare GET is read as a username and answered with the profile
+        // 404. What matters is that it is not a success and NOTHING was written — a GET
+        // that mutates is the fault, whatever status it renders.
+        $response = $this->actingAs($user)->get('/update-profile-lock-status');
+
+        $this->assertContains($response->getStatusCode(), [404, 405]);
+        $this->assertSame(0, (int) $user->fresh()->profile_status_lock);
+    }
+
+    /**
+     * 🚨 AN EMULATING ADMIN MAY NOT SUBMIT SOMEBODY ELSE'S PROFILE.
+     *
+     * Emulation has no write guard of its own — `EnforceEmulationTimeBox` only expires
+     * the session — so an admin on a creator's steps page holds full write access as
+     * that creator. Submitting is the creator's own declaration that they are ready,
+     * and a reviewer cannot tell a submission the owner never made from one they did.
+     */
+    public function test_an_emulating_admin_cannot_submit_for_the_creator(): void
+    {
+        $user = $this->creator();
+        $this->handles($user, ['instagram' => 'ben_lewis']);
+
+        $this->actingAs($user)
+            ->withSession(['emulated_by_admin' => true, 'emulation_admin_id' => 1])
+            ->post('/update-profile-lock-status')
+            ->assertSessionHas('error');
+
+        $this->assertSame(0, (int) $user->fresh()->profile_status_lock);
+    }
+
+    /**
+     * The control for the two guards above: a real creator, pressing the real button,
+     * still submits. A verb change that quietly breaks the feature is not a fix.
+     */
+    public function test_the_creator_can_still_submit_after_the_verb_change(): void
+    {
+        $user = $this->creator(['profile_reject_reason' => 'Social handle: not a creator']);
+        $this->handles($user, ['instagram' => 'ben_lewis']);
+
+        $this->actingAs($user)
+            ->post(route('update.profile.lock.status'))
+            ->assertSessionHas('success');
+
+        $fresh = $user->fresh();
+        $this->assertSame(1, (int) $fresh->profile_status_lock);
+        $this->assertNull($fresh->profile_reject_reason);
+    }
+
+    /**
+     * 🚨 THE THREE CTAs AND THE ROUTE CANNOT DRIFT.
+     *
+     * `CreatorVerification`'s Submit link, `CreatorJourneyCard`'s button and
+     * `OnboardingNudge`'s bar all render this step, and each one had to learn the new
+     * verb. They read it from the payload rather than hardcoding it, so this asserts
+     * the payload — the halves are in different languages and neither the build nor
+     * any scanner can see that they agree.
+     */
+    public function test_the_journey_payload_carries_the_post_verb(): void
+    {
+        $user = $this->creator();
+        $this->handles($user, ['instagram' => 'ben_lewis']);
+
+        $step = app(CreatorJourneyService::class)->nextStep($user->fresh());
+
+        $this->assertSame('review', $step['key']);
+        $this->assertSame('update.profile.lock.status', $step['route']);
+        $this->assertSame('post', $step['method']);
+
+        // A GET step is untouched — the verb is read off the route, not listed.
+        $this->assertSame('get', CreatorJourneyService::methodFor('dashboard'));
+    }
+
+    /**
+     * 🚨 THE REMINDER EMAIL MUST NOT LINK AT THE ACTION.
+     *
+     * While the route was a GET this mail's button submitted the profile — including
+     * when an inbox fetched the link on the recipient's behalf (Outlook Safe Links, a
+     * spam filter, a link preview). So the mail asking somebody to submit could submit
+     * for them. A POST-only step is sent to the page that carries the button instead.
+     */
+    public function test_the_reminder_email_does_not_link_at_the_submit_action(): void
+    {
+        $user = $this->creator();
+        $this->handles($user, ['instagram' => 'ben_lewis']);
+
+        $fresh = $user->fresh();
+        $rendered = (new FinishYourSetup($fresh->id, (string) $fresh->name, 'review'))->render();
+
+        $this->assertStringNotContainsString('update-profile-lock-status', $rendered);
+        $this->assertStringContainsString($user->username, $rendered);
     }
 }

@@ -23,6 +23,7 @@ use App\Http\Controllers\ComparisonController;
 use App\Http\Controllers\Creator\DisputeController;
 use App\Http\Controllers\Creator\ReviewHoldController;
 use App\Http\Controllers\CreatorActivityController;
+use App\Http\Controllers\CreatorConversionController;
 use App\Http\Controllers\CreatorLandingController;
 use App\Http\Controllers\CreatorPushController;
 use App\Http\Controllers\CreatorSetupCelebrationController;
@@ -1332,6 +1333,35 @@ Route::post('/signup-waitlist', [SignupWaitlistController::class, 'join'])
 Route::post('/push/heartbeat', [PushSubscriptionController::class, 'heartbeat'])
     ->middleware(['auth', 'throttle:20,1'])
     ->name('push.heartbeat');
+
+/*
+| A gifter turning their own account into a creator account.
+|
+| 🚨 THE WRITE IS THE POST, AND NOTHING LINKS AT IT. Every entry point — the
+| Account Settings card and the card on the gifter's own profile — links to the
+| PAGE. A GET that flips a role and re-opens a profile for review needs nothing
+| to click it (a link prefetch, a hover prerender, an inbox scanning a link), and
+| `NoWritingGetRoutesTest` exists because that exact fault put creators into the
+| admin review queue on 7 Sep 2026.
+|
+| ⚠️ Single-segment paths, so BOTH must stay above the auth.php require — that
+| file ends with the `/{username}/{page?}` profile catch-all and Laravel matches
+| in registration order, so `become-creator` declared after it is read as a
+| username and answered with the profile 404. `route:list` shows it either way,
+| which is what makes this hard to see.
+|
+| ⚠️ `verified` as well as `auth`: an unconfirmed address is one of the three
+| gates on the conversion itself, so an unverified account has no business on the
+| form. Run `php artisan ziggy:generate` after adding these.
+*/
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/become-creator', [CreatorConversionController::class, 'show'])
+        ->name('become.creator');
+
+    Route::post('/become-creator', [CreatorConversionController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('become.creator.store');
+});
 
 /*
 | The setup celebration has been seen — spends the creator's one-time popup.

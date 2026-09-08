@@ -271,7 +271,7 @@ class ProfileSelfCheckTest extends TestCase
 
         $user = $this->submitReady();
 
-        $this->actingAs($user)->get(route('update.profile.lock.status'));
+        $this->actingAs($user)->post(route('update.profile.lock.status'));
 
         $this->assertSame(1, (int) $user->fresh()->profile_status_lock);
 
@@ -291,8 +291,8 @@ class ProfileSelfCheckTest extends TestCase
 
         $user = $this->submitReady();
 
-        $this->actingAs($user)->get(route('update.profile.lock.status'));
-        $this->actingAs($user)->get(route('update.profile.lock.status'));
+        $this->actingAs($user)->post(route('update.profile.lock.status'));
+        $this->actingAs($user)->post(route('update.profile.lock.status'));
 
         Queue::assertPushed(SendEngagementNotification::class, 1);
 
@@ -311,7 +311,7 @@ class ProfileSelfCheckTest extends TestCase
 
         $user = $this->submitReady(['bio' => 'Weekly behind-the-scenes photo sets and a members-only vlog.']);
 
-        $this->actingAs($user)->get(route('update.profile.lock.status'));
+        $this->actingAs($user)->post(route('update.profile.lock.status'));
 
         $this->assertSame(1, (int) $user->fresh()->profile_status_lock);
         Queue::assertNothingPushed();

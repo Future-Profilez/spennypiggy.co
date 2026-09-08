@@ -63,7 +63,21 @@ export default function CreatorJourneyCard() {
         }
     };
 
-    const go = (name, params) => router.visit(route(name, params));
+    /*
+     * 🚨 THE VERB COMES FROM THE SERVER (`journey.method`, 7 Sep 2026).
+     *
+     * `update.profile.lock.status` is a POST now — as a GET it was submitted for
+     * creators by anything that fetches a URL. A bare `router.visit()` would meet a
+     * 405 on that step, so the method rides in the payload
+     * (`CreatorJourneyService::methodFor()` reads it off the route itself) and every
+     * CTA follows a verb change automatically. Defaults to 'get' for every other step.
+     *
+     * ⚠️ `ThreeWays` calls this too, with `dashboard` — a GET, unaffected.
+     */
+    const go = (name, params) =>
+        router.visit(route(name, params), {
+            method: journey.method === "post" ? "post" : "get",
+        });
 
     const profileUrl = auth?.user?.username
         ? route("user.show", auth.user.username)

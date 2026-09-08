@@ -5581,11 +5581,92 @@ written for.
   article a human edited (`edited_at`), and busts its own caches (`HelpContent::forget()`).
   It writes to `help_articles`, a small quiet table — not `users` or `sessions`, so it is not
   the migration-lock shape that took the site down on 7 Sep.
+- **Embeddings follow on the same hook** — `php artisan help:embed || true`, last step.
+  ⚠️ **A CONVENIENCE, NOT THE SAFETY NET:** `help:embed` is already scheduled **hourly**
+  (`Kernel`, `hourlyAt(24)`) and only re-embeds articles whose text changed, so the hook only
+  closes the ≤1 hour gap between a content deploy and the assistant seeing it.
+  ⚠️ On `HELP_AI_RETRIEVER=keyword` — what Groq forces, since it has no embedding model — it
+  is a deliberate quiet no-op and there is nothing to embed at all.
+  🚨 **`|| true` MUST STAY.** The command returns FAILURE on a provider misconfiguration and
+  on any article that fails, and a failed deploy hook fails the WHOLE deployment — so without
+  it one transient error at an AI provider blocks an unrelated release. The hourly run is what
+  reports a real embedding failure; a deploy is the wrong place to find out. Vapor runs deploy
+  hooks through `Process::fromShellCommandline` (vapor-core `CliHandler`), so `||` is real.
+- 🚨 **CHECK `HELP_AI_RETRIEVER` ON EVERY ENVIRONMENT RUNNING GROQ.** `config/help.php`
+  defaults it to **`vector`**, and Groq has no embedding model — so a Vapor environment with
+  `HELP_AI_BASE_URL` pointing at Groq and no `HELP_AI_RETRIEVER=keyword` answers
+  `embedding_unavailable` / `no_articles_embedded` on every question while every article page
+  renders perfectly. Nothing errors; the assistant is simply silent.
 - 🚨 **AN UNTRACKED BATCH FILE NOW FAILS THE WHOLE DEPLOY.** `HelpCentreSeeder` `use`s
   `ExtraArticles`, `FeatureArticles` and `CoverageArticles`; one missing from the artefact
   dies with `Class not found` and a failed hook fails the deployment. **`git commit -a` does
   not add an untracked file** — the same trap that shipped a schedule without its command on
   7 Sep. Add a new batch file **by name**.
+
+## 🚨 The assistant has an acceptance test now — `HelpAnswerCasesTest` (7 Sep 2026)
+
+Client direction: *"har ek ke sawal ke cases banao … ye feature kabhi fail nahi hona
+chahiye."*
+
+🚨 **RETRIEVAL IS THE WHOLE PRODUCT, AND NOTHING ELSE CAN SEE IT FAIL.** The model writes
+only from the articles `HelpSearch::rankArticles()` hands it, so a question that reaches the
+wrong articles produces a **confident answer about the wrong thing**, and one that reaches
+none produces "we do not have an answer for that". Neither errors, neither appears in any
+log, and both read perfectly on screen. `tests/Feature/HelpAnswerCasesTest.php` is 100
+questions phrased the way people type them, each pinned to the article that must be
+retrieved.
+
+- 🚨 **THE CONTRACT IS TOP `context_articles` (3), NOT TOP ONE.** The model is handed three
+  and writes from all of them, so an answer whose article is third is a correct answer.
+  Asserting rank 1 would fail cases that work and teach people to delete the test.
+- ⚠️ **IT CALLS NO API.** Retrieval is a database query, so the suite is deterministic, free
+  and fast — which is what lets it run on every change instead of being remembered.
+- ⚠️ **THE CASES ARE THE READER'S WORDS, NOT THE TITLES.** A case reworded to match a title
+  passes against an empty `keywords` field, which is the exact failure it guards.
+- ⚠️ An **acceptable-set** (`['a', 'b']`) is only for a genuinely ambiguous question — "what
+  am I allowed to sell" is answered by the content rules *or* the product list. It is never
+  a way to make a red case green.
+- **It found four real failures on its first run**, all keyword collisions no human would
+  have guessed: *"what things can i sell"* → suspension, *"cheapest i can charge"* →
+  chargebacks, *"how do i post something to a buyer"* → scheduled posts, *"what gets taken
+  off my sale"* → nothing relevant.
+
+🚨 **`price-limits` WAS RETITLED, AND THE TITLE IS WHY.** `str_contains` scoring gives a
+title 20 points a term against `keywords`' 14, and *"Why can I not set that price?"* only
+ever served a reader who had already been refused. It is **"How much can I charge for a
+listing?"** now, with the refusal wording moved into `keywords`, and all four intents
+(cheapest / minimum / refused / cannot set) land in the top 3. ⚠️ The **slug is unchanged** —
+titles may change freely, slugs never (`updateOrCreate` keys on the slug and would orphan the
+article).
+
+🚨 **A SCORER "FIX" WAS MEASURED, PROVED WORSE AND REVERTED — do not re-attempt it blind.**
+`score()` matches with `str_contains`, so **"charge" matches "chargebacks"** for full credit;
+the obvious repair is to weight a whole-word hit above a substring. Implemented, it took the
+suite from **2 failures to 8** and had to be reverted. The reason is `terms()` runs every word
+through `stem()`, so a query term is frequently a **fragment by design** — "reserving" arrives
+as "reserv" and must go on matching "reserve". Penalising substrings penalises stemming, which
+is most of the corpus. **The harness is what caught it**; without a hundred cases it would have
+shipped as an improvement.
+
+- Tests: `tests/Feature/HelpAnswerCasesTest.php` (103 — 100 questions plus three guards: every
+  case names a live article, and an off-topic question reaches no model at all,
+  `Http::assertNothingSent`). Whole Help suite **248 green**.
+
+### Measured cost of one answer (7 Sep 2026)
+
+| | |
+|---|---|
+| Retrieval | **29 ms, 2 queries** over 101 articles |
+| Fresh answer (one API call) | **991 ms** |
+| Same question again | **0 ms** — cached, no call |
+| Off-topic question | **19 ms, no call at all** |
+| Prompt | 2,578 system + 1,400 context + question ≈ **1,004 input tokens** |
+| Output ceiling | 400 tokens · **≈1,404 tokens per answer** |
+| Groq free tier | 8,000 tokens/min → **~5 answers a minute** · 1,000 req/day per ACCOUNT |
+
+🚨 **THE OFF-TOPIC ZERO IS THE PROPERTY THAT MAKES A FREE TIER SURVIVABLE**, and it is one
+line of ranking away from being lost — a stranger typing nonsense must never reach the model.
+Pinned by `test_an_off_topic_question_never_reaches_the_model`.
 
 ## The help centre covers the features that shipped (4 Sep 2026)
 
@@ -5826,6 +5907,41 @@ the root `../CLAUDE.md`. What lives HERE:
   `show()` sends `ticket.is_help`, which `Support/Tickets/Show.jsx` reads for labels, the
   resolve gate and the "Spenny Piggy team" sender name.
 - ⚠️ **Needs `queue:work`** for every mail above; `schedule:work` for the two commands.
+
+## Gifter → creator conversion — website half (7 Sep 2026)
+
+The rules — the resets and why they exist, the three gates, the shared column, the admin
+surfaces — are in the root `../CLAUDE.md` ("A gifter can turn their own account into a
+creator account"). **Read that before touching any of this.** What lives HERE:
+
+- **`App\Support\GifterToCreator`** is the one conversion path;
+  **`CreatorConversionController`** is `show` (Inertia `Auth/BecomeCreator`) + `store`.
+- 🚨 **`GET|POST /become-creator` MUST STAY ABOVE `require __DIR__.'/auth.php'`** — single
+  segment, and that file ends with the `/{username}/{page?}` catch-all, so declared after it
+  the path is read as a username and answered with the profile 404. `route:list` shows it
+  either way, which is what makes this invisible. `auth` + `verified`, POST `throttle:10,1`.
+- ⚠️ **`verified` on the GET is deliberate**: an unconfirmed address is one of the three
+  gates, so Laravel bounces an unverified account to `verification.notice` before the page
+  renders — which is the right screen for them anyway. The `email_unverified` blocker copy is
+  therefore near-unreachable and is kept for the hand-made POST.
+- 🚨 **`Pages/Auth/BecomeCreator.jsx` REUSES `register/CreatorProfileStep`** rather than
+  copying it. That component takes every value as a prop, so the badges, the social handle and
+  the referral field here are literally the screen a new creator answers — a parallel form
+  would drift the first time signup changed and the two would then validate differently.
+  ⚠️ Its `Consent` row is a deliberate local copy (the register one is private to that file).
+- **Entry points:** `Pages/accountsetting/Accountsetting.jsx` (the existing card, now a
+  `<Link>` — it was a `<div onClick={contactSupport}>`) and `Components/BecomeCreatorCard.jsx`
+  on the gifter's own profile, mounted in `Dashboard.jsx` under the cover behind
+  **`IsloggedIn && !isCreatorProfile`**. 🚨 **Both halves of that gate are load-bearing** —
+  `/{username}` is also the public profile, so without the owner gate every visitor to a fan's
+  page is invited to convert an account that is not theirs.
+- ⚠️ **Literal paths, never `route()`** — `resources/js/ziggy.js` is a generated snapshot and
+  `route()` THROWS for a name it does not carry until `ziggy:generate` runs, which would take
+  the whole profile down to render one card. Same for the referral check
+  (`/check-referral-code/{code}`) inside its `.catch()`.
+- **`App\Mail\CreatorAccountOpened`** + `resources/views/email/creator-account-opened.blade.php`
+  — one transactional confirmation, queued. **Needs `queue:work`.**
+- Tests: `tests/Feature/GifterToCreatorConversionTest.php` (23).
 
 ## Detailed topic index — load the skill, do not inline this content
 

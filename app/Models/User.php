@@ -179,6 +179,12 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         // NOT in $fillable — see the column's own migration. Written with forceFill by
         // CreatorSetupCelebrationController and by `setup:backfill-celebrated`.
         'setup_celebrated_at' => 'datetime',
+        // When a GIFTER account became a CREATOR one. NULL means "signed up as
+        // whatever they are" — it is not a boolean about today's role.
+        //
+        // ⚠️ Write-once, and deliberately NOT in $fillable — see the column's own
+        // migration. Written with forceFill by App\Support\GifterToCreator.
+        'creator_converted_at' => 'datetime',
         'founder_missed_at' => 'datetime',
         'terms_accepted_at' => 'datetime',
         'creator_email_receipt_acknowledged_at' => 'datetime',
