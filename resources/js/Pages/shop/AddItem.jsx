@@ -52,6 +52,7 @@ export default function AddItem(props) {
         classes,
         type,
         isEdit,
+        hideTrigger = false,
     } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     // The dashboard reads `?add=` once and hands it down. This component is lazy-loaded, so
@@ -584,15 +585,16 @@ export default function AddItem(props) {
 
     return (
         <>
-            {/* Trigger Button */}
-            <button
-                onClick={() => {
-                    setOpen(true);
-                }}
-                className={`${classes ? classes : "px-3 py-2"}`}
-            >
-                {title || trigger}
-            </button>
+            {!hideTrigger && (
+                <button
+                    onClick={() => {
+                        setOpen(true);
+                    }}
+                    className={`${classes ? classes : "px-3 py-2"}`}
+                >
+                    {title || trigger}
+                </button>
+            )}
 
             {/* Modal */}
             <Modal

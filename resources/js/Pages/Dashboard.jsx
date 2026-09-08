@@ -511,10 +511,24 @@ export default function Dashboard(props) {
         // resolved AFTER the strip and read nothing. That is why `?add=digital` opened only
         // the generic chooser and the dashboard card's three options were indistinguishable.
         // One read, passed explicitly; do not add a second window.location parse.
+        const [isPageRefresh] = useState(() => {
+            if (typeof window === "undefined") return false;
+
+            return window.performance?.getEntriesByType?.("navigation")?.[0]
+                ?.type === "reload";
+        });
         const [addIntent] = useState(() => {
             if (typeof window === "undefined") return null;
-            return new URLSearchParams(window.location.search).get("add");
+            return isPageRefresh
+                ? null
+                : new URLSearchParams(window.location.search).get("add");
         });
+        const isDirectProductIntent = [
+            "shop",
+            "digital",
+            "physical",
+        ].includes(addIntent);
+        const [directIntentReady, setDirectIntentReady] = useState(false);
         // `?add=menu` opens the chooser and NOTHING else — it is how a screen that is
         // not this one (My Listings) sends a creator here to pick what to sell. The
         // other values each open a specific form on top of the chooser, which is the
@@ -522,10 +536,7 @@ export default function Dashboard(props) {
         const [showAdd, setShowAdd] = useState(
             () =>
                 addIntent === "menu" ||
-                addIntent === "wish" ||
-                addIntent === "shop" ||
-                addIntent === "digital" ||
-                addIntent === "physical",
+                addIntent === "wish",
         );
         const [wishOptions, setWishOptions] = useState(
             () => addIntent === "wish",
@@ -536,6 +547,36 @@ export default function Dashboard(props) {
         // stacked-modal problem `?add=digital` already had — the creator closes the composer
         // and lands on a menu they never asked for.
         const [postOpen, setPostOpen] = useState(() => addIntent === "post");
+
+        useEffect(() => {
+            if (!isPageRefresh || typeof window === "undefined") return;
+
+            const params = new URLSearchParams(window.location.search);
+            if (!params.has("add")) return;
+
+            params.delete("add");
+            const query = params.toString();
+            window.history.replaceState(
+                {},
+                document.title,
+                `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`,
+            );
+        }, [isPageRefresh]);
+
+        // A direct product link owns the screen. This also protects against a
+        // stale toggleAddOptions event reopening the generic chooser underneath
+        // the product form.
+        useEffect(() => {
+            if (isDirectProductIntent) {
+                window.history.replaceState(
+                    {},
+                    document.title,
+                    window.location.pathname + window.location.hash,
+                );
+                setShowAdd(false);
+                setDirectIntentReady(true);
+            }
+        }, [isDirectProductIntent]);
 
         useEffect(() => {
             if (!showAdd) return;
@@ -551,6 +592,7 @@ export default function Dashboard(props) {
         }, [showAdd]);
         useEffect(() => {
             const handleToggleEvent = () => {
+                if (isDirectProductIntent) return;
                 setShowAdd(true);
             };
 
@@ -564,12 +606,12 @@ export default function Dashboard(props) {
             if (addIntent === "task") {
                 window.location.href = route("task.create");
             } else if (addIntent) {
-                // Safe to strip now: every consumer took its value from `addIntent` during
-                // render, so nothing downstream still needs the query string.
+                // Every add query is a one-shot command. Consumers already
+                // captured it during render, so it must not survive refresh.
                 window.history.replaceState(
                     {},
                     document.title,
-                    window.location.pathname,
+                    window.location.pathname + window.location.hash,
                 );
             }
 
@@ -598,6 +640,17 @@ export default function Dashboard(props) {
 
         return (
             <>
+                {/* Product-specific intents open their own form directly. Keeping
+                    them outside the chooser prevents two modal owners from being
+                    mounted for one click (for example, "Sell a file"). */}
+                {IsloggedIn && isDirectProductIntent && directIntentReady && (
+                        <AddItem
+                            product_type="digital_products"
+                            addIntent={addIntent}
+                            hideTrigger
+                        />
+                    )}
+
                 {/* Journey step "Publish your first post" lands here. Rendered outside the
                     chooser so closing it returns the creator to the dashboard, not to a menu. */}
                 {postOpen && (
@@ -883,13 +936,12 @@ export default function Dashboard(props) {
                                                                           </div>
                                                                       )}
 
-                                                                      <AddItem
-                                                                          classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
-                                                                          product_type="digital_products"
-                                                                          addIntent={
-                                                                              addIntent
-                                                                          }
-                                                                      />
+                                                                      {!isDirectProductIntent && (
+                                                                          <AddItem
+                                                                              classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                              product_type="digital_products"
+                                                                          />
+                                                                      )}
                                                                       {/* The one row here that is not a way to list something for
                                                                           sale. Every other option adds a product; this one is what
                                                                           keeps a creator's recurring subscription income collecting
