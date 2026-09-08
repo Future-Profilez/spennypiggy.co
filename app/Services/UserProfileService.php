@@ -1145,19 +1145,39 @@ class UserProfileService
      */
     public function getProfileOverview(int $userId): array
     {
-        // ⚠️ Key bumped to v2 when `bills` was added (21 Aug 2026). The tab strip
-        // now hides a tab whose count is 0, so a cached v1 array — which has no
-        // `bills` key — would read as zero and hide a tab the creator does sell.
-        return Cache::remember('profile_overview_v2_'.$userId, 600, function () use ($userId) {
+        // ⚠️ Key bumped to v3 because counts now use the public live-listing
+        // rules; v2 entries may contain pending or suspended listings.
+        return Cache::remember('profile_overview_v3_'.$userId, 600, function () use ($userId) {
             $earnings = $this->getUserEarnings($userId);
 
             return [
-                'wishes' => WishItem::where('user_id', $userId)->count(),
-                'bills' => Bills::where('user_id', $userId)->count(),
-                'piggy_pots' => PiggyPot::where('user_id', $userId)->where('status', 'active')->count(),
-                'memberships' => Membership::where('user_id', $userId)->count(),
-                'shops' => Shop::where('user_id', $userId)->where('approved', 1)->count(),
-                'tasks' => Task::where('creator_id', $userId)->where('is_approved', 1)->count(),
+                // These counts drive the public tab strip, so they must use the
+                // same live listing rules as the visitor-facing queries below.
+                'wishes' => WishItem::where('user_id', $userId)
+                    ->where('is_approved', 1)
+                    ->where('is_suspended', 0)
+                    ->count(),
+                'bills' => Bills::where('user_id', $userId)
+                    ->where('approved', 1)
+                    ->where('is_suspended', 0)
+                    ->count(),
+                'piggy_pots' => PiggyPotStatusService::scopePubliclyVisible(
+                    PiggyPot::where('user_id', $userId)
+                )->count(),
+                'memberships' => Membership::where('user_id', $userId)
+                    ->where('approved', 1)
+                    ->where('is_suspended', 0)
+                    ->count(),
+                'shops' => Shop::where('user_id', $userId)
+                    ->where('status', 1)
+                    ->where('approved', 1)
+                    ->where('is_suspended', 0)
+                    ->count(),
+                'tasks' => Task::where('creator_id', $userId)
+                    ->where('status', 'active')
+                    ->where('is_approved', 1)
+                    ->where('is_suspended', 0)
+                    ->count(),
                 'earned' => (float) $earnings['fulfilled'],
                 'earned_target' => (float) $earnings['target'],
             ];

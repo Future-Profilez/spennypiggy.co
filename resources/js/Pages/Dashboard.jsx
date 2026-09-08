@@ -1120,17 +1120,7 @@ export default function Dashboard(props) {
                                         height={400}
                                         width={1200}
                                         className="w-full cover object-cover !min-h-0 !h-[170px] sm:!h-[220px] md:!h-[260px] lg:!h-[300px]"
-                                        src={
-                                            IsloggedIn
-                                                ? user?.cover_url ||
-                                                  wishlistbannerimg
-                                                : user?.cover_url &&
-                                                    Number(
-                                                        user?.cover_approved,
-                                                    ) === 1
-                                                  ? user.cover_url
-                                                  : wishlistbannerimg
-                                        }
+                                        src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_url && Number(user?.cover_approved, ) === 1 ? user.cover_url : wishlistbannerimg}
                                         loading="eager"
                                         fetchpriority="high"
                                     />
@@ -1143,10 +1133,7 @@ export default function Dashboard(props) {
                                     <div className="absolute inset-x-0 bottom-0 z-10 hidden md:block bg-gradient-to-t from-black/90 via-black/55 to-transparent">
                                         <div className="px-5 pb-4 pt-20 lg:px-6 lg:pb-5 lg:pt-24 xl:px-8 xl:pb-6">
                                             <Suspense fallback={null}>
-                                                <CoverIdentity
-                                                    variant="cover"
-                                                    IsloggedIn={IsloggedIn}
-                                                />
+                                                <CoverIdentity variant="cover" IsloggedIn={IsloggedIn}/>
                                             </Suspense>
                                         </div>
                                     </div>
@@ -2203,8 +2190,7 @@ export default function Dashboard(props) {
                                                                         ⚠️ `IsloggedIn` here means "the creator is viewing their OWN
                                                                         profile", not "somebody is signed in". */}
                                                                     <>
-                                                                            {page ===
-                                                                            "wishes" ? (
+                                                                            {page === "wishes" ? (
                                                                                 <ErrorBoundary>
                                                                                     <Suspense
                                                                                         fallback={
@@ -2212,8 +2198,7 @@ export default function Dashboard(props) {
                                                                                         }
                                                                                     >
                                                                                         <div className="wishes-items pb-6">
-                                                                                            {wish_categories &&
-                                                                                            wish_categories.length ? (
+                                                                                            {wish_categories && wish_categories.length ? (
                                                                                                 <>
                                                                                                     <div className="new-wish-cats flex items-center mb-3 md:mb-6 gap-2 flex-wrap p-2">
                                                                                                         <Link
@@ -2287,15 +2272,9 @@ export default function Dashboard(props) {
                                                                                                 ""
                                                                                             )}
 
-                                                                                            {loading ||
-                                                                                            (isInitialLoad &&
-                                                                                                (!wishitems ||
-                                                                                                    wishitems.length ===
-                                                                                                        0)) ? (
+                                                                                            {loading || (isInitialLoad && (!wishitems || wishitems.length === 0)) ? (
                                                                                                 <LoadingScreen />
-                                                                                            ) : wishitems &&
-                                                                                              wishitems.length >
-                                                                                                  0 ? (
+                                                                                            ) : wishitems && wishitems.length > 0 ? (
                                                                                                 <>
                                                                                                     <DndContext
                                                                                                         sensors={
