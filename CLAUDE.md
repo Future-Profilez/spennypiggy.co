@@ -644,7 +644,9 @@ and added three internal domains.
   domains**. ⚠️ **`EmailDomainPolicy::BASELINE_BLOCKED` also blocks in code**, so a fresh
   environment is not wide open to every throwaway service at once, silently.
 - 🚨 **The table is filled by a MIGRATION (`2026_08_16_000002`), not only by the seeder** —
-  **Vapor's deploy hooks run `migrate --force` and never run a seeder**, so left to
+  **Vapor's deploy hooks run `migrate --force`, and until 7 Sep 2026 ran no seeder at
+  all** (⚠️ corrected — `HelpCentreSeeder` is on both `deploy` lists now; it is the ONLY
+  one, and the reasoning for that exception is in `vapor.yml`). So left to
   `BlockedDomainSeeder` alone production would come up with the table CREATED AND EMPTY until
   somebody remembered it. Nothing would break (the code baseline still refuses these), which
   is exactly what makes the omission dangerous: the admin screen would read "No domains
@@ -5521,6 +5523,69 @@ those two documents is its own decision.**
 - Tests: `HelpCentreTest` (40, +5 — pager both ends, kill-switched skip, reading-time floor,
   sibling sections; **three verified red against planted bugs**),
   `tests/javascript/helpRecents.test.js` (9).
+
+## 🚨 Nothing on the platform may be unanswerable — 79 → 101 articles (7 Sep 2026)
+
+Client direction: *"sare article dalo chat module me, har programme har ek terms condition se
+related … website me kuchh aesa terms and programm or feature nahi hona chahiye jo isko na
+pata ho."*
+
+🚨 **THE AI ANSWERS ONLY FROM ARTICLES, SO COVERAGE IS THE FEATURE.** `HELP_AI_RETRIEVER=keyword`
+means `HelpSearch::rankArticles()` picks the articles and the model writes from those and
+nothing else — so a page, a programme or a legal document with **no article** is a question
+the assistant structurally cannot answer, however good retrieval gets.
+
+Audited against `resources/js/Pages/Legal/*` (13 documents), the public route table and the
+shipped feature list. The 22 new articles live in
+**`database/seeders/Help/CoverageArticles.php`** — a fourth batch merged by `HelpCentreSeeder`
+beside `ExtraArticles` and `FeatureArticles`, same shape and same rules.
+
+- 🚨 **A LEGAL SUMMARY IS A SIGNPOST, NEVER A RESTATEMENT.** An article says what a document
+  covers and links to it. Paraphrasing a clause creates a second, unversioned copy of legal
+  text the moment the real one is edited — the exact inverse of the `GrowthBonusTerms.jsx`
+  rule (transcribed word for word, never summarised).
+- ⚠️ **A LEGAL PAGE MAY NAME BANNED WORDS; AN ARTICLE SUMMARISING ONE MAY NOT.** A
+  prohibited-activity list has to say what is prohibited, and the Return Policy has a section
+  heading in exactly that vocabulary. `HelpCentreTest`'s corpus scan does not distinguish and
+  is right not to — describe what the section covers instead.
+- 🚨 **RESOLVE EVERY LEGAL PATH AGAINST `route:list`.** One was wrong: the Payments Policy is
+  **`/reserves-and-payments-policy`**, not `/payments-policy`. A help link to a page that does
+  not exist is indistinguishable from a correct one in review, and no scanner looks.
+- 🚨 **THE ACCEPTANCE TEST IS THE RETRIEVER, NOT THE SEEDER.** All 22 were asked as a real
+  person would type them and checked against `rankArticles()`. **Two landed on the wrong
+  article and were only found that way** — *"can I be found on my birthday"* → `founder-bonus`
+  (the stemmer pulls "found" toward "founder"), and *"how do I buy several wishes at once"* →
+  `what-is-a-wishlist` (the basket article never used the word "wishes"). Both fixed in
+  `keywords`. **Write the article, then ask it the question.**
+- **New token `setup.listings_target`** → `config('creator_setup.listings_target')`.
+  ⚠️ Encouragement, never a gate — one listing plus a verified identity is the real threshold.
+- ⚠️ `MoR`: the **creator** is the seller and merchant of record; the platform provides payment
+  routing, moderation and risk controls. `who-is-the-seller` is now the one article every
+  refund, dispute and tax question routes through.
+- Verified: seeder 0 unknown tokens · 145 Help tests green · 22/22 questions retrieve their own
+  article · `HelpAnswer::ask()` answers from the new corpus and cites it.
+
+🚨 **THE CONTENT PUBLISHES ITSELF ON DEPLOY NOW (7 Sep 2026).**
+`php artisan db:seed --class=HelpCentreSeeder --force` is the last **deploy** hook on BOTH
+environments in `vapor.yml`. Help content lives in git rather than a CMS, so a deploy is the
+only thing that can publish it, and a forgotten manual run is invisible: the articles are
+simply absent, nothing errors, and the assistant quietly cannot answer what they were
+written for.
+
+- ⚠️ **DEPLOY, NEVER BUILD** — the build container has no database connection.
+- ⚠️ **`--force` IS LOAD-BEARING.** `db:seed` calls `confirmToProceed()` in production and the
+  Vapor runner is non-interactive, so without it the step answers **"Command cancelled."**,
+  seeds nothing, and the deploy still reports success. That is exactly what a manual run
+  produced on 7 Sep before the flag was added.
+- ⚠️ Safe on every deploy: idempotent (`updateOrCreate` on slug), skips the body of any
+  article a human edited (`edited_at`), and busts its own caches (`HelpContent::forget()`).
+  It writes to `help_articles`, a small quiet table — not `users` or `sessions`, so it is not
+  the migration-lock shape that took the site down on 7 Sep.
+- 🚨 **AN UNTRACKED BATCH FILE NOW FAILS THE WHOLE DEPLOY.** `HelpCentreSeeder` `use`s
+  `ExtraArticles`, `FeatureArticles` and `CoverageArticles`; one missing from the artefact
+  dies with `Class not found` and a failed hook fails the deployment. **`git commit -a` does
+  not add an untracked file** — the same trap that shipped a schedule without its command on
+  7 Sep. Add a new batch file **by name**.
 
 ## The help centre covers the features that shipped (4 Sep 2026)
 

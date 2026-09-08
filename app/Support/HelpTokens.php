@@ -205,6 +205,12 @@ class HelpTokens
             'push.max_length' => fn () => (string) CreatorPushService::MAX_LENGTH,
             'push.window_days' => fn () => (string) CreatorPushService::MONTH_WINDOW_DAYS,
 
+            // ---- Setup ------------------------------------------------------
+            // 🚨 ENCOURAGEMENT, NOT A GATE. Nothing refuses a sale below it —
+            // one listing plus a verified identity is the real threshold. Any
+            // article quoting this must not imply otherwise.
+            'setup.listings_target' => fn () => (string) config('creator_setup.listings_target', 3),
+
             // ---- Support / verification ------------------------------------
             'gifter.verification_threshold' => fn () => self::money(500),
             'gifter.verification_charge' => fn () => self::money(GifterVerificationCharge::AMOUNT_GBP),

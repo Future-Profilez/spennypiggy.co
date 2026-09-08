@@ -96,6 +96,11 @@ environments:
       # Queries the users table, so it can only run after deploy — the build
       # container has no database connection.
       - "php artisan stripe:request-bank-capabilities"
+      # Same line as production — see the reasoning there. Kept in step
+      # deliberately: help content that publishes itself on one environment and
+      # not the other is a difference nobody remembers until an article is
+      # missing on dev and everyone assumes the seeder is broken.
+      - "php artisan db:seed --class=HelpCentreSeeder --force"
 
   production:
     # ⚠️ Lambda gives CPU IN PROPORTION TO MEMORY, so this is a speed dial and not
@@ -201,6 +206,29 @@ environments:
       # Queries the users table, so it can only run after deploy — the build
       # container has no database connection.
       - "php artisan stripe:request-bank-capabilities"
+      # 🚨 THE HELP CENTRE'S CONTENT LIVES IN GIT, NOT A CMS, SO A DEPLOY IS THE
+      # ONLY THING THAT PUBLISHES IT. Before this line every content change
+      # needed somebody to remember a manual command afterwards, and a forgotten
+      # one is invisible: the articles simply are not there, nothing errors, and
+      # the AI assistant — which answers ONLY from articles — quietly cannot
+      # answer the questions the new ones were written for.
+      #
+      # ⚠️ DEPLOY, NEVER BUILD. The build container has no database connection.
+      # ⚠️ `--force` IS REQUIRED. `db:seed` calls confirmToProceed() in
+      #    production and the Vapor command runner is non-interactive, so
+      #    without it the step answers "Command cancelled." and seeds nothing
+      #    while the deploy still reports success.
+      # ⚠️ Safe on every deploy: the seeder is idempotent (updateOrCreate on
+      #    slug) and SKIPS the body of any article a human has edited
+      #    (`edited_at`), so re-running it never overwrites somebody's words.
+      #    It busts the help caches itself (HelpContent::forget()).
+      # 🚨 IT FAILS THE DEPLOY IF A BATCH FILE IS NOT TRACKED BY GIT.
+      #    HelpCentreSeeder `use`s ExtraArticles, FeatureArticles and
+      #    CoverageArticles; an untracked one is not in the artefact and the step
+      #    dies with "Class not found". `git commit -a` does NOT add an untracked
+      #    file — the same trap that shipped a schedule without its command on
+      #    7 Sep 2026. Add new batch files by name.
+      - "php artisan db:seed --class=HelpCentreSeeder --force"
       #
       # ⚠️ NOT HERE EITHER: `php artisan cache:clear`. It used to sit at the end of
       # the BUILD list, where the container has no VPC route to
