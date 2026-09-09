@@ -608,6 +608,7 @@ export default memo(InstantTabSystem, (prevProps, nextProps) => {
     return (
         prevProps.activeTab === nextProps.activeTab &&
         prevProps.user?.id === nextProps.user?.id &&
-        prevProps.IsloggedIn === nextProps.IsloggedIn
+        prevProps.IsloggedIn === nextProps.IsloggedIn &&
+        prevProps.Toggle === nextProps.Toggle
     );
 });

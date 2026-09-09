@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Head, useForm } from "@inertiajs/react";
 import axios from "axios";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
@@ -110,8 +110,8 @@ export default function BecomeCreator({
     /* ------------------------------ the form ------------------------------ */
 
     const { data, setData, post, processing, errors } = useForm({
-        social_platform: "instagram",
-        social_handle: "",
+        social_platform: prefill.social_platform || "",
+        social_handle: prefill.social_handle || "",
         creator_category: Array.isArray(prefill.creator_category)
             ? prefill.creator_category
             : [],
@@ -125,6 +125,18 @@ export default function BecomeCreator({
         terms_accepted: false,
         creator_email_receipt_ack: false,
     });
+
+    useEffect(() => {
+        // Inertia can preserve this page instance while the conversion props
+        // arrive. `useForm` only reads defaults on its first mount, so sync an
+        // existing gifter handle when the server supplies it.
+        if (!prefill.social_handle) return;
+
+        setData({
+            social_platform: prefill.social_platform || "",
+            social_handle: prefill.social_handle,
+        });
+    }, [prefill.social_platform, prefill.social_handle]);
 
     const makeToggle = (setSelected, field, max) => (slug) => {
         setSelected((prev) => {
@@ -326,9 +338,17 @@ export default function BecomeCreator({
                                 referralType={referralType}
                                 socialPlatform={data.social_platform}
                                 socialHandle={data.social_handle}
-                                onSocialPlatformChange={(key) =>
-                                    setData("social_platform", key)
-                                }
+                                onSocialPlatformChange={(key) => {
+                                    setData({
+                                        social_platform: key,
+                                        // Restore the stored handle when the user
+                                        // returns to its original platform.
+                                        social_handle:
+                                            key === prefill.social_platform
+                                                ? prefill.social_handle || ""
+                                                : "",
+                                    });
+                                }}
                                 onSocialHandleChange={(value) =>
                                     setData("social_handle", value)
                                 }

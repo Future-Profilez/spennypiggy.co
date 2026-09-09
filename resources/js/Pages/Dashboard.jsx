@@ -511,17 +511,9 @@ export default function Dashboard(props) {
         // resolved AFTER the strip and read nothing. That is why `?add=digital` opened only
         // the generic chooser and the dashboard card's three options were indistinguishable.
         // One read, passed explicitly; do not add a second window.location parse.
-        const [isPageRefresh] = useState(() => {
-            if (typeof window === "undefined") return false;
-
-            return window.performance?.getEntriesByType?.("navigation")?.[0]
-                ?.type === "reload";
-        });
         const [addIntent] = useState(() => {
             if (typeof window === "undefined") return null;
-            return isPageRefresh
-                ? null
-                : new URLSearchParams(window.location.search).get("add");
+            return new URLSearchParams(window.location.search).get("add");
         });
         const isDirectProductIntent = [
             "shop",
@@ -547,21 +539,6 @@ export default function Dashboard(props) {
         // stacked-modal problem `?add=digital` already had — the creator closes the composer
         // and lands on a menu they never asked for.
         const [postOpen, setPostOpen] = useState(() => addIntent === "post");
-
-        useEffect(() => {
-            if (!isPageRefresh || typeof window === "undefined") return;
-
-            const params = new URLSearchParams(window.location.search);
-            if (!params.has("add")) return;
-
-            params.delete("add");
-            const query = params.toString();
-            window.history.replaceState(
-                {},
-                document.title,
-                `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`,
-            );
-        }, [isPageRefresh]);
 
         // A direct product link owns the screen. This also protects against a
         // stale toggleAddOptions event reopening the generic chooser underneath
@@ -605,14 +582,6 @@ export default function Dashboard(props) {
 
             if (addIntent === "task") {
                 window.location.href = route("task.create");
-            } else if (addIntent) {
-                // Every add query is a one-shot command. Consumers already
-                // captured it during render, so it must not survive refresh.
-                window.history.replaceState(
-                    {},
-                    document.title,
-                    window.location.pathname + window.location.hash,
-                );
             }
 
             return () => {

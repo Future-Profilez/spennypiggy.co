@@ -48,6 +48,20 @@ class CreatorConversionController extends Controller
             return redirect()->route('user.show', $user->username);
         }
 
+        $socialLinks = $user->social_links;
+        $socialPrefill = ['platform' => null, 'handle' => null];
+
+        if ($socialLinks) {
+            foreach (SocialHandle::platforms() as $platform) {
+                $handle = SocialHandle::normalise($platform, $socialLinks->{$platform});
+
+                if ($handle !== null) {
+                    $socialPrefill = ['platform' => $platform, 'handle' => $handle];
+                    break;
+                }
+            }
+        }
+
         return Inertia::render('Auth/BecomeCreator', [
             /*
              * The refusals, as CODES. The page owns the wording per reason — a
@@ -68,6 +82,8 @@ class CreatorConversionController extends Controller
                 'needs_country' => blank($user->country),
                 'has_bio' => filled($user->bio),
                 'has_avatar' => filled($user->avatar),
+                'social_platform' => $socialPrefill['platform'],
+                'social_handle' => $socialPrefill['handle'],
             ],
             /*
              * What carries over. Shown because the first thing anybody asks before
