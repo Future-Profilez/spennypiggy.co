@@ -113,7 +113,6 @@ import PendingChangesNotice from "@/Components/PendingChangesNotice";
 import SuspendedBanner from "@/Components/SuspendedBanner";
 import SetupCompleteCelebration from "@/Components/SetupCompleteCelebration";
 import ListingProgressStrip from "@/Components/ListingProgressStrip";
-import BecomeCreatorCard from "@/Components/BecomeCreatorCard";
 import lazyRetry from "@/utils/lazyRetry";
 
 const CreatorRiskBanner = lazyRetry(
@@ -515,12 +514,6 @@ export default function Dashboard(props) {
             if (typeof window === "undefined") return null;
             return new URLSearchParams(window.location.search).get("add");
         });
-        const isDirectProductIntent = [
-            "shop",
-            "digital",
-            "physical",
-        ].includes(addIntent);
-        const [directIntentReady, setDirectIntentReady] = useState(false);
         // `?add=menu` opens the chooser and NOTHING else — it is how a screen that is
         // not this one (My Listings) sends a creator here to pick what to sell. The
         // other values each open a specific form on top of the chooser, which is the
@@ -528,7 +521,10 @@ export default function Dashboard(props) {
         const [showAdd, setShowAdd] = useState(
             () =>
                 addIntent === "menu" ||
-                addIntent === "wish",
+                addIntent === "wish" ||
+                addIntent === "shop" ||
+                addIntent === "digital" ||
+                addIntent === "physical",
         );
         const [wishOptions, setWishOptions] = useState(
             () => addIntent === "wish",
@@ -539,21 +535,6 @@ export default function Dashboard(props) {
         // stacked-modal problem `?add=digital` already had — the creator closes the composer
         // and lands on a menu they never asked for.
         const [postOpen, setPostOpen] = useState(() => addIntent === "post");
-
-        // A direct product link owns the screen. This also protects against a
-        // stale toggleAddOptions event reopening the generic chooser underneath
-        // the product form.
-        useEffect(() => {
-            if (isDirectProductIntent) {
-                window.history.replaceState(
-                    {},
-                    document.title,
-                    window.location.pathname + window.location.hash,
-                );
-                setShowAdd(false);
-                setDirectIntentReady(true);
-            }
-        }, [isDirectProductIntent]);
 
         useEffect(() => {
             if (!showAdd) return;
@@ -569,7 +550,6 @@ export default function Dashboard(props) {
         }, [showAdd]);
         useEffect(() => {
             const handleToggleEvent = () => {
-                if (isDirectProductIntent) return;
                 setShowAdd(true);
             };
 
@@ -582,6 +562,14 @@ export default function Dashboard(props) {
 
             if (addIntent === "task") {
                 window.location.href = route("task.create");
+            } else if (addIntent) {
+                // Safe to strip now: every consumer took its value from `addIntent` during
+                // render, so nothing downstream still needs the query string.
+                window.history.replaceState(
+                    {},
+                    document.title,
+                    window.location.pathname,
+                );
             }
 
             return () => {
@@ -609,17 +597,6 @@ export default function Dashboard(props) {
 
         return (
             <>
-                {/* Product-specific intents open their own form directly. Keeping
-                    them outside the chooser prevents two modal owners from being
-                    mounted for one click (for example, "Sell a file"). */}
-                {IsloggedIn && isDirectProductIntent && directIntentReady && (
-                        <AddItem
-                            product_type="digital_products"
-                            addIntent={addIntent}
-                            hideTrigger
-                        />
-                    )}
-
                 {/* Journey step "Publish your first post" lands here. Rendered outside the
                     chooser so closing it returns the creator to the dashboard, not to a menu. */}
                 {postOpen && (
@@ -905,12 +882,13 @@ export default function Dashboard(props) {
                                                                           </div>
                                                                       )}
 
-                                                                      {!isDirectProductIntent && (
-                                                                          <AddItem
-                                                                              classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
-                                                                              product_type="digital_products"
-                                                                          />
-                                                                      )}
+                                                                      <AddItem
+                                                                          classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                          product_type="digital_products"
+                                                                          addIntent={
+                                                                              addIntent
+                                                                          }
+                                                                      />
                                                                       {/* The one row here that is not a way to list something for
                                                                           sale. Every other option adds a product; this one is what
                                                                           keeps a creator's recurring subscription income collecting
@@ -1206,19 +1184,6 @@ export default function Dashboard(props) {
                                 The component itself renders nothing until the server says
                                 celebrate, so a finished creator mounts an empty component. */}
                             {IsloggedIn && <SetupCompleteCelebration />}
-
-                            {/* 🚨 "Start selling from this account" — the gifter's own
-                                page, and BOTH halves of the gate are load-bearing.
-                                This route is also the PUBLIC profile, so without
-                                `IsloggedIn` every visitor to a fan's page is invited to
-                                convert an account that is not theirs; without the role
-                                check a creator is offered a conversion they have already
-                                made. Directly under the cover, same as the two notices
-                                above it, because it is a fact about this account rather
-                                than part of what the page sells. */}
-                            {IsloggedIn && !isCreatorProfile && (
-                                <BecomeCreatorCard className="mb-4" />
-                            )}
 
                             {/* Profile layout: identity rail (left) · cover + content (center) · overview rail (right, xl) */}
                             <div className="profileLayout grid grid-cols-1 items-start gap-4 lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]">
