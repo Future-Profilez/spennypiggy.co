@@ -9,6 +9,7 @@ use App\Support\HelpTokens;
 use Database\Seeders\Help\CoverageArticles;
 use Database\Seeders\Help\ExtraArticles;
 use Database\Seeders\Help\FeatureArticles;
+use Database\Seeders\Help\SellingRulesArticles;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 
@@ -67,7 +68,8 @@ class HelpCentreSeeder extends Seeder
                 $category['articles'],
                 ExtraArticles::forCategory($category['slug']),
                 FeatureArticles::forCategory($category['slug']),
-                CoverageArticles::forCategory($category['slug'])
+                CoverageArticles::forCategory($category['slug']),
+                SellingRulesArticles::forCategory($category['slug'])
             );
 
             foreach ($articles as $i => $article) {
@@ -534,7 +536,7 @@ MD,
                 'audience' => 'creator',
                 'keywords' => 'what can i sell, things to sell, what to sell, sell here, allowed to sell, products, wishes, shop, paid requests, piggy pot, memberships, bills, piggy bank, ways to earn, ideas',
                 'summary' => 'Seven ways to be paid — one-off content, custom work, physical goods, group products, and two recurring options.',
-                'related' => ['what-is-a-reward', 'why-is-my-listing-under-review', 'price-limits'],
+                'related' => ['the-selling-rules', 'what-is-a-reward', 'why-is-my-listing-under-review', 'price-limits'],
                 'body' => <<<'MD'
 Seven products, all sold from the same page and the same link.
 
@@ -1098,9 +1100,9 @@ MD,
                 'slug' => 'what-content-is-allowed',
                 'title' => 'What content is allowed?',
                 'audience' => 'creator',
-                'keywords' => 'sfw, nudity, allowed content, rules, adult, explicit, banned, safe for work',
-                'summary' => 'Strictly SFW, and actively enforced. No nudity, no explicit content, no exceptions.',
-                'related' => ['why-is-my-listing-under-review', 'words-you-cannot-use'],
+                'keywords' => 'sfw, nudity, allowed content, rules, adult, explicit, banned, safe for work, adult creator, findom, branding, selling rules',
+                'summary' => 'Strictly SFW, and actively enforced. No nudity, no explicit content, no exceptions. Adult creators are welcome — the boundary is what you sell here, not who you are.',
+                'related' => ['the-selling-rules', 'adult-creators-and-branding', 'why-is-my-listing-under-review', 'words-you-cannot-use'],
                 'body' => <<<'MD'
 This is a **strictly safe-for-work platform**, and it is enforced rather than merely stated.
 
@@ -1116,6 +1118,8 @@ Every upload is scanned automatically and then reviewed by a real person before 
 
 Adult creators are welcome here for their SFW work. What you do elsewhere is your business — what you publish here has to meet the rule above.
 
+Your **branding is not what is being judged**: a creator name such as Goddess, Domme, Findom or Cashmaster is not refused on its own. See [I'm an adult creator — can I use Spenny Piggy?](/help/content-rules/adult-creators-and-branding).
+
 ## Why we are this strict
 
 It is why this platform's payments stay switched on when other creator platforms lose theirs. That protects every creator here, not just the platform.
@@ -1127,6 +1131,10 @@ The automatic scan is tuned to avoid flagging ordinary content — swimwear, gym
 ## Beyond images
 
 Monetising hateful or violent content is prohibited outright, and that applies to your words as well as your files.
+
+## The rules for each product
+
+[The selling rules](/help/content-rules/the-selling-rules) is the one-page version, and links to the can-and-cannot list for every product.
 MD,
             ],
             [
@@ -1135,7 +1143,7 @@ MD,
                 'audience' => 'creator',
                 'keywords' => 'banned words, title rejected, brand name, expense, rent, bill, wording, blocked word, not allowed, refused, held at review',
                 'summary' => 'Listings must read as a purchase of content or a creator service — not as an expense, a transfer, or a branded product. The form refuses all three as you save, and a person reviews the listing on top of that.',
-                'related' => ['what-should-i-call-my-listing', 'what-is-a-reward', 'why-is-my-listing-under-review', 'what-content-is-allowed'],
+                'related' => ['the-selling-rules', 'what-should-i-call-my-listing', 'what-is-a-reward', 'why-is-my-listing-under-review', 'what-content-is-allowed'],
                 'body' => <<<'MD'
 Everything you sell here has to read as a **purchase of your content or your service**. Three kinds of wording are refused.
 
