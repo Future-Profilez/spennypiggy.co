@@ -219,7 +219,35 @@ return [
          */
         'trending' => 'live',
         'almost_funded' => 'live',   // As hidden_gems — same collection service, same surface.
-        'new_wishes' => 'coming_soon',
+        /*
+         * ✅ LIVE 10 Sep 2026 — and it was flipped in the SAME release as the one
+         * line that made it true, for the reason `bio_direct_sales` records: this
+         * label deploys with the app, so flipping it on a branch that ships first
+         * claims a capability nobody has.
+         *
+         * The collection had been fully built and simply never requested:
+         *   CollectionService::newWishes()            real query, eligibility-filtered
+         *   CollectionRow ItemCard price branch       written FOR a wish ("a wish shows
+         *                                             its listed price") and never run
+         *   routes/auth.php landingCollections        the missing link — now names the key
+         *
+         * 🚨 TWO FAULTS WERE CLOSED BEFORE WIRING, NOT AFTER, and both were
+         * invisible precisely because nothing drew the row:
+         *   - `newWishes()` gated on `is_suspended` and NOT `is_approved`, so it
+         *     would have published wishes still held by `CheckMediaModeration`.
+         *   - `ItemCard` formatted every price as hardcoded GBP.
+         * A dead collection is not a safe collection; it is an unreviewed one.
+         */
+        'new_wishes' => 'live',
+        /*
+         * ⚠️ HELD DELIBERATELY, AND NOT FOR WANT OF CODE.
+         * `CollectionService::personalised()` is complete and its viewer-scoped
+         * cache path is wired; adding the key to a `many()` list is one line.
+         * It is held because it returns `[]` for a guest and for anyone with no
+         * purchase history — which is most Discover traffic — so the row would
+         * draw for almost nobody while the marketing page claimed LIVE NOW beside
+         * it. Verify it returns cards for a real supporter account before flipping.
+         */
         'personalised' => 'coming_soon',
 
         // Block 2 — We'll Promote You

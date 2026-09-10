@@ -665,12 +665,22 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
          * the same creators under two headings reads as a bug. Hidden gems (least
          * SHOWN, never least earning) and almost-funded pots are genuinely different
          * selections.
+         *
+         * 🚨 `new_wishes` ADDED 10 Sep 2026 — IT WAS A BUILT COLLECTION NOBODY
+         * REQUESTED. `CollectionService::newWishes()` and `ItemCard`'s price branch
+         * both existed and were correct; no route ever named the key, so the row
+         * drew on no page and `discovery.labels.new_wishes` was honestly
+         * 'coming_soon'. Same class of dead feature as `SaveButton`'s `is_saved`
+         * prop: everything shipped except the one line connecting the halves.
+         *
+         * ⚠️ It is the ITEM-kind counterpart to `almost_funded`, which already
+         * renders here — so it needs no new component and no new page.
          */
         'landingCollections' => empty($data['filters']['search'])
             && empty($data['filters']['type'])
             && empty($data['filters']['contentType'])
                 ? app(CollectionService::class)
-                    ->many(['hidden_gems', 'almost_funded'], 8, $request->user())
+                    ->many(['hidden_gems', 'almost_funded', 'new_wishes'], 8, $request->user())
                 : [],
 
         /*

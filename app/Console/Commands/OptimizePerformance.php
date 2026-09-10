@@ -15,7 +15,9 @@ class OptimizePerformance extends Command
                             {--clear-cache : Clear all caches}
                             {--optimize-db : Optimize database queries}
                             {--compress-assets : Compress static assets}
-                            {--all : Run all optimizations}';
+                            {--all : Run all optimizations}
+                            {--tables= : Comma-separated tables to rebuild with OPTIMIZE TABLE. Never all of them — a rebuild locks the table out while it runs}
+                            {--force : Allow a table rebuild on production. Put the maintenance wall up first}';
 
     protected $description = 'Optimize application performance with various strategies';
 
@@ -197,17 +199,63 @@ class OptimizePerformance extends Command
             $tables = DB::select('SHOW TABLES');
             $tableCount = 0;
 
-            foreach ($tables as $table) {
-                $tableName = array_values((array) $table)[0];
+            /*
+             * 🚨 `OPTIMIZE TABLE` ON INNODB IS `ALTER TABLE … FORCE` — A FULL
+             * TABLE REBUILD THAT TAKES AN EXCLUSIVE METADATA LOCK.
+             *
+             * Run here it did that to EVERY table in the schema (169 of them,
+             * including `sessions`, `users` and `financial_transactions`) one
+             * after another. `SESSION_DRIVER=database`, so every page load is a
+             * write to `sessions` — a metadata lock anywhere near that path does
+             * not slow the site, it STOPS it, for signed-in and anonymous
+             * visitors alike. That is exactly the shape of the 7 Sep 2026 outage
+             * (a single `Schema::table` on `users`, ~7 minutes, 100% of requests)
+             * and this is that with 169 of them in a loop.
+             *
+             * ⚠️ It also buys almost nothing. InnoDB reuses free space inside its
+             * own tablespace, so a rebuild reclaims disk after a very large
+             * DELETE and does not otherwise make queries faster — this schema has
+             * no such deletion, and the prune commands that do delete are chunked
+             * and bounded.
+             *
+             * ⚠️ NOT DELETED, because reclaiming space after a genuine bulk purge
+             * is a real operation. It is refused on production instead, and even
+             * off production it names the tables rather than sweeping the schema:
+             * `--tables=` plus `--force`. Behind the maintenance wall, always.
+             */
+            $requested = array_values(array_filter(array_map(
+                'trim',
+                explode(',', (string) $this->option('tables'))
+            )));
 
-                // Optimize table
-                DB::statement("OPTIMIZE TABLE `{$tableName}`");
-                $tableCount++;
+            if (! $requested) {
+                $this->warn('Skipping table rebuilds — pass --tables=a,b to name them. (OPTIMIZE TABLE rebuilds a table and locks it out for the duration; it is never run across the whole schema.)');
+            } elseif (app()->isProduction() && ! $this->option('force')) {
+                $this->warn('Refusing to rebuild tables on production without --force. Put the maintenance wall up first: an exclusive lock on a busy table takes the site down while it runs.');
+            } else {
+                $known = array_map(
+                    fn ($table) => array_values((array) $table)[0],
+                    $tables
+                );
+
+                foreach ($requested as $tableName) {
+                    // ⚠️ The name is interpolated into DDL, so it may only ever be
+                    // one this database already reports — never the raw option.
+                    if (! in_array($tableName, $known, true)) {
+                        $this->warn("Unknown table '{$tableName}' — skipped.");
+
+                        continue;
+                    }
+
+                    DB::statement("OPTIMIZE TABLE `{$tableName}`");
+                    $tableCount++;
+                }
+
+                $this->line("✓ Rebuilt {$tableCount} database table(s)");
             }
 
-            $this->line("✓ Optimized {$tableCount} database tables");
-
-            // Update table statistics
+            // ⚠️ ANALYZE is a statistics refresh, not a rebuild — it is quick and
+            // takes no exclusive lock, so it is safe to leave running always.
             DB::statement('ANALYZE TABLE users, wish_items, user_categories');
             $this->line('✓ Updated table statistics');
 

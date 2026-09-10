@@ -63,6 +63,12 @@ class DiscoveryMarketingTest extends TestCase
         'new_wish_reminders' => 'CreatorContentObserver (WishItem in MAP) → CreatorEventNotifier::notifyFollowers, moderation-gated',
         // All seven of this key's labels checked — a key cannot be half true.
         'birthday' => 'BirthdayDiscoveryService::STAGES [7,1,0] + birthday:remind 09:30 + birthday:weekly 09:45 (both flags now default true) + no role filter on the weekly audience + max_featured 10 + /discover/birthdays',
+
+        // Verified 10 Sep 2026, to the same standard: traced to the thing that
+        // RENDERS it. The service method and the item card had both existed for
+        // weeks and no route asked for the key, so nothing drew the row — which
+        // is exactly why it was honestly 'coming_soon' until now.
+        'new_wishes' => 'CollectionService::newWishes (approved-only) → landingCollections in routes/auth.php → CollectionRow ItemCard price branch on the Discover landing',
     ];
 
     /** @test */

@@ -1199,7 +1199,7 @@ class Helpers
                 $content,
                 $email,
                 NotificationLog::STATUS_FAILED,
-                'Push provider returned '.$response->status().' '.$response->reason(),
+                self::pushFailureReason($response->status(), $response->reason(), $response->body()),
             );
 
             return false;
@@ -1838,5 +1838,42 @@ class Helpers
         }
 
         return $metadata;
+    }
+
+    /**
+     * 🚨 THE HTTP STATUS ALONE NAMES THE WRONG FIX.
+     *
+     * Every push on the platform failed from 8 Sep 2026 08:18 and the row an admin
+     * reads said only `Push provider returned 403 Forbidden` — which the back
+     * office classifies as "the provider rejected the request itself", i.e. a
+     * problem with THIS message. The real answer was in the response body and was
+     * thrown away here: `workspace_billing_expired`, "Workspace billing has
+     * expired". Nothing about any individual notification was wrong, resending was
+     * refused identically, and the one thing that would have fixed it — paying the
+     * MagicBell invoice — was named nowhere a person would look.
+     *
+     * ⚠️ The provider's own machine-readable CODE is what is appended, never its
+     * prose: `App\Support\NotificationFailureReason` in the admin app matches on
+     * needles, and a supplier is free to reword a sentence at any time.
+     *
+     * ⚠️ Capped, and only ever APPENDED. `Push provider returned {status}` is the
+     * prefix every existing needle matches on, and a body that is HTML (a proxy
+     * error page, a WAF block) must not push a paragraph into a column an admin
+     * reads in a table cell.
+     */
+    private static function pushFailureReason(int $status, string $reason, string $body): string
+    {
+        $line = 'Push provider returned '.$status.' '.$reason;
+
+        $decoded = json_decode($body, true);
+        $code = is_array($decoded) ? ($decoded['errors'][0]['code'] ?? null) : null;
+
+        // ⚠️ A code-shaped token only. Anything else is the supplier describing
+        // itself in prose, and that belongs in the log, not in the ledger.
+        if (is_string($code) && $code !== '' && preg_match('/^[A-Za-z0-9_.\-]{1,64}$/', $code) === 1) {
+            $line .= ' ('.$code.')';
+        }
+
+        return $line;
     }
 }

@@ -246,6 +246,25 @@ function CreatorCard({ card, source, campaign, ink }) {
  * a supporter into a checkout would skip the stamp entirely — the sale would be
  * recorded as the creator's own traffic for ever, with no way to correct it.
  */
+/**
+ * ⚠️ An unknown or malformed currency code makes `Intl.NumberFormat` THROW a
+ * RangeError, and this runs inside a card in a row on the homepage — one bad
+ * row in the database would blank the whole page rather than one price. Falls
+ * back to the plain number.
+ */
+function formatCardPrice(price, currency) {
+    const amount = Number(price) || 0;
+
+    try {
+        return new Intl.NumberFormat("en-GB", {
+            style: "currency",
+            currency: currency || "GBP",
+        }).format(amount);
+    } catch {
+        return amount.toLocaleString("en-GB");
+    }
+}
+
 function ItemCard({ card, source, campaign, ink }) {
     return (
         <Link
@@ -280,10 +299,17 @@ function ItemCard({ card, source, campaign, ink }) {
                 </div>
             ) : card.price !== null && card.price !== undefined ? (
                 <p className={`mt-3 font-poppins text-[13px] font-bold tabular-nums ${ink.price}`}>
-                    {new Intl.NumberFormat("en-GB", {
-                        style: "currency",
-                        currency: "GBP",
-                    }).format(Number(card.price) || 0)}
+                    {/* 🚨 THE LISTING'S OWN CURRENCY, NOT GBP. This was hardcoded
+                        `currency: "GBP"`, and it never showed because the only live
+                        item collection (`almost_funded`) draws the percent branch
+                        above instead — so the first key to use a price would have
+                        printed every creator's wish in pounds whatever they listed
+                        it in. `Intl` handles zero-decimal currencies (JPY, KRW) on
+                        its own, so no separate rule is needed here.
+                        ⚠️ Falls back to GBP only when the card carries no currency;
+                        a card that omits it is a bug in the collection, not a
+                        licence to guess. */}
+                    {formatCardPrice(card.price, card.currency)}
                 </p>
             ) : null}
         </Link>

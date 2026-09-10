@@ -970,6 +970,9 @@ Developer Master Plan", 19 Aug 2026 (`../docs/client/19 Aug/`).
     `almost_funded`) and payment success (`similar_creators`, `hidden_gems`,
     `new_creators`). ⚠️ Discover's "Just added" rail is the MIXED FEED across all five
     modules, not the `new_wishes` collection — it is not evidence for that claim.
+    ✅ **`new_wishes` LEFT THIS LIST ON 10 Sep 2026** — it is wired and live; see the
+    section below for the two faults that had to be closed first. `personalised` and
+    `campaigns` are unchanged and the reasoning above still holds for both.
   - ⚠️ **`birthday` WAS ON THIS LIST FOR HALF A DAY AND CAME OFF — see the flag change
     below.** It was held back for one reason only: both sending flags defaulted false, so
     the two commands ran daily and reported *"WOULD be sent. Nothing sent."*
@@ -3211,6 +3214,49 @@ cards. The section now costs **no JavaScript**.
   alone, that negative margin pulled the FAQ up into it.
 - ⚠️ `FadeIn` needs `className="h-full"` inside a grid cell, or the wrapper it renders breaks
   the equal-height chain and the cards stop matching.
+
+## 🚨 `new_wishes` was a built collection nobody requested (10 Sep 2026, spennypiggy.co)
+
+The service method, the eligibility filter and the renderer had all shipped — `ItemCard`'s
+price branch is even commented *"a wish shows its listed price"* — and **no route ever named
+the key**, so the row drew on no page and `discovery.labels.new_wishes` was honestly
+`coming_soon`. One line in `routes/auth.php`'s `landingCollections` closed it. Same class of
+dead feature as `SaveButton`'s `is_saved` prop and `CreatorPushCard`: everything shipped
+except the line joining the halves.
+
+🚨 **TWO FAULTS WERE CLOSED BEFORE WIRING, NOT AFTER — a dead collection is not a safe
+collection, it is an unreviewed one.** Both were invisible for exactly as long as nothing
+drew the row:
+
+- 🚨 **`newWishes()` GATED ON `is_suspended` AND NOT ON `is_approved`.** A wish sits at
+  `is_approved = 0` while `CheckMediaModeration` holds it, so the collection would have
+  published precisely the items an admin has not cleared. `DiscoveryService::approved()`
+  applies that predicate to every other public wish surface; this was the one that skipped
+  it. ⚠️ `almost_funded` is correct by accident of its own filter (`status = 'active'`
+  excludes `moderation_hold`) — do not read it as the pattern.
+  ⚠️ Scheduling needs no clause: `publish_at` is a GLOBAL SCOPE on the model
+  (`HasScheduledPublishing`), so a future-dated wish never reaches the query.
+- 🚨 **`ItemCard` FORMATTED EVERY PRICE AS HARDCODED GBP**, and that branch had never run in
+  production because the only live item collection draws a percentage instead. Wiring the key
+  on would have printed a JPY creator's wish in pounds on a public browse surface, with
+  nothing wrong in any log. The card carries `currency` now and `formatCardPrice()` reads it.
+  ⚠️ It is wrapped in a try/catch: an unknown or malformed currency code makes
+  `Intl.NumberFormat` **throw a RangeError**, and this runs inside a row on the homepage — one
+  bad row would blank the page rather than one price.
+
+⚠️ **`personalised` IS DELIBERATELY STILL HELD, and not for want of code.**
+`CollectionService::personalised()` is complete and its viewer-scoped cache path is wired;
+adding the key to a `many()` list is one line. It returns `[]` for a guest and for anyone with
+no purchase history — most Discover traffic — so the row would draw for almost nobody while
+three marketing pages claimed LIVE NOW beside it. **Verify it returns cards for a real
+supporter account before flipping.**
+
+⚠️ **`DiscoveryMarketingTest::VERIFIED_LIVE` is the gate and it works** — it failed the moment
+the label flipped and would not pass until the evidence was written down. Do not route around
+it; add the key with the code that renders it.
+
+Tests: `DiscoveryCollectionsTest` (+2 — the moderation gate and the currency), 144 Discovery
+tests green.
 
 ## 🚨 Discovery Phase 5 + 6 — the collections (21 Aug 2026, spennypiggy.co)
 

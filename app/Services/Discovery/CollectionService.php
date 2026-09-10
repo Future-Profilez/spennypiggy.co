@@ -766,6 +766,24 @@ class CollectionService
         }
 
         return WishItem::query()
+            /*
+             * 🚨 `is_suspended` IS NOT THE MODERATION GATE — `is_approved` IS, and
+             * it was missing. A wish sits at `is_approved = 0` while
+             * `CheckMediaModeration` holds it, so without this line the collection
+             * publishes exactly the items an admin has not cleared yet. Nothing
+             * errors: the card renders, the link works, and the held wish is on the
+             * homepage. `DiscoveryService::approved()` applies the same predicate to
+             * every other public wish surface; this is the one that skipped it.
+             *
+             * ⚠️ It never bit because nothing requested this key (the collection was
+             * built and never wired), which is precisely why it had to be closed
+             * BEFORE wiring rather than after.
+             *
+             * ⚠️ Scheduling needs no clause here — `publish_at` is a GLOBAL SCOPE on
+             * the model (`HasScheduledPublishing`), so a future-dated wish is already
+             * excluded from this query.
+             */
+            ->approved()
             ->where('is_suspended', 0)
             ->whereNotNull('user_id')
             ->with('user:id,name,username,role,suspended_account,avatar,avatar_approved,avatar_cdn_modifier')
@@ -781,6 +799,14 @@ class CollectionService
                 'username' => $w->user?->username,
                 'creator' => $w->user?->name,
                 'price' => $w->price !== null ? (float) $w->price : null,
+                /*
+                 * 🚨 THE CARD MUST CARRY THE LISTING'S OWN CURRENCY. `ItemCard`
+                 * formatted every price as GBP, and that branch had never run in
+                 * production because the only live item collection (`almost_funded`)
+                 * shows a percentage instead — so wiring this key on without the
+                 * currency would have printed a JPY creator's wish as pounds.
+                 */
+                'currency' => $w->currency ?: 'GBP',
             ])
             ->filter(fn ($c) => $c['username'] && $c['title'] !== '')
             ->take($limit)

@@ -21,15 +21,18 @@ import { STABLECOIN_COPY } from '@/constants/stablecoinTips';
 /**
  * A3 — the Link in Bio paid-ads landing page.
  *
- * 🚨 SECTIONS 3 AND 6 SHOW "COMING SOON" WHERE THE BRIEF SAYS "LIVE NOW". This
- * is the one place this page departs from its instructions, it was flagged to
- * Jack rather than decided quietly, and it is driven by the `bio_direct_sales`
- * key in `config/discovery.php` — read that key's note for the full reasoning.
- * Short version: `/{username}/bio` is live but sells nothing (its own docblock
- * says "no checkout, no price and no payment method"), selling from it is the B
- * stream due Fri 28 Aug, and this page goes live Tue 25. The plan lists "Mark
- * anything LIVE NOW in marketing that is not live in the product" under Never.
- * One config flip corrects both sections the day B lands, with no deploy.
+ * ✅ SECTIONS 3 AND 6 READ "LIVE NOW" (corrected 10 Sep 2026). They are driven
+ * by the `bio_direct_sales` key in `config/discovery.php`, which was flipped to
+ * 'live' on 20 Aug 2026 in the same release as the B stream — so this page has
+ * matched the brief since then. Corrected in place rather than deleted, because
+ * the note used to say the opposite and a docblock that contradicts the code is
+ * read as the code being wrong.
+ *
+ * ⚠️ Section 5 (Tips) is the one that still reads COMING SOON, and correctly:
+ * `discovery.labels.tips` is 'coming_soon' and `BioTipService::send()` is an
+ * unimplemented seam that throws. Do not flip that key to make this page look
+ * finished — the plan lists "Mark anything LIVE NOW in marketing that is not
+ * live in the product" under Never.
  *
  * ⚠️ BANNED ON THIS PAGE, per the brief: "instant" / "immediate" / "seconds"
  * about Tips, competitor names, payment-provider names, and any creator's

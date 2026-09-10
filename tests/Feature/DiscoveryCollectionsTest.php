@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\WishItem;
 use App\Services\Discovery\BirthdayDiscoveryService;
 use App\Services\Discovery\CollectionService;
 use App\Services\Discovery\CreatorRecommendationService;
@@ -272,5 +273,86 @@ class DiscoveryCollectionsTest extends TestCase
                 .'cannot build is a collection nobody can tag.'
             );
         }
+    }
+
+    /**
+     * 🚨 A WISH HELD BY MODERATION MUST NOT REACH A PUBLIC COLLECTION.
+     *
+     * `newWishes()` gated on `is_suspended` and NOT on `is_approved`, so an item
+     * `CheckMediaModeration` is still holding would have been published the moment
+     * anything requested the key. It never bit only because nothing did — which is
+     * why the gate had to be closed BEFORE the collection was wired to a route,
+     * not after. A dead collection is not a safe collection; it is an unreviewed one.
+     *
+     * ⚠️ `is_suspended` is the CREATOR-or-admin takedown flag and answers a
+     * different question. Both clauses are load-bearing and neither implies the
+     * other — this asserts the approval one specifically.
+     */
+    /** @test */
+    public function test_new_wishes_never_shows_an_unapproved_wish(): void
+    {
+        $creator = $this->creator(['username' => 'wishcreator']);
+
+        WishItem::factory()->create([
+            'user_id' => $creator->id,
+            'wishname' => 'An approved wish',
+            'price' => 10,
+            'currency' => 'GBP',
+            'is_approved' => 1,
+            'is_suspended' => 0,
+        ]);
+
+        WishItem::factory()->create([
+            'user_id' => $creator->id,
+            'wishname' => 'A wish still under review',
+            'price' => 10,
+            'currency' => 'GBP',
+            'is_approved' => 0,
+            'is_suspended' => 0,
+        ]);
+
+        $titles = array_column(
+            app(CollectionService::class)->get('new_wishes', 12)['cards'],
+            'title'
+        );
+
+        $this->assertContains('An approved wish', $titles);
+        $this->assertNotContains(
+            'A wish still under review',
+            $titles,
+            'newWishes() published a wish that is still held by moderation. `is_suspended` '
+            .'is not the approval gate — `is_approved` is, and DiscoveryService applies it to '
+            .'every other public wish surface.'
+        );
+    }
+
+    /**
+     * 🚨 THE CARD CARRIES THE LISTING'S OWN CURRENCY.
+     *
+     * `ItemCard` formatted every price as hardcoded GBP, and that branch had never
+     * run in production because the only live item collection (`almost_funded`)
+     * draws a percentage instead. Wiring this key on without the currency would
+     * have printed a JPY creator's wish in pounds, on a public browse surface,
+     * with nothing wrong in any log.
+     */
+    /** @test */
+    public function test_a_new_wish_card_carries_its_own_currency(): void
+    {
+        $creator = $this->creator(['username' => 'yencreator']);
+
+        WishItem::factory()->create([
+            'user_id' => $creator->id,
+            'wishname' => 'A wish priced in yen',
+            'price' => 1500,
+            'currency' => 'JPY',
+            'is_approved' => 1,
+            'is_suspended' => 0,
+        ]);
+
+        $card = collect(app(CollectionService::class)->get('new_wishes', 12)['cards'])
+            ->firstWhere('title', 'A wish priced in yen');
+
+        $this->assertNotNull($card, 'The approved wish did not reach the collection.');
+        $this->assertSame('JPY', $card['currency']);
     }
 }
