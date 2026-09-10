@@ -424,6 +424,9 @@ final class GifterToCreator
         CreatorReferral::create([
             'referrer_creator_id' => $referrer->id,
             'referred_creator_id' => $user->id,
+            'referred_name' => $user->name,
+            'referred_username' => $user->username,
+            'referred_joined_at' => $user->created_at,
             'referral_code_id' => $referralCode->id,
             'lifetime_gmv' => 0,
             'status' => 'IN_PROGRESS',

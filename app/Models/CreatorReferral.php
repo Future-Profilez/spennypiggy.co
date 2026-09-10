@@ -15,6 +15,9 @@ class CreatorReferral extends Model
         'referrer_creator_id',
         'payout_id',
         'referred_creator_id',
+        'referred_name',
+        'referred_username',
+        'referred_joined_at',
         'referral_code_id',
         'lifetime_gmv',
         'status',
@@ -23,6 +26,7 @@ class CreatorReferral extends Model
 
     protected $casts = [
         'qualified_at' => 'datetime',
+        'referred_joined_at' => 'datetime',
         'lifetime_gmv' => 'decimal:2',
     ];
 

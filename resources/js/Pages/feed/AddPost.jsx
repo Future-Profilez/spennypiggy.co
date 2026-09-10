@@ -10,6 +10,7 @@ import { FaPenNib } from "react-icons/fa6";
 // button are commented out together — an unused import is what makes a disabled
 // feature look accidentally deleted next time someone reads this file.
 // import ImageGenerationWithAI from "@/Components/ImageGenerationWithAI";
+
 import { router, usePage } from "@inertiajs/react";
 import MentionTextarea from "@/Components/MentionTextarea";
 import PostMediaCarousel from "@/Components/PostMediaCarousel";

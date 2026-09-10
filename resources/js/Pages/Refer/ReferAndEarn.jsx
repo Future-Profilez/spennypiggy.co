@@ -341,7 +341,14 @@ function ReferralRow({ r }) {
                     {(r.name || "?").charAt(0)}
                 </span>
                 <div className="min-w-0">
-                    <div className="font-bold text-sm truncate">{r.name}</div>
+                    <div className="flex min-w-0 items-center gap-2">
+                        <div className="font-bold text-sm truncate">{r.name}</div>
+                        {r.deleted && (
+                            <span className="shrink-0 rounded-full border border-black/30 bg-gray-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-black/60">
+                                Deleted
+                            </span>
+                        )}
+                    </div>
  <div className="text-xs text-black/60 truncate">
                         @{r.username} · joined {r.joined_at}
                     </div>

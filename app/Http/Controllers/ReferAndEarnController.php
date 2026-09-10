@@ -88,9 +88,10 @@ class ReferAndEarnController extends Controller
 
             return [
                 'id' => $ref->id,
-                'name' => $ref->referred->name ?? '-',
-                'username' => $ref->referred->username ?? '-',
-                'joined_at' => optional($ref->referred->created_at)->format('d M Y'),
+                'name' => $ref->referred?->name ?? $ref->referred_name ?? 'Deleted creator',
+                'username' => $ref->referred?->username ?? $ref->referred_username ?? 'deleted',
+                'joined_at' => ($ref->referred?->created_at ?? $ref->referred_joined_at)?->format('d M Y') ?? '-',
+                'deleted' => ! $ref->referred,
                 'lifetime_gmv' => (float) $ref->lifetime_gmv,
                 'status' => $ref->status,
                 'rejection_reason' => $rejectedPayout?->rejection_reason,
