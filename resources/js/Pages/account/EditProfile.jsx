@@ -785,7 +785,7 @@ export default function EditProfile({
                                             onBlur={IsProfileChannged}
                                             type="text"
                                             name="name"
-                                            defaultValue={user?.name || ""}
+                                            defaultValue={profileUser?.name || ""}
                                             onChange={(e) =>
                                                 setData("name", e.target.value)
                                             }
@@ -1274,7 +1274,7 @@ export default function EditProfile({
                                     )}
 
                                     <li className="mb-4">
-                                        <ManagePasskey email={user?.email} />
+                                        <ManagePasskey email={profileUser?.email} />
                                     </li>
 
                                     <li className="mb-4">

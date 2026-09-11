@@ -521,8 +521,15 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            window.dispatchEvent(new Event("openAddOptions"));
-                                            window.scrollTo({ top: 0, behavior: "smooth" });
+                                            if (auth?.user?.username) {
+                                                const onOwnProfile = typeof window !== "undefined" && (window.location.pathname === `/${auth.user.username}` || window.location.pathname.startsWith(`/${auth.user.username}/`));
+                                                if (onOwnProfile) {
+                                                    window.dispatchEvent(new CustomEvent("toggleAddOptions", { detail: { intent: "post" } }));
+                                                    window.scrollTo({ top: 0, behavior: "smooth" });
+                                                    return;
+                                                }
+                                                router.visit(`/${auth.user.username}?add=post`);
+                                            }
                                         }}
                                         className={`${ACTION} mt-4 w-full bg-[#FF007F] text-black hover:opacity-90`}
                                     >

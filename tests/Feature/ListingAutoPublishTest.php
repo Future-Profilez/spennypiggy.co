@@ -110,6 +110,24 @@ class ListingAutoPublishTest extends TestCase
                 .'scan (through ListingPublication::heldAttributes) or an admin does that.'
             );
         }
+
+        $this->assertStringContainsString(
+            'ListingPublication::republish($task->refresh()',
+            $source,
+            'TaskController::update must call ListingPublication::republish so that editing '
+            .'a held task can lift the hold when the flagged text, image, or deliverable is fixed.'
+        );
+    }
+
+    public function test_shop_controller_always_moderates_text_on_update(): void
+    {
+        $source = $this->source('app/Http/Controllers/Auth/ShopsController.php');
+
+        $this->assertMatchesRegularExpression(
+            '/\$this->moderateShopText\(\$shop\);\s*if\s*\(!\s*empty\(\$request->category\)\)/',
+            $source,
+            'ShopsController::update must run moderateShopText unconditionally, not nested inside the reward_file check.'
+        );
     }
 
     public function test_publish_clears_the_reason_the_listing_was_held_for(): void

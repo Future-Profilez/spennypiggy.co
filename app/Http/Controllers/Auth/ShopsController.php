@@ -665,8 +665,8 @@ class ShopsController extends Controller
             }
             if ($shop->reward_file && $shop->reward_file !== $oldRewardFile) {
                 $this->moderateRewardFile($shop);
-                $this->moderateShopText($shop);
             }
+            $this->moderateShopText($shop);
 
             if (! empty($request->category)) {
                 ShopCategory::where('shop_id', $shop->id)->delete();

@@ -353,6 +353,13 @@ class TaskController extends Controller
 
         $task->save();
 
+        /* An edit lifts a hold only where this save could have fixed it — see
+           `ListingPublication::republish`. Editing is never itself a way past a check. */
+        ListingPublication::republish($task->refresh(), array_filter([
+            (string) $task->media_url !== (string) $previousMedia ? 'task_image' : null,
+            (string) RewardFileScan::currentFile($task) !== (string) $previousDeliverable ? 'reward_file' : null,
+        ]));
+
         // The text is re-read on every edit and holds the task if the new wording
         // is the problem — that hold is now the only thing that takes it off sale.
         ItemTextModeration::apply(
