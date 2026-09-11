@@ -851,7 +851,11 @@ export default function EditProfile({
                                         </label>
                                         <input
                                             onBlur={IsProfileChannged}
-                                            defaultValue={user?.username || ""}
+                                            /* Same source as the form data, for the same
+                                               reason as the email field below. */
+                                            defaultValue={
+                                                profileUser?.username || ""
+                                            }
                                             onChange={(e) =>
                                                 setData(
                                                     "username",
@@ -875,7 +879,17 @@ export default function EditProfile({
                                             onBlur={IsProfileChannged}
                                             type="email"
                                             name="email"
-                                            defaultValue={user?.email || ""}
+                                            /* 🚨 `profileUser`, NOT `user` — the same fault
+                                               the bio carried until 3 Sep 2026. Three of
+                                               this component's four mount points pass a
+                                               `user` object that need not carry the field,
+                                               so the box rendered EMPTY while the form data
+                                               (seeded from `profileUser.email` above) still
+                                               held the address. Nothing was lost on save; the
+                                               creator simply read a blank field as "no email
+                                               on file". One source for what is shown and what
+                                               is sent. */
+                                            defaultValue={profileUser?.email || ""}
                                             onChange={(e) =>
                                                 setData("email", e.target.value)
                                             }

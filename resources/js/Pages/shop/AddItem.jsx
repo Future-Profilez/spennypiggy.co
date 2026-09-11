@@ -66,16 +66,12 @@ export default function AddItem(props) {
         openPop = null,
     } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-    // The dashboard reads `?add=` once and hands it down. This component is lazy-loaded, so
-    // parsing window.location here raced the dashboard's own history.replaceState and
-    // usually lost — see the note in Dashboard.jsx.
-    const addIntent = props.addIntent ?? null;
-    const [open, setOpen] = useState(
-        () =>
-            addIntent === "shop" ||
-            addIntent === "digital" ||
-            addIntent === "physical",
-    );
+    /* 🚨 THIS FORM HAS ONE WAY IN: `openPop`. It used to open ITSELF from an
+       `addIntent` prop as well, while the caller was also opening the chooser it
+       was rendered inside — which is how the shop sheet came to sit invisible
+       behind a full-screen menu. The dashboard now closes the chooser and drives
+       this flag; the type comes from `product_type`, as it already did. */
+    const [open, setOpen] = useState(false);
 
     /* `openPop` lets a caller open this form without rendering the trigger
        (see `hideTrigger`) — the pattern `AddBills` already uses. Only a literal
@@ -139,9 +135,6 @@ export default function AddItem(props) {
     const [physical, setPhysical] = useState(() => {
         if (isEdit)
             return item?.type === "physical" ? "physical" : "Digital Products";
-        if (addIntent === "physical") return "physical";
-        if (addIntent === "shop" || addIntent === "digital")
-            return "Digital Products";
         return product_type === "physical" ? "physical" : "Digital Products";
     });
 
@@ -150,9 +143,6 @@ export default function AddItem(props) {
         type: isEdit
             ? item?.type
             : (() => {
-                  if (addIntent === "physical") return "physical";
-                  if (addIntent === "shop" || addIntent === "digital")
-                      return "Digital Products";
                   return product_type === "physical"
                       ? "physical"
                       : "Digital Products";

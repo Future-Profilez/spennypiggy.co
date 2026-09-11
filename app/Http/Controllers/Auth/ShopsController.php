@@ -45,6 +45,7 @@ use App\Services\StockWaitlistService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\ListingPublication;
 use App\Support\NotificationContext;
 use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
@@ -134,7 +135,7 @@ class ShopsController extends Controller
         ItemTextModeration::apply(
             $shop,
             ['reward_title', 'reward_body', 'reward_description', 'name', 'description'],
-            ['approved' => 0]
+            ListingPublication::heldAttributes($shop)
         );
     }
 
@@ -195,7 +196,7 @@ class ShopsController extends Controller
      */
     private function moderateRewardFile(Shop $shop): void
     {
-        RewardFileScan::dispatch($shop, ['approved' => 0]);
+        RewardFileScan::dispatch($shop, ListingPublication::heldAttributes($shop));
     }
 
     /**
@@ -417,13 +418,18 @@ class ShopsController extends Controller
 
         $shop->refresh();
 
+        /* Live on save. ⚠️ The >£2,500 enhanced review below runs AFTER this and
+           still holds — that is a Stripe compliance rule, not the review queue the
+           simplification plan removes. */
+        ListingPublication::publish($shop);
+
         // SFW gate: scan the product image; hold (un-approve) if it fails moderation.
         if (! empty($shop->image)) {
             CheckMediaModeration::dispatch(
                 Shop::class,
                 $shop->id,
                 $shop->image,
-                ['approved' => 0],
+                ListingPublication::heldAttributes($shop),
                 'product_image'
             );
         }
@@ -502,7 +508,7 @@ class ShopsController extends Controller
 
             return response()->json([
                 'status' => true,
-                'msg' => 'Shop Item has been added, your upload will be approved shortly.',
+                'msg' => 'Shop item added — it is live on your page now.',
             ]);
         } catch (Exception $e) {
             $shop->delete();
@@ -645,10 +651,17 @@ class ShopsController extends Controller
             // would notice. Never throws; the scheduled sweep covers it regardless.
             app(StockWaitlistService::class)->checkRestock($shop->id);
 
+            /* An edit lifts a hold only where this save could have fixed it — see
+               `ListingPublication::republish`. */
+            ListingPublication::republish($shop, array_filter([
+                (string) $shop->image !== (string) $oldImage ? 'product_image' : null,
+                (string) $shop->reward_file !== (string) $oldRewardFile ? 'reward_file' : null,
+            ]));
+
             // An edit could swap in new media, so re-run the SFW gate — previously
             // only creation was scanned, making edit a way around moderation.
             if (! empty($request->image) && $request->image !== $oldImage) {
-                CheckMediaModeration::dispatch(Shop::class, $shop->id, $shop->image, ['approved' => 0], 'product_image');
+                CheckMediaModeration::dispatch(Shop::class, $shop->id, $shop->image, ListingPublication::heldAttributes($shop), 'product_image');
             }
             if ($shop->reward_file && $shop->reward_file !== $oldRewardFile) {
                 $this->moderateRewardFile($shop);
@@ -756,8 +769,9 @@ class ShopsController extends Controller
                             }
                         }
                     }
+                    /* A recreated Stripe product is not a moderation signal — see
+                       `ListingPublication`. */
                     $shop->stripe_product_id = $stripe_client->id;
-                    $shop->approved = 0;
                     $shop->save();
                 }
 
@@ -779,7 +793,7 @@ class ShopsController extends Controller
 
                 return response()->json([
                     'status' => true,
-                    'msg' => 'Shop Item has been updated, your upload will be approved shortly.',
+                    'msg' => 'Shop item updated.',
                 ]);
                 // return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Shop Item has been added, your upload will be approved shortly.");
 

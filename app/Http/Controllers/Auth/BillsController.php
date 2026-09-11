@@ -39,6 +39,7 @@ use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\ListingPublication;
 use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
 use App\Traits\RiskEnforcement;
@@ -111,7 +112,7 @@ class BillsController extends Controller
             Bills::class,
             $bill->id,
             $bill->thumbnail,
-            ['approved' => 0],
+            ListingPublication::heldAttributes($bill),
             'thumbnail'
         );
     }
@@ -126,7 +127,7 @@ class BillsController extends Controller
         ItemTextModeration::apply(
             $bill,
             ['reward_title', 'reward_body', 'reward_description', 'name'],
-            ['approved' => 0]
+            ListingPublication::heldAttributes($bill)
         );
     }
 
@@ -139,7 +140,7 @@ class BillsController extends Controller
      */
     private function moderateBillFile(?Bills $bill, ?string $previousFile = null): void
     {
-        RewardFileScan::dispatch($bill, ['approved' => 0], $previousFile);
+        RewardFileScan::dispatch($bill, ListingPublication::heldAttributes($bill), $previousFile);
     }
 
     public function billSave(Request $request)
@@ -225,6 +226,9 @@ class BillsController extends Controller
 
         $bill->save();
 
+        // Live on save; the three scans below retract it if they find something.
+        ListingPublication::publish($bill);
+
         $this->moderateBill($bill);
         $this->moderateBillText($bill);
         $this->moderateBillFile($bill);
@@ -264,7 +268,7 @@ class BillsController extends Controller
 
             return response()->json([
                 'status' => true,
-                'msg' => 'Bill added successfully, your upload will be approved shortly.',
+                'msg' => 'Added — it is live on your page now.',
                 'bill_id' => $bill->id,  // Added for debugging
             ]);
         } catch (Exception $e) {
@@ -368,6 +372,13 @@ class BillsController extends Controller
             'period' => $request->period,
         ] + $this->rewardBundleColumns($request))->save();
 
+        /* An edit lifts a hold only where this save could have fixed it — see
+           `ListingPublication::republish`. Editing is never itself a way past a check. */
+        ListingPublication::republish($bill->refresh(), array_filter([
+            (string) $bill->thumbnail !== (string) $previousThumbnail ? 'thumbnail' : null,
+            (string) RewardFileScan::currentFile($bill) !== (string) $previousRewardFile ? 'reward_file' : null,
+        ]));
+
         $this->moderateBill($bill->refresh(), $previousThumbnail);
         $this->moderateBillText($bill);
         $this->moderateBillFile($bill, $previousRewardFile);
@@ -422,10 +433,11 @@ class BillsController extends Controller
 
                 $stripeProduct = StripeControl::createProduct($productPayload, $user->account_id);
 
+                /* A recreated Stripe product is not a moderation signal — see
+                   `ListingPublication`. The scans still cover what changed. */
                 $bill->update([
                     'product_id' => $stripeProduct->id,
                     'price_id' => $stripeProduct->default_price,
-                    'approved' => 0,
                 ]);
 
                 Log::info("Recreated Stripe Product for bill {$bill->uuid}: ".$stripeProduct->id);
@@ -469,7 +481,6 @@ class BillsController extends Controller
                 $bill->update([
                     'price_id' => $newPrice->id,
                     'product_id' => $product->id,
-                    'approved' => 0,
                 ]);
             } else {
                 // Only name or metadata might have changed

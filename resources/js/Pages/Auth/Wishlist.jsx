@@ -75,8 +75,13 @@ export default function Wishlist(props) {
     const [rewardImage, setRewardImage] = useState("");
     const [isAiImage, setIsAiImage] = useState();
 
+    /* 🚨 ONLY A LITERAL `true` OPENS IT — the pattern `AddBills` and `AddMembership`
+       already follow. A caller driving this flag CLEARS it back to null/false so the
+       next press opens the form again, and a bare `setClose(openPop)` therefore read
+       that clear as "close": the wish form opened and shut itself a tick later, with
+       nothing wrong in any log. Closing is `requestClose`'s job, never this effect's. */
     useEffect(() => {
-        setClose(openPop);
+        if (openPop === true) setClose(true);
     }, [openPop]);
 
     const uploaderRef = useRef();

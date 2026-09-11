@@ -28,6 +28,7 @@ use App\Support\EmailDomainPolicy;
 use App\Support\GifterVerificationCharge;
 use App\Support\MarketingConsent;
 use App\Support\PresetCovers;
+use App\Support\ProfileAutoApproval;
 use App\Support\RiskMessages;
 use App\Support\SocialHandle;
 use Illuminate\Http\RedirectResponse;
@@ -615,11 +616,10 @@ class RegisteredUserController extends Controller
          * 🚨 THIS IS THE SOCIAL ONBOARDING STEP, DONE AT SIGNUP — NOT A SEPARATE
          * CONTACT FIELD.
          *
-         * `Profile/CreatorVerification.jsx` carries a real step ("Add a social handle")
-         * and locks "Submit for review" until the handles, photo and bio are APPROVED.
+         * `Profile/CreatorVerification.jsx` carries a real step ("Add a social handle").
          * Writing this row the way `SocialLinksController` writes it means the creator
-         * gives their handle ONCE: the step is already ticked, the row is already in the
-         * admin review queue, and there is nothing to go back and re-enter.
+         * gives their handle ONCE: the step is already ticked and there is nothing to go
+         * back and re-enter.
          *
          * It also closes the reachability gap it was originally built for — the platform
          * holds a creator's e-mail and nothing else, so a creator who stalls has no other
@@ -644,13 +644,41 @@ class RegisteredUserController extends Controller
                 $handle = SocialHandle::normalise($platform, $request->input('social_handle'));
 
                 if ($handle !== null) {
+                    /*
+                     * 🚨 JUDGE IT HERE, EXACTLY AS THE SOCIALS EDITOR DOES (11 Sep 2026).
+                     *
+                     * This used to write `status = 0` — "awaiting review" — which was
+                     * right while an admin approved handles and became a dead end the
+                     * day profiles started approving themselves. A handle is REQUIRED of
+                     * every creator at signup, nothing judged this row, and
+                     * `ProfileAutoApproval::activateIfComplete()` will not publish a page
+                     * whose socials are unapproved. So every new creator landed held, was
+                     * told "Add a social handle — NEEDS A FIX" about the handle they had
+                     * just given, and the only way out was to open Creator Studio and
+                     * re-save the identical value, because THAT path judges it.
+                     *
+                     * Same four checks as the editor: known platform, https, no
+                     * shortener, not already claimed by another creator.
+                     */
+                    $refusal = ProfileAutoApproval::judgeSocials([$platform => $handle], $user->id);
+
+                    /*
+                     * ⚠️ A REFUSAL IS NOT A 422 HERE, AND IT MUST NOT BE. The editor can
+                     * answer 422 and let the creator fix it on the spot; at signup the
+                     * account already exists and the person is one line from being logged
+                     * in, so nothing on this path may throw or redirect. The handle is
+                     * KEPT with its reason instead — `CreatorVerification.jsx` renders
+                     * `slinks.reason` as "Why it came back", so they are told which check
+                     * pulled it rather than being asked to guess.
+                     */
                     SocialLinks::create([
                         'uuid' => (string) Str::uuid(),
                         'user_id' => $user->id,
                         'source' => 'signup',
-                        // 0 = awaiting review, exactly as a Creator Studio submission
-                        // lands. It is not published until an admin approves it.
-                        'status' => 0,
+                        'status' => $refusal === null
+                            ? SocialLinks::STATUS_APPROVED
+                            : 0,
+                        'reason' => $refusal,
                         $platform => $handle,
                     ]);
 
