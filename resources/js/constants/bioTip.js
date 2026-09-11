@@ -32,7 +32,7 @@ export const BIO_TIP_COPY = {
      * ⚠️ The fee is ADDED to the tip, and the creator receives the tip in full.
      * Saying which way round it goes is the difference between a fee and a cut.
      */
-    feeNote: "A £1 admin fee is added to your tip. Your creator receives the full amount you choose.",
+    feeNote: "Payment processing is included. Your creator receives the full amount you choose.",
 
     /**
      * ⚠️ "Indicative" is load-bearing. The charge is in USD; what that costs in
