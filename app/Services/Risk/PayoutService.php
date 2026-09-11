@@ -645,11 +645,13 @@ class PayoutService
                 }
 
                 /*
-                 * 🚨 IDENTITY IS A PAYOUT GATE (10 Sep 2026). It is checked in
-                 * `calculatePayouts` too, and BOTH are needed: that one keeps the
-                 * creator out of the run's figures, this one is the last thing before
-                 * a real Stripe payout is issued. A creator whose sign-off is revoked
-                 * between the calculation and the transfer must not be paid.
+                 * 🚨 IDENTITY IS A PAYOUT GATE (10 Sep 2026), AND THIS IS THE ONLY
+                 * PLACE IT IS CHECKED ON THE RUN. It is deliberately NOT in
+                 * `calculatePayouts` — the creator's own finance page reads that to
+                 * show "£X is waiting, verify to receive it", and filtering there
+                 * computes £0 for exactly the creator the panel exists to prompt. So
+                 * do not remove this as a "duplicate": it is the last thing before a
+                 * real Stripe payout is issued, and there is no earlier gate.
                  *
                  * ⚠️ Not an error. It is a state the creator can leave, and their
                  * money is still theirs — it stays unpaid and rides the next run.

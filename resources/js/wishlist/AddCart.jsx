@@ -11,10 +11,12 @@ import { trackSearchClick } from "@/includes/Analytics";
 import RewardSummary from "@/Components/Reward/RewardSummary";
 import { riskMessageBody } from '@/constants/riskMessages';
 import lazyRetry from "@/utils/lazyRetry";
+import { supporterFeeCaption } from "@/lib/fees";
 
 export default function AddCart(props) {
     const {  action, uuid, item, currency, showall, IsloggedIn } = props;
     const { auth, card_capabilities, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
+    const __pageProps = usePage().props;
     const [sub, setSub] = useState("daily");
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { usdtogbp, formatMultiPrice, adminFeeInCurrency, calculateTotalSupporterPays } = PriceFormat();
@@ -91,7 +93,7 @@ export default function AddCart(props) {
                                         )}
                                     </span>
                                     <span className="text-[12px] text-gray-500 font-normal mt-1 leading-tight">
-                                        *Includes platform and payment processing fees. You will be charged in {item?.currency || 'USD'}.
+                                        {supporterFeeCaption(__pageProps, { withRate: true })}. You will be charged in {item?.currency || 'USD'}.
                                     </span>
                                 </div>
                             )}
@@ -124,7 +126,7 @@ export default function AddCart(props) {
                             />
                         </div>
                         <p className="text-[12px] text-gray-500 font-normal mt-1 leading-tight">
-                            *Includes platform and payment processing fees. You will be charged in {item?.currency || 'USD'}. Amounts shown in {currency || 'GBP'} are estimates.
+                            {supporterFeeCaption(__pageProps, { withRate: true })}. You will be charged in {item?.currency || 'USD'}. Amounts shown in {currency || 'GBP'} are estimates.
                         </p>
                         <div className="crowd pt-2 mb-4">
                             <CustomProgressBar

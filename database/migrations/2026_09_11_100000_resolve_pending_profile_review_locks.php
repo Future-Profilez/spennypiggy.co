@@ -55,9 +55,20 @@ return new class extends Migration
             ->whereIn('id', $approvedHandles)
             ->update(['profile_status_lock' => 2, 'profile_reject_reason' => null]);
 
-        // → 0: everyone else still carrying the lock. Their next save decides.
+        // → 0: every CREATOR still carrying the lock. Their next save decides.
+        //
+        // 🚨 `role = 1` IS LOAD-BEARING (added 11 Sep 2026, before this ever ran on
+        // production). `profile_status_lock = 1` is still a LIVE state for GIFTERS: it
+        // is how a supporter who crosses £500 enters the billing-address check
+        // (Helpers.php ~1490, RegisteredUserController::cardVerificationSuccess), and the
+        // admin's `/users-address-verification/gifter` queue and its badge read exactly
+        // that value. Unscoped, this statement emptied that queue — every gifter
+        // mid-verification dropped to lock 0, blocked at checkout and invisible to the
+        // only screen that could clear them, with no `down()`. Only the creator meaning
+        // of lock 1 was deleted; the gifter meaning was never touched.
         DB::table('users')
             ->where('profile_status_lock', 1)
+            ->where('role', 1)
             ->update(['profile_status_lock' => 0]);
     }
 

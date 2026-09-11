@@ -16,6 +16,7 @@ use Stripe\Balance;
 use Stripe\Checkout\Session;
 use Stripe\Collection;
 use Stripe\Customer;
+use Stripe\CustomerBalanceTransaction;
 use Stripe\Exception\ApiConnectionException;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\OAuth\InvalidRequestException;
@@ -285,6 +286,52 @@ class StripeControl
         } catch (\Throwable $e) {
             Log::error('Failed to fetch charge facts for payment intent', [
                 'payment_intent_id' => $paymentIntentId,
+                'connected_account_id' => $connectedAccountId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * The payment intent behind a Checkout Session.
+     *
+     * Five of the eight paid modules store only a session id, so measuring what
+     * their charges really cost needs this hop first — which is the second of
+     * the two Stripe reads `finance:record-processor-cost` pays per row, and
+     * half the reason it is a bounded out-of-band command rather than anything
+     * on the checkout path.
+     *
+     * ⚠️ A direct-charge session lives on the CONNECTED account, so omitting
+     * `$connectedAccountId` answers "no such session" rather than failing in a
+     * way anyone would read as a missing option.
+     *
+     * Returns null — never an empty string — when it cannot be read: the caller
+     * treats that as "not measured", and an empty id would be retrieved as one.
+     */
+    public static function paymentIntentIdForSession(string $sessionId, ?string $connectedAccountId = null): ?string
+    {
+        self::setClient();
+
+        try {
+            $opts = [];
+            if (! empty($connectedAccountId)) {
+                $opts['stripe_account'] = $connectedAccountId;
+            }
+
+            $session = self::$client->checkout->sessions->retrieve($sessionId, [], $opts);
+
+            $intent = $session->payment_intent ?? null;
+
+            if (is_object($intent)) {
+                $intent = $intent->id ?? null;
+            }
+
+            return is_string($intent) && $intent !== '' ? $intent : null;
+        } catch (\Throwable $e) {
+            Log::warning('Could not resolve the payment intent for a checkout session', [
+                'session_id' => $sessionId,
                 'connected_account_id' => $connectedAccountId,
                 'error' => $e->getMessage(),
             ]);
@@ -1870,7 +1917,7 @@ class StripeControl
      * unlike a transfer there is no downstream failure to notice it.
      *
      * @param  int  $amountMinor  a POSITIVE credit in minor units
-     * @return \Stripe\CustomerBalanceTransaction
+     * @return CustomerBalanceTransaction
      */
     public static function creditCustomerBalance(
         string $customerId,

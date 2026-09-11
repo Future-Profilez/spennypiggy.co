@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Http\Middleware\CheckStripeIdentityVerification;
 use App\Http\Middleware\UserEmailVerify;
 use App\Models\TipGoal;
 use App\Models\User;
@@ -33,7 +32,7 @@ class TipGoalModerationTest extends TestCase
         parent::setUp();
 
         // Not under test: this is about what the endpoint accepts, not who reaches it.
-        $this->withoutMiddleware([CheckStripeIdentityVerification::class, UserEmailVerify::class]);
+        $this->withoutMiddleware([UserEmailVerify::class]);
     }
 
     private function creator(): User

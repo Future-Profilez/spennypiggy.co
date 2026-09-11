@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Helpers;
-use App\Http\Middleware\CheckStripeIdentityVerification;
 use App\Http\Middleware\UserEmailVerify;
 use App\Models\GifterAddress;
 use App\Models\GifterCardVerification;
@@ -212,7 +211,6 @@ class GifterVerificationAddressTest extends TestCase
 
         $this->actingAs($user)
             ->withoutMiddleware([
-                CheckStripeIdentityVerification::class,
                 UserEmailVerify::class,
             ])
             ->getJson(route('gifter.card.verification'), ['X-Requested-With' => 'XMLHttpRequest'])
@@ -274,7 +272,6 @@ class GifterVerificationAddressTest extends TestCase
 
         $this->actingAs($mine)
             ->withoutMiddleware([
-                CheckStripeIdentityVerification::class,
                 UserEmailVerify::class,
             ])
             ->get(route('card.verification.failed', $victim->uuid))

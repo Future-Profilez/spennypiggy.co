@@ -35,10 +35,10 @@ use App\Http\Controllers\DeliveriesController;
 use App\Http\Controllers\EvidencePackController;
 use App\Http\Controllers\FounderBonusController;
 use App\Http\Controllers\GifterHubController;
+use App\Http\Controllers\MembershipCreditController;
 use App\Http\Controllers\PiggyPotController;
 use App\Http\Controllers\PiggyPotPaymentController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\MembershipCreditController;
 use App\Http\Controllers\ReferAndEarnController;
 use App\Http\Controllers\SavedItemController;
 use App\Http\Controllers\StaticPageController;
@@ -62,6 +62,7 @@ use App\Services\DiscoveryService;
 use App\Services\MembershipCreditService;
 use App\Services\SubscriptionActivationService;
 use App\Support\Badges;
+use App\Support\Incentives;
 use App\Support\SubscriptionPayload;
 use App\Support\SubscriptionPlan;
 use Carbon\Carbon;
@@ -935,613 +936,620 @@ Route::middleware('auth')->group(function () {
         });
     });
 
-    Route::middleware(['mustCompletedStripeIdentity'])->group(function () {
-        Route::middleware('mustHaveToVerify')->group(function () {
-            Route::get('gifter-card-verification', [RegisteredUserController::class, 'gifterCardVerification'])->name('gifter.card.verification');
-            // The gifter's own billing address, typed before the £1 verification charge.
-            // Throttled because it is an authenticated write reachable from a console.
-            Route::post('gifter-verification-address', [RegisteredUserController::class, 'saveVerificationAddress'])
-                ->middleware('throttle:20,1')
-                ->name('gifter.verification.address');
-            Route::get('card-verification-success/{uuid}', [RegisteredUserController::class, 'cardVerificationSuccess'])->name('card.verification.success');
-            Route::get('card-verification-failed/{id}', [RegisteredUserController::class, 'cardVerificationFailed'])->name('card.verification.failed');
-            Route::get('update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat'])->name('updateVat');
-            Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
-            Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+    /*
+     * 🚨 THE `mustCompletedStripeIdentity` WALL THAT WRAPPED THESE ROUTES IS GONE (11 Sep 2026).
+     * Identity is a PAYOUT gate (App\Support\PayoutEligibility), never a page wall. The
+     * wall's own condition — role 1, profile live, Stripe connected, card on file, no ID
+     * check — was exactly the creator the 10 Sep change declares legitimate, and for them
+     * it rendered Auth/StripeIdentity on 149 routes, including financial.dashboard: the
+     * page carrying the PayoutIdentityGate panel built to replace it. Pinned by
+     * PayoutIdentityGateTest::test_no_route_carries_the_old_identity_wall_and_its_class_is_gone.
+     */
+    Route::middleware('mustHaveToVerify')->group(function () {
+        Route::get('gifter-card-verification', [RegisteredUserController::class, 'gifterCardVerification'])->name('gifter.card.verification');
+        // The gifter's own billing address, typed before the £1 verification charge.
+        // Throttled because it is an authenticated write reachable from a console.
+        Route::post('gifter-verification-address', [RegisteredUserController::class, 'saveVerificationAddress'])
+            ->middleware('throttle:20,1')
+            ->name('gifter.verification.address');
+        Route::get('card-verification-success/{uuid}', [RegisteredUserController::class, 'cardVerificationSuccess'])->name('card.verification.success');
+        Route::get('card-verification-failed/{id}', [RegisteredUserController::class, 'cardVerificationFailed'])->name('card.verification.failed');
+        Route::get('update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat'])->name('updateVat');
+        Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
+        Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
-            Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
-            Route::post('notification-switch', [ProfileController::class, 'notificationSwitch'])->name('notification-switch');
-            Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
-            Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
-            Route::get('delete-category/{id}', [WishitemController::class, 'deleteCategory'])->name('delete-category');
-            Route::get('setup/multi-step-verification', function () {
-                return Inertia::render('account/TwoFactorSetup');
-            })->name('account.2fa');
+        Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
+        Route::post('notification-switch', [ProfileController::class, 'notificationSwitch'])->name('notification-switch');
+        Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
+        Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
+        Route::get('delete-category/{id}', [WishitemController::class, 'deleteCategory'])->name('delete-category');
+        Route::get('setup/multi-step-verification', function () {
+            return Inertia::render('account/TwoFactorSetup');
+        })->name('account.2fa');
 
-            Route::get('account', function () {
-                try {
-                    $user = Auth::user();
-                    if (! $user) {
-                        return redirect()->route('login');
-                    }
-
-                    // ... existing logic ...
-                    // I need to copy the whole closure or just insert before it.
-                    // To avoid copying the massive closure, I will use a different anchor.
-
-                    $auto_tweet = (int) ($user->auto_tweet ?? 0) === 1;
-                    $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
-
-                    // ⚠️ One builder for BOTH page payloads — App\Support\SubscriptionPayload.
-                    // This screen hosts the Platform Subscription popup, and its own copy of
-                    // the array had no `has_card`, so a creator who had just saved their card
-                    // was still told to add one — right under a row reading "Card saved".
-                    $subscription = SubscriptionPayload::currentRow($user);
-
-                    // Get complete subscription history for the user
-                    $historyCollection = MonthlyCharge::where('user_id', $user->id)
-                        ->newestFirst()
-                        ->get();
-                    $subscription_history = $historyCollection->map(function ($charge) {
-                        $fmt = function ($date) {
-                            try {
-                                return $date ? Carbon::parse($date)->format('d F Y') : null;
-                            } catch (Throwable $e) {
-                                return null;
-                            }
-                        };
-
-                        return [
-                            'id' => $charge->id,
-                            'uuid' => $charge->uuid,
-                            'stripe_id' => $charge->stripe_id,
-                            'amount' => (float) ($charge->amount ?? 0),
-                            'currency' => $charge->currency ?? 'GBP',
-                            'status' => $charge->status ?? 'pending',
-                            'current_start_trial_date' => $fmt($charge->current_start_trial_date),
-                            'current_end_trial_date' => $fmt($charge->current_end_trial_date),
-                            'current_start_subscription_date' => $fmt($charge->current_start_subscription_date),
-                            'current_end_subscription_date' => $fmt($charge->current_end_subscription_date),
-                            'upcoming_payment' => $fmt($charge->upcoming_payment),
-                            'created_at' => $fmt($charge->created_at),
-                            'updated_at' => $fmt($charge->updated_at),
-                        ];
-                    });
-
-                    $site_subscription = [
-                        'status' => 'INACTIVE',
-                        'trial_status' => null,
-                        'trial_start' => null,
-                        'trial_end_in' => null,
-                        'subscription_start' => null,
-                        'subscription_end' => null,
-                        'subscription_renew_in' => null,
-                        'next_payment_date' => null,
-                        'expired_at' => null,
-                    ];
-
-                    if ($subscription) {
-                        $trial_start = $subscription->current_start_trial_date;
-                        $trial_end = $subscription->current_end_trial_date;
-                        $subscription_start = $subscription->current_start_subscription_date;
-                        $subscription_end = $subscription->current_end_subscription_date;
-
-                        $now = Carbon::now();
-                        $trialStartCarbon = $trial_start ? Carbon::parse($trial_start) : null;
-                        $trialEndCarbon = $trial_end ? Carbon::parse($trial_end) : null;
-                        $subStartCarbon = $subscription_start ? Carbon::parse($subscription_start) : null;
-                        $subEndCarbon = $subscription_end ? Carbon::parse($subscription_end) : null;
-
-                        $isTrialOngoing = $trialEndCarbon && $now->lessThan($trialEndCarbon);
-                        $isTrialEnded = $trialEndCarbon && $now->greaterThanOrEqualTo($trialEndCarbon);
-                        $isSubscriptionActive = in_array($subscription->status, ['paid', 'active', 'renew']) && $subEndCarbon && $now->lessThan($subEndCarbon);
-                        $isExpired = $subEndCarbon && $now->greaterThanOrEqualTo($subEndCarbon);
-
-                        // Format output
-                        $site_subscription['trial_start'] = $trialStartCarbon ? $trialStartCarbon->format('d F Y') : null;
-                        $site_subscription['trial_end_in'] = $trialEndCarbon ? $trialEndCarbon->diffForHumans($now) : null;
-                        $site_subscription['trial_status'] = $isTrialOngoing ? 'active' : 'ended';
-
-                        $site_subscription['subscription_start'] = $subStartCarbon ? $subStartCarbon->format('d F Y') : null;
-                        $site_subscription['subscription_end'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
-                        $site_subscription['subscription_renew_in'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
-                        $site_subscription['expired_at'] = $isExpired ? $subEndCarbon->diffForHumans($now) : null;
-
-                        $site_subscription['next_payment_date'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
-                        $site_subscription['subscription_status_code'] = $user->subscription_status;
-                        $site_subscription['status'] = $user->display_subscription_status;
-                        $site_subscription['is_cancelled'] = $subscription->status === 'canceled' || ! empty($subscription->cancelled_at);
-                    } else {
-                        $site_subscription['status'] = 'Not Subscribed';
-                        $site_subscription['subscription_status_code'] = 3;
-                    }
-
-                    return Inertia::render('accountsetting/Accountsetting', [
-                        'auto_tweet' => $auto_tweet,
-                        'site_subscription' => $site_subscription,
-                        'subscription_history' => $subscription_history,
-                        'monthly_charges' => SubscriptionPayload::for($subscription),
-                        'pwa_notification_details' => $pwaNotificationDetails ?? null,
-                        'subscription_status' => $user->subscription_status, // Add numeric status for debugging
-                        'webAuthnCredentials' => Auth::user()->webAuthnCredentials()->exists(), // Add WebAuthn credentials existence for debugging
-                        // The delete-account reasons come from the config that
-                        // VALIDATES them, never a copy in the bundle — a list
-                        // the form offers and the server refuses is the worst
-                        // of both.
-                        'deletion_reasons' => config('account_deletion.reasons', []),
-                        'deletion_comment_required_for' => config('account_deletion.comment_required_for', 'other'),
-                    ]);
-                } catch (Throwable $e) {
-                    Log::error('Account page error', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
-
-                    return Inertia::render('ErrorPage', [
-                        'status' => 500,
-                        'message' => 'Something went wrong',
-                        'consoleMessage' => $e->getMessage(),
-                    ]);
-                }
-            })->name('account');
-
-            Route::get('/refer-and-earn', [ReferAndEarnController::class, 'index'])->name('refer-and-earn');
-            Route::post('/refer-and-earn/create-link', [ReferAndEarnController::class, 'createReferralLink'])->name('create-referral-link');
-            Route::post('/refer-and-earn/redeem', [ReferAndEarnController::class, 'requestRedeem'])->name('referral.redeem');
-
-            Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
-
-            Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
-
-            Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
-
-            Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
-
-            Route::get('bill-tracker', [WishitemController::class, 'billTracker'])->name('bill-tracker');
-
-            Route::get('membership-tracker', [WishitemController::class, 'membershipTracker'])->name('membership.tracker');
-
-            Route::get('shop-tracker', [WishitemController::class, 'shopTracker'])->name('shop.tracker');
-
-            Route::get('subscriptions', [WishitemController::class, 'creatorSubscriptions'])->name('subscriptions');
-
-            Route::get('subscribed', [WishitemController::class, 'userSubscribed'])->name('subscribed');
-
-            Route::get('cancel-subscription/{subscription_id}', [WishitemController::class, 'cancelSubscription'])->name('cancel-subscription');
-
-            Route::get('/read-status/{payment_id}/{type}', [WishitemController::class, 'readStatus'])->name('read-status');
-
-            // This used to render stripe/Stripe itself, bypassing every guard in
-            // StripeController::index (profile approval, identity verification,
-            // already-connected). It was also the target of the only two "Connect
-            // Stripe" links in the app. Kept as a redirect so old links/bookmarks
-            // land on the guarded page instead of the unguarded copy.
-            Route::get('/stripe', fn () => redirect()->route('stripe.index'))
-                ->middleware(['auth', 'verified'])
-                ->name('stripe');
-
-            Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');
-
-            // Twitter
-            Route::prefix('twitter')->name('x.')->group(function () {
-                Route::get('init', [TwitterController::class, 'authInit'])->name('init');
-                Route::get('authorize', [TwitterController::class, 'handleAuth'])->name('handle');
-                Route::get('share/{uuid}/{type}', [WishitemController::class, 'shareOnTwitter'])->name('share');
-                // Route::get('authorize', [TwitterController::class, 'handleOauth1'])->name('handle');
-            });
-
-            Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
-
-            Route::get('mark-complete-goal/{uuid}', [WishitemController::class, 'markJarComplete'])->name('mark-goal');
-
-            Route::get('all-goals', [WishitemController::class, 'allGoalsCreators'])->name('all-goals');
-
-            // Intro video
-            Route::post('/update/intro/video', [ProfileController::class, 'saveIntroVideo'])->name('save');
-
-            Route::prefix('intro')->name('intro.')->group(function () {
-                Route::post('save', [ProfileController::class, 'saveIntroVideo'])->name('save');
-                Route::get('list', [ProfileController::class, 'getIntroVideo'])->name('list');
-                Route::get('remove', [ProfileController::class, 'removeIntro'])->name('remove');
-                // Route::get('/{uuid}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
-            });
-
-            Route::prefix('deliveries')->name('deliveries.')->group(function () {
-                Route::get('dashboard', [DeliveriesController::class, 'index'])->name('dashboard');
-                Route::get('stats', [DeliveriesController::class, 'getDeliveryStats'])->name('stats');
-            });
-
-            Route::match(['get', 'delete'], 'delete-stripe-account/{accountid}', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
-
-            /*
-             * ⚠️ Throttled PER AUTHENTICATED USER, not per IP.
-             *
-             * This route sits inside the `auth` + `mustHaveToVerify` group, and
-             * Laravel's ThrottleRequests keys a signed-in request on the user id.
-             * So a school, an office or a mobile carrier NAT cannot exhaust one
-             * buyer's budget on behalf of another — the failure mode that makes
-             * IP throttling dangerous on a checkout.
-             *
-             * 30/min is roughly one request every two seconds sustained. A
-             * supporter double-clicking Pay, retrying a declined card, or bouncing
-             * between the item page and checkout cannot reach it; a script minting
-             * Stripe Checkout Sessions in a loop can. Each hit is a real Stripe API
-             * call, so the ceiling is about cost and Stripe's own rate limit as
-             * much as abuse.
-             */
-            Route::match(['get', 'post'], 'wish-subscribe/checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->middleware('throttle:30,1')->name('wish.subscribe.checkout.auth');
-
-            // POST, not GET: this records the creator's digital-content waiver, and a
-            // consent that can be triggered by following a link is not consent. The
-            // POST also carries a CSRF token, which a GET does not.
-            //
-            // ⚠️ Throttled per authenticated creator (this is inside the `auth`
-            // group, so the key is the user id, never a shared IP). 20/min: a
-            // creator subscribing to their own monthly charge does it once, and a
-            // retry after a card decline is a handful more — but every hit creates
-            // a Stripe subscription attempt, so the loop has to be capped.
-            Route::post('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->middleware('throttle:20,1')->name('mandatory.checkout');
-
-            Route::post('/mandatory-cancel', [StripeController::class, 'cancelMandatorySubscription'])->name('mandatory.cancel');
-
-            Route::post('/mandatory-resume', [StripeController::class, 'resumeMandatorySubscription'])->name('mandatory.resume');
-
-            Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
-
-            Route::get('/activate-subscription', function () {
-                $monthlyCharges = null;
+        Route::get('account', function () {
+            try {
                 $user = Auth::user();
-
-                if ($user) {
-                    $subscription = MonthlyCharge::where('user_id', $user->id)
-                        ->newestFirst()
-                        ->first();
-
-                    if ($subscription) {
-                        $fmt = function ($date) {
-                            try {
-                                return $date ? Carbon::parse($date)->format('d F Y') : null;
-                            } catch (Throwable $e) {
-                                return null;
-                            }
-                        };
-
-                        $monthlyCharges = [
-                            'id' => $subscription->id,
-                            'uuid' => $subscription->uuid,
-                            'status' => $subscription->status ?? 'pending',
-                            'amount' => (float) ($subscription->amount ?? 0),
-                            'currency' => $subscription->currency ?? 'GBP',
-                            'current_start_trial_date' => $fmt($subscription->current_start_trial_date),
-                            'current_end_trial_date' => $fmt($subscription->current_end_trial_date),
-                            'current_start_subscription_date' => $fmt($subscription->current_start_subscription_date),
-                            'current_end_subscription_date' => $fmt($subscription->current_end_subscription_date),
-                            'upcoming_payment' => $subscription->upcoming_payment ? Carbon::parse($subscription->upcoming_payment)->format('d F Y H:i') : null,
-                        ];
-                    }
+                if (! $user) {
+                    return redirect()->route('login');
                 }
 
-                return Inertia::render('Profile/ActivateSubscription', [
-                    'monthly_charges' => $monthlyCharges,
-                    /*
-                     * "Earn your membership back" — the creator's own progress
-                     * towards a free month.
-                     *
-                     * 🚨 NULL for a visitor, for a gifter and while the scheme
-                     * is off; the panel renders on the PRESENCE of the prop, so
-                     * there is no second gate in JSX to keep in step. Never
-                     * throws — `panelFor()` reports and returns null, because a
-                     * failed count must not 500 the page a creator uses to
-                     * manage their own billing.
-                     */
-                    'membership_credits' => app(MembershipCreditService::class)->panelFor($user),
-                    // Price and the "no charge until your first sale" wording come
-                    // from config, never from the JSX — the same figure is printed
-                    // on eleven other surfaces.
-                    'subscriptionPlan' => SubscriptionPlan::forFrontend(),
-                    // A creator who has already sold is billed the moment they
-                    // subscribe, so the screen must not promise them a free period.
-                    'hasMadeSale' => $user
-                        ? app(SubscriptionActivationService::class)->hasEverMadeSale($user)
-                        : false,
+                // ... existing logic ...
+                // I need to copy the whole closure or just insert before it.
+                // To avoid copying the massive closure, I will use a different anchor.
+
+                $auto_tweet = (int) ($user->auto_tweet ?? 0) === 1;
+                $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
+
+                // ⚠️ One builder for BOTH page payloads — App\Support\SubscriptionPayload.
+                // This screen hosts the Platform Subscription popup, and its own copy of
+                // the array had no `has_card`, so a creator who had just saved their card
+                // was still told to add one — right under a row reading "Card saved".
+                $subscription = SubscriptionPayload::currentRow($user);
+
+                // Get complete subscription history for the user
+                $historyCollection = MonthlyCharge::where('user_id', $user->id)
+                    ->newestFirst()
+                    ->get();
+                $subscription_history = $historyCollection->map(function ($charge) {
+                    $fmt = function ($date) {
+                        try {
+                            return $date ? Carbon::parse($date)->format('d F Y') : null;
+                        } catch (Throwable $e) {
+                            return null;
+                        }
+                    };
+
+                    return [
+                        'id' => $charge->id,
+                        'uuid' => $charge->uuid,
+                        'stripe_id' => $charge->stripe_id,
+                        'amount' => (float) ($charge->amount ?? 0),
+                        'currency' => $charge->currency ?? 'GBP',
+                        'status' => $charge->status ?? 'pending',
+                        'current_start_trial_date' => $fmt($charge->current_start_trial_date),
+                        'current_end_trial_date' => $fmt($charge->current_end_trial_date),
+                        'current_start_subscription_date' => $fmt($charge->current_start_subscription_date),
+                        'current_end_subscription_date' => $fmt($charge->current_end_subscription_date),
+                        'upcoming_payment' => $fmt($charge->upcoming_payment),
+                        'created_at' => $fmt($charge->created_at),
+                        'updated_at' => $fmt($charge->updated_at),
+                    ];
+                });
+
+                $site_subscription = [
+                    'status' => 'INACTIVE',
+                    'trial_status' => null,
+                    'trial_start' => null,
+                    'trial_end_in' => null,
+                    'subscription_start' => null,
+                    'subscription_end' => null,
+                    'subscription_renew_in' => null,
+                    'next_payment_date' => null,
+                    'expired_at' => null,
+                ];
+
+                if ($subscription) {
+                    $trial_start = $subscription->current_start_trial_date;
+                    $trial_end = $subscription->current_end_trial_date;
+                    $subscription_start = $subscription->current_start_subscription_date;
+                    $subscription_end = $subscription->current_end_subscription_date;
+
+                    $now = Carbon::now();
+                    $trialStartCarbon = $trial_start ? Carbon::parse($trial_start) : null;
+                    $trialEndCarbon = $trial_end ? Carbon::parse($trial_end) : null;
+                    $subStartCarbon = $subscription_start ? Carbon::parse($subscription_start) : null;
+                    $subEndCarbon = $subscription_end ? Carbon::parse($subscription_end) : null;
+
+                    $isTrialOngoing = $trialEndCarbon && $now->lessThan($trialEndCarbon);
+                    $isTrialEnded = $trialEndCarbon && $now->greaterThanOrEqualTo($trialEndCarbon);
+                    $isSubscriptionActive = in_array($subscription->status, ['paid', 'active', 'renew']) && $subEndCarbon && $now->lessThan($subEndCarbon);
+                    $isExpired = $subEndCarbon && $now->greaterThanOrEqualTo($subEndCarbon);
+
+                    // Format output
+                    $site_subscription['trial_start'] = $trialStartCarbon ? $trialStartCarbon->format('d F Y') : null;
+                    $site_subscription['trial_end_in'] = $trialEndCarbon ? $trialEndCarbon->diffForHumans($now) : null;
+                    $site_subscription['trial_status'] = $isTrialOngoing ? 'active' : 'ended';
+
+                    $site_subscription['subscription_start'] = $subStartCarbon ? $subStartCarbon->format('d F Y') : null;
+                    $site_subscription['subscription_end'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
+                    $site_subscription['subscription_renew_in'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
+                    $site_subscription['expired_at'] = $isExpired ? $subEndCarbon->diffForHumans($now) : null;
+
+                    $site_subscription['next_payment_date'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
+                    $site_subscription['subscription_status_code'] = $user->subscription_status;
+                    $site_subscription['status'] = $user->display_subscription_status;
+                    $site_subscription['is_cancelled'] = $subscription->status === 'canceled' || ! empty($subscription->cancelled_at);
+                } else {
+                    $site_subscription['status'] = 'Not Subscribed';
+                    $site_subscription['subscription_status_code'] = 3;
+                }
+
+                return Inertia::render('accountsetting/Accountsetting', [
+                    'auto_tweet' => $auto_tweet,
+                    'site_subscription' => $site_subscription,
+                    'subscription_history' => $subscription_history,
+                    'monthly_charges' => SubscriptionPayload::for($subscription),
+                    'pwa_notification_details' => $pwaNotificationDetails ?? null,
+                    'subscription_status' => $user->subscription_status, // Add numeric status for debugging
+                    'webAuthnCredentials' => Auth::user()->webAuthnCredentials()->exists(), // Add WebAuthn credentials existence for debugging
+                    // The delete-account reasons come from the config that
+                    // VALIDATES them, never a copy in the bundle — a list
+                    // the form offers and the server refuses is the worst
+                    // of both.
+                    'deletion_reasons' => config('account_deletion.reasons', []),
+                    'deletion_comment_required_for' => config('account_deletion.comment_required_for', 'other'),
                 ]);
-            })->name('activate-subscription');
+            } catch (Throwable $e) {
+                Log::error('Account page error', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
 
-            /*
-             * "Earn your membership back" (11 Sep 2026).
-             *
-             * 🚨 THE APPLY IS A POST. It spends a credit and credits money at
-             * Stripe, and a GET that writes needs nothing to click it — a link
-             * prefetch, a hover prerender or an inbox scanning a link is
-             * enough. `NoWritingGetRoutesTest` guards exactly this.
-             *
-             * ⚠️ Throttled: it makes a Stripe call, and a creator needs one
-             * press.
-             */
-            Route::get('/membership-credits/status', [MembershipCreditController::class, 'status'])
-                ->name('membership-credits.status');
-            Route::post('/membership-credits/apply', [MembershipCreditController::class, 'apply'])
-                ->middleware('throttle:10,1')
-                ->name('membership-credits.apply');
+                return Inertia::render('ErrorPage', [
+                    'status' => 500,
+                    'message' => 'Something went wrong',
+                    'consoleMessage' => $e->getMessage(),
+                ]);
+            }
+        })->name('account');
 
-            Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');
+        Route::get('/refer-and-earn', [ReferAndEarnController::class, 'index'])->name('refer-and-earn');
+        Route::post('/refer-and-earn/create-link', [ReferAndEarnController::class, 'createReferralLink'])->name('create-referral-link');
+        Route::post('/refer-and-earn/redeem', [ReferAndEarnController::class, 'requestRedeem'])->name('referral.redeem');
 
-            Route::post('/upload-dalle-image', [ProfileController::class, 'uploadDalleImage'])->name('upload.dalle.image');
+        Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
+
+        Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
+
+        Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
+
+        Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
+
+        Route::get('bill-tracker', [WishitemController::class, 'billTracker'])->name('bill-tracker');
+
+        Route::get('membership-tracker', [WishitemController::class, 'membershipTracker'])->name('membership.tracker');
+
+        Route::get('shop-tracker', [WishitemController::class, 'shopTracker'])->name('shop.tracker');
+
+        Route::get('subscriptions', [WishitemController::class, 'creatorSubscriptions'])->name('subscriptions');
+
+        Route::get('subscribed', [WishitemController::class, 'userSubscribed'])->name('subscribed');
+
+        Route::get('cancel-subscription/{subscription_id}', [WishitemController::class, 'cancelSubscription'])->name('cancel-subscription');
+
+        Route::get('/read-status/{payment_id}/{type}', [WishitemController::class, 'readStatus'])->name('read-status');
+
+        // This used to render stripe/Stripe itself, bypassing every guard in
+        // StripeController::index (profile approval, identity verification,
+        // already-connected). It was also the target of the only two "Connect
+        // Stripe" links in the app. Kept as a redirect so old links/bookmarks
+        // land on the guarded page instead of the unguarded copy.
+        Route::get('/stripe', fn () => redirect()->route('stripe.index'))
+            ->middleware(['auth', 'verified'])
+            ->name('stripe');
+
+        Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');
+
+        // Twitter
+        Route::prefix('twitter')->name('x.')->group(function () {
+            Route::get('init', [TwitterController::class, 'authInit'])->name('init');
+            Route::get('authorize', [TwitterController::class, 'handleAuth'])->name('handle');
+            Route::get('share/{uuid}/{type}', [WishitemController::class, 'shareOnTwitter'])->name('share');
+            // Route::get('authorize', [TwitterController::class, 'handleOauth1'])->name('handle');
         });
 
-        // stripe identity verification routes
-        Route::get('/stripe/identity-verification', function () {
-            $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
+        Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
 
-            // if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
-            //     $user = Auth::user();
-            //     $user->identity_admin_status = 0;
-            //     $user->identity_status = 1;
-            //     $user->save();
-            // }
-            return Inertia::render('Auth/StripeIdentity', [
-                'status' => false,
-                'message' => 'Please complete your Stripe identity verification.',
-            ]);
-        })->name('stripe.identity.verification');
+        Route::get('mark-complete-goal/{uuid}', [WishitemController::class, 'markJarComplete'])->name('mark-goal');
 
-        Route::post('/update/move-wish', [WishitemController::class, 'moveWishes'])->name('move-wish');
-
-        Route::get('/earnings', function () {
-            return Inertia::render('earnings/Earnings');
-        })->name('earnings-page');
-
-        Route::post('piggy-bank-setting/', [ProfileController::class, 'piggyBankSetting'])->name('piggy-bank-setting');
-
-        Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name('get-notification');
-        Route::get('mark-as-read/', [ProfileController::class, 'markRead'])->name('mark-as-read');
-        Route::get('delete-all-notifications/', [ProfileController::class, 'deleteAllNotifications'])->name('delete-all-notifications');
-
-        // Creator Financial Tools
-        Route::prefix('financial')->name('financial.')->group(function () {
-            Route::get('/dashboard/{tab?}', [CreatorFinancialController::class, 'index'])->name('dashboard');
-            Route::post('/refresh', [CreatorFinancialController::class, 'refresh'])->name('refresh');
-            Route::get('/history', [CreatorFinancialController::class, 'history'])->name('history');
-            Route::post('/profile', [CreatorFinancialController::class, 'updateProfile'])->name('profile.update');
-            Route::get('/export/csv', [CreatorFinancialController::class, 'exportCsv'])->name('export.csv');
-            Route::get('/statement', [CreatorFinancialController::class, 'generateIncomeStatement'])->name('statement');
-            // Throttled: each call runs getSummary + three ledger queries + a
-            // dompdf render of up to 500 rows. Unthrottled, one creator looping it
-            // is a cheap way to exhaust Lambda concurrency. (opportunities.remind is
-            // already throttled; this sibling was the gap.)
-            Route::get('/statement/download', [CreatorFinancialController::class, 'downloadStatement'])->name('statement.download')->middleware('throttle:20,1');
-            Route::get('/opportunities', [CreatorFinancialController::class, 'opportunities'])->name('opportunities');
-            // Creator-triggered platform reminder to one of THEIR quiet
-            // supporters. Throttled: it sends real email/push on each hit.
-            Route::post('/opportunities/remind/{supporterId}', [CreatorFinancialController::class, 'remindSupporter'])
-                ->whereNumber('supporterId')
-                ->middleware('throttle:10,1')
-                ->name('opportunities.remind');
-            Route::get('/certificate', [CreatorFinancialController::class, 'certificate'])->name('certificate');
-            Route::get('/fast-start-bonus', [CreatorFinancialController::class, 'fastStartBonus'])->name('fast-start-bonus');
-
-            // Expenses
-            Route::get('/expenses', [CreatorExpenseController::class, 'index'])->name('expenses.index');
-            Route::post('/expenses', [CreatorExpenseController::class, 'store'])->name('expenses.store');
-            Route::put('/expenses/{expense}', [CreatorExpenseController::class, 'update'])->name('expenses.update');
-            Route::delete('/expenses/{expense}', [CreatorExpenseController::class, 'destroy'])->name('expenses.destroy');
-        });
-
-        // "My Listings" — the creator's whole catalogue in one screen.
-        //
-        // ⚠️ Single-segment, so it MUST stay above the `/{username}/{page?}` profile
-        // catch-all at the end of this file. Declared after it, Laravel reads
-        // `my-listings` as a username and answers with the profile 404 — and
-        // `route:list` shows the route either way, which is what makes that hard to see.
-        Route::get('/my-listings', [CatalogueController::class, 'index'])->name('catalogue.index');
-
-        // Duplicate a listing. POST, and rate-limited: each press creates a real Stripe
-        // product on the creator's connected account, so an unthrottled button is a cheap
-        // way to fill it with junk. ⚠️ It carried `identityBeforeListing` until
-        // 10 Sep 2026; identity is a payout gate now, not a listing one.
-        // Set or clear a scheduled publish time. POST — it changes when real money can
-        // start being taken, and a GET carries no CSRF token.
-        Route::post('/my-listings/{type}/{id}/schedule', [CatalogueController::class, 'schedule'])
-            ->whereNumber('id')
-            ->middleware('throttle:30,1')
-            ->name('catalogue.schedule');
-
-        Route::post('/my-listings/{type}/{id}/duplicate', [CatalogueController::class, 'duplicate'])
-            ->whereNumber('id')
-            ->middleware('throttle:10,1')
-            ->name('catalogue.duplicate');
-
-        /*
-         * The creator's own editor for their link-in-bio page.
-         *
-         * ⚠️ Single-segment, so it MUST stay above the `/{username}/{page?}`
-         * catch-all at the end of this file — same trap as `/my-listings`.
-         *
-         * Every write is POST: they change what a public page advertises, and a
-         * GET carries no CSRF token.
-         */
-        Route::get('/bio-links', [BioLinkController::class, 'index'])->name('bio.edit');
-
-        Route::post('/bio-links', [BioLinkController::class, 'store'])
-            ->middleware('throttle:30,1')
-            ->name('bio.links.store');
-
-        Route::post('/bio-links/{link}/update', [BioLinkController::class, 'update'])
-            ->middleware('throttle:60,1')
-            ->name('bio.links.update');
-
-        Route::post('/bio-links/reorder', [BioLinkController::class, 'reorder'])
-            ->middleware('throttle:60,1')
-            ->name('bio.links.reorder');
-
-        Route::post('/bio-links/{link}/delete', [BioLinkController::class, 'destroy'])
-            ->middleware('throttle:30,1')
-            ->name('bio.links.destroy');
-
-        // The page's look — a theme KEY from a curated set, never a colour.
-        // ⚠️ Single-segment under /bio-links, so no `{link}` route can read
-        // "appearance" as a uuid — those all carry a second segment. Checked by
-        // NoShadowedRoutesTest either way.
-        Route::post('/bio-links/appearance', [BioLinkController::class, 'appearance'])
-            ->middleware('throttle:30,1')
-            ->name('bio.appearance.save');
-
-        /*
-         * B stream — which of the creator's EARNING ITEMS appear on their bio
-         * page, and in what order. A row here stores a type + an id, never a
-         * copy of the listing, so price, title and availability always come from
-         * the live listing at render time.
-         *
-         * 🚨 `items/reorder` MUST be declared before `items/{item}` — declared
-         * after it, the literal word "reorder" is read as an item uuid and the
-         * reorder endpoint silently becomes an update on a row that does not
-         * exist. Same trap the neighbouring `/bio-links/reorder` avoids.
-         *
-         * Every write is POST: these change what a public page advertises, and a
-         * GET carries no CSRF token.
-         */
-        Route::post('/bio-links/items', [BioItemController::class, 'store'])
-            ->middleware('throttle:30,1')
-            ->name('bio.items.store');
-
-        Route::post('/bio-links/items/reorder', [BioItemController::class, 'reorder'])
-            ->middleware('throttle:60,1')
-            ->name('bio.items.reorder');
-
-        Route::post('/bio-links/items/{item}', [BioItemController::class, 'update'])
-            ->middleware('throttle:60,1')
-            ->name('bio.items.update');
-
-        Route::post('/bio-links/items/{item}/remove', [BioItemController::class, 'destroy'])
-            ->middleware('throttle:30,1')
-            ->name('bio.items.destroy');
-
-        Route::prefix('earnings')->group(function () {
-            Route::get('all-data/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');
-            Route::get('graph-data/', [LeaderBoardController::class, 'graphData'])->name('graph-data');
-            Route::get('top-wishes/{type?}', [LeaderBoardController::class, 'topWishes'])->name('top-wishes');
-            Route::get('top-subscription/{type?}', [LeaderBoardController::class, 'topSubscription'])->name('top-subscription');
-            Route::get('top-paid-task/{type?}', [LeaderBoardController::class, 'topPaidTask'])->name('top.paid.task');
-            Route::get('top-bill/{type?}', [LeaderBoardController::class, 'topBill'])->name('top-bill');
-            Route::get('top-shop/{type?}', [LeaderBoardController::class, 'topShop'])->name('top-shop');
-            Route::get('top-piggy-bank/{type?}', [LeaderBoardController::class, 'topPiggyBank'])->name('top-piggy-bank');
-            Route::get('top-supporters/{type?}', [LeaderBoardController::class, 'topSupporters'])->name('top-supporters');
-        });
-
-        Route::get('/shop', function () {
-            return Inertia::render('shop/ShopPage');
-        })->name('shop');
-
-        // Keep orders-list in subscription middleware (requires payment features)
-        Route::get('shop/orders-list', [ShopsController::class, 'ordersList'])->name('orders-list');
-
-        Route::get('create-applicant', [TestController::class, 'createApplicant']);
-        Route::get('generate-verification-link', [TestController::class, 'generateVerificationLink']);
-
-        Route::get('generate-backup-code', [AuthenticatedSessionController::class, 'generateBackupCode']);
-        Route::get('show-2fa-qr', [ProfileController::class, 'show2faQR']);
-        Route::post('switch-2fa', [ProfileController::class, 'update2faStatus']);
-        Route::post('verification-2fa', [ProfileController::class, 'verification2FA']);
-
-        Route::get('gifter-access-posts/{username}', [ProfileController::class, 'gifterAccessPosts'])->name('gifter-access-posts');
-
-        Route::post('support/tickets', [SupportTicketController::class, 'store'])->name('support.tickets.store');
-        // A creator opens a help conversation with the team (tier 2, config/creator_help.php).
-        // ⚠️ On the suspension write-allowlist — a suspended creator is who presses it.
-        Route::post('support/help', [SupportTicketController::class, 'openHelp'])->middleware('throttle:10,1')->name('support.help.open');
-        Route::get('support/transaction-details', [SupportTicketController::class, 'transactionDetails'])->name('support.transaction-details');
-        Route::get('support/tickets/{uuid}', [SupportTicketController::class, 'show'])->name('support.tickets.show');
-        /*
-         * ⚠️ Throttled per authenticated user (inside the `auth` group). 30/min is
-         * far above human typing — it exists because each message writes a row and
-         * can notify staff, so an automated loop is a mail/notification amplifier
-         * against the support inbox.
-         */
-        Route::post('support/tickets/{uuid}/message', [SupportTicketController::class, 'message'])->middleware('throttle:30,1')->name('support.tickets.message');
-        Route::post('support/tickets/{uuid}/resolve', [SupportTicketController::class, 'resolve'])->name('support.tickets.resolve');
-        Route::post('support/tickets/{uuid}/creator/approve-refund', [SupportTicketController::class, 'creatorApproveRefund'])->name('support.tickets.creator.approve-refund');
-        Route::post('support/tickets/{uuid}/creator/reject-refund', [SupportTicketController::class, 'creatorRejectRefund'])->name('support.tickets.creator.reject-refund');
-
-        Route::get('support/{creator}/{gifter}', function ($creator, $gifter) {
-            return Inertia::render('gifter/SupportStory', [
-                'creator' => $creator,
-                'gifter' => $gifter,
-            ]);
-        })->middleware('check.block')->name('support.story.page');
-        Route::get('support-story/{creator}/{gifter}', [ProfileController::class, 'supportStory'])->middleware('check.block')->name('support.story');
-        Route::post('support-story/{creator}/{gifter}/react', [ProfileController::class, 'supportStoryReact'])->middleware('check.block')->name('support.story.react');
-        Route::post('support-story/{creator}/{gifter}/reply', [ProfileController::class, 'supportStoryReply'])->middleware('check.block')->name('support.story.reply');
-        Route::get('history', [ProfileController::class, 'supportHistory'])->name('support.history.page');
-
-        Route::get('/history/blocked-users', [ProfileController::class, 'historyBlockedUsers'])->name('blocked.users');
-        // Route::delete('/history/blocked-users/{id}', [ProfileController::class, 'blockedUsers'])->name('blocked.users.destroy');
-
-        Route::get('history-feed', [ProfileController::class, 'transactionsFeed'])->name('transactions.feed');
-
-        // Buyer/supporter self-service hub ("My Purchases")
-        Route::get('my-purchases', [GifterHubController::class, 'index'])->name('gifter.hub');
-        Route::get('my-purchases-feed', [GifterHubController::class, 'feed'])->name('gifter.hub.feed');
-        Route::get('my-purchases-data', [GifterHubController::class, 'data'])->name('gifter.hub.data');
-        Route::get('my-purchases-export', [GifterHubController::class, 'export'])->name('gifter.hub.export');
-
-        // Save-for-later (wishlist of items to buy)
-        Route::post('saved/toggle', [SavedItemController::class, 'toggle'])->name('saved.toggle');
-        Route::get('saved/mine', [SavedItemController::class, 'mine'])->name('saved.mine');
+        Route::get('all-goals', [WishitemController::class, 'allGoalsCreators'])->name('all-goals');
 
         // Intro video
-        Route::get('/redirecting', function () {
-            return Inertia::render('Redirecting');
-        })->name('redirecting');
+        Route::post('/update/intro/video', [ProfileController::class, 'saveIntroVideo'])->name('save');
 
-        Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
-
-        Route::prefix('financial')->name('financial.')->group(function () {
-            Route::get('/evidence-pack/{uuid}', [EvidencePackController::class, 'generate'])->name('evidence-pack');
+        Route::prefix('intro')->name('intro.')->group(function () {
+            Route::post('save', [ProfileController::class, 'saveIntroVideo'])->name('save');
+            Route::get('list', [ProfileController::class, 'getIntroVideo'])->name('list');
+            Route::get('remove', [ProfileController::class, 'removeIntro'])->name('remove');
+            // Route::get('/{uuid}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
         });
 
-        // rye product routes start — gated behind the RYE kill-switch (RYE_ENABLED)
-        Route::middleware('rye.enabled')->group(function () {
-            Route::post('creator-store-address', [WishitemController::class, 'creatorStoreAddress'])->name('creator.store.address');
-            Route::get('get-creator-address', [WishitemController::class, 'getCreatorStoreAddress'])->name('get.creator.address');
-            Route::post('create-creator-product', [WishitemController::class, 'createRyeProduct'])->name('create.creator.product');
-            Route::get('delete-creator-products/{uuid}', [WishitemController::class, 'deleteAndRestoredRyeProduct'])->name('delete.creator.products');
-            Route::post('create-cart', [WishitemController::class, 'createCart'])->name('create.cart');
-            Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
-            Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment')->middleware('mustCompletedCardVerification');
-            Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');
-            Route::get('rye-success-payment/{uuid}', [WishitemController::class, 'ryeSuccessPayment'])->name('rye.success.payment');
-            Route::get('rye-cancel-payment/{uuid}', [WishitemController::class, 'ryeCancelPayment'])->name('rye.cancel.payment');
-            Route::post('store-product-order-details', [WishitemController::class, 'storeProductOrderDetails'])->name('store.product.order.details');
+        Route::prefix('deliveries')->name('deliveries.')->group(function () {
+            Route::get('dashboard', [DeliveriesController::class, 'index'])->name('dashboard');
+            Route::get('stats', [DeliveriesController::class, 'getDeliveryStats'])->name('stats');
         });
-        // rye product routes end
 
-        Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
-
-        Route::get('users', [MyController::class, 'getUsers'])->name('users');
-
-        Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
+        Route::match(['get', 'delete'], 'delete-stripe-account/{accountid}', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
 
         /*
-         * 🚨 POST, NEVER GET (7 Sep 2026). This route puts a creator into the review
-         * queue, and as a bare GET it was submitted for them by anything that fetches
-         * a URL — a browser link-preload, a hover prerender, an extension link
-         * scanner, a back/forward restore. Measured live: krystal555 was submitted at
-         * 12:36:34 from an ADMIN EMULATION session that clicked nothing, thirteen
-         * seconds after the same session accepted her terms; the audit row records
-         * `"method": "GET"` on `/update-profile-lock-status`. The nudge bar made it
-         * worse than one page — `OnboardingNudge` rendered the same URL as an <a href>
-         * at the top of EVERY page for a creator on the `review` step.
+         * ⚠️ Throttled PER AUTHENTICATED USER, not per IP.
          *
-         * A prefetch of a POST route is a 405 and changes nothing, which is the whole
-         * point. Every CTA (`CreatorVerification`'s Submit link, `CreatorJourneyCard`,
-         * `OnboardingNudge`) reads its verb from `CreatorJourneyService::STEPS['method']`
-         * so the three cannot drift from the route.
+         * This route sits inside the `auth` + `mustHaveToVerify` group, and
+         * Laravel's ThrottleRequests keys a signed-in request on the user id.
+         * So a school, an office or a mobile carrier NAT cannot exhaust one
+         * buyer's budget on behalf of another — the failure mode that makes
+         * IP throttling dangerous on a checkout.
+         *
+         * 30/min is roughly one request every two seconds sustained. A
+         * supporter double-clicking Pay, retrying a declined card, or bouncing
+         * between the item page and checkout cannot reach it; a script minting
+         * Stripe Checkout Sessions in a loop can. Each hit is a real Stripe API
+         * call, so the ceiling is about cost and Stripe's own rate limit as
+         * much as abuse.
          */
-        // 🚨 `POST /update-profile-lock-status` (Submit for review) WAS HERE AND IS GONE
-        // (10 Sep 2026). Profiles approve themselves as assets are saved —
-        // App\Support\ProfileAutoApproval. Nothing may re-add a submit route: the whole
-        // point is that no creator waits on a person to build or publish.
+        Route::match(['get', 'post'], 'wish-subscribe/checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->middleware('throttle:30,1')->name('wish.subscribe.checkout.auth');
 
-        Route::post('/user-follow-unfollow', [PwaNotification::class, 'userFollowUnFollow'])->name('user.follow.unfollow');
-        Route::post('send-pwa-to-follower', [PwaNotification::class, 'sendPwaToFollower'])->name('send.pwa.to.follower');
+        // POST, not GET: this records the creator's digital-content waiver, and a
+        // consent that can be triggered by following a link is not consent. The
+        // POST also carries a CSRF token, which a GET does not.
+        //
+        // ⚠️ Throttled per authenticated creator (this is inside the `auth`
+        // group, so the key is the user id, never a shared IP). 20/min: a
+        // creator subscribing to their own monthly charge does it once, and a
+        // retry after a card decline is a handful more — but every hit creates
+        // a Stripe subscription attempt, so the loop has to be capped.
+        Route::post('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->middleware('throttle:20,1')->name('mandatory.checkout');
+
+        Route::post('/mandatory-cancel', [StripeController::class, 'cancelMandatorySubscription'])->name('mandatory.cancel');
+
+        Route::post('/mandatory-resume', [StripeController::class, 'resumeMandatorySubscription'])->name('mandatory.resume');
+
+        Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
+
+        Route::get('/activate-subscription', function () {
+            $monthlyCharges = null;
+            $user = Auth::user();
+
+            if ($user) {
+                $subscription = MonthlyCharge::where('user_id', $user->id)
+                    ->newestFirst()
+                    ->first();
+
+                if ($subscription) {
+                    $fmt = function ($date) {
+                        try {
+                            return $date ? Carbon::parse($date)->format('d F Y') : null;
+                        } catch (Throwable $e) {
+                            return null;
+                        }
+                    };
+
+                    $monthlyCharges = [
+                        'id' => $subscription->id,
+                        'uuid' => $subscription->uuid,
+                        'status' => $subscription->status ?? 'pending',
+                        'amount' => (float) ($subscription->amount ?? 0),
+                        'currency' => $subscription->currency ?? 'GBP',
+                        'current_start_trial_date' => $fmt($subscription->current_start_trial_date),
+                        'current_end_trial_date' => $fmt($subscription->current_end_trial_date),
+                        'current_start_subscription_date' => $fmt($subscription->current_start_subscription_date),
+                        'current_end_subscription_date' => $fmt($subscription->current_end_subscription_date),
+                        'upcoming_payment' => $subscription->upcoming_payment ? Carbon::parse($subscription->upcoming_payment)->format('d F Y H:i') : null,
+                    ];
+                }
+            }
+
+            return Inertia::render('Profile/ActivateSubscription', [
+                'monthly_charges' => $monthlyCharges,
+                /*
+                 * "Earn your membership back" — the creator's own progress
+                 * towards a free month.
+                 *
+                 * 🚨 NULL for a visitor, for a gifter and while the scheme
+                 * is off; the panel renders on the PRESENCE of the prop, so
+                 * there is no second gate in JSX to keep in step. Never
+                 * throws — `panelFor()` reports and returns null, because a
+                 * failed count must not 500 the page a creator uses to
+                 * manage their own billing.
+                 */
+                'membership_credits' => app(MembershipCreditService::class)->panelFor($user),
+                // Price and the "no charge until your first sale" wording come
+                // from config, never from the JSX — the same figure is printed
+                // on eleven other surfaces.
+                'subscriptionPlan' => SubscriptionPlan::forFrontend(),
+                // A creator who has already sold is billed the moment they
+                // subscribe, so the screen must not promise them a free period.
+                'hasMadeSale' => $user
+                    ? app(SubscriptionActivationService::class)->hasEverMadeSale($user)
+                    : false,
+            ]);
+        })->name('activate-subscription');
+
+        /*
+         * "Earn your membership back" (11 Sep 2026).
+         *
+         * 🚨 THE APPLY IS A POST. It spends a credit and credits money at
+         * Stripe, and a GET that writes needs nothing to click it — a link
+         * prefetch, a hover prerender or an inbox scanning a link is
+         * enough. `NoWritingGetRoutesTest` guards exactly this.
+         *
+         * ⚠️ Throttled: it makes a Stripe call, and a creator needs one
+         * press.
+         */
+        Route::get('/membership-credits/status', [MembershipCreditController::class, 'status'])
+            ->name('membership-credits.status');
+        Route::post('/membership-credits/apply', [MembershipCreditController::class, 'apply'])
+            ->middleware('throttle:10,1')
+            ->name('membership-credits.apply');
+
+        Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');
+
+        Route::post('/upload-dalle-image', [ProfileController::class, 'uploadDalleImage'])->name('upload.dalle.image');
     });
+
+    // stripe identity verification routes
+    Route::get('/stripe/identity-verification', function () {
+        $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
+
+        // if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
+        //     $user = Auth::user();
+        //     $user->identity_admin_status = 0;
+        //     $user->identity_status = 1;
+        //     $user->save();
+        // }
+        return Inertia::render('Auth/StripeIdentity', [
+            'status' => false,
+            'message' => 'Please complete your Stripe identity verification.',
+        ]);
+    })->name('stripe.identity.verification');
+
+    Route::post('/update/move-wish', [WishitemController::class, 'moveWishes'])->name('move-wish');
+
+    Route::get('/earnings', function () {
+        return Inertia::render('earnings/Earnings');
+    })->name('earnings-page');
+
+    Route::post('piggy-bank-setting/', [ProfileController::class, 'piggyBankSetting'])->name('piggy-bank-setting');
+
+    Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name('get-notification');
+    Route::get('mark-as-read/', [ProfileController::class, 'markRead'])->name('mark-as-read');
+    Route::get('delete-all-notifications/', [ProfileController::class, 'deleteAllNotifications'])->name('delete-all-notifications');
+
+    // Creator Financial Tools
+    Route::prefix('financial')->name('financial.')->group(function () {
+        Route::get('/dashboard/{tab?}', [CreatorFinancialController::class, 'index'])->name('dashboard');
+        Route::post('/refresh', [CreatorFinancialController::class, 'refresh'])->name('refresh');
+        Route::get('/history', [CreatorFinancialController::class, 'history'])->name('history');
+        Route::post('/profile', [CreatorFinancialController::class, 'updateProfile'])->name('profile.update');
+        Route::get('/export/csv', [CreatorFinancialController::class, 'exportCsv'])->name('export.csv');
+        Route::get('/statement', [CreatorFinancialController::class, 'generateIncomeStatement'])->name('statement');
+        // Throttled: each call runs getSummary + three ledger queries + a
+        // dompdf render of up to 500 rows. Unthrottled, one creator looping it
+        // is a cheap way to exhaust Lambda concurrency. (opportunities.remind is
+        // already throttled; this sibling was the gap.)
+        Route::get('/statement/download', [CreatorFinancialController::class, 'downloadStatement'])->name('statement.download')->middleware('throttle:20,1');
+        Route::get('/opportunities', [CreatorFinancialController::class, 'opportunities'])->name('opportunities');
+        // Creator-triggered platform reminder to one of THEIR quiet
+        // supporters. Throttled: it sends real email/push on each hit.
+        Route::post('/opportunities/remind/{supporterId}', [CreatorFinancialController::class, 'remindSupporter'])
+            ->whereNumber('supporterId')
+            ->middleware('throttle:10,1')
+            ->name('opportunities.remind');
+        Route::get('/certificate', [CreatorFinancialController::class, 'certificate'])->name('certificate');
+        Route::get('/fast-start-bonus', [CreatorFinancialController::class, 'fastStartBonus'])->name('fast-start-bonus');
+
+        // Expenses
+        Route::get('/expenses', [CreatorExpenseController::class, 'index'])->name('expenses.index');
+        Route::post('/expenses', [CreatorExpenseController::class, 'store'])->name('expenses.store');
+        Route::put('/expenses/{expense}', [CreatorExpenseController::class, 'update'])->name('expenses.update');
+        Route::delete('/expenses/{expense}', [CreatorExpenseController::class, 'destroy'])->name('expenses.destroy');
+    });
+
+    // "My Listings" — the creator's whole catalogue in one screen.
+    //
+    // ⚠️ Single-segment, so it MUST stay above the `/{username}/{page?}` profile
+    // catch-all at the end of this file. Declared after it, Laravel reads
+    // `my-listings` as a username and answers with the profile 404 — and
+    // `route:list` shows the route either way, which is what makes that hard to see.
+    Route::get('/my-listings', [CatalogueController::class, 'index'])->name('catalogue.index');
+
+    // Duplicate a listing. POST, and rate-limited: each press creates a real Stripe
+    // product on the creator's connected account, so an unthrottled button is a cheap
+    // way to fill it with junk. ⚠️ It carried `identityBeforeListing` until
+    // 10 Sep 2026; identity is a payout gate now, not a listing one.
+    // Set or clear a scheduled publish time. POST — it changes when real money can
+    // start being taken, and a GET carries no CSRF token.
+    Route::post('/my-listings/{type}/{id}/schedule', [CatalogueController::class, 'schedule'])
+        ->whereNumber('id')
+        ->middleware('throttle:30,1')
+        ->name('catalogue.schedule');
+
+    Route::post('/my-listings/{type}/{id}/duplicate', [CatalogueController::class, 'duplicate'])
+        ->whereNumber('id')
+        ->middleware('throttle:10,1')
+        ->name('catalogue.duplicate');
+
+    /*
+     * The creator's own editor for their link-in-bio page.
+     *
+     * ⚠️ Single-segment, so it MUST stay above the `/{username}/{page?}`
+     * catch-all at the end of this file — same trap as `/my-listings`.
+     *
+     * Every write is POST: they change what a public page advertises, and a
+     * GET carries no CSRF token.
+     */
+    Route::get('/bio-links', [BioLinkController::class, 'index'])->name('bio.edit');
+
+    Route::post('/bio-links', [BioLinkController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('bio.links.store');
+
+    Route::post('/bio-links/{link}/update', [BioLinkController::class, 'update'])
+        ->middleware('throttle:60,1')
+        ->name('bio.links.update');
+
+    Route::post('/bio-links/reorder', [BioLinkController::class, 'reorder'])
+        ->middleware('throttle:60,1')
+        ->name('bio.links.reorder');
+
+    Route::post('/bio-links/{link}/delete', [BioLinkController::class, 'destroy'])
+        ->middleware('throttle:30,1')
+        ->name('bio.links.destroy');
+
+    // The page's look — a theme KEY from a curated set, never a colour.
+    // ⚠️ Single-segment under /bio-links, so no `{link}` route can read
+    // "appearance" as a uuid — those all carry a second segment. Checked by
+    // NoShadowedRoutesTest either way.
+    Route::post('/bio-links/appearance', [BioLinkController::class, 'appearance'])
+        ->middleware('throttle:30,1')
+        ->name('bio.appearance.save');
+
+    /*
+     * B stream — which of the creator's EARNING ITEMS appear on their bio
+     * page, and in what order. A row here stores a type + an id, never a
+     * copy of the listing, so price, title and availability always come from
+     * the live listing at render time.
+     *
+     * 🚨 `items/reorder` MUST be declared before `items/{item}` — declared
+     * after it, the literal word "reorder" is read as an item uuid and the
+     * reorder endpoint silently becomes an update on a row that does not
+     * exist. Same trap the neighbouring `/bio-links/reorder` avoids.
+     *
+     * Every write is POST: these change what a public page advertises, and a
+     * GET carries no CSRF token.
+     */
+    Route::post('/bio-links/items', [BioItemController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('bio.items.store');
+
+    Route::post('/bio-links/items/reorder', [BioItemController::class, 'reorder'])
+        ->middleware('throttle:60,1')
+        ->name('bio.items.reorder');
+
+    Route::post('/bio-links/items/{item}', [BioItemController::class, 'update'])
+        ->middleware('throttle:60,1')
+        ->name('bio.items.update');
+
+    Route::post('/bio-links/items/{item}/remove', [BioItemController::class, 'destroy'])
+        ->middleware('throttle:30,1')
+        ->name('bio.items.destroy');
+
+    Route::prefix('earnings')->group(function () {
+        Route::get('all-data/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');
+        Route::get('graph-data/', [LeaderBoardController::class, 'graphData'])->name('graph-data');
+        Route::get('top-wishes/{type?}', [LeaderBoardController::class, 'topWishes'])->name('top-wishes');
+        Route::get('top-subscription/{type?}', [LeaderBoardController::class, 'topSubscription'])->name('top-subscription');
+        Route::get('top-paid-task/{type?}', [LeaderBoardController::class, 'topPaidTask'])->name('top.paid.task');
+        Route::get('top-bill/{type?}', [LeaderBoardController::class, 'topBill'])->name('top-bill');
+        Route::get('top-shop/{type?}', [LeaderBoardController::class, 'topShop'])->name('top-shop');
+        Route::get('top-piggy-bank/{type?}', [LeaderBoardController::class, 'topPiggyBank'])->name('top-piggy-bank');
+        Route::get('top-supporters/{type?}', [LeaderBoardController::class, 'topSupporters'])->name('top-supporters');
+    });
+
+    Route::get('/shop', function () {
+        return Inertia::render('shop/ShopPage');
+    })->name('shop');
+
+    // Keep orders-list in subscription middleware (requires payment features)
+    Route::get('shop/orders-list', [ShopsController::class, 'ordersList'])->name('orders-list');
+
+    Route::get('create-applicant', [TestController::class, 'createApplicant']);
+    Route::get('generate-verification-link', [TestController::class, 'generateVerificationLink']);
+
+    Route::get('generate-backup-code', [AuthenticatedSessionController::class, 'generateBackupCode']);
+    Route::get('show-2fa-qr', [ProfileController::class, 'show2faQR']);
+    Route::post('switch-2fa', [ProfileController::class, 'update2faStatus']);
+    Route::post('verification-2fa', [ProfileController::class, 'verification2FA']);
+
+    Route::get('gifter-access-posts/{username}', [ProfileController::class, 'gifterAccessPosts'])->name('gifter-access-posts');
+
+    Route::post('support/tickets', [SupportTicketController::class, 'store'])->name('support.tickets.store');
+    // A creator opens a help conversation with the team (tier 2, config/creator_help.php).
+    // ⚠️ On the suspension write-allowlist — a suspended creator is who presses it.
+    Route::post('support/help', [SupportTicketController::class, 'openHelp'])->middleware('throttle:10,1')->name('support.help.open');
+    Route::get('support/transaction-details', [SupportTicketController::class, 'transactionDetails'])->name('support.transaction-details');
+    Route::get('support/tickets/{uuid}', [SupportTicketController::class, 'show'])->name('support.tickets.show');
+    /*
+     * ⚠️ Throttled per authenticated user (inside the `auth` group). 30/min is
+     * far above human typing — it exists because each message writes a row and
+     * can notify staff, so an automated loop is a mail/notification amplifier
+     * against the support inbox.
+     */
+    Route::post('support/tickets/{uuid}/message', [SupportTicketController::class, 'message'])->middleware('throttle:30,1')->name('support.tickets.message');
+    Route::post('support/tickets/{uuid}/resolve', [SupportTicketController::class, 'resolve'])->name('support.tickets.resolve');
+    Route::post('support/tickets/{uuid}/creator/approve-refund', [SupportTicketController::class, 'creatorApproveRefund'])->name('support.tickets.creator.approve-refund');
+    Route::post('support/tickets/{uuid}/creator/reject-refund', [SupportTicketController::class, 'creatorRejectRefund'])->name('support.tickets.creator.reject-refund');
+
+    Route::get('support/{creator}/{gifter}', function ($creator, $gifter) {
+        return Inertia::render('gifter/SupportStory', [
+            'creator' => $creator,
+            'gifter' => $gifter,
+        ]);
+    })->middleware('check.block')->name('support.story.page');
+    Route::get('support-story/{creator}/{gifter}', [ProfileController::class, 'supportStory'])->middleware('check.block')->name('support.story');
+    Route::post('support-story/{creator}/{gifter}/react', [ProfileController::class, 'supportStoryReact'])->middleware('check.block')->name('support.story.react');
+    Route::post('support-story/{creator}/{gifter}/reply', [ProfileController::class, 'supportStoryReply'])->middleware('check.block')->name('support.story.reply');
+    Route::get('history', [ProfileController::class, 'supportHistory'])->name('support.history.page');
+
+    Route::get('/history/blocked-users', [ProfileController::class, 'historyBlockedUsers'])->name('blocked.users');
+    // Route::delete('/history/blocked-users/{id}', [ProfileController::class, 'blockedUsers'])->name('blocked.users.destroy');
+
+    Route::get('history-feed', [ProfileController::class, 'transactionsFeed'])->name('transactions.feed');
+
+    // Buyer/supporter self-service hub ("My Purchases")
+    Route::get('my-purchases', [GifterHubController::class, 'index'])->name('gifter.hub');
+    Route::get('my-purchases-feed', [GifterHubController::class, 'feed'])->name('gifter.hub.feed');
+    Route::get('my-purchases-data', [GifterHubController::class, 'data'])->name('gifter.hub.data');
+    Route::get('my-purchases-export', [GifterHubController::class, 'export'])->name('gifter.hub.export');
+
+    // Save-for-later (wishlist of items to buy)
+    Route::post('saved/toggle', [SavedItemController::class, 'toggle'])->name('saved.toggle');
+    Route::get('saved/mine', [SavedItemController::class, 'mine'])->name('saved.mine');
+
+    // Intro video
+    Route::get('/redirecting', function () {
+        return Inertia::render('Redirecting');
+    })->name('redirecting');
+
+    Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
+
+    Route::prefix('financial')->name('financial.')->group(function () {
+        Route::get('/evidence-pack/{uuid}', [EvidencePackController::class, 'generate'])->name('evidence-pack');
+    });
+
+    // rye product routes start — gated behind the RYE kill-switch (RYE_ENABLED)
+    Route::middleware('rye.enabled')->group(function () {
+        Route::post('creator-store-address', [WishitemController::class, 'creatorStoreAddress'])->name('creator.store.address');
+        Route::get('get-creator-address', [WishitemController::class, 'getCreatorStoreAddress'])->name('get.creator.address');
+        Route::post('create-creator-product', [WishitemController::class, 'createRyeProduct'])->name('create.creator.product');
+        Route::get('delete-creator-products/{uuid}', [WishitemController::class, 'deleteAndRestoredRyeProduct'])->name('delete.creator.products');
+        Route::post('create-cart', [WishitemController::class, 'createCart'])->name('create.cart');
+        Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
+        Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment')->middleware('mustCompletedCardVerification');
+        Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');
+        Route::get('rye-success-payment/{uuid}', [WishitemController::class, 'ryeSuccessPayment'])->name('rye.success.payment');
+        Route::get('rye-cancel-payment/{uuid}', [WishitemController::class, 'ryeCancelPayment'])->name('rye.cancel.payment');
+        Route::post('store-product-order-details', [WishitemController::class, 'storeProductOrderDetails'])->name('store.product.order.details');
+    });
+    // rye product routes end
+
+    Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
+
+    Route::get('users', [MyController::class, 'getUsers'])->name('users');
+
+    Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
+
+    /*
+     * 🚨 POST, NEVER GET (7 Sep 2026). This route puts a creator into the review
+     * queue, and as a bare GET it was submitted for them by anything that fetches
+     * a URL — a browser link-preload, a hover prerender, an extension link
+     * scanner, a back/forward restore. Measured live: krystal555 was submitted at
+     * 12:36:34 from an ADMIN EMULATION session that clicked nothing, thirteen
+     * seconds after the same session accepted her terms; the audit row records
+     * `"method": "GET"` on `/update-profile-lock-status`. The nudge bar made it
+     * worse than one page — `OnboardingNudge` rendered the same URL as an <a href>
+     * at the top of EVERY page for a creator on the `review` step.
+     *
+     * A prefetch of a POST route is a 405 and changes nothing, which is the whole
+     * point. Every CTA (`CreatorVerification`'s Submit link, `CreatorJourneyCard`,
+     * `OnboardingNudge`) reads its verb from `CreatorJourneyService::STEPS['method']`
+     * so the three cannot drift from the route.
+     */
+    // 🚨 `POST /update-profile-lock-status` (Submit for review) WAS HERE AND IS GONE
+    // (10 Sep 2026). Profiles approve themselves as assets are saved —
+    // App\Support\ProfileAutoApproval. Nothing may re-add a submit route: the whole
+    // point is that no creator waits on a person to build or publish.
+
+    Route::post('/user-follow-unfollow', [PwaNotification::class, 'userFollowUnFollow'])->name('user.follow.unfollow');
+    Route::post('send-pwa-to-follower', [PwaNotification::class, 'sendPwaToFollower'])->name('send.pwa.to.follower');
 });
 
 Route::prefix('shop')->group(function () {
@@ -1641,7 +1649,7 @@ Route::controller(StaticPageController::class)->middleware('ssr')->group(functio
  */
 Route::get('/promotion-terms', function () {
     return Inertia::render('Promotions', [
-        'closedOn' => \App\Support\Incentives::closedOn('founder_bonus'),
+        'closedOn' => Incentives::closedOn('founder_bonus'),
     ]);
 })->middleware('ssr')->name('promotion-terms');
 
@@ -1718,7 +1726,7 @@ Route::get('/founder/bonus', [FounderBonusController::class, 'index'])->middlewa
 Route::get('/founder/winners/all-time', [FounderBonusController::class, 'getAllTimeWinners'])->name('founder.winners.all-time');
 Route::middleware(['auth', 'verified'])->group(function () {
     // Opens a billable Stripe Identity session. Gated in the controller on role 1 +
-    // approved profile + Connect done (mirrors CheckStripeIdentityVerification), and
+    // approved profile + Connect done (the gate the deleted identity-page middleware used), and
     // throttled: a person needs one click, a loop needs thousands.
     Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])
         ->middleware('throttle:6,1')

@@ -61,7 +61,7 @@ class CreatorJourneyService
         ],
         'social' => [
             'title' => 'Add a social handle',
-            'body' => 'One account you actually post on. It is how the review team checks you are who your page says.',
+            'body' => 'One account you actually post on. It is checked automatically, and it stays private unless you choose to show it.',
             'cta' => 'Add a social handle',
             // The socials editor lives on the creator's own profile (CreatorVerification),
             // and `dashboard` redirects there with the query string intact.
@@ -138,9 +138,9 @@ class CreatorJourneyService
      * The steps that make an account READY, as opposed to the ones that make it EARN.
      *
      * 🚨 THIS IS NOT `STEP_DONE`, AND THE DIFFERENCE IS THE WHOLE POINT. The journey runs
-     * nine steps deep and only reports itself finished after `first_sale` — a moment that
+     * seven steps deep and only reports itself finished after `first_sale` — a moment that
      * depends on a supporter, not on the creator. But the creator has *finished their own
-     * setup* six steps earlier, the instant the ID check passes, and that is the moment
+     * setup* three steps earlier, the moment the card is on file, and that is the moment
      * worth marking: everything the platform asked of them is done, and from here the
      * remaining work is theirs to choose. Reading `STEP_DONE` for that moment would
      * congratulate them only after somebody had already bought something, which is far too
@@ -247,15 +247,11 @@ class CreatorJourneyService
         $query = User::query()
             ->where('role', 1)
             ->where('suspended_account', 0)
-            // ⚠️ `profile_status_lock = 1` is "submitted, with the review team" — written by
-            // `ProfileController::updateProfileLockStatus`, cleared back to 0 by an admin
-            // rejection (with `profile_reject_reason`) or to 2 by an approval. While it is
-            // set the creator has done their part, and `nextStep()` reports `awaiting_review`
-            // for the `review` step; mailing them "finish setting up" would be asking for work
-            // already handed in. For an already-approved creator the same value is also a
-            // demotion that delists everything they sell — either way, not a coaching moment.
-            // Same exclusion as the admin drip.
-            ->where('profile_status_lock', '!=', 1)
+            // ⚠️ No `profile_status_lock != 1` clause (removed 11 Sep 2026): for a creator
+            // that value no longer exists — the migration resolved every row to 0 or 2 and
+            // nothing writes 1 for role 1 again. (Gifters still use it for the £500 card
+            // check; this query is role 1 only.) A clause that can never exclude anything
+            // under nine lines of comment describing a deleted flow was worse than none.
             // Never mail an address nobody has confirmed: a guaranteed bounce against our
             // sending reputation. The verification reminder is the right message for them.
             ->whereNotNull('email_verified_at')
@@ -419,7 +415,11 @@ class CreatorJourneyService
     private function copyFor(User $creator, string $step, bool $waiting): array
     {
         if ($waiting) {
-            return self::REVIEW_COPY[$step];
+            // ⚠️ REVIEW_COPY is EMPTY since 10 Sep 2026 and `isAwaitingReview()` never
+            // answers true, so this is unreachable today — but a step re-added to that
+            // match without its copy would throw "Undefined array key" here. Falls back
+            // to the step's own copy rather than land a 500 on the dashboard.
+            return self::REVIEW_COPY[$step] ?? self::STEPS[$step];
         }
 
         // A reviewer's written reason belongs to the asset they turned down, which is
@@ -470,16 +470,14 @@ class CreatorJourneyService
      */
     public function isAwaitingReview(User $creator, string $step): bool
     {
+        /*
+         * ⚠️ NO STEP WAITS ON A PERSON (10–11 Sep 2026). `review` left when profiles began
+         * approving themselves; `identity` left for the payout gate. Kept as the mechanism
+         * — a step that genuinely needs an admin again goes here WITH its REVIEW_COPY — and
+         * returning false everywhere is what keeps `awaiting_review` permanently false on
+         * the journey payload, which the card and the nudge bar still read.
+         */
         return match ($step) {
-            // 1 = submitted by the creator, not yet decided. 🚨 Keyed on the LOCK, never on
-            // "photo and bio are filled in" — uploading both puts nobody in a queue.
-            //
-            // 🚨 AND THE LOCK ALONE IS NOT ENOUGH EITHER (6 Sep 2026). The admin queue
-            // also requires a photo, bio, handle and card, so a creator carrying the lock
-            // with one of those missing is in NO queue and nobody will ever decide. Saying
-            // "awaiting review" there is a wait with no end — measured live, all 22
-            // definition the queue, this and the nudge mail all read.
-
             default => false,
         };
     }
@@ -520,10 +518,10 @@ class CreatorJourneyService
     /**
      * Has the creator finished everything the PLATFORM asked of them?
      *
-     * True the instant the ID check passes, whether or not they have listed, posted or sold
-     * anything. Read by the setup celebration and by the listings progress strip.
+     * True the moment the card is on file (the last setup step), whether or not they have
+     * listed, posted or sold anything. Read by the setup celebration and the progress strip.
      *
-     * ⚠️ Costs NO query. Every one of the six is a plain column read or an already-loaded
+     * ⚠️ Costs NO query. Every one of the four is a plain column read or an already-loaded
      * relation, which is why this can sit on the shared Inertia payload — the three steps
      * that do hit the database (`first_listing`, `first_post`, `first_sale`) are exactly the
      * ones this deliberately does not look at.

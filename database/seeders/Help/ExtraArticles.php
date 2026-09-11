@@ -58,7 +58,7 @@ Finish three steps in an hour and it moves three places in an hour. It will neve
 
 ## "Nothing to do" is a real state
 
-Two steps are finished by you and completed by an admin — your profile, and your identity check. While either is being reviewed the card says so and gives you nothing to press, because there genuinely is nothing.
+While the photo check on a new upload is running, the card says so and gives you nothing to press, because there genuinely is nothing — it usually clears in moments.
 
 ## Dismissing it
 
@@ -158,7 +158,7 @@ It is ordered by the number of supporters, with a bonus for verified creators. A
 
 ## The badges
 
-A grey tick means an admin reviewed and approved that creator's profile. A pink tick means that, plus a passport identity check and a completed payout setup — the platform can actually pay them. A crown marks a Founder.
+A grey tick means that creator's profile passed the checks and is live. A pink tick means that, plus a passport identity check and a completed payout setup — the platform can actually pay them. A crown marks a Founder.
 MD,
             ],
             [
@@ -811,11 +811,11 @@ MD,
                 'body' => <<<'MD'
 ## Your social accounts
 
-Yes. Twitter, Instagram and TikTok can be added and verified, and they are part of how your profile is reviewed.
+Yes. Twitter, Instagram and TikTok can be added, and one is required before your page can go live. It stays private unless you choose to show it.
 
 ## Links in your bio
 
-Reviewed alongside everything else. A link that takes a supporter somewhere to pay you outside the platform is refused — that is a supporter the platform cannot protect, cannot refund and cannot resolve a dispute for, and it is the arrangement that gets creator platforms cut off from payments.
+Checked automatically alongside everything else. A link that takes a supporter somewhere to pay you outside the platform is refused — that is a supporter the platform cannot protect, cannot refund and cannot resolve a dispute for, and it is the arrangement that gets creator platforms cut off from payments.
 
 ## Contact details in a bio
 
@@ -918,7 +918,7 @@ If you have two-factor turned on, it is asked for after Google as well. Signing 
 
 ## Nothing is skipped
 
-Signing up with Google skips the password and the bot check — nothing else. Every other rule applies: country, terms, account limits, and profile review for creators.
+Signing up with Google skips the password and the bot check — nothing else. Every other rule applies: country, terms, account limits, and the profile checks for creators.
 
 ## Your email
 
@@ -1121,7 +1121,9 @@ Report the profile, then contact support with a link to it and to your own.
 
 ## What we check
 
-Every creator on this platform is identity-verified with a passport before they can earn anything, and their profile is reviewed by a person. That makes impersonation harder here than in most places, and it makes it faster to resolve when it happens.
+A social handle can only be claimed by one creator here, so the first account to add it keeps it. Photos and bios are screened automatically, and anything the screening flags is read by a person.
+
+**The check that matters for impersonation is the payout one.** Before any money reaches a bank account, that creator has to pass a passport check through Stripe Identity *and* be signed off by our team, who compare the document against the profile photo and the social accounts on the page. So somebody pretending to be you may be able to put a page up — they cannot be paid, and the attempt puts a passport in front of us.
 
 ## Treated urgently
 

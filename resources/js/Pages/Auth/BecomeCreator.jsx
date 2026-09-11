@@ -394,11 +394,25 @@ export default function BecomeCreator({
                                     What happens next
                                 </p>
                                 <ul className="mt-2 space-y-1.5 text-sm leading-[1.55] text-black/70">
+                                    {/* 🚨 THERE IS NO REVIEW TEAM (11 Sep 2026).
+                                        This said the assets "go back for review,
+                                        because a creator page is checked before
+                                        it can sell" — true until profiles began
+                                        approving themselves. `convert()` now
+                                        re-judges the bio and handles inline and
+                                        dispatches the photo scan
+                                        (`judgeConvertedAssets`), so nothing waits
+                                        on a person. ⚠️ The photo is the one that
+                                        is NOT instant: unlike the save path it is
+                                        held at 0 until Rekognition answers, which
+                                        needs `queue:work` — so the copy names
+                                        that check and promises no time. */}
                                     <li>
-                                        Your photo, bio and cover go back for
-                                        review, because a creator page is checked
-                                        before it can sell. They are not deleted
-                                        — you will see them exactly as they are.
+                                        Your photo, bio and cover are checked
+                                        automatically against the creator rules —
+                                        nobody has to approve them, and nothing is
+                                        deleted. Your page opens as soon as the
+                                        photo check clears.
                                     </li>
                                     <li>
                                         You keep every purchase, subscription and
@@ -407,8 +421,14 @@ export default function BecomeCreator({
                                             ? " Your completed card verification carries over too."
                                             : ""}
                                     </li>
+                                    {/* ⚠️ STRIPE FIRST, THEN THE CARD. The journey
+                                        is `profile · social · stripe ·
+                                        subscription · …` — the card moved LAST,
+                                        after Connect, on 11 Sep 2026. Naming them
+                                        the old way round sends a creator to the
+                                        step after the one they are on. */}
                                     <li>
-                                        Then you add a card and connect Stripe, so
+                                        Then you connect Stripe and add a card, so
                                         we can pay you.
                                     </li>
                                 </ul>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
 import AdPage from './components/AdPage';
 import FeeBlock from './components/FeeBlock';
@@ -16,6 +16,7 @@ import {
     StartSelling,
 } from './components/Ledger';
 import { MAX_PRICE_GBP, MIN_PRICE_GBP } from '@/lib/priceLimits';
+import { feeIsAllIn, feeRateLabel } from '@/lib/fees';
 import {
     PRICE_FORMATTED,
     SUBSCRIPTION_COPY,
@@ -234,6 +235,12 @@ export default function Memberships({
     threeTierLine,
     pillars = [],
 }) {
+    /* ⚠️ The rate is read from the shared `fees` prop (`FeeModel`), never
+       typed. `fees` above is the COMPARISON payload — a different shape for
+       the fee table — and the two must not be confused. */
+    const page = usePage();
+    const allIn = feeIsAllIn(page);
+    const rate = feeRateLabel(page);
     const accent = ACCENT.earn;
     const title =
         'Creator memberships — turn supporters into monthly members | Spenny Piggy';
@@ -459,7 +466,11 @@ export default function Memberships({
                         <SectionHead
                             eyebrow="What it costs"
                             accent={accent}
-                            lead="Your member pays the fees on top of your price. What you listed is what reaches you."
+                            lead={
+                                allIn
+                                    ? `Your member pays ${rate} on top of your price, all-in — payment processing is inside it and nothing is added afterwards. What you listed is what reaches you.`
+                                    : 'Your member pays the fees on top of your price. What you listed is what reaches you.'
+                            }
                         >
                             You keep your
                             <br />

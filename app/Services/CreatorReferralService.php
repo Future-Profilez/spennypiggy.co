@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers;
 use App\Jobs\SendReferralQualifiedEmailJob;
 use App\Models\CreatorReferral;
 use App\Models\User;
@@ -346,7 +347,7 @@ class CreatorReferralService
                  * told the creator a figure the payout query did not agree
                  * with, in writing.
                  */
-                \App\Helpers::sendNotification(
+                Helpers::sendNotification(
                     '🎉 Referral goal reached',
                     sprintf(
                         '%s has reached %s in settled earnings. %s has been unlocked for you.',

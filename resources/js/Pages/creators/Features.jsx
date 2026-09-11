@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
 import AdPage from './components/AdPage';
 import {
@@ -19,6 +19,7 @@ import {
 } from '@/constants/creatorSubscription';
 import { PRICE_LIMITS, price } from '@/constants/creatorBonuses';
 import ThreeProgrammes from './components/ThreeProgrammes';
+import { feeIsAllIn, feeRateLabel } from '@/lib/fees';
 
 /**
  * "7 ways to earn" — the detail page behind the paid-ads headline of the same
@@ -109,6 +110,13 @@ const RECURRING = [
 ];
 
 export default function Features() {
+    /* 🚨 The supporter rate is read from the shared `fees` prop, i.e. from
+       `FeeModel` — the class the checkout prices from. This is a Google Ads
+       destination; a typed percentage is a wrong number in an advert the day
+       the rate moves. It is the CARD rate, the most anybody pays. */
+    const page = usePage();
+    const allIn = feeIsAllIn(page);
+    const rate = feeRateLabel(page);
     const accent = ACCENT.earn;
     const title = '7 ways to earn as a creator — Spenny Piggy';
     const description = `Seven ways to get paid on one profile: exclusive content, content goals, Piggy Bank, paid requests, your shop, recurring content and memberships. You keep 100% of your listed price. ${SUBSCRIPTION_COPY.promise}.`;
@@ -188,7 +196,11 @@ export default function Features() {
                             ))}
                             <LedgerTotal
                                 label="What reaches you"
-                                note="Supporters cover the fees at checkout."
+                                note={
+                                    allIn
+                                        ? `Supporters pay ${rate} all-in at checkout, processing included.`
+                                        : 'Supporters cover the fees at checkout.'
+                                }
                                 figure="100%"
                             />
                         </LedgerFrame>
@@ -278,7 +290,11 @@ export default function Features() {
                             <StatCell
                                 figure="100%"
                                 label="Of your listed price"
-                                note="Supporters cover the platform fee at checkout, and they see their full total before they pay."
+                                note={
+                                    allIn
+                                        ? `Supporters pay ${rate} all-in — payment processing included, nothing added after — and see their full total before they pay.`
+                                        : 'Supporters cover the platform fee at checkout, and they see their full total before they pay.'
+                                }
                                 accent={ACCENT.earn}
                                 className="rounded-box border-2 border-white/15 bg-white/[0.04]"
                             />
@@ -306,7 +322,9 @@ export default function Features() {
                             accent={ACCENT.bonus}
                             lead="Each one is a qualifying threshold, not a promise. Earnings are never assured and terms apply."
                         >
-                            Three programmes{' '}
+                            {/* 🚨 NOT "THREE" — the row count is whatever
+                                `ThreeProgrammes` finds live on the server. */}
+                            Programmes{' '}
                             <span className="text-gradient-wishlist">
                                 that stack
                             </span>

@@ -47,6 +47,16 @@ const CHECKS = [
      * panel is nearly always its button. Three found live in one day.
      */
     ['nothing under the bottom bar', 'check-bottom-bar.mjs'],
+    /*
+     * A fee percentage typed into a page cannot follow a config change, and
+     * nothing errors when it stops matching what the checkout charges. Three
+     * creator-facing forms said "Our fee is 19%" — true under the legacy markup,
+     * false from the moment the platform moved to an all-in supporter rate, with
+     * no test and no scanner able to see it. The client's §3 asks for pricing
+     * that moves without development work; that is only true while no surface
+     * carries its own copy of the number.
+     */
+    ['no hardcoded fee figures', 'check-fee-literals.mjs'],
 ];
 
 let failed = 0;

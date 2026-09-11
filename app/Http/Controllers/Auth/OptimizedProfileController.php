@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Support\Incentives;
 use App\Models\FounderBonus;
 use App\Models\MonthlyCharge;
 use App\Models\RyeProduct;
@@ -13,6 +12,7 @@ use App\SeoMeta;
 use App\Services\SeoTemplateService;
 use App\Services\Stripe\StripeAccountState;
 use App\Services\UserProfileService;
+use App\Support\Incentives;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;

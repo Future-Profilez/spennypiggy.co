@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
-use App\Jobs\SendBioSocialUpdateEmail;
 use App\Models\ProfileChangeRequest;
 use App\Models\SocialLinks;
 use App\Models\User;
@@ -336,12 +335,8 @@ class SocialLinksController extends Controller
             //
             // `social_links.status = 0` above is the review signal, and
             // `CreatorReviewService::queue()` already reads it.
-            if ($user->profile_status_lock == 2) {
-                dispatch(new SendBioSocialUpdateEmail($user, [
-                    'bio' => false,
-                    'social' => true,
-                ]));
-            }
+            // ⚠️ The "Approval Needed" admin mail that fired here is deleted (11 Sep 2026):
+            // handles are judged automatically and there is no reviewer to notify.
 
             // Handles approved above; if the photo and bio are already clear this is
             // the save that takes the profile live.
@@ -453,7 +448,6 @@ class SocialLinksController extends Controller
     //                 'social' => true,
     //             ];
 
-    //             dispatch(new SendBioSocialUpdateEmail(Auth::user(), $updatedFields));
     //         }
 
     //         // $user = Auth::user();

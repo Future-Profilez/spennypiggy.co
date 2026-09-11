@@ -23,6 +23,7 @@ import RewardEditor, {
 import RewardPreview from "@/Components/Reward/RewardPreview";
 import { itemFieldClass, itemLabelClass } from "@/Components/ItemForm/ItemFormKit";
 import useDirtyGuard from "@/lib/useDirtyGuard";
+import { creatorFeeNote } from "@/lib/fees";
 
 // The field and label recipes are shared with every other add-item form.
 // Two local copies of this constant had already drifted apart
@@ -51,6 +52,7 @@ const BillsImages = [
 export default function AddBills(props) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { global_currency, auth, rates } = usePage().props;
+    const feeNote = creatorFeeNote(usePage().props);
     const subscriberOnlyPostsCount = auth?.subscriber_only_posts_count || 0;
     const { item, isEdit, editpop, text, classes, fetchBills, hidetrigger, openPop } =
         props;
@@ -387,9 +389,11 @@ export default function AddBills(props) {
                                         }).format(data.price)}
                                     </span>
                                 </div>
+                                {/* 🚨 Never a typed percentage or a typed fee LIST — see resources/js/lib/fees.js.
+                                    This used to name "platform and processing fees", two charges the
+                                    platform stopped making on 11 Sep 2026. */}
                                 <p className="mt-3 text-left text-xs font-medium text-black/60">
-                                    All platform and processing fees are inside the supporter price, so
-                                    you always receive your listed amount.
+                                    {feeNote}
                                 </p>
                             </div>
                         )}

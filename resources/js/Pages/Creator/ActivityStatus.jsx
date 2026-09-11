@@ -446,8 +446,9 @@ const ActivityStatus = ({
 
                         {activityStatus?.status === "not_fully_verified" && (
                             <Note tone="yellow">
-                                ⏳ Finish identity verification and profile
-                                approval to start earning.
+                                ⏳ Connect your payouts so the money you earn can
+                                reach you. Selling does not wait on this — only
+                                the payout does.
                             </Note>
                         )}
 

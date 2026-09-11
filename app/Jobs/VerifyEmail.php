@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\EmailService;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Jobs\Concerns\RetriesCriticalWork;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -50,7 +51,7 @@ class VerifyEmail implements ShouldQueue
     public function handle()
     {
 
-        $otp = \App\Http\Controllers\Auth\EmailVerificationNotificationController::getOrGenerateOtp($this->user);
+        $otp = EmailVerificationNotificationController::getOrGenerateOtp($this->user);
 
         $emailData = [
             'to' => $this->user->email,

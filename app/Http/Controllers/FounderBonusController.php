@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\CheckFounderQualifications;
 use App\Jobs\ProcessFounderPayouts;
 use App\Models\FounderBonus;
+use App\Models\FounderBonusMonthly;
 use App\Models\User;
 use App\Support\Incentives;
 use Illuminate\Http\JsonResponse;
@@ -145,7 +146,7 @@ class FounderBonusController extends Controller
                 }
 
                 $lastMonthKey = now()->subMonthNoOverflow()->format('Y-m');
-                $lastMonthRow = \App\Models\FounderBonusMonthly::where('creator_id', $user->id)
+                $lastMonthRow = FounderBonusMonthly::where('creator_id', $user->id)
                     ->where('month', $lastMonthKey)
                     ->first();
 

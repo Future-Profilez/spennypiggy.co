@@ -44,6 +44,37 @@ export function feeIsAllIn(page) {
 }
 
 /**
+ * The caption under a SUPPORTER-FACING price — a listing card, a basket row, a
+ * checkout total. It says what the number already includes.
+ *
+ * 🚨 "INCLUDES PLATFORM AND PAYMENT PROCESSING FEES" NAMES TWO CHARGES THE
+ * PLATFORM NO LONGER MAKES. Under the all-in model (11 Sep 2026) the supporter
+ * pays the listed price plus ONE advertised percentage and the processor is paid
+ * from inside it — there is no separate processing line and no £1 administration
+ * fee. Nineteen surfaces carried some spelling of the old sentence, each typed by
+ * hand, so they could not follow a model change and several disagreed with each
+ * other about how many fees there were.
+ *
+ * ⚠️ The rate is NOT in the default caption. It is printed on a card beside a
+ * price the supporter is about to pay, where the number that matters is the total
+ * — and a percentage there invites the reader to check our arithmetic rather than
+ * buy. Pass `withRate` on a CHECKOUT surface, where naming the fee is the point.
+ *
+ * ⚠️ Under the legacy markup it keeps the old wording, which was true then.
+ */
+export function supporterFeeCaption(page, { withRate = false } = {}) {
+    if (!feeIsAllIn(page)) {
+        return "Includes platform and payment processing fees";
+    }
+
+    const label = feeRateLabel(page, null);
+
+    return withRate && label
+        ? `Includes our ${label} supporter fee — card processing is inside it, with nothing added afterwards`
+        : "Fees included — nothing is added at checkout";
+}
+
+/**
  * The sentence under a price field, telling a creator what a supporter will pay.
  *
  * ⚠️ Says the creator receives 100% FIRST. That is the part that did not change and the

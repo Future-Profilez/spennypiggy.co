@@ -305,6 +305,45 @@ class PayoutIdentityGateTest extends TestCase
         $this->assertSame([], $routes, 'A listing route still carries an identity gate.');
     }
 
+    /**
+     * 🚨 THE SAME GATE SURVIVED UNDER A DIFFERENT NAME, OVER A FAR BIGGER SURFACE.
+     *
+     * `identityBeforeListing` was deleted on 10 Sep 2026 and the test above pins it.
+     * `mustCompletedStripeIdentity` (`CheckStripeIdentityVerification`) did the same
+     * job and nothing pinned it — it wrapped 149 routes in `routes/auth.php` plus a
+     * group in `web.php`, and its condition was EXACTLY the creator the change
+     * declares legitimate: role 1, profile live, Stripe connected, card on file,
+     * `identity_status != 1`. For them every one of those routes rendered
+     * `Auth/StripeIdentity` instead of the page requested — including
+     * `financial.dashboard`, the page that mounts `PayoutIdentityGate`, the panel
+     * built to replace this gate. They could not reach the thing telling them
+     * their money was waiting. Found by a read-only audit on 11 Sep 2026.
+     *
+     * Two assertions because neither alone is enough: a route could carry the alias
+     * with the class deleted (a boot error), or the class could survive with no
+     * route (a landmine for the next person to reach for it).
+     */
+    public function test_no_route_carries_the_old_identity_wall_and_its_class_is_gone(): void
+    {
+        $routes = collect(app('router')->getRoutes())
+            ->filter(fn ($r) => in_array('mustCompletedStripeIdentity', (array) $r->middleware(), true))
+            ->map(fn ($r) => $r->uri())
+            ->all();
+
+        $this->assertSame([], $routes, 'A route still carries the mustCompletedStripeIdentity wall.');
+
+        $this->assertFalse(
+            class_exists('App\\Http\\Middleware\\CheckStripeIdentityVerification'),
+            'CheckStripeIdentityVerification still exists. Identity is a payout gate (PayoutEligibility), never a page wall.'
+        );
+
+        $this->assertArrayNotHasKey(
+            'mustCompletedStripeIdentity',
+            app('router')->getMiddleware(),
+            'The mustCompletedStripeIdentity alias is still registered in the Kernel.'
+        );
+    }
+
     public function test_identity_is_not_a_journey_step(): void
     {
         $this->assertArrayNotHasKey('identity', CreatorJourneyService::STEPS);
@@ -346,5 +385,19 @@ class PayoutIdentityGateTest extends TestCase
                 .'moves money must call PayoutEligibility::blocksPayout().'
             );
         }
+
+        /*
+         * 🚨 THE SEVENTH PAYER. `growth-bonus:pay` (Phase 3, scheduled Fridays) is gated
+         * TRANSITIVELY: it asks `GrowthBonusService::holdReasonFor()`, which is what calls
+         * `PayoutEligibility`. The literal never appears in the payer, so the loop above
+         * could not see it — and an audit on 11 Sep 2026 found that deleting the
+         * `holdReasonFor` line left this suite green. Pin both ends of the chain.
+         */
+        $payer = file_get_contents(base_path('app/Console/Commands/ProcessGrowthBonusPayouts.php'));
+        $this->assertNotFalse($payer);
+        $this->assertStringContainsString('holdReasonFor(', $payer,
+            'growth-bonus:pay no longer asks GrowthBonusService::holdReasonFor() — that call IS its identity gate.');
+        $this->assertStringContainsString('PayoutEligibility::blocksPayout', file_get_contents(base_path('app/Services/GrowthBonusService.php')),
+            'GrowthBonusService::holdReasonFor() no longer reads PayoutEligibility, so growth-bonus:pay is ungated.');
     }
 }

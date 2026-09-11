@@ -13,7 +13,7 @@ const PRIDE_LIVEBAR_ITEMS = [
  "💸 MONETISE THE ATTENTION ",
 ];
 
-export default function PrideLanding() {
+export default function PrideLanding({ founderOpen = false }) {
     const [scrolled, setScrolled] = useState(false);
     const scrolledRef = useRef(false);
 
@@ -190,7 +190,10 @@ export default function PrideLanding() {
                 </div>
             </section>
 
-            {/* Founder Bonus Section */}
+            {/* 🚨 Founder Bonus is a RETIRED scheme (11 Sep 2026). This block recruited
+                for it on a public page with no gate while every other Founder surface
+                404s or explains itself. Rendered only while the server says it is open. */}
+            {founderOpen && (
             <section className="relative z-10 py-12 px-6">
                 <div className="max-w-5xl mx-auto">
  <div className="bg-gradient-to-r from-[#1a1a1a] to-[#0a0a0a] border border-[#FFB800]/50 rounded-box p-8 md:p-10 relative ">
@@ -237,6 +240,7 @@ export default function PrideLanding() {
                     </div>
                 </div>
             </section>
+            )}
 
             {/* LGBTQ+ Business Positioning */}
             <section className="relative z-10 py-16 px-6">

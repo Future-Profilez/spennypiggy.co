@@ -38,12 +38,13 @@ use Illuminate\Support\Str;
  * simply setting `role = 1`, and it is why the reset list must never be trimmed
  * for the sake of a faster conversion.
  *
- * 🚨 CONVERSION IS INSTANT AND THE REVIEW IS NOT SKIPPED. The account becomes a
+ * 🚨 CONVERSION IS INSTANT AND THE CHECKS ARE NOT SKIPPED. The account becomes a
  * creator the moment they submit, and then walks the ordinary creator journey
- * (profile → social → review → card → stripe → identity), so an admin still
- * approves the profile before anything can be sold. There is deliberately no
- * second approval queue for the conversion itself: a queue nobody staffs is a
- * feature nobody can finish.
+ * (profile → social → stripe → subscription). Since 11 Sep 2026 nobody approves
+ * the profile: `judgeConvertedAssets()` re-runs the automatic checks over what the
+ * fan already had, and the page goes live on its own once they pass. There is
+ * deliberately no approval queue: a queue nobody staffs is a feature nobody can
+ * finish.
  *
  * ⚠️ WHAT IS NOT TOUCHED, deliberately: their purchases, the memberships and
  * subscriptions they bought, saved items, follows, `gifter_addresses`, their
@@ -201,10 +202,9 @@ final class GifterToCreator
              * profile as their reward for converting; the review is the thing that
              * was missing, not the content.
              *
-             * ⚠️ `profile_status_lock = 0` puts them at the start of the journey's
-             * review step rather than in the admin queue — they have not pressed
-             * Submit, and a submission nobody made is what
-             * `NoWritingGetRoutesTest` exists to prevent.
+             * ⚠️ `profile_status_lock = 0` is "drafting": the automatic checks in
+             * `judgeConvertedAssets()` move it to 2 on their own once the assets
+             * pass. There is no Submit and no queue (11 Sep 2026).
              */
             /*
              * 🚨 RESET TO 0 HERE, THEN RE-JUDGED BY THE MACHINE BELOW (10 Sep 2026).
@@ -395,8 +395,8 @@ final class GifterToCreator
             Mail::to($user->email)->queue(new CreatorAccountOpened(
                 $user->id,
                 $user->name ?: $user->username,
-                // Whether they actually HAD a photo or bio, so the mail never tells
-                // somebody their picture is under review when they never uploaded one.
+                // Whether they actually HAD a photo or bio, so the mail never
+                // describes what happened to a picture they never uploaded.
                 filled($user->avatar) || filled($user->bio),
             ));
         } catch (\Throwable $e) {

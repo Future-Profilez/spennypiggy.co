@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\CheckMediaModeration;
-use App\Jobs\SendBioSocialUpdateEmail;
 use App\Models\AccountDeletionFeedback;
 use App\Models\BillPayment;
 use App\Models\Bills;
@@ -441,9 +440,9 @@ class ProfileController extends Controller
                         'bio_status' => ! empty($request->bio) ? 0 : null,
                     ]);
 
-                    if ($user->profile_status_lock == 2 && ! empty($request->bio)) {
-                        dispatch(new SendBioSocialUpdateEmail($user, ['bio' => true, 'social' => false]));
-                    }
+                    // ⚠️ `SendBioSocialUpdateEmail` used to fire here — an "Approval Needed"
+                    // mail to admins on every bio edit. There is nothing to approve since
+                    // 11 Sep 2026 (the edit is applied and recorded); the chain is deleted.
 
                     // Only a LIVE profile's edit is worth recording — a creator still
                     // filling the form in is not editing anything anybody saw.

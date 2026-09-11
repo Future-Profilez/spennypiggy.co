@@ -18,6 +18,7 @@ import RewardPreview from "@/Components/Reward/RewardPreview";
 import { MAX_PRICE_GBP, formatPrice, priceLimitError, priceLimits } from "@/lib/priceLimits";
 import { itemFieldClass, itemLabelClass } from "@/Components/ItemForm/ItemFormKit";
 import useDirtyGuard from "@/lib/useDirtyGuard";
+import { creatorFeeNote } from "@/lib/fees";
 
 // The field and label recipes are shared with every other add-item form.
 // Two local copies of this constant had already drifted apart
@@ -36,6 +37,7 @@ const TIERS = [
 
 export default function AddMembership({ item, text, classes, hidetrigger, openPop }) {
     const { auth, global_currency, rates } = usePage().props;
+    const feeNote = creatorFeeNote(usePage().props);
     const memberOnlyPostsCount = auth?.member_only_posts_count || 0;
     const { successAlert, errorAlert } = useAlerts();
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
@@ -262,9 +264,9 @@ export default function AddMembership({ item, text, classes, hidetrigger, openPo
                                         }).format(data.month_price)}
                                     </span>
                                 </div>
+                                {/* 🚨 Never a typed percentage — see resources/js/lib/fees.js. */}
                                 <p className="mt-3 text-left text-xs font-medium text-black/80">
-                                    All fees are inside the supporter price, so you always receive your
-                                    listed amount.
+                                    {feeNote}
                                 </p>
                             </div>
                         )}

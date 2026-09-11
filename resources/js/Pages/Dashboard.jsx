@@ -1212,7 +1212,7 @@ export default function Dashboard(props) {
                 {IsloggedIn &&
                     user?.bio_approved == 0 &&
                     pendingNotice(
-                        "Your bio is waiting for admin approval. Currently only you can see this.",
+                        "A check held your bio back — only you can see it. Fix it and save to go live.",
                     )}
 
                 {creatorTags.length > 0 && (
@@ -1227,7 +1227,7 @@ export default function Dashboard(props) {
                 {IsloggedIn &&
                     slinks?.status === 0 &&
                     pendingNotice(
-                        "Your social media links are waiting for admin approval. Currently only you can see them.",
+                        "A check held your social links back — only you can see them. Fix and save to go live.",
                     )}
             </div>
     ) : null;

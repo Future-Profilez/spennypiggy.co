@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\StripeControl;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Stripe\Exception\ApiConnectionException;
+use Stripe\Exception\PermissionException;
 use Tests\TestCase;
 
 /**
@@ -39,7 +41,7 @@ class ManualPayoutScheduleNoiseTest extends TestCase
         $method = new \ReflectionMethod(StripeControl::class, 'isAccountUnreachable');
         $method->setAccessible(true);
 
-        $permission = new \Stripe\Exception\PermissionException(
+        $permission = new PermissionException(
             "The provided key 'sk_live_xxx' does not have access to account 'acct_1QHzEN2RsYS7cGKq' "
             .'(or that account does not exist). Application access may have been revoked.'
         );
@@ -53,7 +55,7 @@ class ManualPayoutScheduleNoiseTest extends TestCase
         $method->setAccessible(true);
 
         // A network blip is a failure of THIS run and must keep its error level.
-        $transient = new \Stripe\Exception\ApiConnectionException('Could not connect to Stripe.');
+        $transient = new ApiConnectionException('Could not connect to Stripe.');
 
         $this->assertFalse(
             $method->invoke(null, $transient),

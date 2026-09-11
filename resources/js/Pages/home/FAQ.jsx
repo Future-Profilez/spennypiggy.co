@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
 import FadeIn from '@/Components/animations/FadeIn';
 import { PRICE_FORMATTED, FREE_UNTIL_FIRST_SALE } from '@/constants/creatorSubscription';
 import { STABLECOIN_TIPS_ANNOUNCED, STABLECOIN_TIPS_LIVE } from '@/constants/stablecoinTips';
+import { feeIsAllIn, feeRateLabel } from '@/lib/fees';
 
 /**
  * ⚠️ THIS IS A PUBLIC STATEMENT OF PRICING AND PAYOUT TERMS. The version it
@@ -33,9 +34,25 @@ import { STABLECOIN_TIPS_ANNOUNCED, STABLECOIN_TIPS_LIVE } from '@/constants/sta
  * column. Two renderings, one state — they cannot disagree about what is open.
  */
 export default function FAQ() {
+  const page = usePage();
+
+  /*
+   * 🚨 THE SUPPORTER RATE IS READ FROM THE SERVER, NEVER TYPED. This is a
+   * published statement of pricing — the version this file replaced advertised
+   * "starting at just 8%" long after that stopped being true — and a figure in
+   * JSX cannot follow a config change. `feeRateLabel` falls back to the words
+   * "our standard rate" rather than a plausible wrong number.
+   *
+   * ⚠️ It is the CARD rate, the most anybody pays. Pay by Bank is cheaper.
+   */
+  const supporterRate = feeRateLabel(page);
+  const supporterFeeSentence = feeIsAllIn(page)
+    ? `Supporters pay your price plus ${supporterRate}, all-in — payment processing is included and nothing is added afterwards. They see the full total before they pay.`
+    : 'Supporters cover the platform fee at checkout and see the full total before they pay.';
+
   const costAnswer = FREE_UNTIL_FIRST_SALE
-    ? `Nothing until your first sale. After that it's ${PRICE_FORMATTED} + VAT a month — flat, whatever you earn, cancel any time. There's no commission on your sales. Supporters cover the platform fee at checkout and see the full total before they pay.`
-    : `${PRICE_FORMATTED} + VAT a month — flat, whatever you earn, cancel any time. There's no commission on your sales. Supporters cover the platform fee at checkout and see the full total before they pay.`;
+    ? `Nothing until your first sale. After that it's ${PRICE_FORMATTED} + VAT a month — flat, whatever you earn, cancel any time. There's no commission on your sales — you keep 100% of every price you list. ${supporterFeeSentence}`
+    : `${PRICE_FORMATTED} + VAT a month — flat, whatever you earn, cancel any time. There's no commission on your sales — you keep 100% of every price you list. ${supporterFeeSentence}`;
 
   const payoutAnswer = 'Every Friday. Your earnings run Friday to Thursday, that week is held for a week, and it is paid on the Friday after — so earnings from Fri 4 to Thu 10 September go out on Friday 18 September. Your first payout takes 8 to 14 days depending on the day you sell; after that you are paid weekly. Paid straight into your own Stripe account, in your name.'
     + (STABLECOIN_TIPS_ANNOUNCED
@@ -53,10 +70,26 @@ export default function FAQ() {
       "description": "The Everything Wishlist — and a whole lot more. Sell exclusive content, run memberships, take custom requests, and sell your own products, all from one page and one link. You set your prices and you keep 100% of them."
     },
     {
+      /* 🚨 THE SUPPORTER'S SIDE OF THE PRICE, AS ITS OWN QUESTION (client §16).
+         It was previously only a closing clause on "How much does it cost?",
+         which is a question a creator asks — so the one number a supporter
+         cares about was filed under somebody else's heading. */
+      "title": "What do supporters pay?",
+      "description": `${supporterFeeSentence} You still receive 100% of the price you listed.`
+    },
+    {
       // Second by design: the answer a creator and a payment reviewer both want,
       // visible without expanding anything.
       "title": "Is this a SFW platform?",
-      "description": "Yes — strictly, and it's actively enforced. No nudity, no explicit content, no exceptions. Every upload is reviewed by a real person before it goes live, and every creator is identity-verified with a passport before they can earn a penny. Adult creators are welcome here for their SFW work; what you do elsewhere is your business. It's also why our payments stay switched on when other creator platforms lose theirs."
+      /* 🚨 TWO CLAIMS HERE WERE UNTRUE FROM 11 Sep 2026 AND BOTH WERE PUBLISHED.
+         "Every upload is reviewed by a real person before it goes live" — photos
+         and bios are screened automatically as they are saved and publish on
+         their own (`ProfileAutoApproval`); a person only sees what the screening
+         pulls back. And "identity-verified before they can earn a penny" — the
+         ID check is a PAYOUT gate now (`PayoutEligibility`), not a listing gate,
+         so a creator can sell before it and cannot be PAID before it. Saying
+         "earn" for "withdraw" is the exact conflation §19 warns against. */
+      "description": "Yes — strictly, and it's actively enforced. No nudity, no explicit content, no exceptions. Every upload is screened before it goes live, anything flagged goes to a real person, and no creator is paid out until their identity has been verified with a passport and signed off by our team. Adult creators are welcome here for their SFW work; what you do elsewhere is your business. It's also why our payments stay switched on when other creator platforms lose theirs."
     },
     {
       "title": "How do I get paid?",
@@ -75,8 +108,13 @@ export default function FAQ() {
       "description": "No. Most creators start as individuals and register once they approach their country's tax threshold. Your full earnings history is exportable whenever you need it."
     },
     {
-      "title": "How long does verification take?",
-      "description": "We review 11am–6pm, seven days a week. Most creators are live within a day or two."
+      /* 🚨 §19: "No waiting for manual approval" — TRUE AS OF 11 Sep 2026, and
+         this answer was the last place on the homepage still promising a wait.
+         ⚠️ The two things must stay separated: your PAGE goes live immediately,
+         your PAYOUTS wait on the ID check. Collapsing them back into one
+         sentence is how the old copy came to promise the wrong one. */
+      "title": "Do I have to wait to be approved?",
+      "description": "No. Add a photo, a bio and a social handle and your page goes live — there is no approval queue to sit in and nothing to submit. Content is screened as you save it. The one thing that does need checking is your identity, and that is a condition of being PAID rather than of selling: verify with a passport whenever you like, and your first weekly payout follows once it is signed off."
     },
     {
       "title": "Can I use this alongside other platforms?",

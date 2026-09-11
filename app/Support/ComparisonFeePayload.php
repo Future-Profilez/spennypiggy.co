@@ -76,6 +76,9 @@ class ComparisonFeePayload
              * every platform on these pages charges both kinds, and folding a
              * flat fee into a percentage is how a comparison stops being one.
              */
+            // ⚠️ Lets the block draw ONE line under all-in instead of three that sum to
+            // less than the headline (measured: 5.98 + 0 + 3.4 beside "12%").
+            'all_in' => FeeModel::isAllIn(),
             'platform_rate' => $flow['platform_fee_rate'],
             'compliance_rate' => $flow['compliance_fee_rate'],
             'processing_rate' => $flow['stripe_fee_rate'],

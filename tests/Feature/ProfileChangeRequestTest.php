@@ -61,7 +61,7 @@ class ProfileChangeRequestTest extends TestCase
             'bio' => self::LIVE_BIO,
             'bio_approved' => 1,
             'country' => 'India',
-            // Keeps `CheckStripeIdentityVerification` from intercepting the POST.
+            // A fully set-up creator. (Identity no longer gates any page — 11 Sep 2026.)
             'identity_status' => 1,
         ], $overrides))->refresh();
     }

@@ -78,15 +78,17 @@ class FirstListingNudgeTest extends TestCase
         $this->assertFalse($service->needsFirstListing($creator));
     }
 
-    public function test_creator_without_identity_does_not_need_first_listing(): void
+    public function test_creator_without_identity_still_needs_first_listing(): void
     {
-        // They are blocked from listing by `mustCompletedStripeIdentity`, so asking them
-        // to publish sends them to a wall. `creators:nudge-journey` chases the identity
-        // check itself instead.
+        // 🚨 REVERSED 11 Sep 2026. This used to assert FALSE: identity gated the whole
+        // creator area (`mustCompletedStripeIdentity`), so a nudge to publish sent them
+        // to a wall. That wall is gone — identity is a PAYOUT gate now — and a creator
+        // with no ID check can list and sell. Keeping the exclusion would have made the
+        // first-listing nudge skip 304 of 324 creators: exactly the ones it exists for.
         $creator = $this->creator(['identity_status' => 0]);
         $service = app(CreatorSetupService::class);
 
-        $this->assertFalse($service->needsFirstListing($creator));
+        $this->assertTrue($service->needsFirstListing($creator));
     }
 
     public function test_suspended_creator_does_not_need_first_listing(): void

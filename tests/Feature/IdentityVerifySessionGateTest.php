@@ -12,7 +12,9 @@ use Tests\TestCase;
  * `POST stripe/identity/verify` opens a billable Stripe Identity session. Until
  * 31 Aug 2026 it was declared under "Public routes (no middleware)" and checked only
  * that SOMEBODY was signed in — a gifter could loop it. The gate here mirrors the one
- * on the identity PAGE (CheckStripeIdentityVerification): creator, approved profile,
+ * that USED to sit on the identity page middleware (deleted 11 Sep 2026 — identity is a
+ * payout gate, not a page wall). This endpoint keeps its own copy because it mints a
+ * BILLABLE Stripe session: creator, approved profile,
  * Connect done, not already verified. Every refusal happens before Stripe is called.
  */
 class IdentityVerifySessionGateTest extends TestCase

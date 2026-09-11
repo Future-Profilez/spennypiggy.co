@@ -13,7 +13,7 @@ import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import SummaryReceipt, { PayButton, SectionLabel } from "@/Components/Checkout/SummaryReceipt";
 import { fieldClass } from "@/Components/Checkout/FormKit";
 import axios from "axios";
-import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
+import { feeRatesFor, creatorIdOf, supporterTotal } from "@/utils/pricing";
 
 export default function BillCheckout(props) {
     const {
@@ -27,7 +27,7 @@ export default function BillCheckout(props) {
     } = usePage().props;
     const __pageProps = usePage().props;
     const turnstileRef = useRef(null);
-    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency, supporterFixedFee } = PriceFormat();
     const {
         bill,
         vat_amount,
@@ -83,30 +83,20 @@ export default function BillCheckout(props) {
         const vatAmount = (listedPrice * (parseFloat(vatPercent) || 0)) / 100;
         const priceWithVat = listedPrice + vatAmount;
 
-        // Constants must match backend configuration (Helpers.php)
-        const stripeFeeRate = STRIPE_FEE_RATE;
-        const stripeFixedFee = isZeroDecimal ? 0 : STRIPE_FIXED_FEE;
-        // Per-creator: a creator on a bespoke platform rate must be QUOTED
-        // what checkout will CHARGE them. The global props cannot express that.
+        // 🚨 THE FORMULA LIVES IN ONE PLACE (`utils/pricing`), NEVER HERE. This
+        // surface carried its own copy of the legacy gross-up, so when the
+        // platform moved to an all-in supporter fee on 11 Sep 2026 it went on
+        // quoting the old, higher total while checkout charged the new one —
+        // with nothing wrong in any log. `feeRatesFor` carries the live model
+        // alongside the rates, so a call site cannot pick the wrong arithmetic.
         const __rates = feeRatesFor(creatorIdOf(bill), __pageProps);
-        const platformFeeRate = __rates.platform / 100;
-        const complianceFeeRate = __rates.compliance / 100;
-        const adminFee = adminFeeInCurrency(curr);
-        const totalDeductionRate =
-            stripeFeeRate + platformFeeRate + complianceFeeRate;
 
-        if (totalDeductionRate >= 1) return priceWithVat;
-
-        const totalSupporterPays =
-            (priceWithVat + stripeFixedFee + adminFee) /
-            (1 - totalDeductionRate);
-
-        // Rounding logic to match backend (Helpers.php)
-        if (!isZeroDecimal) {
-            return Math.ceil(totalSupporterPays * 100) / 100;
-        } else {
-            return Math.ceil(totalSupporterPays);
-        }
+        return supporterTotal(priceWithVat, {
+            ...__rates,
+            adminFee: adminFeeInCurrency(curr),
+            fixedFee: supporterFixedFee(curr),
+            isZeroDecimal,
+        });
     };
 
     // New: Calculate estimated display price for UI only

@@ -21,9 +21,11 @@ import SaveButton from "@/Components/SaveButton";
 import ScheduledBadge from "@/Components/ScheduledBadge";
 import ItemStatusBadge from "@/Components/ItemStatusBadge";
 import lazyRetry from "@/utils/lazyRetry";
+import { supporterFeeCaption } from "@/lib/fees";
 
 export default function Wishlistbox(props) {
     const { ziggy, auth: globalAuth } = usePage().props;
+    const __pageProps = usePage().props;
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const {
         imagesize,
@@ -390,7 +392,7 @@ export default function Wishlistbox(props) {
                                     *Fees included
                                 </p>
                                 <p className="mt-0.5 hidden text-[12px] font-normal leading-tight text-gray-500 sm:block">
-                                    *Includes platform and payment processing fees
+                                    {supporterFeeCaption(__pageProps)}
                                 </p>
                             </>
                         )}

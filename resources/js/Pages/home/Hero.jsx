@@ -1,4 +1,4 @@
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 const transparentPixel = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB2aWV3Qm94PSIwIDAgMSAxIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InRyYW5zcGFyZW50Ii8+PC9zdmc+';
 import TrustBox from './TrustBox';
 import { useState, useEffect, useRef } from 'react';
@@ -7,6 +7,9 @@ import FadeIn from '@/Components/animations/FadeIn';
 import WordReveal from '@/Components/animations/WordReveal';
 import Magnetic from '@/Components/animations/Magnetic';
 import { PRICE_FORMATTED, SUBSCRIPTION_COPY, FREE_UNTIL_FIRST_SALE } from "@/constants/creatorSubscription";
+import { FAST_START, percent } from "@/constants/creatorBonuses";
+import { useIncentives } from "@/lib/incentives";
+import { feeIsAllIn, feeRateLabel } from "@/lib/fees";
 import {
   motion,
   AnimatePresence,
@@ -119,6 +122,22 @@ function WishTile({ tile }) {
 }
 
 export default function Hero({auth}) {
+
+  /* 🚨 THE STICKER BELOW ADVERTISED A RETIRED SCHEME IN TYPED JSX.
+     "We pay you 5% extra / on everything you earn in your first 30 days" was
+     the loudest single offer on the highest-traffic page on the site, and Fast
+     Start was retired on 11 Sep 2026 (§6) — so it sold a bonus nobody can earn
+     and jumped to `#act-earn`, where `EarnMoreAnnouncement` had already removed
+     the card explaining it.
+
+     Gated on the SERVER flag, never on the constants: `FAST_START` is always
+     importable, which is exactly how this survived. Its figures are read from
+     the constants too, so switching the scheme back on cannot restore a stale
+     rate with it. */
+  const page = usePage();
+  const incentives = useIncentives();
+  const allIn = feeIsAllIn(page);
+  const supporterRate = feeRateLabel(page);
 
   const houseIconRef = useRef(null);
   const rocketIconRef1 = useRef(null);
@@ -411,29 +430,53 @@ export default function Hero({auth}) {
                       <span className="absolute -top-4 -right-3 bg-white text-[#C4006A] text-[12px] font-gulfs uppercase tracking-[0.18em] px-3 py-1 rounded-full">It's Free</span>
                     </div>
 
-                    {/* FAST START STICKER — the loudest single offer on the page.
+                    {/* THE STICKER SLOT — the loudest single offer on the page.
                         Deliberately styled as a stuck-on label, not a card: brand
-                        yellow, black type (house rule), tilted, and anchored to the
-                        "Earn more" chapter where the bonus is explained in full.
+                        yellow, black type (house rule), tilted.
                         ⚠️ No shadow, no hover scale — attention comes from colour,
                         rotation and the pulsing bolt, per the site-wide rules. */}
-                    <a
-                      href="#act-earn"
-                      className="group relative inline-flex items-center gap-3 md:gap-4 bg-[#E6EA7B] text-black border-black rounded-box-sm py-3 pl-4 pr-5 md:pl-5 md:pr-6 rotate-[-2deg] transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
-                    >
-                      <span aria-hidden="true" className="relative flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full bg-black flex-shrink-0">
-                        <span className="absolute inset-0 rounded-full bg-black/40 animate-ping"></span>
-                        <span className="relative text-[18px] md:text-[20px] leading-none">⚡</span>
-                      </span>
-                      <span className="flex flex-col items-start text-left">
-                        <span className="font-gulfs uppercase tracking-[0.06em] text-[15px] md:text-[19px] leading-[1.1]">
-                          We pay you 5% extra
+                    {incentives.fastStart ? (
+                      <a
+                        href="#act-earn"
+                        className="group relative inline-flex items-center gap-3 md:gap-4 bg-[#E6EA7B] text-black border-black rounded-box-sm py-3 pl-4 pr-5 md:pl-5 md:pr-6 rotate-[-2deg] transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
+                      >
+                        <span aria-hidden="true" className="relative flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full bg-black flex-shrink-0">
+                          <span className="absolute inset-0 rounded-full bg-black/40 animate-ping"></span>
+                          <span className="relative text-[18px] md:text-[20px] leading-none">⚡</span>
                         </span>
-                        <span className="font-poppins text-[12px] md:text-[13px] leading-[1.35] text-black/70">
-                          On everything you earn in your first 30 days
+                        <span className="flex flex-col items-start text-left">
+                          <span className="font-gulfs uppercase tracking-[0.06em] text-[15px] md:text-[19px] leading-[1.1]">
+                            We pay you {percent(FAST_START.rate)} extra
+                          </span>
+                          <span className="font-poppins text-[12px] md:text-[13px] leading-[1.35] text-black/70">
+                            On everything you earn in your first {FAST_START.windowDays} days
+                          </span>
                         </span>
-                      </span>
-                    </a>
+                      </a>
+                    ) : allIn ? (
+                      /* 🚨 THE CLIENT'S §16 HEADLINE, IN THE SLOT THE RETIRED BONUS
+                         VACATED: creators keep 100%, supporters pay one all-in
+                         percentage, processing included. It is the strongest claim
+                         the platform can make and it is true of every sale, where
+                         the bonus was true of a first month.
+                         ⚠️ NOT A LINK. Everything else in this stack goes to
+                         /register; a second destination beside the CTA is the
+                         conversion leak `ReferEarnAnnouncement` was removed for. */
+                      <div className="relative inline-flex items-center gap-3 md:gap-4 bg-[#E6EA7B] text-black border-black rounded-box-sm py-3 pl-4 pr-5 md:pl-5 md:pr-6 rotate-[-2deg]">
+                        <span aria-hidden="true" className="relative flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full bg-black flex-shrink-0">
+                          <span className="absolute inset-0 rounded-full bg-black/40 animate-ping"></span>
+                          <span className="relative text-[18px] md:text-[20px] leading-none">💯</span>
+                        </span>
+                        <span className="flex flex-col items-start text-left">
+                          <span className="font-gulfs uppercase tracking-[0.06em] text-[15px] md:text-[19px] leading-[1.1]">
+                            You keep 100%
+                          </span>
+                          <span className="font-poppins text-[12px] md:text-[13px] leading-[1.35] text-black/70">
+                            Supporters pay {supporterRate} all-in — payment processing included
+                          </span>
+                        </span>
+                      </div>
+                    ) : null}
 
                     <TrustBox />
 
@@ -441,9 +484,14 @@ export default function Hero({auth}) {
                         AND under the 12px type floor, on the one line that states
                         the platform's pricing promise. */}
                     <p className="uppercase text-center lg:text-left max-w-[520px] text-white/60 font-poppins text-[12px] tracking-wider">
+                      {/* 🚨 "COVERS STRIPE FEES" IS GONE (11 Sep 2026). Card processing
+                          comes out of the supporter's all-in fee now, so a line saying
+                          the creator's subscription pays for it too described a charge
+                          taken twice — on the one line that states the platform's
+                          pricing promise. */}
                       {FREE_UNTIL_FIRST_SALE
-                        ? <>*{SUBSCRIPTION_COPY.reassurance} After your first sale, a monthly {PRICE_FORMATTED} + VAT payment covers Stripe fees and compliance costs.</>
-                        : <>*A monthly {PRICE_FORMATTED} + VAT payment covers Stripe fees and compliance costs. No commission on your sales.</>}
+                        ? <>*{SUBSCRIPTION_COPY.reassurance} After your first sale, a monthly {PRICE_FORMATTED} + VAT payment covers compliance and content review. No commission on your sales.</>
+                        : <>*A monthly {PRICE_FORMATTED} + VAT payment covers compliance and content review. No commission on your sales.</>}
                     </p>
                   </div>
                 </FadeIn>

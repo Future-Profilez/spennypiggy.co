@@ -208,8 +208,8 @@ export default function SetupCompleteCelebration() {
                     </h2>
 
                     <p className="mt-4 text-base font-bold leading-[1.55] text-black md:text-lg">
-                        Your profile is approved, your payouts are connected and your identity
-                        is verified. Everything we needed from you is done.
+                        Your page is live, your payouts are connected and your card is on
+                        file. Everything we needed from you is done.
                     </p>
 
                     {/* 🚨 The one instruction, and it is deliberately the only bold claim on
@@ -229,9 +229,11 @@ export default function SetupCompleteCelebration() {
                         shadow. */}
                     <div className="mt-7 grid grid-cols-3 gap-px overflow-hidden rounded-box border-[3px] border-black bg-black">
                         {[
-                            { label: "Profile", value: "Approved" },
+                            // ⚠️ The four SETUP_STEPS, nothing else: identity is a payout
+                            // gate and is not what this celebrates (11 Sep 2026).
+                            { label: "Profile", value: "Live" },
                             { label: "Payouts", value: "Connected" },
-                            { label: "Identity", value: "Verified" },
+                            { label: "Card", value: "On file" },
                         ].map((cell) => (
                             <div
                                 key={cell.label}

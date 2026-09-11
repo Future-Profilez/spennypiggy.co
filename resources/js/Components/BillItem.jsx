@@ -5,7 +5,8 @@ import { Link, router, usePage } from "@inertiajs/react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
+import { supporterFeeCaption } from "@/lib/fees";
+import { feeRatesFor, creatorIdOf, supporterTotal } from "@/utils/pricing";
 const AddBills = lazyRetry(() => import("@/Pages/bills/AddBills"));
 import { Menu, Transition } from "@headlessui/react";
 import RemoveBill from "@/Pages/bills/RemoveBill";
@@ -22,7 +23,7 @@ function BillItem(props) {
     const { auth, platform_fee_percentage, transaction_fee_percentage } =
         usePage().props;
     const __pageProps = usePage().props;
-    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency, supporterFixedFee } = PriceFormat();
     /* `discoverySource` is set ONLY by a Spenny-Piggy-chosen surface (Discover's
        grid and carousels). Undefined everywhere else — a creator's own profile
        listing their bills is their traffic, not ours. */
@@ -55,26 +56,20 @@ function BillItem(props) {
         const isZeroDecimal = isZeroDecimalCurrency(curr);
         const vatAmount = (listedPrice * (parseFloat(vatPercent) || 0)) / 100;
         const priceWithVat = listedPrice + vatAmount;
-        const stripeFeeRate = STRIPE_FEE_RATE;
-        const stripeFixedFee = isZeroDecimal ? 0 : STRIPE_FIXED_FEE;
-        // Per-creator: a creator on a bespoke platform rate must be QUOTED
-        // what checkout will CHARGE them. The global props cannot express that.
+        // 🚨 THE FORMULA LIVES IN ONE PLACE (`utils/pricing`), NEVER HERE. This
+        // card carried its own copy of the legacy gross-up, so when the platform
+        // moved to an all-in supporter fee on 11 Sep 2026 it went on quoting the
+        // old, higher total while checkout charged the new one — with nothing
+        // wrong in any log. `feeRatesFor` carries the live model with the rates,
+        // so the card cannot pick the wrong arithmetic.
         const __rates = feeRatesFor(creatorIdOf(itm), __pageProps);
-        const platformFeeRate = __rates.platform / 100;
-        const complianceFeeRate = __rates.compliance / 100;
-        const adminFee = adminFeeInCurrency(curr);
-        const totalDeductionRate =
-            stripeFeeRate + platformFeeRate + complianceFeeRate;
 
-        if (totalDeductionRate >= 1) return priceWithVat;
-
-        const totalSupporterPays =
-            (priceWithVat + stripeFixedFee + adminFee) /
-            (1 - totalDeductionRate);
-        if (!isZeroDecimal) {
-            return Math.ceil(totalSupporterPays * 100) / 100;
-        }
-        return Math.ceil(totalSupporterPays);
+        return supporterTotal(priceWithVat, {
+            ...__rates,
+            adminFee: adminFeeInCurrency(curr),
+            fixedFee: supporterFixedFee(curr),
+            isZeroDecimal,
+        });
     };
 
     const isCreator = auth?.user?.id === itm?.user_id;
@@ -326,8 +321,7 @@ function BillItem(props) {
                                         itm?.currency || "GBP",
                                     )}
                                     <div className="text-[12px] text-black/80 font-bold mt-1 leading-tight text-center">
-                                        *Includes platform and payment
-                                        processing fees
+                                        {supporterFeeCaption(__pageProps)}
                                     </div>
                                 </div>
                             )}

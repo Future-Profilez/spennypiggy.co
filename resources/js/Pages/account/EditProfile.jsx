@@ -801,7 +801,7 @@ export default function EditProfile({
                                             {user?.bio &&
                                                 user?.bio_approved === 0 && (
                                                     <span className="text-xs font-semibold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full border border-yellow-200">
-                                                        Pending Approval
+                                                        Held by a check
                                                     </span>
                                                 )}
                                             {user?.bio &&

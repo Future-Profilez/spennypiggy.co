@@ -10,9 +10,15 @@
 | for at the PAYOUT gate: they cannot be PAID until it passes and an admin signs it
 | off. Nothing about listing, selling or the journey reads this file.
 |
-| ⚠️ MIRROR NOTHING FROM HERE INTO THE ADMIN APP. Unlike `payments.fee_profiles` or
-| `growth_bonus`, this decides whether the WEBSITE releases money — the admin app has
-| no payout runner. The admin app reads the sign-off queue, which is a plain column.
+| 🚨 MIRRORED IN THE ADMIN APP, AND THE EARLIER NOTE HERE SAYING NOT TO WAS WRONG.
+| This file used to claim "the admin app has no payout runner". It has FIVE: its own
+| copy of Risk\PayoutService (two buttons — finance and risk dashboards), the Founder
+| bonus trigger, manual reserve release, and a Fast Start command. Found by audit on
+| 11 Sep 2026 — every one of them paid an identity-blocked creator in full, including
+| one an admin had explicitly refused. `enabled` and `grandfather_verified_before` are
+| read by both apps' `App\Support\PayoutEligibility`; keep the two files identical
+| (the `fee_profiles` rule). The reminder keys are inert in the admin app and travel
+| with the file so a diff is a diff.
 |
 */
 

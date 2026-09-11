@@ -105,8 +105,8 @@ class SecurityHeaders
          *   - `payment=()` disables the Payment Request API, which is how Apple
          *     Pay and Google Pay render inside Stripe's frames. The wallet buttons
          *     simply do not appear — no error, no log.
-         *   - `camera=()` breaks Stripe Identity document capture (this app gates
-         *     listings on it, see CheckStripeIdentityVerification) and Uploadcare's
+         *   - `camera=()` breaks Stripe Identity document capture (the payout gate
+         *     depends on it — App\Support\PayoutEligibility) and Uploadcare's
          *     camera upload source.
          * `microphone=(self)` is for Uploadcare's video capture, which records
          * audio.

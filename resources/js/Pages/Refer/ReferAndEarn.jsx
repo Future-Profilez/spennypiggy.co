@@ -364,7 +364,9 @@ function ReferralRow({ r }) {
                 </div>
             </div>
 
-            {/* Progress to £1,000 */}
+            {/* Progress to THIS ROW'S OWN threshold — never a figure typed here.
+                The comment used to say £1,000, which stopped being the number on
+                11 Sep 2026, and a stale comment is what the next reader copies. */}
             <div className="flex-1 min-w-0">
                 <div className="h-3.5 bg-gray-100 rounded-full border-2 border-black overflow-hidden">
                     <div

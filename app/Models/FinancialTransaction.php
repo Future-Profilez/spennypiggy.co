@@ -62,6 +62,17 @@ class FinancialTransaction extends Model
         'net_amount' => 'decimal:2',
         'gbp_amount' => 'decimal:2',
         'refunded_amount' => 'decimal:2',
+        /*
+         * 🚨 `processor_cost*` ARE CAST BUT NOT FILLABLE, in either app.
+         *
+         * They are what Stripe reported it actually cost to take the money —
+         * a fact read off a balance transaction, not something a form, a back
+         * office or a re-sync may assert. `finance:record-processor-cost`
+         * writes them through the query builder; anything that can
+         * mass-assign a processor cost can restate the platform's own margin.
+         */
+        'processor_cost' => 'decimal:2',
+        'processor_cost_recorded_at' => 'datetime',
     ];
 
     protected static function boot()

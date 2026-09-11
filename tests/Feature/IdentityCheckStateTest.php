@@ -2,10 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Console\Commands\NudgeStuckJourney;
 use App\Http\Controllers\StripeWebhookController;
 use App\Models\User;
-use App\Services\CreatorJourneyService;
 use App\Support\IdentityCheckState;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

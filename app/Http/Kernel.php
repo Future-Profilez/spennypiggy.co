@@ -4,7 +4,6 @@ namespace App\Http;
 
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\CheckGifterCardVerification;
-use App\Http\Middleware\CheckStripeIdentityVerification;
 use App\Http\Middleware\CheckSuspendedUser;
 use App\Http\Middleware\CheckUserBlock;
 use App\Http\Middleware\EnableSsr;
@@ -197,7 +196,6 @@ class Kernel extends HttpKernel
         'throttle' => ThrottleRequests::class,
         'verified' => EnsureEmailIsVerified::class,
         'mustHaveToVerify' => UserEmailVerify::class,
-        'mustCompletedStripeIdentity' => CheckStripeIdentityVerification::class,
         'mustCompletedCardVerification' => CheckGifterCardVerification::class,
         'rye.enabled' => EnsureRyeEnabled::class,
         'sysdiag' => EnsureSystemDiagnosticsAccess::class,

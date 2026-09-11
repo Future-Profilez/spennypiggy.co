@@ -13,8 +13,9 @@ import { fieldClass } from "@/Components/Checkout/FormKit";
 import ShareButton from "@/Components/ShareButton";
 import userphoto from "../../../assets/siteicon.png";
 import axios from "axios";
-import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
+import { feeRatesFor, creatorIdOf, supporterTotal } from "@/utils/pricing";
 import { riskMessageBody, riskMessageTitle } from '@/constants/riskMessages';
+import { supporterFeeCaption } from "@/lib/fees";
 
 export default function Show({ auth, task, share, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol, card_capabilities }) {
     const { turnstileSiteKey, platform_fee_percentage, transaction_fee_percentage, flash } = usePage().props;
@@ -28,7 +29,7 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
         payment_method: 'card',
     });
     const [previewPrices, setPreviewPrices] = useState(null);
-    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency, supporterFixedFee } = PriceFormat();
 
     // Helper to identify zero decimal currencies
     const isZeroDecimalCurrency = (curr) => {
@@ -48,27 +49,20 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
         // Client Rule: Add VAT before other fees
         const priceWithVat = listedPrice + vat;
 
-        // Constants must match backend configuration (Helpers.php)
-        const stripeFeeRate = STRIPE_FEE_RATE;
-        const stripeFixedFee = isZeroDecimal ? 0 : STRIPE_FIXED_FEE;
-        // Per-creator: a creator on a bespoke platform rate must be QUOTED
-        // what checkout will CHARGE them. The global props cannot express that.
+        // 🚨 THE FORMULA LIVES IN ONE PLACE (`utils/pricing`), NEVER HERE. This
+        // surface carried its own copy of the legacy gross-up, so when the
+        // platform moved to an all-in supporter fee on 11 Sep 2026 it went on
+        // quoting the old, higher total while checkout charged the new one —
+        // with nothing wrong in any log. `feeRatesFor` carries the live model
+        // alongside the rates, so a call site cannot pick the wrong arithmetic.
         const __rates = feeRatesFor(creatorIdOf(task), __pageProps);
-        const platformFeeRate = __rates.platform / 100;
-        const complianceFeeRate = __rates.compliance / 100; 
-        const adminFee = adminFeeInCurrency(curr); 
-        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
-        
-        if (totalDeductionRate >= 1) return priceWithVat;
 
-        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
-        
-        // Rounding logic to match backend (Helpers.php)
-        if (!isZeroDecimal) {
-            return Math.ceil(totalSupporterPays * 100) / 100;
-        } else {
-            return Math.ceil(totalSupporterPays);
-        }
+        return supporterTotal(priceWithVat, {
+            ...__rates,
+            adminFee: adminFeeInCurrency(curr),
+            fixedFee: supporterFixedFee(curr),
+            isZeroDecimal,
+        });
     };
 
     const [verified, setVerified] = useState(false);
@@ -464,7 +458,7 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
                                     </div>
                                     {!isCreator && (
                                         <span className="block text-xs text-black/60 font-medium mt-2 leading-tight">
-                                            *Includes platform & payment fees.
+                                            {supporterFeeCaption(__pageProps)}
                                         </span>
                                     )}
                                 </div>

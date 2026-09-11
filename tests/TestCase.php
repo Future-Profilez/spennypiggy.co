@@ -3,6 +3,8 @@
 namespace Tests;
 
 use App\SeoMeta;
+use App\Services\Pricing\CreatorFeeResolver;
+use App\Services\Pricing\PricingResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
@@ -36,6 +38,35 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         SeoMeta::clear();
+
+        /*
+         * 🚨 SAME CLASS OF FAULT AS `SeoMeta`, FOR THE SAME REASON.
+         *
+         * `PricingResolver` pins the pricing version in force inside a static for the
+         * life of a process — that memo is what makes one charge impossible to compute
+         * at two different rates. A PHPUnit run is ONE process, so a test that publishes
+         * a version would otherwise price every test after it, and the result would
+         * depend on test ORDER.
+         *
+         * ⚠️ Production is unaffected: PHP-FPM gives each request a fresh script
+         * execution. (Under Octane this would need resetting per request, exactly like
+         * `SeoMeta` above.)
+         */
+        PricingResolver::forget();
+
+        /*
+         * 🚨 SAME FAULT, ONE CLASS ALONG, AND IT WAS ALREADY LIVE.
+         * `CreatorFeeResolver::$liveCache` memoises a bespoke agreement per CREATOR ID
+         * — and `RefreshDatabase` restarts the id sequence every test, so a creator
+         * created in one test inherits the previous test's negotiated rate under the
+         * same id. Measured 11 Sep 2026: `AllInFeeModelTest`'s 8% deal priced an
+         * unrelated creator in `PlatformPricingEngineTest` at 8% instead of 12%.
+         *
+         * ⚠️ It only shows when the two files run TOGETHER. Each passed alone, which is
+         * the shape that costs the most to diagnose — the class that fails is not the
+         * class that is wrong.
+         */
+        CreatorFeeResolver::flushCache();
     }
 
     /**

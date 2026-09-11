@@ -71,7 +71,7 @@ class FinishYourSetup extends Mailable
     {
         return match ($step) {
             'profile' => 'Supporters decide whether to buy from a page that looks finished, and this is the fastest thing you can do today.',
-            'social' => 'The review team checks one account you post on to confirm the page is yours — it is the quickest thing standing between you and approval.',
+            'social' => 'One account you post on is all this needs, it is checked automatically, and it stays private unless you choose to show it.',
             'subscription' => 'Your payouts are connected. A card on file is the last step — nothing is charged until your first sale.',
             'stripe' => 'Until your bank details are connected, anything you sell has nowhere to be paid out to.',
             'first_post' => 'Posts are what your members see after they buy, and one is enough to give a subscriber a reason to stay.',

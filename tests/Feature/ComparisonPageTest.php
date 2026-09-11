@@ -269,7 +269,23 @@ class ComparisonPageTest extends TestCase
             // a sum the table below it does not use.
             'money20' => 'the fee heading keeps its example figure',
             'Keeping all of it is no use' => 'the holds-up block',
-            'Three programmes' => 'the bonuses block',
+            /*
+             * 🚨 "THREE" WAS DELIBERATELY DROPPED, AND THIS PIN MOVED WITH IT
+             * (11 Sep 2026). Spec v4.3 §3b fixes the heading as "THREE
+             * PROGRAMMES THAT STACK"; §6 of the September plan then RETIRED
+             * Founder and Fast Start. `ThreeProgrammes` drops a retired row on
+             * the server's own flag, so a typed count is wrong the moment a
+             * scheme is switched off — and a marketing page naming three
+             * programmes above two rows is the page advertising one that no
+             * longer exists, which is the standing prohibition.
+             *
+             * ⚠️ The NEWER client decision wins over the older spec line. The
+             * block itself is still required and still reused unchanged — so
+             * what is pinned is that it is MOUNTED, which is the half a
+             * regression would actually remove. The component name is the
+             * stable marker; the heading is the caller's and now varies.
+             */
+            '<ThreeProgrammes' => 'the bonuses block',
             'We would rather you chose with the whole picture' => 'the "to be fair" intro',
             'Keep the price' => 'the final heading',
             'Listing is free. You are not charged anything until' => 'the final sub-line',

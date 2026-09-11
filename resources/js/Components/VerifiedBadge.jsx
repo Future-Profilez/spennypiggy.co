@@ -27,7 +27,7 @@ import { FaCrown } from 'react-icons/fa';
 const TIERS = {
   basic: {
     className: 'text-[#9AA0A6]',
-    label: 'Verified — profile reviewed and approved',
+    label: 'Verified — profile checks passed',
   },
   creator: {
     className: 'text-[#FF007F]',

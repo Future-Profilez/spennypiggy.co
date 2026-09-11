@@ -38,7 +38,7 @@ use Illuminate\Support\Arr;
  */
 final class ProfileSelfCheck
 {
-    /** Submitting this will hold the review up — it breaks a rule we enforce. */
+    /** Saving this holds the page back — it breaks a rule the checks enforce. */
     public const BLOCKING = 'blocking';
 
     /** A reviewer will probably ask about it. Worth a look, not a refusal. */
@@ -163,7 +163,7 @@ final class ProfileSelfCheck
                 'Bio',
                 self::ATTENTION,
                 'Your bio is very short. Write a line or two about what you make and what supporters '
-                .'get from you — there may not be enough here to review.'
+                .'get from you — a line or two is what supporters read first.'
             );
         }
 
@@ -200,7 +200,7 @@ final class ProfileSelfCheck
             $asset,
             $label,
             self::ATTENTION,
-            $reason.' Uploading a different image is usually quicker than waiting for a review.'
+            $reason.' Upload a different image and it is checked again straight away.'
         );
     }
 

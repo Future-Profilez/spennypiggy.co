@@ -8,7 +8,8 @@ import { Menu, Transition } from "@headlessui/react";
 import RemoveMembership from "@/Pages/membership/RemoveMembership";
 import { useAlerts } from "@/Components/Alerts";
 import RewardHint from "@/Pages/discover/components/RewardHint";
-import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
+import { supporterFeeCaption } from "@/lib/fees";
+import { feeRatesFor, creatorIdOf, supporterTotal } from "@/utils/pricing";
 import SaveButton from "@/Components/SaveButton";
 import { tierTheme } from "@/constants/membershipTiers";
 
@@ -33,7 +34,7 @@ export default function MembershipItem({
     const { auth, platform_fee_percentage, transaction_fee_percentage } =
         usePage().props;
     const __pageProps = usePage().props;
-    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency, supporterFixedFee } = PriceFormat();
     const [rewards, setrewards] = useState(
         item?.rewards ? JSON.parse(item.rewards) : [],
     );
@@ -77,28 +78,20 @@ export default function MembershipItem({
         const isZeroDecimal = isZeroDecimalCurrency(curr);
         const vatAmount = (listedPrice * (parseFloat(vatPercent) || 0)) / 100;
         const priceWithVat = listedPrice + vatAmount;
-        const stripeFeeRate = STRIPE_FEE_RATE;
-        const stripeFixedFee = isZeroDecimal ? 0 : STRIPE_FIXED_FEE;
-        // Per-creator: a creator on a bespoke platform rate must be QUOTED
-        // what checkout will CHARGE them. The global props cannot express that.
+        // 🚨 THE FORMULA LIVES IN ONE PLACE (`utils/pricing`), NEVER HERE. This
+        // surface carried its own copy of the legacy gross-up, so when the
+        // platform moved to an all-in supporter fee on 11 Sep 2026 it went on
+        // quoting the old, higher total while checkout charged the new one —
+        // with nothing wrong in any log. `feeRatesFor` carries the live model
+        // alongside the rates, so a call site cannot pick the wrong arithmetic.
         const __rates = feeRatesFor(creatorIdOf(item), __pageProps);
-        const platformFeeRate = __rates.platform / 100;
-        const complianceFeeRate = __rates.compliance / 100;
-        const adminFee = adminFeeInCurrency(curr);
-        const totalDeductionRate =
-            stripeFeeRate + platformFeeRate + complianceFeeRate;
 
-        if (totalDeductionRate >= 1) {
-            return priceWithVat;
-        }
-
-        const totalSupporterPays =
-            (priceWithVat + stripeFixedFee + adminFee) /
-            (1 - totalDeductionRate);
-        if (!isZeroDecimal) {
-            return Math.ceil(totalSupporterPays * 100) / 100;
-        }
-        return Math.ceil(totalSupporterPays);
+        return supporterTotal(priceWithVat, {
+            ...__rates,
+            adminFee: adminFeeInCurrency(curr),
+            fixedFee: supporterFixedFee(curr),
+            isZeroDecimal,
+        });
     };
 
     const isCreator = auth?.user?.id === item?.user_id;
@@ -239,7 +232,7 @@ export default function MembershipItem({
                     {!isCreator && (
                         <div className="mt-1 flex items-center justify-between gap-3">
                             <p className="text-[12px] font-semibold text-black/60">
-                                Includes platform &amp; processing fees
+                                {supporterFeeCaption(__pageProps)}
                             </p>
                             <div onClick={(e) => e.stopPropagation()} className="shrink-0">
                                 <SaveButton productType="membership" itemId={item?.id} creatorId={item?.user_id} />

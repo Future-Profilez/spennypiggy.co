@@ -28,6 +28,19 @@ use Illuminate\Support\Facades\Log;
  * arithmetic and the rounding; this class answers "what rate applies to this rail, for
  * this creator, right now" and "below what price does that rate stop covering its own
  * costs".
+ *
+ * 🚨 THE RATE IS NO LONGER A CONFIG VALUE (11 Sep 2026) — it is PUBLISHED from the back
+ * office, and `PricingResolver` is where that is read: the pricing version in force,
+ * falling back to `config/payments.php`, falling back to a hard default. **This class is
+ * still the ONE read path.** Nothing outside `App\Services\Pricing` asks the resolver,
+ * nothing reads `payments.all_in.*` directly, and no caller can tell which link in the
+ * chain answered. If a surface has to know where the number came from, the design is
+ * wrong.
+ *
+ * 🚨 A SCHEDULED FUTURE RATE IS NEVER RETURNED. The resolver filters on
+ * `effective_at <= now`, so nothing here — `describe()` least of all, since it is the
+ * public `fees` prop — can leak pricing that has not started. Client direction: "do not
+ * expose future pricing plans publicly."
  */
 class FeeModel
 {
@@ -41,7 +54,7 @@ class FeeModel
     /** Is the platform on the all-in model? */
     public static function isAllIn(): bool
     {
-        return config('payments.model', self::MODEL_ALL_IN) === self::MODEL_ALL_IN;
+        return PricingResolver::model() === self::MODEL_ALL_IN;
     }
 
     /**
@@ -58,7 +71,18 @@ class FeeModel
     {
         $feeProfile = in_array($feeProfile, self::PROFILES, true) ? $feeProfile : 'card';
 
-        $standard = (float) config("payments.all_in.$feeProfile", config('payments.all_in.card', 12));
+        /*
+         * 🚨 WHERE THIS NUMBER COMES FROM MOVED ON 11 Sep 2026, AND NOTHING ELSE DID.
+         * It used to be `config('payments.all_in.*')`; it is now whatever
+         * `PricingResolver` answers — the published pricing version in force, falling
+         * back to that same config, falling back to a hard default. Callers cannot tell
+         * which link answered, which is the point: there is still ONE way to ask.
+         *
+         * ⚠️ The creator id is passed even for the "standard" rate because a published
+         * version may GRANDFATHER creators who predate it. A grandfathered creator is
+         * still on standard terms — just an older set of them.
+         */
+        $standard = PricingResolver::rateFor($feeProfile, $creatorId);
 
         if ($creatorId === null) {
             return $standard;
@@ -88,13 +112,12 @@ class FeeModel
      * ⚠️ Zero-decimal currencies (JPY, KRW) get an integer — a fractional yen is
      * meaningless, and the gross-up would carry the fraction into the supporter's total.
      */
-    public static function fixedFee(string $currency = 'GBP'): float
+    public static function fixedFee(string $currency = 'GBP', ?int $creatorId = null): float
     {
-        if (! (bool) config('payments.fixed_fee.enabled', false)) {
-            return 0.0;
-        }
-
-        $gbp = (float) config('payments.fixed_fee.amount_gbp', 0);
+        // Published version first, config second — the same chain as the percentage,
+        // and the creator id so a grandfathered creator keeps the toggle state they
+        // were on rather than inheriting a fee introduced after them.
+        $gbp = PricingResolver::fixedFeeGbp($creatorId);
 
         if ($gbp <= 0) {
             return 0.0;
@@ -143,26 +166,25 @@ class FeeModel
      */
     public static function minimumSellable(string $feeProfile = 'card', string $currency = 'GBP', ?int $creatorId = null): float
     {
-        $f = self::supporterRate($feeProfile, $creatorId) / 100;
-
+        /*
+         * ⚠️ THE FORMULA LIVES IN `PricingPreview`, NOT HERE, since 11 Sep 2026. The
+         * admin app has to compute the same break-even to REFUSE a rate that cannot
+         * cover the platform's own minimum listing, and it has no copy of this class or
+         * of `Helpers::calculateStripeDirectChargeFlow`. One formula, mirrored and
+         * drift-guarded, beats two that agree until they do not.
+         *
+         * ⚠️ The processing estimate stays in `config/payments.php` deliberately: it is
+         * an estimate of what STRIPE costs us, not a price we set, so it is not on the
+         * admin pricing screen and does not move without a deploy.
+         */
         $profile = config("payments.fee_profiles.$feeProfile", config('payments.fee_profiles.card', []));
-        $stripeRate = (float) ($profile['stripe_rate'] ?? 3.4) / 100;
-        $stripeFixed = Helpers::isZeroDecimalCurrency($currency) ? 0.0 : (float) ($profile['stripe_fixed_fee'] ?? 0.30);
-        $fixed = self::fixedFee($currency);
 
-        $denominator = $f - ($stripeRate * (1 + $f));
-
-        if ($denominator <= 0) {
-            return INF;
-        }
-
-        $numerator = $stripeFixed + ($fixed * $stripeRate) - $fixed;
-
-        if ($numerator <= 0) {
-            return 0.0;
-        }
-
-        return round($numerator / $denominator, 2, PHP_ROUND_HALF_UP);
+        return PricingPreview::breakEven(
+            self::supporterRate($feeProfile, $creatorId),
+            self::fixedFee($currency, $creatorId),
+            (float) ($profile['stripe_rate'] ?? 3.4),
+            Helpers::isZeroDecimalCurrency($currency) ? 0.0 : (float) ($profile['stripe_fixed_fee'] ?? 0.30)
+        );
     }
 
     /**
@@ -174,13 +196,21 @@ class FeeModel
     {
         $rate = self::supporterRate($feeProfile, $creatorId);
 
+        /*
+         * 🚨 NOTHING ABOUT A SCHEDULED VERSION MAY APPEAR HERE. This array is the shared
+         * `fees` Inertia prop and feeds the landing pages, the comparison page, the help
+         * tokens and every creator form — i.e. it is PUBLIC. `PricingResolver` only ever
+         * returns a version whose `effective_at` has passed, so a future rate cannot
+         * reach it; do not add a `next_rate`, an `effective_from` or a countdown.
+         * Client direction: "do not expose future pricing plans publicly."
+         */
         return [
-            'model' => config('payments.model', self::MODEL_ALL_IN),
+            'model' => PricingResolver::model(),
             'all_in' => self::isAllIn(),
             'rate' => $rate,
             // Trailing zeros dropped: "12%", not "12.00%". A fee is read aloud.
             'rate_label' => rtrim(rtrim(number_format($rate, 2, '.', ''), '0'), '.').'%',
-            'fixed_fee' => self::fixedFee($currency),
+            'fixed_fee' => self::fixedFee($currency, $creatorId),
         ];
     }
 
@@ -196,7 +226,11 @@ class FeeModel
     {
         $rates = [self::supporterRate('card')];
 
-        if ((bool) config('payments.bank.enabled', false)) {
+        // 🚨 `payments.enabled`, NOT `payments.bank.enabled` — that key has never
+        // existed, so this always answered 12% while the bank rail was live at 9%.
+        // The guard in AllInFeeModelTest set the same non-existent key, which is why it
+        // certified a rate the platform never advertised. Both fixed 11 Sep 2026.
+        if ((bool) config('payments.enabled', false)) {
             $rates[] = self::supporterRate('bank');
         }
 

@@ -32,6 +32,7 @@ import RewardEditor, {
     validateReward,
 } from "@/Components/Reward/RewardEditor";
 import { Link } from "@inertiajs/react";
+import { creatorFeeNote } from "@/lib/fees";
 
 const slug = (text) => {
     return text
@@ -46,6 +47,7 @@ const slug = (text) => {
 
 export default function AddItem(props) {
     const { auth, user, rates } = usePage().props;
+    const feeNote = creatorFeeNote(usePage().props);
     const defaultCurrency =
         user?.default_currency || auth?.user?.default_currency || "GBP";
 
@@ -919,14 +921,14 @@ export default function AddItem(props) {
                                                                 to improve
                                                                 conversion
                                                             </p>
+                                                            {/* 🚨 Never a typed percentage — see
+                                                                resources/js/lib/fees.js. This also used
+                                                                to say currency conversion was "added on
+                                                                top", which the all-in total does not do:
+                                                                the supporter pays the listed price plus
+                                                                the one advertised rate and nothing else. */}
                                                             <p className="mt-1 text-xs text-black/60 font-medium">
-                                                                Fees and
-                                                                currency
-                                                                conversion are
-                                                                added on top so
-                                                                you always
-                                                                receive the full
-                                                                price you set.
+                                                                {feeNote}
                                                             </p>
                                                         </div>
                                                     </div>

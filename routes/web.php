@@ -343,7 +343,12 @@ Route::get('/', function (DiscoveryService $discoveryService) {
 })->middleware('ssr')->name('home');
 
 Route::get('/pride', function () {
-    return Inertia::render('Pride/Index');
+    return Inertia::render('Pride/Index', [
+        // 🚨 The page carried a "Join now" Founder Bonus block with no gate — the ONE
+        // retired-scheme recruitment left on a public URL (11 Sep 2026). Server flag,
+        // never a JS constant, same rule as every other Founder surface.
+        'founderOpen' => \App\Support\Incentives::founderEnabled(),
+    ]);
 })->middleware('ssr')->name('pride.landing');
 
 // =====================================================
@@ -1716,7 +1721,7 @@ require __DIR__.'/auth.php';
 // Quick middleware test — echoes the caller's email/role/subscription_status.
 // Local/testing only; it exists to verify middleware wiring, not to run in production.
 if (app()->environment('local', 'testing')) {
-    Route::middleware(['auth', 'mustCompletedStripeIdentity', 'mustHaveToVerify'])
+    Route::middleware(['auth', 'mustHaveToVerify'])
         ->get('/debug-middleware-test', function () {
             $user = auth()->user();
 

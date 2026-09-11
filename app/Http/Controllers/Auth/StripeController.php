@@ -5120,7 +5120,10 @@ class StripeController extends Controller
             }
 
             /*
-             * 🚨 THE SAME GATE `CheckStripeIdentityVerification` APPLIES TO THE PAGE.
+             * 🚨 THIS ENDPOINT CARRIES ITS OWN GATE. The identity-page middleware that
+             * used to mirror it (`CheckStripeIdentityVerification`) was deleted on
+             * 11 Sep 2026 — identity is a payout gate, not a page wall — so this is the
+             * ONLY gate left in front of a billable session. Do not loosen it.
              *
              * This endpoint used to sit under "Public routes (no middleware)" with only
              * the `$user` check above, so any signed-in account — a gifter included —

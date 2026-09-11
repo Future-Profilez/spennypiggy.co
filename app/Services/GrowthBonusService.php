@@ -6,7 +6,6 @@ use App\Mail\GrowthBonusApproved;
 use App\Mail\GrowthBonusHeld;
 use App\Mail\GrowthBonusMilestoneReached;
 use App\Mail\GrowthBonusOutcome;
-use App\Models\FinancialTransaction;
 use App\Models\GrowthBonusProfile;
 use App\Models\GrowthBonusReward;
 use App\Models\User;
@@ -177,7 +176,11 @@ class GrowthBonusService
         return match ($reason) {
             GrowthBonusReward::HOLD_MILESTONE_NOT_COVERED => 'Your bonus is on hold because a refunded or disputed payment has taken your qualifying earnings back below this milestone. It will be sent as soon as new sales cover it again.',
             GrowthBonusReward::HOLD_ACCOUNT_SUSPENDED => 'Your bonus is on hold while your account is suspended.',
-            GrowthBonusReward::HOLD_CANNOT_RECEIVE => 'Your bonus is on hold because your payout account cannot receive it yet. Finish your Stripe setup and we will send it on the next payout day.',
+            // ⚠️ Names BOTH causes. This code covers "identity not signed off" as well
+            // as "no payout account" (holdReasonFor), and telling an identity-blocked
+            // creator to finish a Stripe setup that is already complete sent them to
+            // fix the wrong thing (11 Sep 2026).
+            GrowthBonusReward::HOLD_CANNOT_RECEIVE => 'Your bonus is on hold because we cannot send money to your account yet — usually your identity check is waiting to be signed off, or your payouts are not connected. Your payout page says which. It goes out on the next payout day once that clears.',
             default => 'Your bonus is on hold. We check it again every week.',
         };
     }

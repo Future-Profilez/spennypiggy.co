@@ -239,6 +239,44 @@ class GrowthBonusNotificationTest extends TestCase
         }
     }
 
+    /**
+     * 🚨 THE MAIL OUTLIVES THE SCHEME, SO IT MUST NOT ADVERTISE IT.
+     *
+     * The payer keeps running after the ladder closes so anyone who met the
+     * published condition is still paid (App\Support\Incentives). That means
+     * this mail CAN legitimately arrive after closure — at which point
+     * "Next up: £250 unlocks another £25" promises a rung the creator can
+     * never climb. The template's other branch is no safer: it claims they
+     * earned the FULL ladder, which is a different untrue statement.
+     */
+    public function test_a_closed_ladder_is_not_advertised_in_the_milestone_mail(): void
+    {
+        $creator = $this->creator();
+
+        config(['growth_bonus.enabled' => false]);
+        $closed = (new GrowthBonusMilestoneReached($creator, 100, 25, 25, 250, 25))->render();
+
+        $this->assertStringContainsString('closed to new milestones', $closed);
+        $this->assertStringContainsString('still being paid in full', $closed);
+        $this->assertStringNotContainsString('Next up', $closed);
+
+        /*
+         * 🚨 AND NO BUTTON. `/growth-bonus` 404s while the flag is off, so the CTA on a
+         * mail that outlives the scheme was a link to a dead page — handed to somebody
+         * being told they had earned money.
+         */
+        $this->assertStringNotContainsString('/growth-bonus', $closed);
+        $this->assertStringNotContainsString('See your milestones', $closed);
+
+        // The control: while the ladder is open the next rung and the button both stay.
+        config(['growth_bonus.enabled' => true]);
+        $open = (new GrowthBonusMilestoneReached($creator, 100, 25, 25, 250, 25))->render();
+
+        $this->assertStringContainsString('Next up', $open);
+        $this->assertStringNotContainsString('closed to new milestones', $open);
+        $this->assertStringContainsString('/growth-bonus', $open);
+    }
+
     /*
      * ⚠️ NO BESPOKE "are its properties protected?" TEST HERE, DELIBERATELY.
      * `tests/Feature/MailableViewDataCollisionTest.php` is the house guard and

@@ -264,7 +264,9 @@ class AllInFeeModelTest extends TestCase
 
         DB::table('creator_fee_overrides')->insert([
             'user_id' => $creator->id,
-            'platform_rate_card' => 8.0,
+            // ⚠️ 10.5, not 8: below ~9.74% an all-in card rate cannot cover the £4.99
+            // minimum and `rateIsSane()` now refuses it (see the break-even test).
+            'platform_rate_card' => 10.5,
             'platform_rate_bank' => null,
             'effective_from' => now()->subDay(),
             'created_at' => now(),
@@ -276,10 +278,10 @@ class AllInFeeModelTest extends TestCase
         $standard = Helpers::calculateStripeDirectChargeFlow(100, 'GBP', 0, 'card');
         $bespoke = Helpers::calculateStripeDirectChargeFlow(100, 'GBP', 0, 'card', $creator->id);
 
-        // An 8% deal must charge this creator's supporters less than the standard 12%.
+        // A 10.5% deal must charge this creator's supporters less than the standard 12%.
         $this->assertLessThan($standard['total_supporter_pays'], $bespoke['total_supporter_pays']);
-        $this->assertEqualsWithDelta(108.00, $bespoke['total_supporter_pays'], 0.02);
-        $this->assertSame(8.0, $bespoke['supporter_rate']);
+        $this->assertEqualsWithDelta(110.50, $bespoke['total_supporter_pays'], 0.02);
+        $this->assertSame(10.5, $bespoke['supporter_rate']);
         $this->assertSame('custom', $bespoke['fee_source']);
 
         // 🚨 And the creator is STILL whole — a discount comes out of the platform's
@@ -306,14 +308,69 @@ class AllInFeeModelTest extends TestCase
         $this->assertSame('9.5%', FeeModel::describe('card')['rate_label']);
     }
 
+    /**
+     * 🚨 A BESPOKE ALL-IN RATE THAT CANNOT COVER THE £4.99 MINIMUM LEAVES THE CREATOR
+     * SHORT, AND NOTHING REFUSED IT (found by audit, 11 Sep 2026). `rateIsSane()` only
+     * tested legacy gross-up solvability. Measured at 8% on card: a £4.99 listing charged
+     * £5.39, the platform fee clamped to £0.00 and the creator received £4.91 — the one
+     * promise the whole model rests on, broken silently for exactly the creators on a
+     * negotiated deal. The admin pricing screen already refuses a PLATFORM rate below
+     * break-even; a bespoke rate gets the same rule. The break-even at 3.4% + 30p is
+     * ~9.74%, so 8% is refused and standard pricing applies, with an error logged.
+     */
+    public function test_a_bespoke_rate_below_break_even_is_refused_not_honoured(): void
+    {
+        $creator = User::factory()->create(['role' => 1]);
+        CreatorFeeResolver::flushCache();
+
+        DB::table('creator_fee_overrides')->insert([
+            'user_id' => $creator->id,
+            'platform_rate_card' => 8.0,
+            'platform_rate_bank' => null,
+            'effective_from' => now()->subDay(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        CreatorFeeResolver::flushCache();
+
+        // ⚠️ `profileFor()` hands back the LEGACY standard profile on refusal (17% card);
+        // the all-in answer a charge actually reads is `FeeModel::supporterRate()`.
+        $this->assertSame(CreatorFeeResolver::SOURCE_STANDARD, CreatorFeeResolver::profileFor($creator->id, 'card')['fee_source']);
+        $this->assertSame(
+            (float) config('payments.all_in.card'),
+            FeeModel::supporterRate('card', $creator->id),
+            'An 8% all-in card rate cannot cover the £4.99 minimum and must fall back to the standard rate.'
+        );
+        $this->assertEqualsWithDelta(
+            112.01,
+            Helpers::calculateStripeDirectChargeFlow(100, 'GBP', 0, 'card', $creator->id)['total_supporter_pays'],
+            0.02,
+            'The refused deal must price at standard, not at 8%.'
+        );
+
+        // The control: a viable bespoke rate is still honoured.
+        $viable = User::factory()->create(['role' => 1]);
+        CreatorFeeResolver::flushCache();
+        DB::table('creator_fee_overrides')->insert([
+            'user_id' => $viable->id, 'platform_rate_card' => 10.5, 'platform_rate_bank' => null,
+            'effective_from' => now()->subDay(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        CreatorFeeResolver::flushCache();
+        $this->assertSame(10.5, FeeModel::supporterRate('card', $viable->id));
+    }
+
     public function test_the_headline_never_advertises_a_rail_that_cannot_take_a_payment(): void
     {
         // Advertising "from 9%" while Pay by Bank is switched off is a price a supporter
         // cannot obtain — the same rule the client's plan applies to stablecoin.
-        config(['payments.bank.enabled' => false]);
+        // 🚨 `payments.enabled` is the rail's real switch. This test set `payments.bank.enabled`
+        // — a key that does not exist — and so did the code, so it passed while production
+        // never counted the live bank rail. A guard that sets the same wrong key as the code
+        // certifies what it missed (fixed 11 Sep 2026).
+        config(['payments.enabled' => false]);
         $this->assertSame(12.0, FeeModel::lowestLiveRate());
 
-        config(['payments.bank.enabled' => true]);
+        config(['payments.enabled' => true]);
         $this->assertSame(9.0, FeeModel::lowestLiveRate());
     }
 

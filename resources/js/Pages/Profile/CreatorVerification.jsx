@@ -5,8 +5,6 @@ import { useState, useEffect, useRef } from "react";
 import EditProfile from "../account/EditProfile";
 import Social from "../Auth/Social";
 import {
-    isIdentityProcessing,
-    isIdentityUnfinished,
     parseIdentityError,
 } from "@/utils/identityError";
 
@@ -144,13 +142,13 @@ function ActionCard({ step, selfCheck }) {
                     </p>
                     <p className="text-sm text-gray-800">
                         {step.reason ||
-                            "Our team asked for a change. Update it and submit again."}
+                            "A check pulled this back. Fix it and save — it is checked again straight away."}
                     </p>
                     {/* A rejection is the moment a creator objects — give them a
                         person, not a mailto (config/creator_help.php, tier 2). */}
                     <div className="mt-2">
                         <GetHelpButton
-                            code={step.key === "identity" ? "identity_help" : "rejected_assets"}
+                            code="rejected_assets"
                             label="Ask our team about this"
                         />
                     </div>
@@ -312,16 +310,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const isSocialApproved = socialStatus == 1;
     const isSocialPending = hasAnySocialMedia && socialStatus == 0;
     const isSocialRejected = socialStatus == 2;
-    // 🚨 `identity_status = 2` means a session is OPEN, not that anything was
-    // submitted — see isIdentityProcessing in utils/identityError.
-    const identityProcessing = isIdentityProcessing(
-        creatorUser?.identity_status,
-        creatorUser?.identity_session_status,
-    );
-    const identityUnfinished = isIdentityUnfinished(
-        creatorUser?.identity_status,
-        creatorUser?.identity_session_status,
-    );
 
     const avatarStatus = creatorUser?.avatar_approved;
     const bioStatus = creatorUser?.bio_approved;
@@ -388,12 +376,14 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     // Onboarding is "done" only when every gated step is approved/connected —
     // not just Stripe. The old poll stopped once Stripe was submitted (or after
     // ~100s), so any later decision needed a manual reload.
+    // ⚠️ No identity clause (11 Sep 2026): identity is a payout gate and left this
+    // rail on 10 Sep. Keeping it here meant "5 of 5 done" with the celebration never
+    // firing, and the 15s poller re-arming for ever for a check the page does not show.
     const onboardingComplete =
         isSocialApproved &&
         avatarStatus == 1 &&
         bioStatus == 1 &&
         hasSubscription &&
-        creatorUser?.identity_status == 1 &&
         creatorUser?.stripe_details_submitted == 1;
 
     useEffect(() => {
@@ -629,16 +619,14 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 "Takes about 3 minutes on Stripe, then you come straight back",
             ],
             state: creatorUser?.stripe_details_submitted == 1 ? "done" : "todo",
-            // ⚠️ Connect comes BEFORE identity (31 July 2026). Stripe Identity
-            // bills the platform per check, so it was moved behind Connect — which
-            // costs us nothing and already demands bank details plus Stripe's own
-            // KYC. Locking Connect on identity would restore the old order and
-            // contradict the dashboard journey card, which reads the new one.
-            locked: profileStatusLock != 2 || !hasSubscription,
-            lockReason:
-                profileStatusLock != 2
-                    ? "Unlocks once your profile is approved."
-                    : "Add your card first — it unlocks payouts.",
+            // 🚨 CONNECT IS NOT LOCKED BEHIND THE CARD (fixed 11 Sep 2026). The
+            // journey is profile · social · STRIPE · subscription — the card moved
+            // LAST — and `StripeController::index` asks only for a live page. This
+            // rail still held Connect shut until a card was added, the exact deadlock
+            // `subscriptionGate()` was deleted to remove, while the dashboard card
+            // beside it said "Connect your payouts". One creator, two answers.
+            locked: profileStatusLock != 2,
+            lockReason: "Unlocks once your page is live.",
             action: (
                 <Link className={primaryBtn} href="/stripe/authorize">
                     Connect with Stripe
@@ -656,14 +644,12 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             title: "Add your card",
             mins: 1,
             /*
-             * 🚨 THE CARD COMES AFTER APPROVAL (client decision, 7 Sep 2026). It sat
-             * before Submit and was the step most creators stopped on — asked of
-             * somebody no human had looked at yet. It still gates Connect
-             * (`StripeController::subscriptionGate()`), so it sits right before it.
-             * ⚠️ No deadlock by construction: Submit no longer asks for a card, and
-             * this step asks only for approval — never for a Submit.
+             * 🚨 THE CARD IS THE LAST SETUP STEP, AFTER CONNECT (11 Sep 2026). It has
+             * moved three times and each move found the same thing: it is the step
+             * creators stop on, so everything asked before it is free. It gates
+             * nothing — `subscriptionGate()` is deleted — and asks only for a live page.
              */
-            description: `Your page is approved. Add a card to unlock payouts — ${SUBSCRIPTION_COPY.promise}, then ${PRICE_FORMATTED} + VAT a month.`,
+            description: `Your page is live. Add a card to unlock payouts — ${SUBSCRIPTION_COPY.promise}, then ${PRICE_FORMATTED} + VAT a month.`,
             hint: [
                 SUBSCRIPTION_COPY.reassurance,
                 "Cancel any time from your account settings",
@@ -671,7 +657,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             state: hasSubscription ? "done" : "todo",
             approvedState: hasSubscription,
             locked: profileStatusLock != 2,
-            lockReason: "Unlocks once your profile is approved.",
+            lockReason: "Unlocks once your page is live.",
             action: (
                 <Link className={primaryBtn} href="/activate-subscription">
                     Add your card
@@ -699,7 +685,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     // A pending step used to match both `waiting` and (locked) `upcoming` and
     // rendered twice; keying on state fixes that.
     const completed = steps.filter((s) => s.state === "done");
-    const waiting = steps.filter((s) => s.state === "pending");
+    // ⚠️ No `waiting` list (11 Sep 2026): no step produces "pending" any more — nobody
+    // is looking. The "With our team · In review" section that read it was dead markup.
     const needsYou = steps.filter(
         (s) => s.state === "rejected" || (s.state === "todo" && !s.locked),
     );
@@ -809,8 +796,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 <div className="mb-4 rounded-box-sm border-2 border-black bg-[#FFF6D6] p-4">
                     <p className="text-[13px] font-bold uppercase tracking-wide text-black">
                         {topFindings.some((f) => f.severity === "blocking")
-                            ? "This is likely to hold up your review"
-                            : "Worth a look before review"}
+                            ? "This will hold your page back"
+                            : "Worth a look before you go live"}
                     </p>
                     {topFindings.map((f, i) => (
                         <p key={i} className="mt-1 text-sm text-black/80">
@@ -865,28 +852,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         </>
                     )}
 
-                    {waiting.length > 0 && (
-                        <>
-                            <SectionHeading>
-                                With our team · {waiting.length}
-                            </SectionHeading>
-                            {waiting.map((s) => (
-                                <StepRow
-                                    key={s.key}
-                                    step={{
-                                        ...s,
-                                        note: s.reviewNote,
-                                        chip: (
-                                            <StatusChip state="pending">
-                                                In review
-                                            </StatusChip>
-                                        ),
-                                    }}
-                                />
-                            ))}
-                        </>
-                    )}
-
                     {upcoming.length > 0 && (
                         <>
                             <SectionHeading>Coming up</SectionHeading>
@@ -924,13 +889,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                             ? "Connected"
                                             : s.key === "stripe"
                                               ? "Connected"
-                                              : s.key === "identity"
-                                                ? "Verified"
-                                                : s.key === "submit"
-                                                  ? "Verified"
-                                                  : s.approvedState === 1
-                                                    ? "Approved"
-                                                    : "Ready"}
+                                              : s.approvedState === 1
+                                              ? "Approved"
+                                              : "Ready"}
                                     </StatusChip>
                                 ),
                             }}
