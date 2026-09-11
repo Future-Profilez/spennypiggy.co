@@ -36,7 +36,14 @@ function Billslist({ IsloggedIn, suppressEmptyState = false }) {
                         <AddMoreTile
                             title="Add Bill"
                             subtitle="Create a new bill for your supporters."
-                            onClick={() => window.dispatchEvent(new Event("toggleAddOptions"))}
+                            /* Names this module — a bare `new Event` opens the chooser. */
+                            onClick={() =>
+                                window.dispatchEvent(
+                                    new CustomEvent("toggleAddOptions", {
+                                        detail: { intent: "bill" },
+                                    }),
+                                )
+                            }
                             minHeightClass="min-h-[300px]"
                         />
                     )}

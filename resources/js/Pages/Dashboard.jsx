@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, Suspense, lazy, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Head, Link, usePage } from "@inertiajs/react";
 // A drawn icon for the add trigger; it was a bare "+" glyph nudged into place.
-import { Plus } from "lucide-react";
+import { CalendarDays, Home, Plus, Rocket } from "lucide-react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.png";
 const Wishlist = lazyRetry(() => import("./Auth/Wishlist"));
 const Wishlistbox = lazyRetry(() => import("@/wishlist/Wishlistbox"));
@@ -146,6 +146,53 @@ const handleDelete = (id) => {
         });
     }
 };
+
+/**
+ * One row of the "what do you want to sell" chooser.
+ *
+ * 🚨 IT IS A BUTTON THAT REPORTS A CHOICE — it never renders a form of its own.
+ * Each row used to BE the module's component (`<AddItem>`, `<AddBills>`, …), which
+ * meant the form opened inside the chooser's own portal: the sheet the creator had
+ * just asked for was drawn UNDERNEATH a full-screen menu, invisible but live, and
+ * the only sign of it was a validation message nobody could see the fields for.
+ *
+ * ⚠️ Module scope, not inside `Toggle` — that function is rebuilt on every render
+ * of `Dashboard`, so a component declared in it is a new TYPE each time and React
+ * remounts the whole row (the same trap the `stableToggleRef` docblock describes).
+ */
+function ChooserRow({ icon, title, subtitle, onClick, tone, badge }) {
+    const mint = tone === "mint";
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`w-full font-bold addop border-2 border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:transition-colors ${
+                mint
+                    ? "bg-[#D9F9EE] hover:bg-[#C2F3E1] after:text-[#00B98C] hover:after:text-[#05EFB8]"
+                    : "bg-white hover:bg-[#FFF0DF] after:text-[#FFB3D6] hover:after:text-[#FF007F]"
+            }`}
+        >
+            <div className="flex items-center">
+                <div className="p-1 rounded-box-sm border-2 border-black bg-[#FF007F]/10 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
+                    {icon}
+                </div>
+                <div className="pl-4 text-left">
+                    {badge ? (
+                        <span className="mb-1 inline-block rounded-box-xs border-2 border-black bg-[#05EFB8] px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-black">
+                            {badge}
+                        </span>
+                    ) : null}
+                    <h2 className="font-gulfs text-base md:text-xl font-light text-black uppercase tracking-normal md:tracking-wide leading-tight">
+                        {title}
+                    </h2>
+                    <p className="text-sm font-bold text-black/80">
+                        {subtitle}
+                    </p>
+                </div>
+            </div>
+        </button>
+    );
+}
 
 export default function Dashboard(props) {
     const { ziggy } = usePage().props;
@@ -517,20 +564,13 @@ export default function Dashboard(props) {
             return new URLSearchParams(window.location.search).get("add");
         });
         // `?add=menu` opens the chooser and NOTHING else — it is how a screen that is
-        // not this one (My Listings) sends a creator here to pick what to sell. The
-        // other values each open a specific form on top of the chooser, which is the
-        // wrong landing for "add something".
-        const [showAdd, setShowAdd] = useState(
-            () =>
-                addIntent === "menu" ||
-                addIntent === "wish" ||
-                addIntent === "shop" ||
-                addIntent === "digital" ||
-                addIntent === "physical",
-        );
-        const [wishOptions, setWishOptions] = useState(
-            () => addIntent === "wish",
-        );
+        // not this one (My Listings) sends a creator here to pick what to sell.
+        // 🚨 ONLY `?add=menu` OPENS THE CHOOSER. Every other value NAMES a module, and
+        // opening that module's form ON TOP OF the chooser is what put the shop sheet
+        // BEHIND a full-screen menu — the creator saw "TURN CONTENT INTO CASH" with an
+        // invisible form underneath it answering "Please fill in all required fields".
+        // A named intent goes to the same direct-form path a tab's own Add button uses.
+        const [showAdd, setShowAdd] = useState(() => addIntent === "menu");
 
         // `?add=post` opens the composer DIRECTLY, deliberately not via `showAdd`. The
         // AddPost inside the chooser would need the chooser open behind it, which is the
@@ -545,16 +585,48 @@ export default function Dashboard(props) {
            own form directly.
 
            `directMounted` keeps the form mounted after it has been asked for once;
-           `directPulse` is the literal `true` its `openPop` reads and is cleared a
-           tick later so the NEXT press opens it again (a value that stayed set
-           would never change, so nothing would re-fire). Same pattern
-           `Wishlistbox` already uses to drive the wish editor. */
+           `directPulse` names whichever form should be open, and every request
+           clears it before setting it so the NEXT press is a real change (a value
+           that stayed set would never change, so nothing would re-fire). Same
+           pattern `Wishlistbox` already uses to drive the wish editor. */
         const [directMounted, setDirectMounted] = useState({});
         const [directPulse, setDirectPulse] = useState(null);
+        /* 🚨 THE PULSE IS CLEARED BEFORE IT IS SET, NEVER ON A TIMER. These forms are
+           lazy, so the chunk can resolve later than any timeout — and a child mounting
+           after the flag had been wiped read `openPop` as null and never opened, with
+           nothing wrong in any log. Holding the value means a form that mounts a second
+           later still sees `true`; clearing it first is what makes a SECOND press of the
+           same row a real change, so it reopens. */
         const openDirectForm = (key) => {
             setDirectMounted((mounted) => ({ ...mounted, [key]: true }));
-            setDirectPulse(key);
-            setTimeout(() => setDirectPulse(null), 60);
+            setDirectPulse(null);
+            setTimeout(() => setDirectPulse(key), 0);
+        };
+
+        /* Every route into a module is this one function — the chooser's rows, a tab's
+           own Add button and the `?add=` intent — so a module can never be opened one way
+           on one surface and another way on the next. It CLOSES the chooser first: a form
+           rendered inside that portal sits under it. */
+        const pickModule = (intent) => {
+            if (!intent) {
+                setShowAdd(true);
+                return;
+            }
+            setShowAdd(false);
+            if (intent === "task") {
+                window.location.href = route("task.create");
+                return;
+            }
+            if (intent === "pot") {
+                openCreateModal();
+                return;
+            }
+            if (intent === "post") {
+                setPostOpen(true);
+                return;
+            }
+            // `shop` is the old name for the digital form; both land on the same sheet.
+            openDirectForm(intent === "shop" ? "digital" : intent);
         };
 
         /* 🚨 ONE lock, not two. There were two effects on `showAdd`: this one
@@ -565,7 +637,6 @@ export default function Dashboard(props) {
            from the keyboard. */
         useEffect(() => {
             if (!showAdd) {
-                setWishOptions(false);
                 return undefined;
             }
             const previousBody = document.body.style.overflow;
@@ -590,24 +661,7 @@ export default function Dashboard(props) {
             const handleToggleEvent = (event) => {
                 // No intent means "I have not decided" — that is what the
                 // chooser is for. An intent names one module, so open it.
-                const intent = event?.detail?.intent || null;
-                if (!intent) {
-                    setShowAdd(true);
-                    return;
-                }
-                if (intent === "task") {
-                    window.location.href = route("task.create");
-                    return;
-                }
-                if (intent === "pot") {
-                    openCreateModal();
-                    return;
-                }
-                if (intent === "post") {
-                    setPostOpen(true);
-                    return;
-                }
-                openDirectForm(intent);
+                pickModule(event?.detail?.intent || null);
             };
 
             const handleCloseEvent = () => {
@@ -617,11 +671,17 @@ export default function Dashboard(props) {
             window.addEventListener("toggleAddOptions", handleToggleEvent);
             window.addEventListener("closeAddOptions", handleCloseEvent);
 
-            if (addIntent === "task") {
-                window.location.href = route("task.create");
-            } else if (addIntent) {
+            // A named `?add=` intent opens that module's own form, the same way a tab's
+            // Add button does. `menu` already opened the chooser in state above, and
+            // `post` already opened the composer, so neither is routed twice here.
+            if (addIntent && addIntent !== "menu" && addIntent !== "post") {
+                pickModule(addIntent);
+            }
+
+            if (addIntent && addIntent !== "task") {
                 // Safe to strip now: every consumer took its value from `addIntent` during
-                // render, so nothing downstream still needs the query string.
+                // render, so nothing downstream still needs the query string. `task` is
+                // excluded because `pickModule` has already started a navigation away.
                 window.history.replaceState(
                     {},
                     document.title,
@@ -816,85 +876,7 @@ export default function Dashboard(props) {
                                                       ""
                                                   )}
                                                   <div className="mx-auto min-h-0 w-full max-w-4xl flex-1 overflow-y-auto pt-2 pb-24 md:overflow-visible md:pb-0">
-                                                      {wishOptions ? (
-                                                          <div>
-                                                              {/* ⚠️ Content-first: this was "Cash Gift". "Gift" is
-                                                                  banned vocabulary on every user-facing surface, and
-                                                                  "Cash Gift" describes a money transfer — the exact
-                                                                  framing a wish is reframed AWAY from. Matches the
-                                                                  chooser row that opens this. */}
-                                                              <Wishlist
-                                                                  text="Sell exclusive content"
-                                                                  currency={
-                                                                      global_currency
-                                                                  }
-                                                                  setuped={
-                                                                      AuthUserStripeConnected ==
-                                                                      1
-                                                                          ? true
-                                                                          : false
-                                                                  }
-                                                              />
-                                                              {/* The Oink Store is kill-switched
-                                                                  (`RYE_ENABLED`), so this row has no
-                                                                  action. It read as an ordinary
-                                                                  option at 80% opacity — say it. */}
-                                                              <div
-                                                                  aria-disabled="true"
-                                                                  className="w-full font-bold disabled addop bg-white border-2 border-black rounded-box p-3 mb-4 text-center"
-                                                              >
-                                                                  <div className="flex items-center">
-                                                                      <div className="p-1 rounded-box border-2 border-black bg-[#FF007F]/10 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
-                                                                          <CiShoppingCart
-                                                                              color="#000"
-                                                                              size="1.5rem"
-                                                                          />
-                                                                      </div>
-                                                                      <div className="pl-3 text-left">
-                                                                          {/* ⚠️ Content-first: this card said "Add
-                                                                              Surprise Gift" / "1000's of Gifts in the
-                                                                              Oink Gift Zone". "Gift" is banned
-                                                                              vocabulary on every user-facing surface,
-                                                                              the surface is branded "Oink Store" and
-                                                                              never "Gift Store", and a gift-box icon
-                                                                              carries the same meaning as the word. */}
-                                                                          <h2 className="flex flex-wrap items-center gap-2 font-gulfs font-light text-md uppercase text-black">
-                                                                              <span>Add Oink Store item</span>
-                                                                              <span className="rounded-box-xs border-2 border-black bg-[#F2EFE7] px-2 py-0.5 text-[10px] font-black tracking-[0.14em]">
-                                                                                  Coming soon
-                                                                              </span>
-                                                                          </h2>
-                                                                          <p className="text-sm font-bold text-black/80">
-                                                                              Lets
-                                                                              supporters
-                                                                              pick
-                                                                              from
-                                                                              1000’s
-                                                                              of
-                                                                              items
-                                                                              in
-                                                                              the
-                                                                              Oink
-                                                                              Store
-                                                                          </p>
-                                                                      </div>
-                                                                  </div>
-                                                              </div>
-
-                                                              <div className="flex justify-center">
-                                                                  <button
-                                                                      onClick={() =>
-                                                                          setWishOptions(
-                                                                              !wishOptions,
-                                                                          )
-                                                                      }
-                                                                      className="min-h-[44px] rounded-box-sm border-2 border-black bg-white px-6 text-xs font-black uppercase tracking-[0.14em] text-black transition-colors hover:bg-[#F4F4F5]"
-                                                                  >
-                                                                      Back
-                                                                  </button>
-                                                              </div>
-                                                          </div>
-                                                      ) : (
+                                                      {(
                                                           <>
                                                               <div
                                                                   className={`${AuthUserStripeConnected == 1 ? "block" : "disabled"}`}
@@ -904,11 +886,7 @@ export default function Dashboard(props) {
                                                                       menu to read. */}
                                                                   <div className="grid w-full grid-cols-1 gap-x-4 gap-y-1 md:grid-cols-2">
                                                                       <div
-                                                                          onClick={() =>
-                                                                              setWishOptions(
-                                                                                  true,
-                                                                              )
-                                                                          }
+                                                                          onClick={() => pickModule("wish")}
                                                                           className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-2 border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                       >
                                                                           <div className="flex items-center">
@@ -1007,12 +985,17 @@ export default function Dashboard(props) {
                                                                           </div>
                                                                       )}
 
-                                                                      <AddItem
-                                                                          classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-2 border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
-                                                                          product_type="digital_products"
-                                                                          addIntent={
-                                                                              addIntent
-                                                                          }
+                                                                      {/* 🚨 THESE ROWS OPEN NOTHING THEMSELVES. Each one used to be the module's
+                                                                          own component rendering its own trigger, so pressing it opened that form
+                                                                          INSIDE this portal — and the chooser covers the screen, so the sheet the
+                                                                          creator had just asked for sat behind a menu, invisible, still validating.
+                                                                          They name a module and hand it to `pickModule`, which closes the chooser
+                                                                          and opens the form mounted above it. */}
+                                                                      <ChooserRow
+                                                                          icon={<CiShoppingCart color="#FF007F" size="1.6rem" />}
+                                                                          title="Sell something"
+                                                                          subtitle="Sell digital or physical items from your page."
+                                                                          onClick={() => pickModule("digital")}
                                                                       />
                                                                       {/* The one row here that is not a way to list something for
                                                                           sale. Every other option adds a product; this one is what
@@ -1021,31 +1004,33 @@ export default function Dashboard(props) {
                                                                           subscriptions when they stop posting for members). Drawn
                                                                           identically to its neighbours, that was invisible — so it
                                                                           carries the mint accent the platform already uses for
-                                                                          "this is live / this is working", and keeps that accent on
-                                                                          hover instead of falling back to the shared cream. */}
-                                                                      <AddPost
-                                                                          highlight
-                                                                          classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-[#D9F9EE] hover:bg-[#C2F3E1] border-2 border-black transition-colors rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#00B98C] after:transition-colors hover:after:text-[#05EFB8]"
+                                                                          "this is live / this is working". */}
+                                                                      <ChooserRow
+                                                                          tone="mint"
+                                                                          badge="Keeps payments active"
+                                                                          icon={<Rocket size={22} strokeWidth={2.5} color="#00B98C" />}
+                                                                          title="Post something"
+                                                                          subtitle="Share an update, photo or note. Keep posting for members or your subscription payments pause."
+                                                                          onClick={() => pickModule("post")}
                                                                       />
-                                                                      {/* <AddGift
-                                                                            text="Add Gift"
-                                                                            classes="font-bold py-3 px-3 mb-2 text-center"
-                                                                            fetch_gifts={
-                                                                            fetch_gifts
-                                                                                                                                                }
-                                                                            addressAdded={
-                                                                            auth?.user
-                                                                            ?.is_creator_address_found
-                                                                    }
-                                                                /> */}
-                                                                      <AddMembership classes=" font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-2 border-black transition-colors rounded-box !w-full relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
-                                                                      <AddBills classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-2 border-black transition-colors rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
+                                                                      <ChooserRow
+                                                                          icon={<Home size={22} strokeWidth={2.5} color="#FF007F" />}
+                                                                          title="Membership"
+                                                                          subtitle="Give fans monthly access to your exclusive posts."
+                                                                          onClick={() => pickModule("membership")}
+                                                                      />
+                                                                      <ChooserRow
+                                                                          icon={<CalendarDays size={22} strokeWidth={2.5} color="#FF007F" />}
+                                                                          title="Recurring content"
+                                                                          subtitle="Sell content your supporters unlock every week or month."
+                                                                          onClick={() => pickModule("bill")}
+                                                                      />
                                                                   </div>
                                                               </div>
                                                           </>
                                                       )}
                                                   </div>
-                                                  {!wishOptions && (
+                                                  {(
                                                       <div
                                                           // bottom-bar-safe: inside Popup, which hides the bar while open
                                                           className="sticky bottom-0 bg-[#FFF6EC] pt-4 flex justify-center"
@@ -1101,7 +1086,7 @@ export default function Dashboard(props) {
      * EVERY RENDER — and `InstantTabSystem` renders it as `<Toggle />`. A
      * different function at the same position is a different COMPONENT TYPE to
      * React, so the entire chooser subtree is unmounted and remounted: `showAdd`,
-     * `postOpen`, `wishOptions` and every `Popup`'s own `open` flag all go back
+     * `postOpen`, `directPulse` and every `Popup`'s own `open` flag all go back
      * to false.
      *
      * Reported as "the post composer closes while I am typing the headline".

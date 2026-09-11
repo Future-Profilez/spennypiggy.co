@@ -6014,6 +6014,91 @@ This app's whole contribution is **one page type**, and the reason it needed a s
   type 5 of 6 fail; with the per-page marker removed the uniques case fails and the control
   ("every other page type still uses the original marker") correctly stays green.
 
+## 🚨 A LISTING PUBLISHES ITSELF — THE CHECKS RETRACT IT (11 Sep 2026, spennypiggy.co)
+
+Reported as a clean paid task showing **PENDING REVIEW**. It was not a task fault: **all six
+sellable modules created every listing at its HELD value and nothing in `app/` could ever
+write the live one.** `ItemTextModeration`, `CheckMediaModeration` and `RewardFileScan` can
+only hold FURTHER — the sole thing that ever put a listing on sale was an admin in the back
+office, i.e. the queue the client's simplification plan removes (§8/§9: *"if the automated
+checks detect no issue, publish immediately"*). So a clean listing sat held for ever while
+the screen said *"your upload will be approved shortly"*, describing a process that had
+stopped existing. Same publish-on-save / scan-retracts trade the avatar took the same week.
+
+- 🚨 **`App\Support\ListingPublication` IS THE ONE DEFINITION** — `LIVE` / `HELD` per module,
+  `heldAttributes()` (what EVERY scanner is handed), `publish()` (create), `isHeld()`,
+  `republish()` (edit). The admin Content Review queue in the other app reads these values,
+  so a module spelling its own is a listing held where nobody can see it. **Pinned by a
+  source scan over all six controllers** — the fault was six copies, and a behavioural test
+  of one module passes while the other five stay broken.
+- 🚨 **`republish()` IS NOT `publish()`, AND EDITING IS NOT A WAY PAST THE CHECKS.** The media
+  scans deliberately skip an UNCHANGED file (Rekognition is deterministic — a re-scan
+  re-produces a false positive and un-approves a listing an admin already cleared), so a
+  flagged cover that was not replaced is still that cover. A hold lifts only when
+  `moderation_asset` is `reward_text` (re-read synchronously on every save, so it re-holds
+  itself) or the creator replaced THAT asset in this save.
+- 🚨 **A HOLD WITH NO `moderation_asset` IS NEVER LIFTED.** An admin's hold writes the flag and
+  no asset key — that null is the only thing separating "a check did this" from "a person
+  did this", and a creator must not overturn a decision by saving the form again.
+- ⚠️ **`republish()` refuses outright when the listing is not held.** A Piggy Pot can
+  legitimately be `completed` or `expired`; a blanket publish on every edit reopens a goal
+  that had finished.
+- 🚨 **FOUR EDIT RE-HOLDS WERE REMOVED** (Bills, Membership, Wish, Shop). Each dropped a LIVE
+  listing to unapproved whenever its Stripe product or price was recreated — not a moderation
+  signal, and with no queue left it meant *off sale for ever* after a price edit.
+- **Unchanged, deliberately:** the shop's **>£2,500 enhanced review** (a Stripe compliance
+  rule, runs AFTER `publish()` and wins), an admin's own hold, and every fail-closed branch
+  in `CheckMediaModeration` — "we could not check it" is still a hold.
+- ⚠️ **A NON-VISUAL PAID FILE (a PDF, a zip) IS SCANNED BY NOTHING.** Rekognition produces no
+  verdict, so `RewardFileScan` skips it; under the old model that listing still met a human
+  and now it does not. **Open, and a client decision — not an oversight.**
+- 🚨 **`queue:work` matters more than it did:** with no worker nothing scans, so nothing
+  retracts, and a listing stays live on its first save whatever it contains.
+- **`php artisan listings:held-report [--limit=]` — READ ONLY, and that is the rule, not a
+  gap.** Approval fires when the CREATOR saves (the `profiles:activation-report` precedent);
+  a sweep would also release what a person held and what still carries its flagged file.
+  Measured on dev: **23 listings held**, every one reporting "no recorded cause" (they
+  predate `moderation_asset`), i.e. only a person can decide them. ⚠️ **Run it on
+  production.** ⚠️ Its file is untracked until somebody `git add`s it BY NAME —
+  `ScheduledCommandsExistTest` only guards SCHEDULED commands and this one is run by hand.
+- Tests: `tests/Feature/ListingAutoPublishTest.php` (7), verified red against the replanted
+  bug. ⚠️ The first `test_a_task_is_created_live` **could not fail** — it built its own Task,
+  set the flag itself and asserted the flag it had just set.
+
+## 🚨 Adding a listing — one route in, and the chooser closes behind it (11 Sep 2026)
+
+Three reports in one sitting, all on the add-a-listing path, none of them visible in any log.
+
+- 🚨 **`new Event("toggleAddOptions")` CARRIES NO `detail`**, and `Dashboard` reads a missing
+  intent as "the creator has not decided" — so a tab's own **Add Task** / **Create Piggy
+  Pot** opened the seven-option chooser, whose matching row the creator then pressed again.
+  Six call sites now name their module (`task` · `digital` · `bill` · `membership` · `pot`
+  ×2). ⚠️ The bottom bar's `+` stays intentless on purpose: it genuinely means "add
+  something".
+- 🚨 **THE CHOOSER'S ROWS WERE THE MODULE COMPONENTS**, so pressing one opened that form
+  INSIDE the chooser's own portal — underneath a full-screen menu, live and still
+  validating. The only evidence on screen was *"Please fill in all required fields"* for
+  fields nobody could see. Rows are now a module-scope **`ChooserRow`** that reports a choice
+  and opens nothing; **`pickModule(intent)`** is the single route in (chooser rows, tab Add
+  buttons, `?add=`) and **closes the chooser first**.
+  ⚠️ `ChooserRow` is module scope because `Toggle` is rebuilt on every render of `Dashboard`
+  — a component declared inside it is a new TYPE each time and React remounts the row.
+- 🚨 **`?add=digital` NO LONGER OPENS THE CHOOSER AT ALL.** Only `?add=menu` does; every other
+  value names a module and goes straight to that form. **`AddItem`'s own `addIntent`
+  self-open is DELETED** — a second, competing way in is how one form ends up open twice.
+  `ListingProgressStrip`'s "Add a listing" sends `?add=menu`, not `?add=digital`.
+- 🚨 **`Wishlist` READ THE CALLER CLEARING ITS FLAG AS "CLOSE".** `setClose(openPop)` — and
+  the caller clears `openPop` so the NEXT press is a real change — so the wish form opened
+  and shut itself a tick later. It is `if (openPop === true)` now, the guard `AddBills` and
+  `AddMembership` already had. ⚠️ The pulse also no longer self-clears on a 60 ms timer:
+  these forms are lazy, and a chunk resolving later than that mounted with the flag already
+  wiped and **never opened at all**.
+- ⚠️ **`EditProfile.jsx` rendered the email input from `user?.email` while the form posted
+  `profileUser.email`** — three of its four mount points pass a `user` that need not carry
+  the field, so the box was EMPTY while the payload held the address. The identical fault
+  fixed for the bio on 3 Sep 2026; username moved with it.
+- Full write-up: `docs/simplification-sept-2026/11-LISTING-AUTOPUBLISH-AND-ADD-FLOW.md`.
+
 ## Detailed topic index — load the skill, do not inline this content
 
 The dated feature write-ups that used to sit in this file now live as **skills**: only the

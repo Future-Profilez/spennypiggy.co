@@ -42,6 +42,7 @@ use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
 use App\Support\ContentDownloadMonitor;
+use App\Support\ListingPublication;
 use App\Support\NotificationContext;
 use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
@@ -188,7 +189,11 @@ class TaskController extends Controller
         $task->creator_id = Auth::id();
         $task->title = $request->title;
         $task->description = $request->description;
-        $task->is_approved = false; // Default unapproved
+        /* 🚨 LIVE ON SAVE — `ListingPublication` carries the reasoning. This wrote
+           `false` and nothing in the codebase could ever write `true`, so a clean
+           task sat at PENDING REVIEW waiting for a queue the simplification plan
+           removes. The three scanners below still retract it. */
+        $task->is_approved = true;
         $task->price = $request->price;
         $task->currency = Auth::user()->default_currency ?? 'USD';
         $task->category = $request->category;
@@ -216,7 +221,7 @@ class TaskController extends Controller
         ItemTextModeration::apply(
             $task,
             ['reward_title', 'reward_body', 'reward_description', 'title', 'description'],
-            ['is_approved' => false]
+            ListingPublication::heldAttributes($task)
         );
 
         // SFW gate: AI-scan the task media; keep it unapproved if it fails moderation.
@@ -226,7 +231,7 @@ class TaskController extends Controller
                 Task::class,
                 $task->id,
                 $mediaUuid,
-                ['is_approved' => false],
+                ListingPublication::heldAttributes($task),
                 'task_image'
             );
         }
@@ -236,7 +241,7 @@ class TaskController extends Controller
          * above and was never scanned at all — an instant task shipped whatever was
          * attached straight to the buyer on payment.
          */
-        RewardFileScan::dispatch($task, ['is_approved' => false]);
+        RewardFileScan::dispatch($task, ListingPublication::heldAttributes($task));
 
         // Clear user caches
         $user = Auth::user();
@@ -333,9 +338,10 @@ class TaskController extends Controller
             $task->media_url = $request->media_file['url'] ?? null;
         }
 
-        if ($task->is_approved == 2 || $task->is_approved == 1) {
-            $task->is_approved = 0;
-        }
+        /* 🚨 AN EDIT NO LONGER PULLS A LIVE TASK OFF SALE. It used to drop straight
+           back to 0, which under the old model meant "wait for an admin" — and with
+           that queue gone it means "never live again". The scans below still run on
+           anything the creator CHANGED and retract it if they find something. */
 
         if ($request->type === 'instant') {
             if ($request->deliverable_file) {
@@ -347,12 +353,12 @@ class TaskController extends Controller
 
         $task->save();
 
-        // An edit already drops the task back to unapproved above, so this only
-        // records WHY when the new wording is the problem.
+        // The text is re-read on every edit and holds the task if the new wording
+        // is the problem — that hold is now the only thing that takes it off sale.
         ItemTextModeration::apply(
             $task,
             ['reward_title', 'reward_body', 'reward_description', 'title', 'description'],
-            ['is_approved' => false]
+            ListingPublication::heldAttributes($task)
         );
 
         /*
@@ -366,12 +372,12 @@ class TaskController extends Controller
                 Task::class,
                 $task->id,
                 $task->media_url,
-                ['is_approved' => false],
+                ListingPublication::heldAttributes($task),
                 'task_image'
             );
         }
 
-        RewardFileScan::dispatch($task, ['is_approved' => false], $previousDeliverable);
+        RewardFileScan::dispatch($task, ListingPublication::heldAttributes($task), $previousDeliverable);
 
         // Clear user caches
         $user = Auth::user();

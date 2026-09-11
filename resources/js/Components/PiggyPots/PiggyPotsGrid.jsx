@@ -224,9 +224,14 @@ export default function PiggyPotsGrid({
                         <AddMoreTile
                             title="Add Piggy Pot"
                             subtitle="Create a new goal for your supporters."
+                            /* Names this module, so the pot form opens straight away.
+                               A bare `new Event` carries no `detail`, which Dashboard
+                               reads as "not decided yet" and answers with the chooser. */
                             onClick={() =>
                                 window.dispatchEvent(
-                                    new Event("toggleAddOptions"),
+                                    new CustomEvent("toggleAddOptions", {
+                                        detail: { intent: "pot" },
+                                    }),
                                 )
                             }
                             minHeightClass="min-h-[260px]"
@@ -248,7 +253,11 @@ export default function PiggyPotsGrid({
                     </p>
                     <button
                         onClick={() =>
-                            window.dispatchEvent(new Event("toggleAddOptions"))
+                            window.dispatchEvent(
+                                new CustomEvent("toggleAddOptions", {
+                                    detail: { intent: "pot" },
+                                }),
+                            )
                         }
                         className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                     >

@@ -139,13 +139,21 @@ class SignupSocialHandleTest extends TestCase
     }
 
     /**
-     * 🚨 IT LANDS AS A NORMAL SUBMISSION AWAITING REVIEW — the same state a Creator
-     * Studio save produces. `source` records where it came from and gates nothing;
-     * an earlier version used it to hide these rows from the review queue, which
-     * meant they could never be approved and the creator's own "Submit for review"
-     * stayed locked for ever.
+     * 🚨 A CLEAN SIGNUP HANDLE IS APPROVED ON THE SPOT — REVERSED 11 Sep 2026.
+     *
+     * This used to assert `status = 0`, "awaiting review", which was right while an
+     * admin approved handles. Profiles approve themselves now and there is no
+     * reviewer, so writing 0 here parked EVERY new creator in a held state the
+     * moment they signed up: the handle is required at signup, nothing judged it,
+     * `activateIfComplete()` refuses to publish a page whose socials are not
+     * approved, and the creator's own screen said "Add a social handle — NEEDS A
+     * FIX" about a handle they had already given. The only escape was to open
+     * Creator Studio and re-save the identical handle, because THAT path judges.
+     *
+     * Reported from a live page: instagram icon rendering in the header, and
+     * "A check held your social links back" beside it.
      */
-    public function test_a_signup_handle_awaits_review_like_any_other(): void
+    public function test_a_clean_signup_handle_is_approved_on_the_spot(): void
     {
         $this->post(route('register'), $this->signupPayload([
             'social_platform' => 'tiktok',
@@ -154,8 +162,46 @@ class SignupSocialHandleTest extends TestCase
 
         $links = SocialLinks::where('user_id', $this->registered()->id)->first();
 
-        $this->assertSame(0, (int) $links->status, 'never published without review');
+        $this->assertSame(
+            SocialLinks::STATUS_APPROVED,
+            (int) $links->status,
+            'A handle the checks accept must be live immediately — nobody reviews it.'
+        );
+        $this->assertNull($links->reason);
         $this->assertSame('signup', $links->source, 'provenance only');
+    }
+
+    /**
+     * 🚨 A REFUSED HANDLE IS KEPT, NOT LOST, AND IT CARRIES ITS REASON.
+     *
+     * The signup write may never throw — the account exists and the person is one
+     * line from being logged in — so a refusal cannot be a 422 the way the Creator
+     * Studio save is. It stores the handle at `status = 0` WITH the refusal text,
+     * which is what `CreatorVerification.jsx` renders as "Why it came back". Losing
+     * the handle would make the creator type it again with no idea what was wrong.
+     */
+    public function test_a_refused_signup_handle_is_kept_with_its_reason(): void
+    {
+        $taken = User::factory()->create(['role' => 1]);
+        SocialLinks::create([
+            'uuid' => (string) Str::uuid(),
+            'user_id' => $taken->id,
+            'status' => SocialLinks::STATUS_APPROVED,
+            'instagram' => 'janedoe',
+        ]);
+
+        $this->post(route('register'), $this->signupPayload([
+            'social_platform' => 'instagram',
+            'social_handle' => 'janedoe',
+        ]));
+
+        $links = SocialLinks::where('user_id', $this->registered()->id)->first();
+
+        $this->assertNotNull($links, 'the handle must still be stored');
+        $this->assertSame('janedoe', $links->instagram);
+        $this->assertSame(0, (int) $links->status);
+        $this->assertNotNull($links->reason, 'the creator must be told which check pulled it');
+        $this->assertStringContainsString('already linked', $links->reason);
     }
 
     /**

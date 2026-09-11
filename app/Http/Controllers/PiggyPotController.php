@@ -11,6 +11,7 @@ use App\Services\ItemTextModeration;
 use App\Services\PiggyPotStatusService;
 use App\Services\RewardService;
 use App\Services\UserProfileService;
+use App\Support\ListingPublication;
 use App\Support\RewardFileScan;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -163,28 +164,29 @@ class PiggyPotController extends Controller
         $data['user_id'] = Auth::id();
         $data['payment_methods_accepted'] = in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : 'both';
 
-        // Held until an admin releases it, exactly like a shop listing or a paid
-        // task. A pot used to be created `active`, so it was public and buyable
-        // for the ~20 seconds the scan takes — and permanently public whenever
-        // the queue worker was not running. The owner still sees it on their own
-        // page (getOptimizedPiggyPots includes moderation_hold for the owner).
-        $data['status'] = 'moderation_hold';
+        /* 🚨 LIVE ON CREATE, and the scans below retract it — see `ListingPublication`.
+           This was `moderation_hold` on the reasoning that a pot must not be buyable
+           for the ~20 seconds a scan takes. The simplification plan (§9) takes the
+           other side of that trade for every module, because nothing could release
+           the hold afterwards: there is no queue left to work it.
+           ⚠️ The residual risk is unchanged in kind — with no queue worker running,
+           nothing scans and nothing retracts. **Needs `queue:work`.** */
+        $data['status'] = 'active';
 
-        // A pot nobody can see cannot be the pinned one. Pinning at creation
-        // used to unpin the creator's current live pot immediately, so the
-        // featured slot on their profile went EMPTY for as long as the new pot
-        // sat in review. The creator can pin it from the edit form once it is
-        // live.
+        /* ⚠️ STILL NOT PINNED AT CREATION. The original reason (a held pot must not
+           take the featured slot) is gone now that it is live immediately — but
+           pinning here silently UNPINS whatever the creator had featured, which is
+           a change to a different listing they did not ask for. The edit form pins. */
         $data['is_pinned'] = false;
 
         $piggyPot = PiggyPot::create($data);
 
-        // Text half of the gate. A pot is already held on create, so this only
-        // records WHY — but on update it is what re-holds a live pot.
+        // Text half of the gate — on create and on update this is what holds a
+        // live pot when the wording is the problem.
         ItemTextModeration::apply(
             $piggyPot,
             ['reward_title', 'reward_body', 'reward_description', 'title', 'content_description'],
-            ['status' => 'moderation_hold']
+            ListingPublication::heldAttributes($piggyPot)
         );
 
         // SFW gate: scan the cover image; record a reason if it fails moderation
@@ -195,7 +197,7 @@ class PiggyPotController extends Controller
                 PiggyPot::class,
                 $piggyPot->id,
                 $piggyPot->cover_media,
-                ['status' => 'moderation_hold'],
+                ListingPublication::heldAttributes($piggyPot),
                 'cover_image'
             );
         }
@@ -204,11 +206,11 @@ class PiggyPotController extends Controller
          * The pot's CONTENT is the product — the cover is only its shop front — and
          * the content file was the one thing here nothing ever scanned.
          */
-        RewardFileScan::dispatch($piggyPot, ['status' => 'moderation_hold']);
+        RewardFileScan::dispatch($piggyPot, ListingPublication::heldAttributes($piggyPot));
 
         app(UserProfileService::class)->clearUserCaches(Auth::user()->username, Auth::user()->id);
 
-        return redirect()->back()->with('success', 'Piggy Pot created — it goes live once our team has reviewed it.');
+        return redirect()->back()->with('success', 'Piggy Pot created — it is live on your page now.');
     }
 
     /**
@@ -222,6 +224,7 @@ class PiggyPotController extends Controller
         // able to tell a replaced content file from an untouched one, or a re-scan
         // re-produces a false positive on a pot an admin has already released.
         $previousRewardFile = (string) RewardFileScan::currentFile($piggyPot);
+        $previousCover = (string) $piggyPot->cover_media;
 
         // Default the reward headline from the pot title so a missing field
         // never blocks creation (the pot's content IS the deliverable).
@@ -264,8 +267,10 @@ class PiggyPotController extends Controller
         $data = $validator->validated();
         $data = array_merge($data, RewardService::columnsWithFile($request->all()));
 
-        // A held pot can only be released by admin approval (Content Review in
-        // the admin app) — never by the creator re-submitting status=active.
+        /* 🚨 THE CREATOR STILL CANNOT TYPE THEIR WAY OUT OF A HOLD. `status` is a
+           field on this form, so accepting it would let a held pot be released by
+           re-submitting the form with `active` — the release is decided below by
+           `ListingPublication::republish`, on what this save actually changed. */
         if ($piggyPot->status === 'moderation_hold') {
             unset($data['status']);
         }
@@ -288,8 +293,8 @@ class PiggyPotController extends Controller
             $data['status'] = 'active';
         }
 
-        // Same rule as creation: a pot still in review cannot take the featured
-        // slot, or the creator's profile shows nothing pinned until it clears.
+        // A HELD pot cannot take the featured slot — the profile would show a
+        // pinned pot nobody but the owner can see.
         if ($piggyPot->status === 'moderation_hold') {
             $data['is_pinned'] = false;
         } elseif (! empty($data['is_pinned']) && $data['is_pinned']) {
@@ -299,10 +304,17 @@ class PiggyPotController extends Controller
 
         $piggyPot->update($data);
 
+        /* An edit lifts a hold only where this save could have fixed it — see
+           `ListingPublication::republish`. */
+        ListingPublication::republish($piggyPot->refresh(), array_filter([
+            (string) $piggyPot->cover_media !== $previousCover ? 'cover_image' : null,
+            (string) RewardFileScan::currentFile($piggyPot) !== $previousRewardFile ? 'reward_file' : null,
+        ]));
+
         ItemTextModeration::apply(
             $piggyPot->refresh(),
             ['reward_title', 'reward_body', 'reward_description', 'title', 'content_description'],
-            ['status' => 'moderation_hold']
+            ListingPublication::heldAttributes($piggyPot)
         );
 
         // SFW gate: re-scan the cover image on update.
@@ -312,12 +324,12 @@ class PiggyPotController extends Controller
                 PiggyPot::class,
                 $piggyPot->id,
                 $piggyPot->cover_media,
-                ['status' => 'moderation_hold'],
+                ListingPublication::heldAttributes($piggyPot),
                 'cover_image'
             );
         }
 
-        RewardFileScan::dispatch($piggyPot, ['status' => 'moderation_hold'], $previousRewardFile);
+        RewardFileScan::dispatch($piggyPot, ListingPublication::heldAttributes($piggyPot), $previousRewardFile);
 
         app(UserProfileService::class)->clearUserCaches(Auth::user()->username, Auth::user()->id);
 

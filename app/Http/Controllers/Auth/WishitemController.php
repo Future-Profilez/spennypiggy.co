@@ -47,6 +47,7 @@ use App\Services\RewardService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\ListingPublication;
 use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
 use App\Support\VerifiedBadge;
@@ -106,7 +107,7 @@ class WishitemController extends Controller
             WishItem::class,
             $wish->id,
             $wish->thumbnail,
-            ['is_approved' => 0],
+            ListingPublication::heldAttributes($wish),
             'thumbnail'
         );
     }
@@ -121,7 +122,7 @@ class WishitemController extends Controller
         ItemTextModeration::apply(
             $wish,
             ['reward_title', 'reward_body', 'reward_description', 'wishname'],
-            ['is_approved' => 0]
+            ListingPublication::heldAttributes($wish)
         );
     }
 
@@ -135,7 +136,7 @@ class WishitemController extends Controller
      */
     private function moderateWishFile(?WishItem $wish, ?string $previousFile = null): void
     {
-        RewardFileScan::dispatch($wish, ['is_approved' => 0], $previousFile);
+        RewardFileScan::dispatch($wish, ListingPublication::heldAttributes($wish), $previousFile);
     }
 
     public function saveWishItem(Request $request): RedirectResponse
@@ -273,6 +274,9 @@ class WishitemController extends Controller
                 $wish->price_id = $stripeProduct->default_price;
                 $wish->save();
             }
+
+            // Live on save; the three scans below retract it if they find something.
+            ListingPublication::publish($wish);
 
             $this->moderateWish($wish);
             $this->moderateWishText($wish);
@@ -504,6 +508,9 @@ class WishitemController extends Controller
             }
         }
 
+        // Live on save; the three scans below retract it if they find something.
+        ListingPublication::publish($wish);
+
         $this->moderateWish($wish);
         $this->moderateWishText($wish);
         $this->moderateWishFile($wish);
@@ -511,7 +518,7 @@ class WishitemController extends Controller
         // Clear activity cache to ensure real-time updates
         app(CreatorActivityService::class)->clearActivityCache(Auth::user());
 
-        return redirect(route('user.show', ['username' => Auth::user()->username, 'page' => 'wishes']))->with('success', 'Wish Item has been added, your upload will be approved shortly.');
+        return redirect(route('user.show', ['username' => Auth::user()->username, 'page' => 'wishes']))->with('success', 'Wish added — it is live on your page now.');
     }
 
     public function updateWishItem(Request $request, $uuid = null)
@@ -628,6 +635,14 @@ class WishitemController extends Controller
             $previousThumbnail = (string) $wish->thumbnail;
             $previousRewardFile = (string) RewardFileScan::currentFile($wish);
             $wish->refresh();
+
+            /* An edit lifts a hold only where this save could have fixed it — see
+               `ListingPublication::republish`. */
+            ListingPublication::republish($wish, array_filter([
+                (string) $wish->thumbnail !== $previousThumbnail ? 'thumbnail' : null,
+                (string) RewardFileScan::currentFile($wish) !== $previousRewardFile ? 'reward_file' : null,
+            ]));
+
             $this->moderateWish($wish, $previousThumbnail);
             $this->moderateWishText($wish);
             $this->moderateWishFile($wish, $previousRewardFile);
@@ -756,8 +771,11 @@ class WishitemController extends Controller
                         }
                     }
 
-                    $wish->is_approved = 0;
-                    $wish->save();
+                    /* 🚨 A PRICE CHANGE IS NOT A MODERATION SIGNAL. This dropped the
+                       wish back to unapproved whenever its Stripe price was recreated,
+                       which under the new rule means "off sale for ever" — the queue
+                       that used to release it is gone. The scans still cover anything
+                       the creator actually changed. */
 
                     $logs = Logs::where('edited_wish_id', $wish->id)->where('status', 'pending')->first();
                     if (! empty($logs)) {
