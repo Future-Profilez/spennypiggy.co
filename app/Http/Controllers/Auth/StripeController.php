@@ -565,7 +565,7 @@ class StripeController extends Controller
         // smaller set is what saves the fee. ⚠️ Identity is no longer enforced on
         // listing at all (10 Sep 2026) — it is a PAYOUT gate now, App\Support\PayoutEligibility.
         if (($user->profile_status_lock ?? 0) != 2) {
-            return redirect(route('user.show', $user->username))->with('error', 'Your profile is not approved yet.');
+            return redirect(route('user.show', $user->username))->with('error', 'Please complete your profile and add a social handle before connecting payouts.');
         }
 
         // 🚨 THE CARD NO LONGER GATES CONNECT (10 Sep 2026, client direction). It is the
@@ -840,7 +840,7 @@ class StripeController extends Controller
         // smaller set is what saves the fee. ⚠️ Identity is no longer enforced on
         // listing at all (10 Sep 2026) — it is a PAYOUT gate now, App\Support\PayoutEligibility.
         if (($user->profile_status_lock ?? 0) != 2) {
-            return redirect(route('user.show', $user->username))->with('error', 'Your profile is not approved yet.');
+            return redirect(route('user.show', $user->username))->with('error', 'Please complete your profile and add a social handle before connecting payouts.');
         }
 
         // 🚨 THE CARD NO LONGER GATES CONNECT (10 Sep 2026, client direction). It is the
