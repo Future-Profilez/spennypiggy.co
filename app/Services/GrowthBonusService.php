@@ -6,11 +6,12 @@ use App\Mail\GrowthBonusApproved;
 use App\Mail\GrowthBonusHeld;
 use App\Mail\GrowthBonusMilestoneReached;
 use App\Mail\GrowthBonusOutcome;
-use App\Models\FinancialTransaction;
 use App\Models\GrowthBonusProfile;
 use App\Models\GrowthBonusReward;
 use App\Models\User;
 use App\Support\GrowthBonusPanelPayload;
+use App\Support\PayoutEligibility;
+use App\Support\QualifyingEarnings;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -138,6 +139,16 @@ class GrowthBonusService
             return GrowthBonusReward::HOLD_CANNOT_RECEIVE;
         }
 
+        /*
+         * 🚨 Identity is a payout gate (10 Sep 2026) — see PayoutEligibility.
+         * ⚠️ Phase 1 release is MANUAL, so this is what stops an admin pressing
+         * "mark paid" on a creator who cannot legally be paid yet. The reward is
+         * HELD, never reversed — they keep it and receive it once verified.
+         */
+        if (PayoutEligibility::blocksPayout($creator)) {
+            return GrowthBonusReward::HOLD_CANNOT_RECEIVE;
+        }
+
         $profile = $reward->profile;
 
         if (! $profile) {
@@ -165,7 +176,11 @@ class GrowthBonusService
         return match ($reason) {
             GrowthBonusReward::HOLD_MILESTONE_NOT_COVERED => 'Your bonus is on hold because a refunded or disputed payment has taken your qualifying earnings back below this milestone. It will be sent as soon as new sales cover it again.',
             GrowthBonusReward::HOLD_ACCOUNT_SUSPENDED => 'Your bonus is on hold while your account is suspended.',
-            GrowthBonusReward::HOLD_CANNOT_RECEIVE => 'Your bonus is on hold because your payout account cannot receive it yet. Finish your Stripe setup and we will send it on the next payout day.',
+            // ⚠️ Names BOTH causes. This code covers "identity not signed off" as well
+            // as "no payout account" (holdReasonFor), and telling an identity-blocked
+            // creator to finish a Stripe setup that is already complete sent them to
+            // fix the wrong thing (11 Sep 2026).
+            GrowthBonusReward::HOLD_CANNOT_RECEIVE => 'Your bonus is on hold because we cannot send money to your account yet — usually your identity check is waiting to be signed off, or your payouts are not connected. Your payout page says which. It goes out on the next payout day once that clears.',
             default => 'Your bonus is on hold. We check it again every week.',
         };
     }
@@ -375,118 +390,18 @@ class GrowthBonusService
      * every creator climb the ladder ~30% faster than the terms say; counting
      * the creator's share alone would penalise VAT-registered creators.
      *
+     * 🚨 MOVED OUT 11 Sep 2026 — the implementation is now
+     * `App\Support\QualifyingEarnings::forCreator()`, unchanged, so that the
+     * membership-credit ladder and the creator referral read the SAME rows with
+     * the SAME exclusions rather than each writing a third answer. This method
+     * stays as the Growth Bonus's own window (`stripe_connected_at` → expiry)
+     * and is what every existing caller and test still uses.
+     *
      * @return array{total: float, unconverted: int, contributions: array<int, array{id: int, date: Carbon, gbp: float, cumulative: float}>}
      */
     public function computeGmv(User $creator, ?Carbon $until = null): array
     {
-        $rows = FinancialTransaction::query()
-            ->where('user_id', $creator->id)
-            ->where('type', 'income')
-            ->where('status', 'completed')
-            ->when($creator->stripe_connected_at, fn ($q) => $q->where('transaction_date', '>=', $creator->stripe_connected_at))
-            ->when($until, fn ($q) => $q->where('transaction_date', '<=', $until))
-            // Self-payment exclusion (brief §4). NULL supporter = guest
-            // checkout, which stays in — the Phase 1 manual payout approval is
-            // the control for disguised self-purchases.
-            ->where(fn ($q) => $q->whereNull('supporter_id')->orWhereColumn('supporter_id', '!=', 'user_id'))
-            // Full source, not column-constrained: morphTo across types where
-            // some have no `status` column (same trap as FounderBonus).
-            ->with('source')
-            ->orderBy('transaction_date')
-            ->orderBy('id')
-            ->get(['id', 'gross_amount', 'net_amount', 'vat_amount', 'refunded_amount', 'gbp_amount', 'gbp_rate', 'currency', 'source_type', 'source_id', 'transaction_date']);
-
-        $contributions = [];
-        $running = 0.0;
-        $unconverted = 0;
-
-        foreach ($rows as $tx) {
-            // Task escrow gate: paid but not yet accepted = still refundable,
-            // so not yet a genuine qualifying sale.
-            if ($tx->source_type === 'App\Models\TaskPurchase'
-                && isset($tx->source->status)
-                && ! in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'], true)) {
-                continue;
-            }
-
-            $gbp = $this->rowGbpQualifying($tx);
-
-            if ($gbp === null) {
-                $unconverted++;
-
-                continue;
-            }
-
-            if ($gbp <= 0) {
-                continue;
-            }
-
-            $running += $gbp;
-            $contributions[] = [
-                'id' => (int) $tx->id,
-                'date' => $tx->transaction_date,
-                'gbp' => $gbp,
-                'cumulative' => $running,
-            ];
-        }
-
-        return [
-            'total' => round($running, 2),
-            'unconverted' => $unconverted,
-            'contributions' => $contributions,
-        ];
-    }
-
-    /**
-     * One row's contribution: the LISTED SALE VALUE in GBP, less any refunded
-     * portion. NULL = cannot be converted (the caller counts it rather than
-     * guessing at a rate).
-     *
-     * 🚨 `net_amount + vat_amount`, NOT `net_amount` ALONE (client decision,
-     * 26 Aug 2026, option (a)). The listed price is what the creator typed, and
-     * for a VAT-registered creator part of it is VAT they collect and pass on —
-     * so `net_amount` alone would make that creator climb the ladder more
-     * slowly than a non-registered creator selling the identical listing. The
-     * client's rule is "£100 listed = £100 qualifying, whatever the VAT status".
-     *
-     * ⚠️ THIS IS NOT "WHAT THE CREATOR KEEPS" AND NO COPY MAY SAY SO. Where VAT
-     * applies, part of this figure is money the creator hands to HMRC. It is the
-     * LISTED SALE VALUE, which is why the terms define it as "Qualifying
-     * Earnings" rather than as earnings in the take-home sense.
-     *
-     * 🚨 `gbp_amount` IS THE GROSS AND IS DELIBERATELY NOT USED FOR THE TOTAL.
-     * It is still read for its FROZEN RATE (`gbp_rate`), so the figure converts
-     * at the rate in force when the money moved rather than at today's — the
-     * whole point of `FreezesLedgerFx`.
-     *
-     * ⚠️ A partial refund is applied PROPORTIONALLY. `refunded_amount` is a
-     * refund of the supporter's GROSS, so subtracting it whole would remove more
-     * than the sale ever added — on a £100 listing a £130.55 full refund would
-     * take the creator to −£30. It is scaled by the row's own listed/gross ratio
-     * instead.
-     */
-    private function rowGbpQualifying(FinancialTransaction $tx): ?float
-    {
-        // The listed sale value: the creator's share plus any VAT carried on it.
-        $listed = (float) ($tx->net_amount ?? 0) + (float) ($tx->vat_amount ?? 0);
-        $gross = (float) ($tx->gross_amount ?? 0);
-        $refunded = (float) ($tx->refunded_amount ?? 0);
-
-        $refundedShare = ($refunded > 0 && $gross > 0)
-            ? $refunded * ($listed / $gross)
-            : 0.0;
-
-        $value = max(0.0, $listed - $refundedShare);
-
-        if ((float) $tx->gbp_rate > 0) {
-            return $value / (float) $tx->gbp_rate;
-        }
-
-        if (strtoupper((string) ($tx->currency ?? 'GBP')) === 'GBP') {
-            return $value;
-        }
-
-        return null;
+        return QualifyingEarnings::forCreator($creator, $creator->stripe_connected_at, $until);
     }
 
     /**

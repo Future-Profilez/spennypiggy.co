@@ -4,7 +4,7 @@ import { Dialog, Transition } from '@headlessui/react';
 export default function Popup(props) {
   // `hideclose`: for panels that render their own close control in their own
   // header — the floating circle would otherwise land on top of it.
-  const { children, text, classes, action, hidecontrols, hideclose, size, space, modalclass, bodyclass, fullscreen } = props;
+  const { children, text, classes, action, hidecontrols, hideclose, size, space, modalclass, bodyclass, fullscreen, title, dismissable } = props;
   const [open, setOpen] = useState(false)
   useEffect(() => {
     if (action === true) {
@@ -79,7 +79,19 @@ export default function Popup(props) {
         </button>
       )}
       <Transition appear show={open} as={Fragment}>
-        <Dialog as="div" className="relative z-[9995]" onClose={() => {}}>
+        {/* 🚨 Esc and the backdrop are dead unless a caller opts in with
+            `dismissable`. Headless UI routes both gestures through this one
+            prop, and it was `() => {}` — so a Popup could only ever be left
+            through its own X, which is a keyboard trap.
+
+            ⚠️ It is OPT-IN rather than the default, and deliberately: six of
+            the 27 callers are payment checkouts and two are OTP steps, where a
+            stray backdrop tap would throw away a part-entered payment or a code
+            that has already been sent. `dismissable` goes on panels that either
+            hold nothing worth losing or pass an `onHide` dirty guard —
+            `closeModal` honours that veto, so a form confirms before it
+            discards. Give the rest Esc only once each has a guard. */}
+        <Dialog as="div" className="relative z-[9995]" onClose={dismissable ? closeModal : () => {}}>
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -145,6 +157,13 @@ export default function Popup(props) {
                   }`}
                   onClick={(event) => event.stopPropagation()}
                 >
+                  {/* 🚨 A Dialog with no `Dialog.Title` is announced unnamed —
+                      a screen reader says "dialog" and nothing else. Every
+                      panel here draws its own visual header (or none, on the
+                      bare pink band), so the name is carried visually-hidden
+                      instead of duplicating a heading on screen. `Sheet` does
+                      the same job with a visible title. */}
+                  {title ? <Dialog.Title className="sr-only">{title}</Dialog.Title> : null}
                   <div
                     className={`flex min-h-0 flex-1 flex-col ${
                       fullscreen ? '' : 'md:block md:min-h-0 md:flex-none md:p-0'

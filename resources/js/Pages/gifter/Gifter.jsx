@@ -70,8 +70,8 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
             notices.push({
                 key: "bio-review",
                 tone: "warn",
-                title: "Bio under review",
-                body: "Your bio is waiting for admin approval. It stays hidden from visitors until then.",
+                title: "Bio held back",
+                body: "A check held your bio back. It stays hidden from visitors until you fix and save it.",
             });
         if (IsloggedIn && user?.bio_approved === 2 && user?.edit_bio_reason)
             notices.push({
@@ -84,8 +84,8 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
             notices.push({
                 key: "links-review",
                 tone: "warn",
-                title: "Social links under review",
-                body: "Your updated links are waiting for admin approval.",
+                title: "Social links held back",
+                body: "A check held your updated links back. Fix and save them to go live.",
             });
         if (IsloggedIn && sLinks?.status === 2 && sLinks?.reason)
             notices.push({

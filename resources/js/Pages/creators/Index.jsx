@@ -1,5 +1,5 @@
 import PillarCards from '@/Components/PillarCards';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import ThreeProgrammes, {
     THREE_PROGRAMMES,
 } from './components/ThreeProgrammes';
@@ -28,6 +28,7 @@ import {
     money,
     percent,
 } from '@/constants/creatorBonuses';
+import { feeIsAllIn, feeRateLabel } from '@/lib/fees';
 
 /**
  * The creators overview — the Final URL every Google Ads campaign points at.
@@ -93,10 +94,19 @@ const WAYS = [
     },
 ];
 
-const REASONS = [
+/*
+ * 🚨 THE SUPPORTER RATE IS A PROP, NOT A LITERAL. `REASONS` is built from the
+ * shared `fees` prop so the one number on this page that a config change can
+ * move is read from `FeeModel`, the class the checkout prices from. This is the
+ * Final URL every Google Ads campaign points at — a wrong fee here is a wrong
+ * fee in an advert.
+ */
+const reasonsFor = (allIn, rate) => [
     {
         title: 'You keep 100%',
-        line: 'No revenue cut. The price you list is the amount that reaches you — supporters cover the platform fee at checkout, and they see their full total before they pay.',
+        line: allIn
+            ? `No revenue cut. The price you list is the amount that reaches you — supporters pay ${rate} on top, all-in, with the payment processing included and nothing added afterwards.`
+            : 'No revenue cut. The price you list is the amount that reaches you — supporters cover the platform fee at checkout, and they see their full total before they pay.',
         href: '/creators/keep-100',
         cta: 'How the pricing works',
         accent: ACCENT.earn,
@@ -128,8 +138,15 @@ const REASONS = [
 ];
 
 export default function Index({ comparisons = [], pillars = [] }) {
+    const page = usePage();
+    const allIn = feeIsAllIn(page);
+    const rate = feeRateLabel(page);
+    const REASONS = reasonsFor(allIn, rate);
+
     const title = 'Sell your content and keep 100% — Spenny Piggy for creators';
-    const description = `Seven ways to get paid on one profile, weekly payouts, and dispute evidence gathered for you. You keep 100% of your listed price. ${SUBSCRIPTION_COPY.promise}.`;
+    const description = allIn
+        ? `Seven ways to get paid on one profile, weekly payouts, and dispute evidence gathered for you. You keep 100% of your listed price and supporters pay just ${rate} all-in, payment processing included. ${SUBSCRIPTION_COPY.promise}.`
+        : `Seven ways to get paid on one profile, weekly payouts, and dispute evidence gathered for you. You keep 100% of your listed price. ${SUBSCRIPTION_COPY.promise}.`;
     const promise = `${SUBSCRIPTION_COPY.promise} · ${PRICE_FORMATTED} + VAT / month after · cancel anytime`;
 
     return (
@@ -179,7 +196,11 @@ export default function Index({ comparisons = [], pillars = [] }) {
                         <StatCell
                             figure="100%"
                             label="Of your listed price"
-                            note="No revenue cut. Supporters cover the platform fee at checkout."
+                            note={
+                                allIn
+                                    ? `No revenue cut. Supporters pay ${rate} all-in, payment processing included.`
+                                    : 'No revenue cut. Supporters cover the platform fee at checkout.'
+                            }
                             accent={ACCENT.earn}
                             className="rounded-box border-2 border-white/15 bg-white/[0.04]"
                         />
@@ -242,7 +263,11 @@ export default function Index({ comparisons = [], pillars = [] }) {
                             ))}
                             <LedgerTotal
                                 label="What reaches you"
-                                note="Supporters cover the fees at checkout."
+                                note={
+                                    allIn
+                                        ? `Supporters pay ${rate} all-in at checkout, processing included.`
+                                        : 'Supporters cover the fees at checkout.'
+                                }
                                 figure="100%"
                             />
                         </LedgerFrame>
@@ -402,7 +427,13 @@ export default function Index({ comparisons = [], pillars = [] }) {
                             accent={ACCENT.bonus}
                             lead={THREE_PROGRAMMES.lead}
                         >
-                            Three programmes{' '}
+                            {/* 🚨 NOT "THREE". Founder and Fast Start were
+                                retired on 11 Sep 2026 and `ThreeProgrammes`
+                                drops their rows on the server's own flags —
+                                which is why its docblock leaves this heading to
+                                the caller. A typed count breaks again every
+                                time a scheme is switched on or off. */}
+                            Programmes{' '}
                             <span className="text-gradient-wishlist">
                                 that stack
                             </span>

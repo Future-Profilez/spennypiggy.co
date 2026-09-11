@@ -62,6 +62,18 @@ class GrowthBonusPayoutTest extends TestCase
             'stripe_connected_at' => Carbon::parse('2026-08-27'),
             'stripe_details_submitted' => 1,
             'account_id' => 'acct_'.uniqid(),
+            /*
+             * 🚨 IDENTITY BECAME A PAYOUT GATE ON 10 Sep 2026, and this fixture is a
+             * creator who CAN be paid. Without both columns every payout test in this
+             * class stops at `cannot_receive` before reaching the branch it is about —
+             * which is the gate working, not the bonus engine failing.
+             *
+             * The gate itself is proved in `PayoutIdentityGateTest`, including the
+             * source scan that fails the build if this path ever stops checking it.
+             */
+            'identity_status' => 1,
+            'identity_admin_status' => 1,
+            'identity_verified_at' => Carbon::parse('2026-08-27'),
         ], $overrides));
     }
 

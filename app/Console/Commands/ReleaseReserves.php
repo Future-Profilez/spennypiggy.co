@@ -10,6 +10,7 @@ use App\Models\ShopPayment;
 use App\Models\TaskPurchase;
 use App\Models\User;
 use App\StripeControl;
+use App\Support\PayoutEligibility;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -119,6 +120,18 @@ class ReleaseReserves extends Command
             // exactly the reserve the pause exists to withhold.
             if (! empty($creator->payout_paused_at)) {
                 Log::info("reserve:release — creator {$creator->uuid} has payouts paused; leaving ".$fts->count().' reserve(s) held.');
+
+                continue;
+            }
+
+            /*
+             * 🚨 IDENTITY IS A PAYOUT GATE (10 Sep 2026), and a reserve release is a
+             * real Stripe payout — the money simply took a different route to get
+             * here. Gating the weekly run and not this one would pay an unverified
+             * creator every reserve they ever earned, thirty days at a time.
+             */
+            if (PayoutEligibility::blocksPayout($creator)) {
+                Log::info("reserve:release — creator {$creator->uuid} has not completed identity verification (".PayoutEligibility::reasonFor($creator).'); leaving '.$fts->count().' reserve(s) held.');
 
                 continue;
             }

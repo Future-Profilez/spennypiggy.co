@@ -172,7 +172,10 @@ export default function Generic({
                         <SectionHeadSplit
                             eyebrow="The money"
                             accent={accent}
-                            lead="Every rate and the flat fee, read live from our own checkout — so they can never drift from what a supporter is charged."
+                            /* 🚨 "AND THE FLAT FEE" WAS RETIRED WITH THE £1 ON
+                               11 Sep 2026. The supporter pays one all-in
+                               percentage now and nothing is added after it. */
+                            lead="Every rate, read live from our own checkout — so they can never drift from what a supporter is charged."
                         >
                             What a payment{' '}
                             <span className="text-gradient-wishlist">
@@ -198,7 +201,11 @@ export default function Generic({
                         <SectionHeadSplit
                             eyebrow="Why the fee"
                             accent={accent}
-                            lead="Three rails, one flat fee, and what the difference pays for — including the parts a link page does not do at all."
+                            /* ⚠️ Was "Three rails" — one of the three is the
+                               stablecoin rail, which is not built. It must
+                               match WhyTheFee directly below it, which now
+                               says two live and a third coming. */
+                            lead="Two live rails, one all-in rate on each, and what the difference pays for — including the parts a link page does not do at all."
                         >
                             Why our fee is{' '}
                             <span className="text-gradient-wishlist">

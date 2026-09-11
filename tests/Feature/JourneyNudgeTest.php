@@ -43,7 +43,7 @@ class JourneyNudgeTest extends TestCase
         });
     }
 
-    private function stuckCreator(string $step = 'identity', int $daysAgo = 2, array $overrides = []): User
+    private function stuckCreator(string $step = 'stripe', int $daysAgo = 2, array $overrides = []): User
     {
         return User::factory()->create(array_merge([
             'role' => 1,
@@ -59,14 +59,14 @@ class JourneyNudgeTest extends TestCase
 
     public function test_a_creator_three_days_into_a_step_is_due_the_first_reminder(): void
     {
-        $creator = $this->stuckCreator('identity', 3);
+        $creator = $this->stuckCreator('first_post', 3);
 
         $this->assertSame(3, app(CreatorJourneyService::class)->nudgeStageFor($creator));
     }
 
     public function test_a_creator_two_days_in_is_not_due_anything_yet(): void
     {
-        $creator = $this->stuckCreator('identity', 2);
+        $creator = $this->stuckCreator('stripe', 2);
 
         $this->assertNull(app(CreatorJourneyService::class)->nudgeStageFor($creator));
     }
@@ -75,7 +75,7 @@ class JourneyNudgeTest extends TestCase
     {
         // Newest threshold first. Somebody already weeks past every stage when this shipped
         // must receive exactly ONE message, not a backlog of three.
-        $creator = $this->stuckCreator('identity', 30);
+        $creator = $this->stuckCreator('stripe', 30);
 
         $this->assertSame(23, app(CreatorJourneyService::class)->nudgeStageFor($creator));
     }
@@ -100,7 +100,7 @@ class JourneyNudgeTest extends TestCase
     public function test_a_creator_the_sync_has_not_stamped_is_not_nudged(): void
     {
         // NULL is "unknown", never "stuck since forever".
-        $creator = $this->stuckCreator('identity', 5, ['journey_step_at' => null]);
+        $creator = $this->stuckCreator('stripe', 5, ['journey_step_at' => null]);
 
         $this->assertNull(app(CreatorJourneyService::class)->nudgeStageFor($creator));
     }
@@ -108,7 +108,7 @@ class JourneyNudgeTest extends TestCase
     public function test_a_future_timestamp_does_not_fire_the_final_reminder(): void
     {
         // diffInDays() is absolute — clock skew would otherwise read as "stuck 90 days".
-        $creator = $this->stuckCreator('identity', 0, ['journey_step_at' => now()->addDays(5)]);
+        $creator = $this->stuckCreator('stripe', 0, ['journey_step_at' => now()->addDays(5)]);
 
         $this->assertNull(app(CreatorJourneyService::class)->nudgeStageFor($creator));
     }
@@ -116,7 +116,7 @@ class JourneyNudgeTest extends TestCase
     public function test_the_command_queues_one_reminder_and_never_repeats_it(): void
     {
         Queue::fake();
-        $creator = $this->stuckCreator('identity', 3);
+        $creator = $this->stuckCreator('stripe', 3);
 
         $this->artisan('creators:nudge-journey')->assertSuccessful();
         Queue::assertPushed(SendEngagementNotification::class, 1);
@@ -128,7 +128,7 @@ class JourneyNudgeTest extends TestCase
         $this->assertDatabaseHas('engagement_notifications', [
             'user_id' => $creator->id,
             'type' => 'journey_nudge',
-            'dedup_key' => 'identity:3',
+            'dedup_key' => 'stripe:3',
         ]);
     }
 
@@ -140,7 +140,10 @@ class JourneyNudgeTest extends TestCase
         $this->artisan('creators:nudge-journey')->assertSuccessful();
 
         $creator->forceFill([
-            'journey_step' => 'identity',
+            // ⚠️ Not `first_listing` — it is excluded from `nudgeableSteps()`
+            // (the dedicated first-listing nudge owns it), so the command would
+            // correctly send nothing and the test would fail for the wrong reason.
+            'journey_step' => 'first_post',
             'journey_step_at' => now()->subDays(3),
         ])->saveQuietly();
 
@@ -152,7 +155,7 @@ class JourneyNudgeTest extends TestCase
     public function test_a_dry_run_sends_nothing_and_claims_nothing(): void
     {
         Queue::fake();
-        $creator = $this->stuckCreator('identity', 3);
+        $creator = $this->stuckCreator('stripe', 3);
 
         $this->artisan('creators:nudge-journey', ['--dry-run' => true])->assertSuccessful();
 
@@ -169,7 +172,7 @@ class JourneyNudgeTest extends TestCase
     public function test_an_old_signup_who_just_moved_a_step_is_not_dormant(): void
     {
         Queue::fake();
-        $this->stuckCreator('identity', 3, ['created_at' => now()->subDays(200)]);
+        $this->stuckCreator('stripe', 3, ['created_at' => now()->subDays(200)]);
 
         $this->artisan('creators:nudge-journey')->assertSuccessful();
 
@@ -181,7 +184,7 @@ class JourneyNudgeTest extends TestCase
         // Mailing a long tail of abandoned signups in one run is how a sending domain
         // earns a spam reputation.
         Queue::fake();
-        $this->stuckCreator('identity', 200, ['created_at' => now()->subDays(200)]);
+        $this->stuckCreator('stripe', 200, ['created_at' => now()->subDays(200)]);
 
         $this->artisan('creators:nudge-journey')->assertSuccessful();
         Queue::assertNothingPushed();
@@ -190,22 +193,23 @@ class JourneyNudgeTest extends TestCase
         Queue::assertPushed(SendEngagementNotification::class, 1);
     }
 
-    public function test_a_flagged_identity_is_never_nudged(): void
-    {
-        // 3 = Stripe's fraud signals said no. A reminder asks for a retry with the same answer.
-        Queue::fake();
-        $this->stuckCreator('identity', 5, ['identity_status' => 3]);
-
-        $this->artisan('creators:nudge-journey')->assertSuccessful();
-        Queue::assertNothingPushed();
-    }
+    /*
+     * 🚨 `test_a_flagged_identity_is_never_nudged` WAS HERE AND IS GONE (10 Sep 2026).
+     *
+     * It asserted that a creator whose identity Stripe had flagged was not sent a
+     * reminder to retry a check that would answer the same way. That is still true and
+     * still matters — it simply is not this command's job any more: identity left the
+     * journey for the payout gate, so `nudgeStageFor()` has no identity step to reach.
+     * The equivalent guarantee now lives in `PayoutIdentityGateTest`, where a flagged
+     * creator is shown a support conversation and no retry button.
+     */
 
     public function test_a_punished_creator_is_never_coached_to_publish(): void
     {
         // profile_status_lock = 1 is "submitted, with the review team" — and for an
         // already-approved creator, a demotion that delists everything they sell.
         Queue::fake();
-        $this->stuckCreator('identity', 5, ['profile_status_lock' => 1]);
+        $this->stuckCreator('stripe', 5, ['profile_status_lock' => 1]);
 
         $this->artisan('creators:nudge-journey')->assertSuccessful();
         Queue::assertNothingPushed();
@@ -214,7 +218,7 @@ class JourneyNudgeTest extends TestCase
     public function test_an_unverified_address_is_never_mailed(): void
     {
         Queue::fake();
-        $this->stuckCreator('identity', 5, ['email_verified_at' => null]);
+        $this->stuckCreator('stripe', 5, ['email_verified_at' => null]);
 
         $this->artisan('creators:nudge-journey')->assertSuccessful();
         Queue::assertNothingPushed();
@@ -223,7 +227,7 @@ class JourneyNudgeTest extends TestCase
     public function test_the_drip_and_this_command_never_message_on_the_same_day(): void
     {
         Queue::fake();
-        $creator = $this->stuckCreator('identity', 5);
+        $creator = $this->stuckCreator('stripe', 5);
 
         DB::table('notifications')->insert([
             'uuid' => (string) Str::uuid(),
@@ -245,7 +249,7 @@ class JourneyNudgeTest extends TestCase
     {
         // $marketing = false bypasses the consent gate, so the preference has to be
         // honoured here or the unsubscribe link in the email is decorative.
-        $creator = $this->stuckCreator('identity', 3, ['creator_updates_enabled' => false]);
+        $creator = $this->stuckCreator('stripe', 3, ['creator_updates_enabled' => false]);
 
         $channels = (new \ReflectionClass(NudgeStuckJourney::class))
             ->getMethod('channelsFor');
@@ -261,12 +265,12 @@ class JourneyNudgeTest extends TestCase
     public function test_the_email_copy_comes_from_the_journey_steps_never_a_second_copy(): void
     {
         // If these drift, the email tells a creator something the dashboard does not.
-        $creator = $this->stuckCreator('identity', 3);
+        $creator = $this->stuckCreator('stripe', 3);
 
         $payload = app(NudgeStuckJourney::class)->payloadFor($creator, 3);
 
-        $this->assertSame(FinishYourSetup::subjectFor('identity', 3), $payload['title']);
-        $this->assertSame(CreatorJourneyService::STEPS['identity']['body'], $payload['body']);
+        $this->assertSame(FinishYourSetup::subjectFor('stripe', 3), $payload['title']);
+        $this->assertSame(CreatorJourneyService::STEPS['stripe']['body'], $payload['body']);
         $this->assertSame(FinishYourSetup::class, $payload['mailable']);
     }
 

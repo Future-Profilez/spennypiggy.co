@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { lazy } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { route } from "ziggy-js";
+import { useIncentives } from "@/lib/incentives";
 import {
     EXTERNAL_LINK_PROPS,
     PRIVACY_POLICY_URL,
@@ -67,6 +68,7 @@ import {
 
 export default function Accountsetting(props) {
     const { successAlert, errorAlert } = useAlerts();
+    const incentives = useIncentives();
     const {
         auth,
         user,
@@ -998,16 +1000,23 @@ export default function Accountsetting(props) {
                             />
                         </Link>
 
-                        <Link
-                            href={route("founder.bonus")}
-                            className="block w-full"
-                        >
-                            <SettingItem
-                                icon={Trophy}
-                                title="Founder Program"
-                                subtitle="View seats, qualification status, and rewards"
-                            />
-                        </Link>
+                        {/* 🚨 GONE WHILE THE FOUNDER BONUS IS RETIRED
+                            (11 Sep 2026). `founder.bonus` 404s in that state,
+                            and this is a settings row a creator taps expecting
+                            their own account — a not-found there reads as their
+                            account being broken, not as a closed programme. */}
+                        {incentives.founderBonus && (
+                            <Link
+                                href={route("founder.bonus")}
+                                className="block w-full"
+                            >
+                                <SettingItem
+                                    icon={Trophy}
+                                    title="Founder Program"
+                                    subtitle="View seats, qualification status, and rewards"
+                                />
+                            </Link>
+                        )}
 
                         <SettingItem
                             icon={HelpCircle}

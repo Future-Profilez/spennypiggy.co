@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Helpers;
+use App\Services\Pricing\FeeModel;
 
 /**
  * Our side of "What a £20 payment really costs".
@@ -75,14 +76,32 @@ class ComparisonFeePayload
              * every platform on these pages charges both kinds, and folding a
              * flat fee into a percentage is how a comparison stops being one.
              */
+            // ⚠️ Lets the block draw ONE line under all-in instead of three that sum to
+            // less than the headline (measured: 5.98 + 0 + 3.4 beside "12%").
+            'all_in' => FeeModel::isAllIn(),
             'platform_rate' => $flow['platform_fee_rate'],
             'compliance_rate' => $flow['compliance_fee_rate'],
             'processing_rate' => $flow['stripe_fee_rate'],
             'processing_fixed' => $flow['stripe_fixed_fee'],
-            'all_in_rate' => round(
-                $flow['platform_fee_rate'] + $flow['compliance_fee_rate'] + $flow['stripe_fee_rate'],
-                1
-            ),
+            /*
+             * 🚨 UNDER ALL-IN THIS IS THE ADVERTISED RATE ITSELF, NOT A SUM.
+             *
+             * Adding the parts was right for the legacy markup, where each was a
+             * separate charge stacked on the listed price. Under all-in they are all
+             * slices of ONE percentage and every one of them is expressed against the
+             * supporter TOTAL — so the sum omits the processor's fixed component and
+             * reads LOW. Measured at 12%: 7.05 + 0 + 3.4 = 10.45%, on a page telling
+             * the public what we charge, while the checkout takes 12%.
+             *
+             * A page about fee transparency must not understate the fee. `FeeModel` is
+             * the one place the advertised rate lives.
+             */
+            'all_in_rate' => FeeModel::isAllIn()
+                ? round(FeeModel::supporterRate($profile), 1)
+                : round(
+                    $flow['platform_fee_rate'] + $flow['compliance_fee_rate'] + $flow['stripe_fee_rate'],
+                    1
+                ),
 
             // The £1, in the reader's currency, straight off the breakdown.
             'flat_fee' => $flow['admin_fee'],

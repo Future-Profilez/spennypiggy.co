@@ -95,7 +95,7 @@ export default function ReferralCard({ promo, onAction }) {
 
                 <p className="mt-2 max-w-[34ch] text-[13px] md:text-[15px] leading-[1.4] font-semibold" style={{ color: g.body }}>
                     Share your link. Once a creator who joins through it passes{" "}
-                    {f.threshold ?? "£1,000"} in sales, the {f.reward ?? "£50"} is yours.
+                    {f.threshold ?? "£2,000"} in sales, the {f.reward ?? "£50"} is yours.
                 </p>
 
                 <div className="mt-auto pt-3">

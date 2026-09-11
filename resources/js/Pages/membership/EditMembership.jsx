@@ -13,6 +13,7 @@ import RewardEditor, {
     validateReward,
 } from "@/Components/Reward/RewardEditor";
 import RewardPreview from "@/Components/Reward/RewardPreview";
+import { creatorFeeNote } from "@/lib/fees";
 
 const FIELD =
     "w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-bold placeholder:font-medium placeholder:text-neutral-400 focus:outline-none focus:ring-0 ";
@@ -20,6 +21,7 @@ const FIELD_LABEL = "mb-2 block text-left text-[12px] font-black uppercase track
 
 export default function EditMembership({ item }) {
     const { auth, global_currency, rates } = usePage().props;
+    const feeNote = creatorFeeNote(usePage().props);
     const memberOnlyPostsCount = auth?.member_only_posts_count || 0;
     const { errorAlert } = useAlerts();
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
@@ -195,6 +197,13 @@ export default function EditMembership({ item }) {
                                         }).format(data.month_price)}
                                     </span>
                                 </div>
+                                {/* 🚨 Never a typed percentage — see resources/js/lib/fees.js.
+                                    This screen carried no fee note at all while its Add twin did,
+                                    so the same two figures were explained on one form and not the
+                                    other. */}
+                                <p className="mt-3 text-left text-xs font-medium text-neutral-700">
+                                    {feeNote}
+                                </p>
                             </div>
                         )}
 

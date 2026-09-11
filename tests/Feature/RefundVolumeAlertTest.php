@@ -2,13 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Console\Commands\MonitorPlatformRiskState;
 use App\Mail\PlatformRiskAlert;
 use App\Models\CreatorMetric;
 use App\Models\Payment;
 use App\Models\SecurityEvent;
+use Illuminate\Console\Command;
+use Illuminate\Console\OutputStyle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\TestCase;
 
 /**
@@ -36,7 +41,7 @@ class RefundVolumeAlertTest extends TestCase
 
     private function runCheck(): void
     {
-        $command = app(\App\Console\Commands\MonitorPlatformRiskState::class);
+        $command = app(MonitorPlatformRiskState::class);
         $command->setLaravel(app());
 
         $method = new \ReflectionMethod($command, 'checkRefundVolume');
@@ -47,11 +52,11 @@ class RefundVolumeAlertTest extends TestCase
         // with only the output set it throws "Call to a member function
         // getOption() on null", the check's own try/catch swallows it, and the
         // test fails looking like a threshold bug.
-        $output = new \Symfony\Component\Console\Output\BufferedOutput;
-        $input = new \Symfony\Component\Console\Input\ArrayInput([], $command->getDefinition());
+        $output = new BufferedOutput;
+        $input = new ArrayInput([], $command->getDefinition());
 
-        foreach (['input' => $input, 'output' => new \Illuminate\Console\OutputStyle($input, $output)] as $name => $value) {
-            $property = new \ReflectionProperty(\Illuminate\Console\Command::class, $name);
+        foreach (['input' => $input, 'output' => new OutputStyle($input, $output)] as $name => $value) {
+            $property = new \ReflectionProperty(Command::class, $name);
             $property->setAccessible(true);
             $property->setValue($command, $value);
         }

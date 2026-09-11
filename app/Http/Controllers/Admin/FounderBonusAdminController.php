@@ -72,7 +72,7 @@ class FounderBonusAdminController extends Controller
 
         // Available months list for dropdown filtering
         $monthlyMonths = FounderBonusMonthly::distinct()->pluck('month')->toArray();
-        $qualMonths = FounderBonus::selectRaw("SUBSTR(qualification_date, 1, 7) as m")
+        $qualMonths = FounderBonus::selectRaw('SUBSTR(qualification_date, 1, 7) as m')
             ->distinct()
             ->pluck('m')
             ->toArray();

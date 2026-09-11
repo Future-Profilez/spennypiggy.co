@@ -240,6 +240,9 @@ MD,
                 'title' => 'The Fast Start bonus',
                 'audience' => 'creator',
                 'keywords' => 'fast start, fast start bonus, early bonus, first 30 days, new creator bonus, 5 percent, fast payout',
+                // 🚨 Unpublished with the scheme (11 Sep 2026) — see the
+                // founder-bonus article for why a flag rather than a deletion.
+                'feature_flag' => 'fast_start_bonus.enabled',
                 'summary' => 'An extra {{faststart.rate}} on what you earn in your first {{faststart.window_days}} days, paid automatically once those sales have settled.',
                 'related' => ['bonuses-explained', 'growth-bonus', 'founder-bonus', 'when-do-i-get-paid'],
                 'body' => <<<'MD'
@@ -269,14 +272,14 @@ MD,
                 'title' => 'Referring another creator',
                 'audience' => 'creator',
                 'keywords' => 'referral, refer a friend, referral link, refer and earn, invite, code, 50, affiliate',
-                'summary' => 'Share your referral link and earn {{referral.reward}} once a creator you referred passes {{referral.threshold}} in lifetime sales.',
+                'summary' => 'Share your referral link and earn {{referral.reward}} once a creator you referred reaches {{referral.threshold}} in settled earnings.',
                 'related' => ['bonuses-explained', 'growth-bonus', 'where-can-i-see-my-earnings'],
                 'body' => <<<'MD'
 Your referral link is on your dashboard. Anyone signing up as a creator through it is recorded as your referral.
 
 ## What you earn, and when
 
-**{{referral.reward}} per creator — once that creator passes {{referral.threshold}} in lifetime sales.**
+**{{referral.reward}} per creator — once that creator reaches {{referral.threshold}} in settled earnings.**
 
 Both halves matter. A signup on its own earns nothing: the reward is for bringing somebody who goes on to actually sell, so there is a real threshold between the two and it is worth telling people you refer what they need to reach.
 
@@ -292,7 +295,12 @@ Your dashboard shows who signed up through your link and how far each of them is
 
 - Your own second account.
 - A creator who already had an account before using your link.
-- Sales that were refunded, which come back off the running total.
+- Sales that were refunded or charged back, which come back off the running total.
+- Anything a referred creator paid themselves.
+
+## If the threshold changes
+
+A referral is judged at the threshold that applied on the day it was made. If we change the figure, referrals already in progress keep the one they started under — the goalposts do not move on somebody part-way there.
 MD,
             ],
         ];

@@ -1,10 +1,12 @@
+import { usePage } from '@inertiajs/react';
 import {
     FAST_START,
     FOUNDER,
-    REFERRAL,
     money,
     percent,
 } from '@/constants/creatorBonuses';
+import { useIncentives } from '@/lib/incentives';
+import { feeIsAllIn, feeRateLabel } from '@/lib/fees';
 import { Eyebrow } from './Ledger';
 
 /**
@@ -26,6 +28,11 @@ import { Eyebrow } from './Ledger';
  * to keep reading that way.
  */
 export default function WhyTheFee({ accent, headless = false }) {
+    const incentives = useIncentives();
+    const page = usePage();
+    const allIn = feeIsAllIn(page);
+    const rate = feeRateLabel(page);
+
     return (
         <section>
             {/* ⚠️ See `FeatureMatrix` for why `headless` exists. */}
@@ -47,12 +54,39 @@ export default function WhyTheFee({ accent, headless = false }) {
              * follow the one above it.
              */}
             <div className="mt-8 md:columns-2 md:gap-10 [&>*]:break-inside-avoid">
+                {/* 🚨 "PLUS ONE FLAT FEE" WAS THE £1, RETIRED 11 Sep 2026, and
+                    this is a Google Ads destination arguing that every charge is
+                    on the page — so naming a charge that no longer exists fails
+                    the claim in the direction of overstating our own fee. Its
+                    replacement names what the percentage now INCLUDES, which is
+                    the change: processing comes out of the fee instead of being
+                    added after it.
+                    ⚠️ The rate is read from the `fees` prop, never typed. It is
+                    the card rate, i.e. the most anybody pays. */}
+                {/* 🚨 "THREE RATES, ALL ON THIS PAGE" WAS NOT TRUE (11 Sep 2026).
+                    This page's whole claim is that every charge is on it, and it
+                    named three rates while displaying ONE. The shared `fees` prop
+                    is `FeeModel::describe('card')` — card only — so the bank rate
+                    cannot be quoted here without widening that payload, and the
+                    stablecoin rail has no rate at all because it is not built
+                    (both its endpoints answer 503). Naming a rate we do not show
+                    fails the claim in the direction of looking evasive about our
+                    own pricing, which is the one thing this page cannot afford.
+                    ⚠️ Bank being CHEAPER is still said — it is the client's own
+                    positioning — just not quantified, because the figure is not
+                    on the page. Restore "two rates" here only if the bank rate
+                    is added to the shared prop and rendered. */}
                 <Block title="What you are charged">
-                    Three rails, three rates — stablecoin, Pay by Bank, card —
-                    plus one flat fee, all on this page. No withdrawal fees, no
-                    instant-payout fees, no currency fees, no charges that only
-                    appear on a help article. The supporter fee is not a cut of
-                    your money: you always receive the price you list.
+                    Two rails you can use today — Pay by Bank and card — and a
+                    third on the way. Bank costs less to process, so it is the
+                    cheaper of the two for your supporter.{' '}
+                    {allIn
+                        ? `On card that is ${rate}, all-in: the payment processing is inside it and nothing is added afterwards. `
+                        : ''}
+                    No withdrawal fees, no instant-payout fees, no currency
+                    fees, no charges that only appear on a help article. The
+                    supporter fee is not a cut of your money: you always receive
+                    the price you list.
                 </Block>
 
                 {/*
@@ -102,14 +136,36 @@ export default function WhyTheFee({ accent, headless = false }) {
                     </p>
                 </Block>
 
+                {/* 🚨 EVERY SENTENCE HERE IS A SCHEME, AND THREE OF THEM WERE
+                    RETIRED ON 11 Sep 2026. This is a paid-ads page arguing the
+                    fee is worth it BECAUSE of what it pays back — a retired
+                    scheme quoted here is not a stale link, it is the argument
+                    itself being untrue. Each clause is gated on the server's
+                    own flag. */}
                 <Block title="And it pays you back">
-                    {percent(FAST_START.rate)} extra on everything in your first{' '}
-                    {FAST_START.windowDays} days. {percent(FOUNDER.monthlyRate)}{' '}
-                    extra every month for founders, up to{' '}
-                    {money(FOUNDER.monthlyCap)} a month.{' '}
-                    {money(REFERRAL.amount)} for every creator you refer, paid
-                    once they have earned {money(REFERRAL.qualifyingGmv)}. And
-                    further bonuses at our discretion through the year — we
+                    {incentives.fastStart && (
+                        <>
+                            {percent(FAST_START.rate)} extra on everything in
+                            your first {FAST_START.windowDays} days.{' '}
+                        </>
+                    )}
+                    {incentives.founderBonus && (
+                        <>
+                            {percent(FOUNDER.monthlyRate)} extra every month for
+                            founders, up to {money(FOUNDER.monthlyCap)} a month.{' '}
+                        </>
+                    )}
+                    {money(incentives.referral.reward)} for every creator you
+                    refer, paid once they have earned{' '}
+                    {money(incentives.referral.threshold)}.{' '}
+                    {incentives.membershipCredits && (
+                        <>
+                            Every {money(incentives.membershipCredit.threshold)}{' '}
+                            you earn buys a free month of your creator
+                            membership.{' '}
+                        </>
+                    )}
+                    And further bonuses at our discretion through the year — we
                     would rather hand fee back to creators who are earning than
                     to anyone else.
                 </Block>
@@ -139,7 +195,9 @@ export default function WhyTheFee({ accent, headless = false }) {
                 />
                 <Card
                     heading="Volume pricing, case by case"
-                    body="The three rates are base rates. Already earning, or about to? We agree bespoke supporter fees case by case to bring pricing in line with your volume. Drop us a chat — it takes one conversation."
+                    /* ⚠️ "The three rates" counted a rail that is not live and a
+                       rate this page does not show — see the charges block. */
+                    body="These are base rates. Already earning, or about to? We agree bespoke supporter fees case by case to bring pricing in line with your volume. Drop us a chat — it takes one conversation."
                 />
             </div>
         </section>

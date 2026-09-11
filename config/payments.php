@@ -85,6 +85,66 @@ return [
     // Stripe payment_method_types offered per charge currency for the
     // "bank" profile. EUR lists both: Stripe Checkout shows Pay by Bank
     // to FR/DE bank holders and SEPA to the rest.
+    /*
+    |--------------------------------------------------------------------------
+    | The all-in supporter fee (11 Sep 2026, client direction)
+    |--------------------------------------------------------------------------
+    |
+    | 🚨 TWO FEE MODELS LIVE IN THIS FILE AND `model` PICKS ONE.
+    |
+    | `legacy_markup` is what the platform charged until now: platform_rate +
+    | compliance_rate + the Stripe estimate, every one of them added ON TOP of the
+    | listed price. A £100 listing charged the supporter £130.55.
+    |
+    | `all_in` is the new commercial model. The supporter pays the listed price
+    | plus ONE advertised percentage, and **Stripe's cost comes out of that
+    | percentage rather than on top of it**. A £100 listing at 12% charges £112.00,
+    | the creator still receives exactly £100, and the platform keeps whatever is
+    | left after Stripe.
+    |
+    | ⚠️ THE CREATOR'S SIDE IS IDENTICAL UNDER BOTH. They receive 100% of the
+    | listed price either way — that promise is not what changed. Only the size of
+    | the supporter's fee, and which side of it Stripe sits on.
+    |
+    | 🚨 EVERY USER-FACING FEE FIGURE READS `App\Services\Pricing\FeeModel`,
+    | NEVER A LITERAL. That is what makes the headline rate one value to change
+    | rather than an eighteen-surface rewrite — see docs/simplification-sept-2026.
+    */
+    'model' => env('FEE_MODEL', 'all_in'),
+
+    /*
+    | The advertised all-in rate per rail, as a percentage of the listed price.
+    |
+    | ⚠️ 🔴 OPEN DECISION (D1). The client's written plan says 9% on card and Pay by
+    | Bank; the verbal instruction was 12%. 12% is seeded here because 9% is
+    | LOSS-MAKING at the platform's own £4.99 minimum on the current processing
+    | estimate — see `FeeModel::minimumSellable()`, which computes that break-even
+    | rather than asserting it. Change this one value when the client answers.
+    |
+    | ⚠️ Bank is priced BELOW card deliberately (D2): a bank payment carries no card
+    | interchange, so it genuinely costs less, and a supporter needs a reason to
+    | choose it. Equal pricing would keep more margin on the rail we ask people to
+    | prefer, which is backwards.
+    */
+    'all_in' => [
+        'card' => (float) env('ALL_IN_CARD_RATE', 12),
+        'bank' => (float) env('ALL_IN_BANK_RATE', 9),
+    ],
+
+    /*
+    | A flat per-transaction fee on top of the percentage.
+    |
+    | 🚨 OFF AT LAUNCH (client §2: "No separate £1 fee at launch"). It exists because
+    | processing carries a fixed cost that does not shrink with the sale, so the
+    | smallest transactions are the thinnest — the toggle is the answer if the
+    | measured cost turns out higher than the estimate. Ships off; turning it on is
+    | a visible price rise and a deliberate decision.
+    */
+    'fixed_fee' => [
+        'enabled' => (bool) env('SUPPORTER_FIXED_FEE_ENABLED', false),
+        'amount_gbp' => (float) env('SUPPORTER_FIXED_FEE_GBP', 0),
+    ],
+
     'bank_methods' => [
         'GBP' => ['pay_by_bank'],
         'EUR' => ['pay_by_bank', 'sepa_debit'],

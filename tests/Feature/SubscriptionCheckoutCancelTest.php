@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\SubscriptionCheckoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -29,8 +30,8 @@ class SubscriptionCheckoutCancelTest extends TestCase
 
         return MonthlyCharge::create([
             'user_id' => $user->id,
-            'uuid' => (string) \Illuminate\Support\Str::uuid(),
-            'session_id' => 'cs_live_'.\Illuminate\Support\Str::random(20),
+            'uuid' => (string) Str::uuid(),
+            'session_id' => 'cs_live_'.Str::random(20),
             'status' => SubscriptionCheckoutService::STATUS_STARTED,
         ]);
     }

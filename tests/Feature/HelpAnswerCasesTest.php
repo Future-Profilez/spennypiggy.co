@@ -124,15 +124,25 @@ class HelpAnswerCasesTest extends TestCase
             'will the reserve ever stop' => 'is-the-reserve-permanent',
             'what gets taken off my sale' => 'what-fees-are-deducted',
             'do i need to worry about vat' => 'vat-and-your-earnings',
-            'what is the founder bonus' => 'founder-bonus',
+            /*
+             * ⚠️ EITHER THE SCHEME'S OWN ARTICLE OR THE CLOSED-PROGRAMMES ONE.
+             *
+             * These three schemes were retired on 11 Sep 2026 and their how-to-join
+             * articles are unpublished with them (`feature_flag`) — an article telling
+             * a creator how to join something nobody can join sends them to a 404.
+             * But the question does not stop being asked: the people most likely to
+             * type it are the ones who already EARNED one and want to know where it
+             * stands. `closed-programmes` is the answer they get.
+             */
+            'what is the founder bonus' => ['founder-bonus', 'closed-programmes'],
             'i got paid less than i expected' => 'my-payout-was-smaller-than-expected',
             'my payout failed' => 'my-payout-failed',
             'do i have to charge vat' => 'do-i-charge-vat',
             'what bonuses are there' => 'bonuses-explained',
             'where do i see how much i earned' => 'where-can-i-see-my-earnings',
             'can i get my money sooner' => 'can-i-be-paid-faster',
-            'what is the growth bonus' => 'growth-bonus',
-            'what is the fast start bonus' => 'fast-start-bonus',
+            'what is the growth bonus' => ['growth-bonus', 'closed-programmes'],
+            'what is the fast start bonus' => ['fast-start-bonus', 'closed-programmes'],
             'how do i refer another creator' => 'refer-a-creator',
             'why is one of my payments being reviewed' => 'why-is-a-payment-held-for-review',
             'i need a statement for my accountant' => 'download-an-earnings-statement',

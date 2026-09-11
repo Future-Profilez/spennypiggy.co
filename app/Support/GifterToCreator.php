@@ -2,10 +2,12 @@
 
 namespace App\Support;
 
+use App\Jobs\CheckMediaModeration;
 use App\Jobs\LinkUserToCrmCreator;
 use App\Mail\CreatorAccountOpened;
 use App\Models\CreatorReferral;
 use App\Models\Dispute;
+use App\Models\ProfileChangeRequest;
 use App\Models\ReferralCode;
 use App\Models\SocialLinks;
 use App\Models\User;
@@ -13,6 +15,7 @@ use App\Models\UserVerificationStatus;
 use App\Services\ActivityLogger;
 use App\Services\CreatorJourneyService;
 use App\Services\UserProfileService;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -35,12 +38,13 @@ use Illuminate\Support\Str;
  * simply setting `role = 1`, and it is why the reset list must never be trimmed
  * for the sake of a faster conversion.
  *
- * 🚨 CONVERSION IS INSTANT AND THE REVIEW IS NOT SKIPPED. The account becomes a
+ * 🚨 CONVERSION IS INSTANT AND THE CHECKS ARE NOT SKIPPED. The account becomes a
  * creator the moment they submit, and then walks the ordinary creator journey
- * (profile → social → review → card → stripe → identity), so an admin still
- * approves the profile before anything can be sold. There is deliberately no
- * second approval queue for the conversion itself: a queue nobody staffs is a
- * feature nobody can finish.
+ * (profile → social → stripe → subscription). Since 11 Sep 2026 nobody approves
+ * the profile: `judgeConvertedAssets()` re-runs the automatic checks over what the
+ * fan already had, and the page goes live on its own once they pass. There is
+ * deliberately no approval queue: a queue nobody staffs is a feature nobody can
+ * finish.
  *
  * ⚠️ WHAT IS NOT TOUCHED, deliberately: their purchases, the memberships and
  * subscriptions they bought, saved items, follows, `gifter_addresses`, their
@@ -198,10 +202,17 @@ final class GifterToCreator
              * profile as their reward for converting; the review is the thing that
              * was missing, not the content.
              *
-             * ⚠️ `profile_status_lock = 0` puts them at the start of the journey's
-             * review step rather than in the admin queue — they have not pressed
-             * Submit, and a submission nobody made is what
-             * `NoWritingGetRoutesTest` exists to prevent.
+             * ⚠️ `profile_status_lock = 0` is "drafting": the automatic checks in
+             * `judgeConvertedAssets()` move it to 2 on their own once the assets
+             * pass. There is no Submit and no queue (11 Sep 2026).
+             */
+            /*
+             * 🚨 RESET TO 0 HERE, THEN RE-JUDGED BY THE MACHINE BELOW (10 Sep 2026).
+             * A fan's photo and bio were approved under the fan rules — nobody looked.
+             * They are not thrown away: `judgeConvertedAssets()` runs the creator
+             * checks on what is already there, so a clean bio is approved in the same
+             * transaction and a photo is scanned; the profile goes live on its own the
+             * moment all three clear. Nothing waits on a person.
              */
             'avatar_approved' => 0,
             'bio_approved' => 0,
@@ -302,6 +313,8 @@ final class GifterToCreator
          * `role = 0` row (written at the £500 card-verification gate), and a second
          * row would leave two rows disagreeing about the same account's state.
          */
+        self::judgeConvertedAssets($user->fresh());
+
         UserVerificationStatus::updateOrCreate(
             ['user_id' => $user->id],
             [
@@ -382,8 +395,8 @@ final class GifterToCreator
             Mail::to($user->email)->queue(new CreatorAccountOpened(
                 $user->id,
                 $user->name ?: $user->username,
-                // Whether they actually HAD a photo or bio, so the mail never tells
-                // somebody their picture is under review when they never uploaded one.
+                // Whether they actually HAD a photo or bio, so the mail never
+                // describes what happened to a picture they never uploaded.
                 filled($user->avatar) || filled($user->bio),
             ));
         } catch (\Throwable $e) {
@@ -431,5 +444,52 @@ final class GifterToCreator
             'lifetime_gmv' => 0,
             'status' => 'IN_PROGRESS',
         ]);
+    }
+
+    /**
+     * Run the creator checks over what the fan already had, so conversion does not
+     * park a clean profile at "not yet".
+     *
+     * ⚠️ Bio and handles are synchronous and approve here. The photo cannot be — it
+     * needs the Rekognition round trip — so it is dispatched and approves (or holds)
+     * when the scan returns, which is also when `activateIfComplete()` is asked again.
+     * ⚠️ Never throws: a judging failure must not fail a conversion that has already
+     * been written. The assets stay at 0 and are re-judged on the creator's next save.
+     */
+    private static function judgeConvertedAssets(User $user): void
+    {
+        try {
+            if (filled($user->bio) && ProfileAutoApproval::judgeBio($user->bio) === null) {
+                ProfileAutoApproval::markApproved($user, ProfileChangeRequest::ASSET_BIO);
+            }
+
+            $links = SocialLinks::where('user_id', $user->id)->first();
+
+            if ($links) {
+                $handles = Arr::only($links->getAttributes(), SocialLinks::ACCEPTED_PLATFORMS);
+
+                if (ProfileAutoApproval::judgeSocials($handles, $user->id) === null) {
+                    ProfileAutoApproval::markApproved($user, ProfileChangeRequest::ASSET_SOCIALS);
+                }
+            }
+
+            if (filled($user->avatar)) {
+                CheckMediaModeration::dispatch(
+                    User::class,
+                    $user->id,
+                    $user->avatar,
+                    ['avatar_approved' => 0],
+                    'avatar',
+                    ['avatar_approved' => 1]
+                );
+            }
+
+            ProfileAutoApproval::activateIfComplete($user->fresh());
+        } catch (\Throwable $e) {
+            Log::warning('Conversion: could not auto-judge existing assets', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

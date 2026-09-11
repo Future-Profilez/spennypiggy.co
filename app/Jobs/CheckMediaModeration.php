@@ -7,6 +7,7 @@ use App\Models\ProfileChangeRequest;
 use App\Models\User;
 use App\Services\RekognitionModeration;
 use App\Support\ModerationNotice;
+use App\Support\ProfileAutoApproval;
 use App\Support\UserFlagger;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -101,7 +102,23 @@ class CheckMediaModeration implements ShouldQueue
         public $modelId,
         public ?string $mediaUuid,
         public array $flagOnViolation = [],
-        public string $mediaAsset = 'thumbnail'
+        public string $mediaAsset = 'thumbnail',
+        /**
+         * 🚨 WRITTEN WHEN THE SCAN COMES BACK CLEAN (10 Sep 2026). Until now this job
+         * only ever wrote on a violation — a clean image left the row exactly as the
+         * caller saved it, which for a creator's photo meant `avatar_approved = 0`
+         * until a person pressed Approve. Profiles approve themselves now, so the
+         * clean result has to be written somewhere, and this is the only place that
+         * knows the verdict.
+         *
+         * Empty (the default) keeps the old behaviour for every listing caller that
+         * still wants a human to decide.
+         *
+         * ⚠️ For a `ProfileChangeRequest` this is ignored: a clean pending change is
+         * APPLIED (`ProfileAutoApproval::applyChange`), not flagged, because the value
+         * to approve is on the request, not on the user row.
+         */
+        public array $approveOnClean = []
     ) {}
 
     public function handle(): void
@@ -169,6 +186,81 @@ class CheckMediaModeration implements ShouldQueue
 
         if ($restricted = RekognitionModeration::restrictedLabel($labels)) {
             $this->flag($restricted);
+
+            return;
+        }
+
+        $this->passClean();
+    }
+
+    /**
+     * The scan found nothing. Write the approval the caller asked for, if any.
+     *
+     * ⚠️ Reached ONLY after a real verdict. Every earlier return in `handle()` is a
+     * non-answer — no uuid, not an image, provider down — and those fail CLOSED
+     * (`flag()`), never through here. "We could not check it" must not become
+     * "approved".
+     */
+    private function passClean(): void
+    {
+        try {
+            $record = ($this->modelClass)::find($this->modelId);
+
+            if (! $record) {
+                return;
+            }
+
+            if ($record instanceof ProfileChangeRequest) {
+                // A clean pending change goes live. `applyChange()` refuses a request
+                // that is no longer pending, so a verdict arriving after an admin or the
+                // creator has moved on changes nothing.
+                if ($record->scan_state !== ProfileChangeRequest::SCAN_FLAGGED) {
+                    $record->forceFill(['scan_state' => ProfileChangeRequest::SCAN_CLEAN])->save();
+                    ProfileAutoApproval::applyChange($record->fresh());
+                }
+
+                return;
+            }
+
+            if ($this->approveOnClean === []) {
+                return;
+            }
+
+            /*
+             * 🚨 THE IMAGE MUST STILL BE THE ONE WE SCANNED. The scan is asynchronous
+             * and a creator can replace their photo in the window; approving the row
+             * on the strength of a verdict about the PREVIOUS file is exactly the
+             * "clean result outlives the image" fault the fresh-verdict rule exists for.
+             */
+            $liveUuid = RekognitionModeration::uuidFrom((string) ($record->{$this->mediaAsset} ?? ''));
+            $scannedUuid = RekognitionModeration::uuidFrom((string) $this->mediaUuid);
+
+            if ($liveUuid !== null && $scannedUuid !== null && $liveUuid !== $scannedUuid) {
+                Log::info('CheckMediaModeration: clean verdict discarded — image replaced since scan', [
+                    'model' => $this->modelClass,
+                    'id' => $this->modelId,
+                    'asset' => $this->mediaAsset,
+                ]);
+
+                return;
+            }
+
+            // ⚠️ Query builder, not `save()`: `users.updated_at` orders the admin review
+            // queue and keys the profile cache. An approval seconds after upload is not
+            // an edit.
+            $record->newQuery()->whereKey($record->getKey())->update($this->approveOnClean);
+
+            if ($record instanceof User) {
+                ProfileAutoApproval::activateIfComplete($record->fresh());
+            }
+        } catch (\Throwable $e) {
+            // A bookkeeping failure on a CLEAN result must not hold the asset — but it
+            // must be seen, or a creator sits unapproved with nothing wrong.
+            Log::error('CheckMediaModeration: could not write clean verdict', [
+                'model' => $this->modelClass,
+                'id' => $this->modelId,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

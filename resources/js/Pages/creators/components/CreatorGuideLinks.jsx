@@ -1,5 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 
+import { useIncentives } from '@/lib/incentives';
+
 /**
  * Moving between the creator guides — the last block on every `/creators/*` page.
  *
@@ -33,12 +35,21 @@ import { Link, usePage } from '@inertiajs/react';
  */
 export default function CreatorGuideLinks() {
     const { url } = usePage();
+    const incentives = useIncentives();
 
     const pages = [
         { href: '/creators', label: 'Overview' },
         { href: '/creators/features', label: '7 ways to earn' },
         { href: '/creators/keep-100', label: 'Keep 100%' },
-        { href: '/creators/founder-bonus', label: 'Founder bonus' },
+        /*
+         * 🚨 DROPPED WHILE THE FOUNDER BONUS IS RETIRED (11 Sep 2026).
+         * `/creators/founder-bonus` 404s in that state, and this nav is
+         * rendered on EVERY /creators page — so one stale entry would put a
+         * dead link on all ten of the paid-ads destinations at once.
+         */
+        ...(incentives.founderBonus
+            ? [{ href: '/creators/founder-bonus', label: 'Founder bonus' }]
+            : []),
         { href: '/creators/stripe-safe', label: 'Stripe safe' },
         { href: '/creators/disputes', label: 'Disputes' },
         { href: '/creators/discovery', label: 'Get discovered' },

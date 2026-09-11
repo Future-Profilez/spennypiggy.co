@@ -248,7 +248,13 @@ export default function Show({
                         <SectionHeadSplit
                             eyebrow="The money"
                             accent={accent}
-                            lead="Percentages next to percentages, flat fees next to flat fees, every line for both of us. Ours are read live from our checkout, so they can never drift from what a supporter is charged."
+                            /* 🚨 "FLAT FEES NEXT TO FLAT FEES" WAS RETIRED WITH
+                               the £1 on 11 Sep 2026 — ours is one all-in
+                               percentage with the processing already inside it.
+                               `FeeBlock`'s own copy of this lead is gated on
+                               whether a flat fee exists; this one is the page's
+                               head and is written for today. */
+                            lead="Every line, for both of us — and ours is one all-in percentage with the payment processing already inside it. Ours are read live from our checkout, so they can never drift from what a supporter is charged."
                         >
                             {/* 🚨 §3b fixes this heading, £20 included. The
                                 figure is the spec's, not a formatting choice —
@@ -356,7 +362,7 @@ export default function Show({
                         <SectionHeadSplit
                             eyebrow="Why the fee"
                             accent={accent}
-                            lead="Three rails, one flat fee, and what the difference pays for — including the parts nobody else on this page offers."
+                            lead="Three rails, one all-in rate on each, and what the difference pays for — including the parts nobody else on this page offers."
                         >
                             Why our fee is{' '}
                             <span className="text-gradient-wishlist">
@@ -487,7 +493,14 @@ export default function Show({
                             accent={ACCENT.bonus}
                             lead={THREE_PROGRAMMES.lead}
                         >
-                            Three programmes{' '}
+                            {/* 🚨 NOT "THREE". The row count is whatever is live
+                                — Founder and Fast Start were retired on
+                                11 Sep 2026 and `ThreeProgrammes` drops their
+                                rows on the server's flags, which is exactly why
+                                its docblock leaves the heading to the caller.
+                                A typed count here re-breaks it every time a
+                                scheme is switched on or off. */}
+                            Programmes{' '}
                             <span className="text-gradient-wishlist">
                                 that stack
                             </span>

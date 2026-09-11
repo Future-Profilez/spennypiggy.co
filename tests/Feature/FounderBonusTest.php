@@ -6,7 +6,6 @@ use App\Mail\FounderPayoutRejection;
 use App\Models\AuditLog;
 use App\Models\FounderBonus;
 use App\Models\FounderBonusMonthly;
-use App\Models\Setting;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -298,6 +297,18 @@ class FounderBonusTest extends TestCase
 
     public function test_public_founder_leaderboard_route_and_calculations(): void
     {
+        /*
+         * ⚠️ The Founder scheme was RETIRED on 11 Sep 2026 and its page 404s while the
+         * flag is off — see `App\Support\Incentives`. This test is about the page's
+         * arithmetic, not about the retirement, and the arithmetic still has to be
+         * right: existing founders keep their entitlements, the payout job outlives the
+         * scheme, and switching it back on must restore a working page rather than a
+         * broken one.
+         *
+         * `FounderRetirementTest` is where the closed state itself is asserted.
+         */
+        config(['founder_bonus.enabled' => true]);
+
         $creator = $this->createCreator([
             'is_founder' => true,
             'stripe_connected_at' => now()->subDays(10),

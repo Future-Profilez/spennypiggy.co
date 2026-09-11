@@ -21,13 +21,21 @@ use Tests\TestCase;
  *
  * Two rules are pinned here.
  *
- * 1. `profile_status_lock = 2 → 1` is not "under review", it is a punishment: the
- *    verified badge, Discover, search, trending, top-earners — DELISTING EVERY ITEM
- *    THE CREATOR SELLS — and Stripe onboarding. Nothing on the website sets it back.
+ * 1. AN ORDINARY EDIT NEVER DEMOTES A LIVE PROFILE. `profile_status_lock = 2 → 1` was
+ *    not "under review", it was a punishment: the verified badge, Discover, search,
+ *    trending, top-earners — DELISTING EVERY ITEM THE CREATOR SELLS — and Stripe
+ *    onboarding. The value 1 no longer exists at all (migration `2026_09_11_100000`).
  *
- * 2. An edit to an asset that is already live becomes a change request. The live
- *    column is never touched, so the public keeps seeing the approved version and a
- *    rejection costs nothing. A creator who is not live yet keeps the old path.
+ * 2. 🚨 REWRITTEN 11 Sep 2026. An edit to a live asset APPLIES IMMEDIATELY. It used to
+ *    become a pending change request with the published value held for an admin to
+ *    decide between; profiles approve themselves now, so the checks run in the
+ *    validator, the edit lands, and a CLOSED request records that the machine allowed
+ *    it — `decided_by_admin_id` null is what the daily report counts.
+ *
+ * ⚠️ MOST OF THIS FILE IS UNCHANGED, and that is the point: what counts as an EDIT is
+ * the same hard-won set of rules. A save that changes nothing must write nothing, or
+ * the daily report fills with edits nobody made — the same fault as the old queue
+ * filling with reviews nobody asked for.
  */
 class ProfileChangeRequestTest extends TestCase
 {
@@ -53,7 +61,7 @@ class ProfileChangeRequestTest extends TestCase
             'bio' => self::LIVE_BIO,
             'bio_approved' => 1,
             'country' => 'India',
-            // Keeps `CheckStripeIdentityVerification` from intercepting the POST.
+            // A fully set-up creator. (Identity no longer gates any page — 11 Sep 2026.)
             'identity_status' => 1,
         ], $overrides))->refresh();
     }
@@ -83,7 +91,7 @@ class ProfileChangeRequestTest extends TestCase
         $this->actingAs($user)->post(route('edit-profile'), $this->editProfilePayload($user, $overrides));
     }
 
-    // ---------------------------------------------------------------- the demotion
+    // ------------------------------------------------------------------ no demotion
 
     public function test_changing_only_the_country_leaves_the_review_state_untouched(): void
     {
@@ -96,7 +104,7 @@ class ProfileChangeRequestTest extends TestCase
         $this->assertSame(2, (int) $user->profile_status_lock);
         $this->assertSame(1, (int) $user->bio_approved, 'An unrelated edit must not re-open the bio.');
         $this->assertSame(self::LIVE_BIO, $user->bio);
-        $this->assertSame(0, ProfileChangeRequest::count(), 'Nothing changed, so nothing is waiting on review.');
+        $this->assertSame(0, ProfileChangeRequest::count(), 'Nothing changed, so nothing is recorded.');
     }
 
     public function test_saving_social_handles_never_demotes_the_profile(): void
@@ -107,7 +115,7 @@ class ProfileChangeRequestTest extends TestCase
             'user_id' => $user->id,
             'uuid' => '33333333-3333-4333-8333-333333333333',
             'instagram' => 'oldhandle',
-            'status' => 2,
+            'status' => SocialLinks::STATUS_REJECTED,
             'reason' => 'That handle points nowhere.',
         ]);
 
@@ -117,142 +125,134 @@ class ProfileChangeRequestTest extends TestCase
         $links = SocialLinks::where('user_id', $user->id)->firstOrFail();
 
         $this->assertSame(2, (int) $user->profile_status_lock);
-
-        // These handles were REJECTED, not live, so the save writes straight through.
         $this->assertSame('newhandle', $links->instagram);
-        $this->assertSame(0, (int) $links->status);
 
-        // `reason` was missing from the website model's `$fillable`, so a stale
-        // rejection survived the re-save and rendered beside a pending status.
+        // 🚨 Approved on save (11 Sep 2026). The checks ran in the controller and
+        // passed; it used to land at 0 and wait for a person who no longer exists.
+        $this->assertSame(SocialLinks::STATUS_APPROVED, (int) $links->status);
+
+        // `reason` was missing from the model's `$fillable`, so a stale rejection
+        // survived the re-save and rendered beside a pending status.
         $this->assertNull($links->reason);
 
         // The row's public identifier must not change because a handle was edited.
         $this->assertSame('33333333-3333-4333-8333-333333333333', $links->uuid);
     }
 
-    // ------------------------------------------------------------ live assets defer
+    // -------------------------------------------------------- live edits apply at once
 
-    public function test_editing_a_live_bio_leaves_the_published_text_in_place(): void
+    /** 🚨 The published text is REPLACED, not held. There is no reviewer to hold it for. */
+    public function test_editing_a_live_bio_applies_at_once_and_is_recorded(): void
     {
         $user = $this->approvedCreator();
 
-        $this->save($user, ['bio' => 'I make short films about harbour towns.']);
+        $this->save($user, ['bio' => 'Now I make short films about mountains.']);
         $user->refresh();
 
-        $this->assertSame(self::LIVE_BIO, $user->bio, 'The approved bio stays public until an admin decides.');
+        $this->assertSame('Now I make short films about mountains.', $user->bio);
         $this->assertSame(1, (int) $user->bio_approved);
         $this->assertSame(2, (int) $user->profile_status_lock);
 
-        $change = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_BIO);
-        $this->assertNotNull($change);
-        $this->assertSame('I make short films about harbour towns.', $change->proposed['bio']);
-        $this->assertSame(self::LIVE_BIO, $change->previous['bio'], 'The diff needs the value it was edited from.');
+        $record = ProfileChangeRequest::where('user_id', $user->id)->firstOrFail();
+        $this->assertSame(ProfileChangeRequest::STATUS_APPROVED, $record->status);
+        $this->assertNull($record->decided_by_admin_id, 'No admin decided it — that is what the report counts.');
+        $this->assertSame(self::LIVE_BIO, $record->previous['bio']);
     }
 
-    public function test_uploading_over_a_live_avatar_does_not_destroy_it(): void
+    /**
+     * 🚨 The new photo goes up at once (client direction: no delay). The scan runs
+     * behind it and is what can pull it back down.
+     */
+    public function test_uploading_over_a_live_avatar_publishes_it_at_once(): void
     {
+        Queue::fake();
         $user = $this->approvedCreator();
-        $new = '55555555-5555-4555-8555-555555555555';
+        $new = '44444444-4444-4444-8444-444444444444';
 
-        $this->save($user, ['avatar' => ['uuid' => $new, 'cdnUrlModifiers' => '-/crop/1:1/center/']]);
+        $this->save($user, ['avatar' => ['uuid' => $new, 'cdnUrlModifiers' => null]]);
         $user->refresh();
 
-        // The whole point: the approved uuid used to be overwritten and lost, and the
-        // public then saw the generic placeholder because the flag had dropped to 0.
-        $this->assertSame(self::LIVE_AVATAR, $user->avatar);
+        $this->assertSame($new, $user->avatar);
         $this->assertSame(1, (int) $user->avatar_approved);
+        $this->assertSame(2, (int) $user->profile_status_lock);
 
-        $change = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_AVATAR);
-        $this->assertSame($new, $change->proposed['uuid']);
-        $this->assertSame(self::LIVE_AVATAR, $change->previous['uuid']);
+        // The retraction is the scan's job, so it must actually be dispatched.
+        Queue::assertPushed(CheckMediaModeration::class);
     }
 
+    /** A crop is what the public sees, so changing it is an edit. */
     public function test_recropping_the_same_photo_is_a_change(): void
     {
+        Queue::fake();
         $user = $this->approvedCreator();
 
-        $this->save($user, [
-            'avatar' => ['uuid' => self::LIVE_AVATAR, 'cdnUrlModifiers' => '-/crop/16:9/center/'],
-        ]);
+        $this->save($user, ['avatar' => ['uuid' => self::LIVE_AVATAR, 'cdnUrlModifiers' => '-/crop/16:9/center/']]);
 
-        $change = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_AVATAR);
-
-        $this->assertNotNull($change, 'A re-crop changes what the public sees even though the uuid does not.');
-        $this->assertSame('-/crop/16:9/center/', $change->proposed['cdn_modifier']);
+        $this->assertSame('-/crop/16:9/center/', $user->refresh()->avatar_cdn_modifier);
+        $this->assertSame(1, ProfileChangeRequest::where('asset', 'avatar')->count());
     }
 
     public function test_resubmitting_the_identical_photo_is_not_a_change(): void
     {
+        Queue::fake();
         $user = $this->approvedCreator();
 
-        $this->save($user, [
-            'avatar' => ['uuid' => self::LIVE_AVATAR, 'cdnUrlModifiers' => '-/crop/1:1/center/'],
-        ]);
+        $this->save($user, ['avatar' => ['uuid' => self::LIVE_AVATAR, 'cdnUrlModifiers' => '-/crop/1:1/center/']]);
 
         $this->assertSame(0, ProfileChangeRequest::count());
-        $this->assertSame(1, (int) $user->refresh()->avatar_approved, 'Re-saving must not re-open a cleared photo.');
+        Queue::assertNotPushed(CheckMediaModeration::class);
     }
 
-    public function test_editing_live_social_handles_leaves_the_published_ones_in_place(): void
+    public function test_editing_live_social_handles_applies_at_once(): void
     {
         $user = $this->approvedCreator();
 
         SocialLinks::create([
             'user_id' => $user->id,
-            'uuid' => '33333333-3333-4333-8333-333333333333',
-            'instagram' => 'livehandle',
-            'twitter' => 'livetwitter',
-            'status' => 1,
+            'uuid' => '55555555-5555-4555-8555-555555555555',
+            'instagram' => 'coastalfilms',
+            'twitter' => 'coastal_x',
+            'status' => SocialLinks::STATUS_APPROVED,
         ]);
 
         $this->actingAs($user)->post(route('save_social_links'), [
-            'instagram' => 'newhandle',
-            'twitter' => '',
+            'instagram' => 'mountainfilms',
+            'twitter' => 'coastal_x',
         ]);
 
         $links = SocialLinks::where('user_id', $user->id)->firstOrFail();
 
-        $this->assertSame('livehandle', $links->instagram, 'The approved handles stay public.');
-        $this->assertSame(1, (int) $links->status);
+        $this->assertSame('mountainfilms', $links->instagram);
+        $this->assertSame(SocialLinks::STATUS_APPROVED, (int) $links->status);
+        $this->assertSame(2, (int) $user->fresh()->profile_status_lock);
 
-        $change = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_SOCIALS);
-        $this->assertSame('newhandle', $change->proposed['instagram']);
-
-        // 🚨 A removed platform is a change carried by an explicit null. Filtering
-        // nulls out of the proposed map would silently drop every deletion.
-        //
-        // ⚠️ The field must be POSTED empty for that. This test used to send only
-        // `instagram` and assert the same thing, which pinned the bug in
-        // `profile_change_requests` #1 (3 Sep 2026): a form that never sent the
-        // field proposed wiping a published handle nobody had touched.
-        $this->assertArrayHasKey('twitter', $change->proposed);
-        $this->assertNull($change->proposed['twitter']);
+        $record = ProfileChangeRequest::where('asset', 'socials')->firstOrFail();
+        $this->assertNull($record->decided_by_admin_id);
+        $this->assertSame('coastalfilms', $record->previous['instagram']);
     }
 
+    /**
+     * 🚨 `ConvertEmptyStringsToNull` is global, so a box the creator deliberately
+     * emptied and a field the form never sent arrive IDENTICAL. Only the second is
+     * not an edit.
+     */
     public function test_a_handle_the_payload_does_not_carry_is_not_a_deletion(): void
     {
         $user = $this->approvedCreator();
 
         SocialLinks::create([
             'user_id' => $user->id,
-            'uuid' => '33333333-3333-4333-8333-333333333334',
-            'instagram' => 'https://instagram.com/4242xo',
-            'twitter' => 'livetwitter',
-            'status' => 1,
+            'uuid' => '66666666-6666-4666-8666-666666666666',
+            'instagram' => 'coastalfilms',
+            'twitter' => 'coastal_x',
+            'status' => SocialLinks::STATUS_APPROVED,
         ]);
 
-        // The form sends the platform the creator edited and nothing else.
-        $this->actingAs($user)->post(route('save_social_links'), ['tiktok' => 'https://tiktok.com/@4242xo']);
+        $this->actingAs($user)->post(route('save_social_links'), ['instagram' => 'mountainfilms']);
 
-        $change = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_SOCIALS);
-
-        $this->assertSame('https://tiktok.com/@4242xo', $change->proposed['tiktok']);
-        $this->assertSame(
-            'https://instagram.com/4242xo',
-            $change->proposed['instagram'],
-            'A field the payload never carried must not be proposed for deletion.'
-        );
-        $this->assertSame('livetwitter', $change->proposed['twitter']);
+        $links = SocialLinks::where('user_id', $user->id)->firstOrFail();
+        $this->assertSame('mountainfilms', $links->instagram);
+        $this->assertSame('coastal_x', $links->twitter, 'A field the form did not send is not a deletion.');
     }
 
     public function test_re_saving_identical_handles_is_not_an_edit(): void
@@ -261,24 +261,14 @@ class ProfileChangeRequestTest extends TestCase
 
         SocialLinks::create([
             'user_id' => $user->id,
-            'uuid' => '33333333-3333-4333-8333-333333333335',
-            'instagram' => 'livehandle',
+            'uuid' => '99999999-9999-4999-8999-999999999999',
+            'instagram' => 'coastalfilms',
             'status' => SocialLinks::STATUS_APPROVED,
         ]);
 
-        $this->actingAs($user)->post(route('save_social_links'), [
-            // The same handle, carrying the invisible differences a paste or a
-            // textarea introduces: padding, a zero-width space, a CRLF.
-            'instagram' => " live\u{200B}handle\r\n",
-        ]);
+        $this->actingAs($user)->post(route('save_social_links'), ['instagram' => 'coastalfilms']);
 
-        $this->assertNull(
-            ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_SOCIALS),
-            'A save that changes nothing must not open a review request.'
-        );
-
-        $links = SocialLinks::where('user_id', $user->id)->firstOrFail();
-        $this->assertSame(SocialLinks::STATUS_APPROVED, (int) $links->status, 'The approval must survive it.');
+        $this->assertSame(0, ProfileChangeRequest::count(), 'A save that changes nothing records nothing.');
     }
 
     public function test_a_real_handle_edit_is_still_a_change(): void
@@ -287,73 +277,71 @@ class ProfileChangeRequestTest extends TestCase
 
         SocialLinks::create([
             'user_id' => $user->id,
-            'uuid' => '33333333-3333-4333-8333-333333333336',
-            'instagram' => 'livehandle',
+            'uuid' => '77777777-7777-4777-8777-777777777777',
+            'instagram' => 'coastalfilms',
             'status' => SocialLinks::STATUS_APPROVED,
         ]);
 
-        $this->actingAs($user)->post(route('save_social_links'), ['instagram' => 'a-different-handle']);
+        $this->actingAs($user)->post(route('save_social_links'), ['instagram' => 'somethingelse']);
 
-        $change = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_SOCIALS);
-
-        $this->assertNotNull($change, 'A handle somebody actually edited still reaches a reviewer.');
-        $this->assertSame('a-different-handle', $change->proposed['instagram']);
+        $this->assertSame('somethingelse', SocialLinks::where('user_id', $user->id)->value('instagram'));
+        $this->assertSame(1, ProfileChangeRequest::where('asset', 'socials')->count());
     }
 
+    /**
+     * ⚠️ A REJECTED row is deliberately let through unchanged. `status = 2` means an
+     * admin asked for something, and refusing an unchanged re-submit would leave the
+     * creator holding a rejection they cannot clear.
+     */
     public function test_a_rejected_row_may_be_resubmitted_unchanged(): void
     {
         $user = $this->approvedCreator();
 
         SocialLinks::create([
             'user_id' => $user->id,
-            'uuid' => '33333333-3333-4333-8333-333333333337',
-            'instagram' => 'livehandle',
+            'uuid' => 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+            'instagram' => 'coastalfilms',
             'status' => SocialLinks::STATUS_REJECTED,
-            'reason' => 'Please use your own account.',
+            'reason' => 'Please use the account you post on.',
         ]);
 
-        $this->actingAs($user)->post(route('save_social_links'), ['instagram' => 'livehandle']);
+        $this->actingAs($user)->post(route('save_social_links'), ['instagram' => 'coastalfilms']);
 
         $links = SocialLinks::where('user_id', $user->id)->firstOrFail();
-
-        $this->assertSame(
-            SocialLinks::STATUS_PENDING,
-            (int) $links->status,
-            'A rejection the creator cannot clear is a creator stuck for ever.'
-        );
+        $this->assertSame(SocialLinks::STATUS_APPROVED, (int) $links->status);
         $this->assertNull($links->reason);
     }
 
-    // ------------------------------------------------------- not-live keeps old path
-
-    public function test_a_creator_whose_bio_was_never_approved_writes_straight_through(): void
+    /**
+     * A creator who is not live yet is not editing anything the public saw, so nothing
+     * is recorded — the report is about changes to a live page.
+     */
+    public function test_a_creator_who_is_not_live_records_nothing(): void
     {
-        $user = $this->approvedCreator(['bio_approved' => 0]);
+        $user = $this->approvedCreator(['profile_status_lock' => 0, 'bio_approved' => 0]);
 
-        $this->save($user, ['bio' => 'First attempt at a bio.']);
-        $user->refresh();
+        $this->save($user, ['bio' => 'A first attempt at a bio.']);
 
-        $this->assertSame('First attempt at a bio.', $user->bio);
-        $this->assertSame(0, (int) $user->bio_approved);
-        $this->assertSame(0, ProfileChangeRequest::count(), 'There is nothing public to protect.');
+        $this->assertSame('A first attempt at a bio.', $user->fresh()->bio);
+        $this->assertSame(1, (int) $user->fresh()->bio_approved);
+        $this->assertSame(0, ProfileChangeRequest::count());
     }
 
-    public function test_the_gate_is_per_asset_not_per_profile(): void
+    /** One asset changing must not record or touch the others. */
+    public function test_an_edit_is_per_asset_not_per_profile(): void
     {
-        // An approved profile whose cover was never cleared. Gating on
-        // `profile_status_lock` would have parked this in review for no reason.
-        $user = $this->approvedCreator(['cover_approved' => 0]);
+        $user = $this->approvedCreator();
 
-        $this->save($user, [
-            'cover' => ['uuid' => '66666666-6666-4666-8666-666666666666', 'cdnUrlModifiers' => null],
-        ]);
+        $this->save($user, ['bio' => 'Only the bio moved in this save.']);
 
-        $this->assertSame('66666666-6666-4666-8666-666666666666', $user->refresh()->cover);
-        $this->assertSame(0, ProfileChangeRequest::count());
+        $this->assertSame(1, ProfileChangeRequest::where('asset', 'bio')->count());
+        $this->assertSame(0, ProfileChangeRequest::where('asset', 'avatar')->count());
+        $this->assertSame(self::LIVE_AVATAR, $user->fresh()->avatar);
     }
 
     public function test_a_curated_cover_goes_live_immediately(): void
     {
+        Queue::fake();
         $user = $this->approvedCreator();
         $preset = array_key_first(PresetCovers::COVERS);
 
@@ -362,7 +350,31 @@ class ProfileChangeRequestTest extends TestCase
 
         $this->assertSame($preset, $user->cover);
         $this->assertSame(1, (int) $user->cover_approved, 'A curated cover is pre-approved.');
-        $this->assertSame(0, ProfileChangeRequest::count(), 'Holding it would queue work nobody needs to do.');
+
+        // ⚠️ Never re-scanned: a false positive would pull the same banner off every
+        // profile using it.
+        Queue::assertNotPushed(CheckMediaModeration::class);
+    }
+
+    /**
+     * 🚨 A NEW image gets a FRESH verdict. The scan only ever WRITES
+     * `users.moderation_reason` — a clean result writes nothing — so a reason left by
+     * the previous photo would outlive it and be read as a verdict on its replacement.
+     */
+    public function test_a_new_photo_clears_the_previous_scan_reason(): void
+    {
+        Queue::fake();
+        $user = $this->approvedCreator([
+            'moderation_asset' => 'avatar',
+            'moderation_reason' => 'Held by our automated check on your profile photo.',
+        ]);
+
+        $this->save($user, ['avatar' => ['uuid' => '88888888-8888-4888-8888-888888888888', 'cdnUrlModifiers' => null]]);
+
+        $user->refresh();
+        $this->assertNull($user->moderation_reason);
+        $this->assertNull($user->moderation_asset);
+        Queue::assertPushed(CheckMediaModeration::class);
     }
 
     // ------------------------------------------------------- the bio must really change
@@ -451,102 +463,47 @@ class ProfileChangeRequestTest extends TestCase
         $this->assertSame(0, ProfileChangeRequest::count());
     }
 
+    /** The control for the invisible-character cases above. */
     public function test_a_real_bio_edit_is_still_a_change(): void
     {
         $user = $this->approvedCreator();
 
-        $this->save($user, ['bio' => 'I make short films about harbour towns.']);
+        $this->save($user, ['bio' => self::LIVE_BIO.' And the people in them.']);
 
-        $this->assertNotNull(ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_BIO));
+        $this->assertSame(1, ProfileChangeRequest::where('asset', 'bio')->count());
+        $this->assertStringContainsString('And the people in them.', $user->fresh()->bio);
     }
 
-    // ------------------------------------------------------------------- supersession
-
-    public function test_editing_twice_leaves_one_open_request_carrying_the_later_value(): void
+    /**
+     * 🚨 Two edits are two records, and the LIVE value is the later one. Under the old
+     * queue the second save SUPERSEDED the first and only one row survived; each is now
+     * a thing that happened, and the report shows both.
+     */
+    public function test_editing_twice_records_both_and_keeps_the_later_value(): void
     {
         $user = $this->approvedCreator();
 
-        $this->save($user, ['bio' => 'Second thoughts.']);
-        $this->save($user, ['bio' => 'Third thoughts.']);
+        $this->save($user, ['bio' => 'First rewrite of the bio text.']);
+        $this->save($user->fresh(), ['bio' => 'Second rewrite of the bio text.']);
 
-        $open = ProfileChangeRequest::where('user_id', $user->id)
-            ->where('status', ProfileChangeRequest::STATUS_PENDING)
-            ->get();
-
-        $this->assertCount(1, $open);
-        $this->assertSame('Third thoughts.', $open->first()->proposed['bio']);
-
-        $superseded = ProfileChangeRequest::where('user_id', $user->id)
-            ->where('status', ProfileChangeRequest::STATUS_SUPERSEDED)
-            ->first();
-
-        $this->assertNotNull($superseded);
-        $this->assertNull($superseded->active_key, 'A closed row must free the key or the asset locks forever.');
+        $this->assertSame('Second rewrite of the bio text.', $user->fresh()->bio);
+        $this->assertSame(2, ProfileChangeRequest::where('asset', 'bio')->count());
+        $this->assertSame(0, ProfileChangeRequest::pending()->count(), 'Nothing waits on anybody.');
     }
 
-    public function test_re_saving_a_bio_that_is_already_pending_does_not_churn_the_queue(): void
+    /**
+     * 🚨 A SAVE THAT CHANGES NOTHING WRITES NOTHING — the invariant that survived the
+     * rewrite intact. Re-saving the same text must not fill the report with edits
+     * nobody made.
+     */
+    public function test_re_saving_the_same_bio_records_nothing(): void
     {
         $user = $this->approvedCreator();
 
-        $this->save($user, ['bio' => 'Second thoughts.']);
-        $first = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_BIO);
+        $this->save($user, ['bio' => 'A genuinely new bio about mountains.']);
+        $this->assertSame(1, ProfileChangeRequest::where('asset', 'bio')->count());
 
-        // The creator saves the profile again without touching the bio box.
-        $this->save($user, ['bio' => 'Second thoughts.']);
-
-        $this->assertSame(
-            1,
-            ProfileChangeRequest::where('user_id', $user->id)->count(),
-            'Re-submitting the pending text must not supersede the creator\'s own place in the queue.'
-        );
-        $this->assertSame($first->id, ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_BIO)->id);
-    }
-
-    public function test_a_pending_photo_is_scanned_against_its_own_row_not_the_live_one(): void
-    {
-        Queue::fake();
-
-        $user = $this->approvedCreator();
-        $new = '88888888-8888-4888-8888-888888888888';
-
-        $this->save($user, ['avatar' => ['uuid' => $new, 'cdnUrlModifiers' => null]]);
-
-        $change = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_AVATAR);
-
-        Queue::assertPushed(CheckMediaModeration::class, function ($job) use ($change, $new) {
-            // 🚨 Scanning against `users` would write the verdict to
-            // `users.moderation_reason`, which describes the LIVE photo — and
-            // CreatorReviewAdvisor reads that column, so the console would recommend
-            // rejecting the photo the admin already approved.
-            return $this->jobProperty($job, 'modelClass') === ProfileChangeRequest::class
-                && (int) $this->jobProperty($job, 'modelId') === (int) $change->id
-                && $this->jobProperty($job, 'mediaUuid') === $new;
-        });
-    }
-
-    /** The job's constructor arguments are protected; read them for the assertion. */
-    private function jobProperty(object $job, string $name): mixed
-    {
-        $property = new \ReflectionProperty($job, $name);
-        $property->setAccessible(true);
-
-        return $property->getValue($job);
-    }
-
-    public function test_the_public_payload_does_not_move_while_a_change_is_pending(): void
-    {
-        $user = $this->approvedCreator();
-
-        $before = [$user->avatar_url, $user->cover_url, $user->bio];
-
-        $this->save($user, [
-            'bio' => 'Rewritten.',
-            'avatar' => ['uuid' => '77777777-7777-4777-8777-777777777777', 'cdnUrlModifiers' => null],
-        ]);
-
-        // A fresh instance, so no in-memory state carries over.
-        $public = User::findOrFail($user->id);
-
-        $this->assertSame($before, [$public->avatar_url, $public->cover_url, $public->bio]);
+        $this->save($user->fresh(), ['bio' => 'A genuinely new bio about mountains.']);
+        $this->assertSame(1, ProfileChangeRequest::where('asset', 'bio')->count(), 'The second save changed nothing.');
     }
 }

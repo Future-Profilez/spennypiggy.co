@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\SocialLinks;
 use App\Models\User;
+use App\Services\UserProfileService;
 use App\Support\SocialVisibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Ramsey\Uuid\Uuid;
@@ -337,7 +338,7 @@ class SocialVisibilityTest extends TestCase
             'public_platforms' => ['onlyfans', 'fansly'],
         ]);
 
-        $loaded = app(\App\Services\UserProfileService::class)->getUserWithRelations($user->username);
+        $loaded = app(UserProfileService::class)->getUserWithRelations($user->username);
 
         $this->assertNotNull($loaded);
         $this->assertNotNull($loaded->social_links);

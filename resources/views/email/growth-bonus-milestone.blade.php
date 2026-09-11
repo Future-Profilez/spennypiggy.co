@@ -110,7 +110,16 @@
                 </td>
             </tr>
 
-            @if ($nextMilestone && $nextReward)
+            @if (! empty($schemeClosed))
+                <tr>
+                    <td align="center"
+                        style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#4A4A4A;
+                               line-height:22px;padding:0 0 22px 0;text-align:center;">
+                        The Growth Bonus is now closed to new milestones. This one was yours
+                        before it closed, so it is still being paid in full.
+                    </td>
+                </tr>
+            @elseif ($nextMilestone && $nextReward)
                 <tr>
                     <td align="center"
                         style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#4A4A4A;
@@ -131,7 +140,20 @@
                 </tr>
             @endif
 
-            {{-- CTA --}}
+            {{--
+                🚨 NO BUTTON ONCE THE LADDER IS CLOSED (11 Sep 2026).
+
+                `/growth-bonus` 404s while `growth_bonus.enabled` is false — switching the
+                scheme off takes every entry point down at once, by design. But this mail
+                deliberately OUTLIVES the scheme (the payer keeps running so anyone who met
+                the published condition is still paid), so an honoured creator was being
+                handed a button to a dead page on the message telling them they had earned
+                money. No CTA is strictly better than one that 404s.
+
+                ⚠️ The sentence above already says the bonus is being paid in full, so
+                nothing is lost by dropping the button — there is no action to take.
+            --}}
+            @if (empty($schemeClosed))
             <tr>
                 <td align="center" style="padding:0 0 8px 0;">
                     <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
@@ -148,6 +170,7 @@
                     </table>
                 </td>
             </tr>
+            @endif
 
         </table>
     </td>

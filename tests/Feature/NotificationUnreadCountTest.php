@@ -29,8 +29,8 @@ class NotificationUnreadCountTest extends TestCase
 
     private function fan(): User
     {
-        // A gifter (role 0) clears CheckStripeIdentityVerification without any
-        // Connect/identity setup — this route is behind that middleware too.
+        // A gifter (role 0) with no Connect/identity setup — nothing about reading
+        // notifications depends on either.
         return User::factory()->create(['role' => 0, 'suspended_account' => 0]);
     }
 

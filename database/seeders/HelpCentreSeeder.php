@@ -213,8 +213,8 @@ class HelpCentreSeeder extends Seeder
                 'title' => 'How do I start selling?',
                 'audience' => 'creator',
                 'keywords' => 'get started, setup, onboarding, new creator, begin, first steps, sign up',
-                'summary' => 'Six setup steps, in this order: profile → social account → review → card on file → payouts → identity. Then your first listing and your first sale.',
-                'related' => ['why-is-my-profile-still-in-review', 'what-does-the-subscription-cost', 'connect-your-payouts', 'i-already-have-a-supporter-account'],
+                'summary' => 'Four setup steps, in this order: profile → social account → payouts → card on file. Then your first listing and your first sale. Nothing waits on an approval.',
+                'related' => ['why-is-my-profile-still-in-review', 'verify-your-identity', 'what-does-the-subscription-cost', 'i-already-have-a-supporter-account'],
                 'body' => <<<'MD'
 Setting up runs in a fixed order, and each step unlocks the next. Your dashboard always shows the one step you are on, so you never have to remember where you got to.
 
@@ -224,33 +224,31 @@ Add a photo, a banner and a bio.
 
 ## 2. A social account
 
-Add one account you post on. It is how our team checks the page is really yours, and it stays private unless you choose to show it.
+Add one account you post on. It is checked automatically, and it stays private unless you choose to show it.
 
-## 3. Submit for review
-
-A real person reads your photo and bio before they go public — that review is part of why this platform's payments stay switched on. Your profile is not in the queue until you press Submit.
-
-## 4. Card on file
-
-Once your profile is approved, add a card for the creator subscription. Nothing is charged {{subscription.when_charged}} — see [what the subscription costs](/help/getting-started-creators/what-does-the-subscription-cost).
-
-## 5. Connect your payouts
+## 3. Connect your payouts
 
 Set up your Stripe account so money can reach your bank. This is your own account, in your name.
 
-## 6. Verify your identity
+## 4. Card on file
 
-A passport check through Stripe Identity. It happens after payouts are connected, not before.
+Add a card for the creator subscription. Nothing is charged {{subscription.when_charged}} — see [what the subscription costs](/help/getting-started-creators/what-does-the-subscription-cost).
+
+## There is no approval step
+
+Your photo, bio and social handle are checked automatically as you save them, and your page goes live on its own once all three are clean. Nobody has to approve it and there is no queue to sit in. If a check holds something back you are told which one and why, on your own dashboard.
 
 ## Then: your first listing
 
-You cannot put anything up for sale until identity verification is done. Browsing the whole platform before that is fine — only publishing is blocked.
+You can list and sell as soon as your page is live — an identity check is not needed to publish anything.
+
+## Before you are paid: your identity
+
+A passport check through Stripe Identity, plus a sign-off by our team. It is the one thing standing between your earnings and your bank account, and you only need it once there is money waiting. See **Verifying your identity** below.
 
 ## And: your first sale
 
 This is the step that starts your subscription billing, and it is the point at which the platform starts earning anything from you at all.
-
-If a step says it is being reviewed, there is nothing for you to do — you will be told when it clears.
 MD,
             ],
             [
@@ -277,16 +275,16 @@ Either one opens a short form. Nothing changes until you finish it.
 The same things a new creator answers when they sign up:
 
 - **Badges** — what you make, so supporters can find you.
-- **A social account** — one account you post on. It is how our team checks the page is really yours, and it stays private unless you choose to show it.
+- **A social account** — one account you post on. It is checked automatically, and it stays private unless you choose to show it.
 - **The creator Terms**, and that you understand your creator email address can appear on supporter transaction records and receipts. Most creators set up an address just for this.
 
 ## What happens straight away
 
 Your account becomes a creator account the moment you submit. You can start setting your page up immediately.
 
-**Your profile photo and bio go to our review team.** Nothing is deleted — they are still on your page exactly as you left them. As a supporter they were never reviewed, because a supporter's picture is not shown on a page anybody buys from; as a creator they are, and a real person reads both before they go public. If your banner was one of ours it stays as it is.
+**Your profile photo and bio are checked against the creator rules.** Nothing is deleted — they are still on your page exactly as you left them. As a supporter they were never checked, because a supporter's picture is not shown on a page anybody buys from; as a creator they are. The checks are automatic, so there is nobody to wait for. If your banner was one of ours it stays as it is.
 
-You will then work through the rest of the setup — a card on file, your payouts, and an identity check. [How do I start selling?](/help/getting-started-creators/how-do-i-start-selling) walks through all of it in order.
+You will then work through the rest of the setup — your payouts, then a card on file. [How do I start selling?](/help/getting-started-creators/how-do-i-start-selling) walks through all of it in order.
 
 ## What you keep
 
@@ -311,29 +309,49 @@ MD,
             ],
             [
                 'slug' => 'why-is-my-profile-still-in-review',
-                'title' => 'Why is my profile still in review?',
+                /*
+                 * 🚨 THE SLUG IS THE KEY AND NEVER CHANGES — the title and body did
+                 * (11 Sep 2026). Profiles approve themselves now: there is no queue,
+                 * no reviewer and no "in review" state. But the QUESTION is still
+                 * asked, and by exactly the people whose photo a check held back, so
+                 * the article answers what actually happens instead of being deleted.
+                 * `updateOrCreate` keys on the slug, and seven other articles list it
+                 * in `related`.
+                 */
+                /*
+                 * ⚠️ THE TITLE KEEPS THE WORD "REVIEW" ON PURPOSE, AND THE ANSWER IS
+                 * "NO". `HelpSearch::score()` weights a title hit 20 against a
+                 * keyword's 14, so the first retitle — "Why is my photo or bio not
+                 * showing?" — lost "my profile has been in review for days" to three
+                 * articles that legitimately have "review" in their titles
+                 * (`why-is-a-payment-held-for-review`, `who-reviews-my-content`,
+                 * `what-happens-after-approval`). Caught by HelpAnswerCasesTest.
+                 * A help title has to carry the word the reader types even when the
+                 * point of the article is that the thing no longer exists.
+                 */
+                'title' => 'Is my profile waiting for review?',
                 'audience' => 'creator',
-                'keywords' => 'profile review, pending, approval, avatar, banner, bio, waiting, not approved',
-                'summary' => 'Photos, banner and bio are each checked by a person. Until they clear, the public sees a placeholder — you still see your own upload.',
+                'keywords' => 'profile review, pending, approval, avatar, banner, bio, waiting, not approved, in review, held, not showing, not live, page not live',
+                'summary' => 'Your photo, bio and handles are checked automatically as you save them. Nothing waits on a person — if something is held back your dashboard says which and why.',
                 'related' => ['how-do-i-start-selling', 'what-content-is-allowed'],
                 'body' => <<<'MD'
-Every profile photo, banner and bio is reviewed by a real person before it is shown publicly. That is deliberate: it is a large part of why this platform's payments stay switched on when other creator platforms lose theirs.
+**There is no review queue and nobody is approving your page.** Your photo, bio and social handle are each checked automatically the moment you save them, and your page goes live on its own once all three are clean.
 
-## What you see versus what everyone else sees
+## If something is not showing
 
-**You always see your own upload.** Nobody else does until it is approved. If your photo looks right to you but a friend sees a placeholder, that is review in progress, not a failed upload.
+Your dashboard names the item and the reason. There is nothing to submit and nobody to chase — fix the thing it names, save, and it is re-checked immediately.
 
-## How long it takes
+## The photo is the one that can lag
 
-Assets are reviewed in the order they arrive. You will get an email and a notification the moment a decision is made — you do not need to check back.
+The bio and your handles are judged as you save. The photo goes through an image check, which takes a moment longer — so on a slow moment it can be the last thing to clear.
 
-## If something is refused
+## Editing something already live
 
-You will be told which asset it was and why, in plain words. Replace just that one thing and it goes back into review automatically. Nothing else on your profile is affected.
+An edit does **not** take the live version down. The published photo, banner or bio stays up while the new one is checked, so a saved change can never leave your page blank.
 
-## Editing something already approved
+## What a person still checks
 
-An edit to a live photo, banner or bio does **not** take the current version down. The public keeps seeing the approved version until the new one clears review, and rejecting the change simply leaves your existing one in place.
+Your identity, once you have earnings waiting — that is a passport check plus a sign-off by our team, and it is about being paid, not about your page being visible.
 MD,
             ],
             [
@@ -348,11 +366,11 @@ MD,
 
 ## When you are charged
 
-Billing starts {{subscription.when_charged}}. Your card is collected once your profile has been approved, before your payouts are connected — but it is not charged until then.
+Billing starts {{subscription.when_charged}}. Your card is collected after your payouts are connected — it is the last setup step — but it is not charged until then.
 
 ## Why we take the card before charging it
 
-Your card is asked for after a person has approved your profile and before your payouts are set up. It is the filter that keeps automated accounts away from identity verification, which costs the platform money on every check. It is not a hold on your funds — nothing is taken.
+Your card is asked for once your page is live and your payouts are set up. It is not a hold on your funds — nothing is taken until your first sale.
 
 ## Cancelling
 
@@ -428,14 +446,16 @@ MD,
                 'title' => 'Verifying your identity',
                 'audience' => 'creator',
                 'keywords' => 'identity, passport, kyc, verification, id check, stripe identity, rejected',
-                'summary' => 'A passport check through Stripe Identity, after payouts are connected. You cannot publish a listing until it passes.',
+                'summary' => 'A passport check through Stripe Identity plus a sign-off by our team. It gates your PAYOUT, not your listings — you can sell before it is done.',
                 'related' => ['connect-your-payouts', 'how-do-i-start-selling'],
                 'body' => <<<'MD'
-Identity verification is a passport check run by Stripe Identity. It happens **after** you have connected payouts, not before.
+Identity verification is a passport check run by Stripe Identity, followed by a sign-off from our team.
+
+**It does not stop you selling.** You can publish listings and take payments before it is done — what it gates is the money reaching your bank. You only need it once you have earnings waiting.
 
 ## What it blocks
 
-Publishing a listing. Nothing else — you can browse the entire platform, set up your profile and connect your payouts while it is outstanding.
+Being paid. Nothing else — you can list, sell, set up your profile and connect your payouts while it is outstanding. The money simply waits in your balance until the check clears.
 
 ## Why it comes after payouts
 
@@ -911,9 +931,11 @@ MD,
 
 List something at {{price.min}} and {{price.min}} is what reaches your balance. The supporter's card is charged more than that, and the difference never passes through your earnings.
 
-## The rate is not one number
+## The rate
 
-It varies by **payment method** — a bank payment costs less to process than a card, so the total a supporter pays is lower — and some creators are on individually negotiated rates. That is why you will not find a single percentage published anywhere: any one figure would be wrong for someone.
+**{{fee.all_in}} on a card payment, {{fee.all_in.bank}} on a bank payment.** That is the whole fee — card processing is inside it, not added afterwards, and there is no separate administration charge.
+
+A bank payment costs less to process than a card, which is why it is the cheaper of the two for your supporter. A few creators are on individually negotiated rates; if that is you, yours is the one on your own transactions.
 
 The exact breakdown for any sale is on that transaction in your financial dashboard.
 
@@ -958,10 +980,111 @@ We do not file anything for you and we are not your accountant. What we provide 
 MD,
             ],
             [
+                /*
+                 * ⚠️ WRITTEN 11 Sep 2026 BECAUSE THE GUARD ASKED FOR IT. `HelpAnswerCasesTest`
+                 * has expected `shipping-physical-products` since it was written and the
+                 * article never existed — a creator asking "how do I post something to a
+                 * buyer" was handed three articles about publishing POSTS, because the word
+                 * means two different things and only one of them had any copy.
+                 *
+                 * ⚠️ The keywords carry the POSTAL sense deliberately ("post a parcel",
+                 * "send it", "royal mail") — the publishing sense is already well covered
+                 * and was winning the search outright.
+                 */
+                'slug' => 'shipping-physical-products',
+                'title' => 'Sending a physical item to a buyer',
+                'audience' => 'creator',
+                'keywords' => 'shipping, postage, post a parcel, posting, send it, sending, delivery, dispatch, royal mail, courier, tracking, shipping profile, shipping zones, worldwide, domestic',
+                'summary' => 'Set your postage rates before you list, pack and send within your stated delivery time, then mark the order delivered.',
+                'related' => ['when-do-i-get-paid', 'what-fees-are-deducted'],
+                'body' => <<<'MD'
+When you sell something physical, the buyer pays your **listed price plus the postage you set**. Postage is yours to set and yours to pay out of — so set it before you list, not after somebody has bought.
+
+## Set your postage first
+
+Each physical item needs at least one postage rate. You can set rates in two ways:
+
+- **A shipping profile** — one set of rates you reuse across many items. Change it once and every item using it follows. This is the one to use if you post similar things.
+- **Per item** — rates typed on that listing alone.
+
+⚠️ A profile always wins where one is selected. Saving an item with a profile chosen **removes** any per-item rates it had, so the two can never both apply.
+
+## Zones
+
+Within either, a buyer's own country is matched first and **Worldwide** is the fallback. Set your own country's rate deliberately — it is the one most of your buyers will use.
+
+🚨 **If you delete a shipping profile, every item still pointing at it ships free.** Nothing warns the buyer and nothing warns you — the order simply arrives with no postage on it and you pay to send it. Move those items onto another profile, or give them their own rates, before deleting one.
+
+## Delivery time and restrictions
+
+Delivery time and any restrictions are **per item**, always shown, and they are a promise: they are what the buyer is shown before paying and what we measure a late order against. Say what is true for the way you actually post, not the best case.
+
+## After the sale
+
+1. You are notified, and the order appears in your orders list.
+2. Pack and send it within the delivery time you stated.
+3. **Mark it delivered** — the money is released on your normal payout schedule, and an order left unmarked can hold up that payment.
+
+If a parcel goes missing or a buyer says it never arrived, message support from the chat bubble before refunding — we can see the order, the dates and what the buyer was told.
+MD,
+            ],
+
+            [
+                /*
+                 * 🚨 THE ANSWER FOR SOMEBODY WHO ALREADY EARNED ONE (11 Sep 2026).
+                 *
+                 * The three bonus schemes were retired and their how-to-join articles
+                 * are unpublished with them — an article explaining how to join
+                 * something nobody can join sends a creator to a 404. But the question
+                 * does not stop being asked, and the people most likely to ask it are
+                 * the ones holding an entitlement and wondering where it stands.
+                 *
+                 * ⚠️ NO `feature_flag`. This one is visible precisely BECAUSE the
+                 * schemes are closed, and it stays accurate if they are switched back
+                 * on: it says what closed and that earned entitlements are honoured,
+                 * never how to join.
+                 */
+                'slug' => 'closed-programmes',
+                'title' => 'Closed bonus programmes',
+                'audience' => 'creator',
+                'keywords' => 'founder bonus, growth bonus, fast start, closed, retired, ended, discontinued, still get paid, already earned, what happened to',
+                'summary' => 'The Founder, Growth and Fast Start bonuses are closed to new participation. Anything already earned is unaffected.',
+                'related' => ['when-do-i-get-paid', 'what-fees-are-deducted'],
+                'body' => <<<'MD'
+The **Founder bonus**, the **Creator Growth bonus** and the **Fast Start bonus** are closed to new participation. No new qualifications are being accepted for any of them.
+
+## If you already earned one
+
+**It is unaffected and it will still be paid.** Closing a programme stops new qualifications — it does not cancel anything somebody has already earned. Payments carry on to their normal schedule, and you will see them on your payouts page like any other.
+
+## Why they closed
+
+We simplified what the platform charges and what it offers. You now keep **100% of your listed price** on every sale, and supporters cover one simple fee at checkout with card processing included — rather than a lower headline rate topped up with bonuses that only some creators reached.
+
+## What is open instead
+
+- **Earn your membership back** — every {{credits.threshold}} of settled earnings gives you a free month of your creator membership.
+- **Refer a creator** — when someone you refer reaches {{referral.threshold}} in settled earnings, you receive {{referral.reward}}.
+
+If you think a bonus you earned has not been paid, message support from the chat bubble and we will look at your account.
+MD,
+            ],
+
+            [
                 'slug' => 'founder-bonus',
                 'title' => 'The Founder bonus',
                 'audience' => 'creator',
                 'keywords' => 'founder, bonus, seats, qualify, earnings bonus, 30 days, monthly bonus',
+                /*
+                 * 🚨 UNPUBLISHED WITH THE SCHEME (11 Sep 2026). `feature_flag`
+                 * is read by `HelpArticle::isVisible()`, so the article leaves
+                 * the Help Centre, the search index and the sitemap the moment
+                 * the config line flips — and comes back if it flips again. An
+                 * article explaining how to join a scheme nobody can join is
+                 * worse than no article: a creator reads it, tries, and finds
+                 * a 404.
+                 */
+                'feature_flag' => 'founder_bonus.enabled',
                 'summary' => 'Earn {{founder.min_earnings}} net in your first {{founder.window_days}} days and you become a Founder — {{founder.seats}} seats in total.',
                 'related' => ['when-do-i-get-paid', 'what-fees-are-deducted'],
                 'body' => <<<'MD'
@@ -1044,12 +1167,11 @@ The full total is on screen before you enter any payment details, and it is the 
 
 If fees came out of the price, a creator listing something at £20 would receive less than £20 and would have to guess at a higher number to end up where they meant to be. Adding on top means the creator's price is real and yours is honest.
 
-## Why it varies
+## What the fee is
 
-- **Payment method.** Bank costs less to process than card, so the bank total is lower.
-- **The creator.** Some creators are on individually negotiated rates.
+**{{fee.all_in}} paying by card, {{fee.all_in.bank}} paying by bank.** Card processing is included in that — it is not a second charge stacked on afterwards, and there is no separate administration fee.
 
-That is why no single percentage is published — any one figure would be wrong for someone.
+Bank costs less to process than card, which is the whole of why the two differ. A few creators are on individually negotiated rates, so the figure on a particular listing can differ from the ones above; the total on screen is always the one you will be charged.
 
 ## A basket with several items
 
@@ -1112,7 +1234,7 @@ This is a **strictly safe-for-work platform**, and it is enforced rather than me
 
 ## How it is enforced
 
-Every upload is scanned automatically and then reviewed by a real person before it goes live. Every creator is identity-verified with a passport before they can earn anything.
+Every upload is screened automatically before it goes live, and anything the screening flags goes to a real person. No creator is paid out until their identity has been verified with a passport and signed off by our team.
 
 ## Adult creators
 

@@ -12,12 +12,14 @@ use App\Models\UserVerificationStatus;
 use App\Services\CreatorJourneyService;
 use App\Services\IntercomService;
 use App\Services\Pricing\CreatorFeeResolver;
+use App\Services\Pricing\FeeModel;
 use App\Services\PromoBannerService;
 use App\Services\SubscriptionActivationService;
 use App\Support\AnalyticsEvent;
 use App\Support\GifterVerificationCharge;
+use App\Support\Incentives;
 use App\Support\MaintenanceMode;
-use App\Support\ReviewSubmission;
+use App\Support\ProfileAutoApproval;
 use App\Support\SubscriptionPlan;
 use App\Support\SuspendedAccount;
 use App\Support\VerifiedBadge;
@@ -127,18 +129,20 @@ class HandleInertiaRequests extends Middleware
                 'social_url' => $user->social_url,
                 'auto_tweet' => $user->auto_tweet,
                 'profile_reject_reason' => $user->profile_reject_reason,
+                // The scan's creator-facing reason and which asset it judged — the
+                // steps page renders the held asset's own reason beside it.
+                'moderation_reason' => $user->moderation_reason,
+                'moderation_asset' => $user->moderation_asset,
                 /*
-                 * 🚨 "SUBMITTED" AND "WITH THE REVIEW TEAM" ARE DIFFERENT FACTS.
-                 *
-                 * `profile_status_lock = 1` says the creator pressed Submit. It does
-                 * NOT say an admin can see them: the queue also requires a photo, bio,
-                 * handle and card, so a submission missing one of those sits in no
-                 * queue at all. Reading the bare lock is what told 22 creators "our
-                 * team is checking it now — there is nothing else to do" while nobody
-                 * could ever look at them. Null unless there is something to say; see
-                 * App\Support\ReviewSubmission.
+                 * 🚨 WHICH ASSETS ARE HOLDING THE PROFILE BACK, if any. Profiles approve
+                 * themselves (App\Support\ProfileAutoApproval); an entry here is a photo
+                 * the scan held, a bio or handle an admin turned down. Empty means
+                 * nothing stands between the creator and live — the page renders on
+                 * the LIST, never on the lock.
                  */
-                'review_submission' => ReviewSubmission::payload($user),
+                'profile_holds' => (int) ($user->role ?? 0) === 1
+                    ? ProfileAutoApproval::holding($user)
+                    : [],
                 'is_subscription_cancelled' => $user->is_subscription_cancelled,
                 'upcoming_payment_date' => $user->upcoming_payment_date,
                 'subscription_end' => $user->subscription_end,
@@ -292,6 +296,22 @@ class HandleInertiaRequests extends Middleware
                     ? app(CreatorJourneyService::class)->nextStep($user)
                     : null,
             ],
+            /*
+             * 🚨 WHICH CREATOR INCENTIVE SCHEMES EXIST — one flag per scheme,
+             * read by every JSX surface that advertises one (11 Sep 2026,
+             * simplification programme §6).
+             *
+             * Most scheme surfaces are already gated by their own server prop.
+             * The footer, the header and the /creators marketing pages are not:
+             * they render from JSX with no scheme prop of their own, and
+             * `constants/creatorBonuses.js` is always importable — which is
+             * exactly how a card comes to advertise a route that 404s. Read
+             * `incentives.*` in JSX, NEVER a constant.
+             *
+             * ⚠️ Booleans and figures only. This goes out with every Inertia
+             * navigation and must cost no query.
+             */
+            'incentives' => Incentives::payload(),
             'follow_status' => $follow_status,
             'cart_count' => $cart_count,
             /*
@@ -342,6 +362,19 @@ class HandleInertiaRequests extends Middleware
             'analytics' => fn () => AnalyticsEvent::pull(),
             'symbols' => Cache::remember('currency_symbols', 86400, fn () => Currency::symbols()),
             'rates' => Cache::remember('currency_rates', 86400, fn () => Currency::rates()),
+            /*
+             * 🚨 THE ADVERTISED SUPPORTER FEE, SHARED SO NO PAGE EVER TYPES IT.
+             *
+             * Three creator-facing forms said "Our fee is 19%" — true under the legacy
+             * markup and wrong the day the platform moved to an all-in rate. A number
+             * typed into JSX cannot follow a config change, and the client's §3 asks
+             * for pricing that moves without development work.
+             *
+             * ⚠️ NOT cached: the rate is a config read, and caching it would put a
+             * stale fee in front of creators for up to a day after a change — which is
+             * the exact failure this prop exists to prevent.
+             */
+            'fees' => fn () => FeeModel::describe('card'),
             'currencies' => Cache::remember('all_currencies_iso', 86400, fn () => Currency::select('ISO', 'ISOdigits', 'symbol')->get()->keyBy('ISO')),
             'global_currency' => Cookie::get('currency'),
             'platform_fee_percentage' => config('app.platform_fee_percentage', 17),

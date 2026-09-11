@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Jobs\CheckMediaModeration;
 use App\Models\PiggyPot;
+use App\Rules\NoBlockedSymbols;
 use App\Rules\NoExpenseOrBrandName;
 use App\Services\ItemTextModeration;
 use App\Services\PiggyPotStatusService;
 use App\Services\RewardService;
 use App\Services\UserProfileService;
+use App\Support\RewardFileScan;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -124,7 +126,7 @@ class PiggyPotController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'title' => ['required', 'string', 'max:255', new NoExpenseOrBrandName],
+            'title' => ['required', 'string', 'max:255', new NoExpenseOrBrandName, new NoBlockedSymbols],
             'description' => 'nullable|string',
             'target_amount' => [
                 'required',
@@ -198,6 +200,12 @@ class PiggyPotController extends Controller
             );
         }
 
+        /*
+         * The pot's CONTENT is the product — the cover is only its shop front — and
+         * the content file was the one thing here nothing ever scanned.
+         */
+        RewardFileScan::dispatch($piggyPot, ['status' => 'moderation_hold']);
+
         app(UserProfileService::class)->clearUserCaches(Auth::user()->username, Auth::user()->id);
 
         return redirect()->back()->with('success', 'Piggy Pot created — it goes live once our team has reviewed it.');
@@ -210,6 +218,11 @@ class PiggyPotController extends Controller
     {
         $piggyPot = PiggyPot::withScheduled()->where('user_id', Auth::id())->findOrFail($id);
 
+        // Captured before `update()` mutates the model — the scan below has to be
+        // able to tell a replaced content file from an untouched one, or a re-scan
+        // re-produces a false positive on a pot an admin has already released.
+        $previousRewardFile = (string) RewardFileScan::currentFile($piggyPot);
+
         // Default the reward headline from the pot title so a missing field
         // never blocks creation (the pot's content IS the deliverable).
         if (! filled($request->reward_title)) {
@@ -217,7 +230,7 @@ class PiggyPotController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'title' => ['required', 'string', 'max:255', new NoExpenseOrBrandName],
+            'title' => ['required', 'string', 'max:255', new NoExpenseOrBrandName, new NoBlockedSymbols],
             'description' => 'nullable|string',
             'target_amount' => [
                 'required',
@@ -303,6 +316,8 @@ class PiggyPotController extends Controller
                 'cover_image'
             );
         }
+
+        RewardFileScan::dispatch($piggyPot, ['status' => 'moderation_hold'], $previousRewardFile);
 
         app(UserProfileService::class)->clearUserCaches(Auth::user()->username, Auth::user()->id);
 

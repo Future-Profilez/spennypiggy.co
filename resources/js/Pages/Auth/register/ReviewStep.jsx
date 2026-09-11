@@ -61,7 +61,7 @@ export default function ReviewStep({
     // that the social profile must be public and active — belongs on the screen
     // that asks for it, not as a warning here.
     const nextUp = isCreator
-        ? "Next: link a public social profile, verify your identity, then publish."
+        ? "Next: link a public social profile, connect your payouts, then publish."
         : "Next: confirm your email, then find creators on Discover.";
 
     const blocker = !consents.terms

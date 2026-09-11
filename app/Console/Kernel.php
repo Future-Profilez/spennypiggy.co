@@ -249,6 +249,39 @@ class Kernel extends ConsoleKernel
             ->monthlyOn(7, '10:05')
             ->withoutOverlapping(30);
 
+        /*
+         * "Earn your membership back" — £500 of qualifying settled earnings
+         * buys one free month of the creator platform subscription
+         * (simplification programme §5, 11 Sep 2026).
+         *
+         * ⚠️ 09:25, immediately after `growth-bonus:evaluate` (09:20) and clear
+         * of the founder job at 09:00 — every command due in one minute runs
+         * sequentially inside a single `schedule:run` invocation, and on Vapor
+         * that invocation dies at `cli-timeout`.
+         *
+         * ⚠️ THE DAILY PASS IS WHAT REVERSES A CREDIT. The creator's own panel
+         * computes live, but a refund arrives as a webhook and nothing else
+         * re-reads that creator's total — a credit that should have been taken
+         * back would sit spendable until they happened to open a page. There
+         * is deliberately no per-sale hook: awarding a free month a few hours
+         * late costs nothing, and a ledger recompute on the payment path does.
+         *
+         * Both no-op while `membership_credits.enabled` is false.
+         */
+        $schedule->command('membership-credits:evaluate')
+            ->dailyAt('09:25')
+            ->withoutOverlapping(30);
+
+        /*
+         * ⚠️ AFTER the evaluator, so a month earned this morning can be spent
+         * this morning — and after the payout commands, because it makes a
+         * Stripe call per credit and those are the runs that must not be
+         * delayed. A no-op in `manual` spend mode (D11).
+         */
+        $schedule->command('membership-credits:apply')
+            ->dailyAt('11:15')
+            ->withoutOverlapping(30);
+
         // Risk Engine: Enforce Manual Payouts (Every 10 Minutes)
         $schedule->command('payout:enforce-manual')
             ->everyTenMinutes()
@@ -302,19 +335,6 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping();
 
         /*
-         * Remind creators whose profile is SUBMITTED but held out of the admin queue by
-         * something they can fix. Weekly, because the reminder ladder is measured in
-         * fortnights and months — a daily run would re-examine the same rows to send
-         * nothing six days out of seven.
-         *
-         * Monday 09:50: after `creators:nudge-journey` (09:40) so the two cannot land in
-         * the same minute and share a cli-timeout budget on Vapor.
-         */
-        $schedule->command('review:nudge-blocked')
-            ->weeklyOn(1, '09:50')
-            ->withoutOverlapping();
-
-        /*
          * Invite REJECTED creators back — every two months ×3, then yearly (client
          * decision, 7 Sep 2026). Reason-gated, never lock-gated: lock 0 is also the
          * default, and mailing 280 drafts "come back and fix it" would name a
@@ -322,6 +342,21 @@ class Kernel extends ConsoleKernel
          */
         $schedule->command('profiles:nudge-rejected')
             ->weeklyOn(1, '09:55')
+            ->withoutOverlapping();
+
+        /*
+         * Tell a creator holding money they cannot receive that their identity check is
+         * what is stopping it — 7, 30, 60 then 90 days from their first settled earning
+         * (10 Sep 2026: identity became a payout gate rather than an onboarding step).
+         *
+         * ⚠️ Only ever reaches a creator with earnings waiting; the payout page already
+         * says it to anyone who opens it, and this is for the creator who is not looking.
+         *
+         * Monday 10:00, clear of the three nudges above so they cannot share one
+         * cli-timeout budget on Vapor.
+         */
+        $schedule->command('payouts:remind-unverified')
+            ->weeklyOn(1, '10:00')
             ->withoutOverlapping();
 
         // Recompute where each creator has got to. This must run BEFORE the admin app's

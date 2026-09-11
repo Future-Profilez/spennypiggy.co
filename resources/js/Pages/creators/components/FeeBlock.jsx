@@ -22,6 +22,16 @@ import { Eyebrow } from './Ledger';
  * platform on these pages charges both kinds, and folding one into the other is
  * how a comparison stops being one.
  *
+ * 🚨 OUR OWN FLAT FEE IS £0 SINCE 11 Sep 2026, AND THE BLOCK HAD NO ZERO CASE.
+ * `rail.flat_fee !== null` printed "Plus £0.00 flat" on every rail, and the
+ * standing `lines.flat_fee` sentence — "£1 covers the human review of every
+ * payment" — was rendered unconditionally, so this block advertised a charge
+ * the checkout no longer makes, underneath a rail card correctly showing zero.
+ * Both are gated on `hasFlatFee` now. ⚠️ The SENTENCE still comes from
+ * `ComparisonFeePayload` and still names £1; the gate is what keeps it off the
+ * page, so if a flat fee is ever switched back on, check that sentence before
+ * trusting it.
+ *
  * ⚠️ "Not on their pricing page" is the STRONGEST wording permitted in this UI.
  * Never "hidden", never "sneaky", never "scam" — a spec rule, and it is what
  * keeps the page factual rather than an attack.
@@ -49,6 +59,15 @@ export default function FeeBlock({
      */
     const hasTheirs = (competitorFees ?? []).length > 0;
 
+    /*
+     * ⚠️ `> 0`, NOT `!== null`. Zero and "not applicable" are different facts
+     * and were being drawn the same way. An announced rail carries null (its
+     * provider rate is unpublished) and must still print nothing.
+     */
+    const hasFlatFee = (fees.rails ?? []).some(
+        (rail) => typeof rail.flat_fee === 'number' && rail.flat_fee > 0,
+    );
+
     return (
         <section>
             {/* ⚠️ See `FeatureMatrix` for why `headless` exists. Default false,
@@ -62,10 +81,11 @@ export default function FeeBlock({
                     </h2>
 
                     <p className="mt-5 max-w-2xl text-base leading-relaxed text-gray-300 md:text-lg">
-                        Percentages next to percentages, flat fees next to flat
-                        fees, every line for both of us. Ours are read live from
-                        our checkout, so they can never drift from what a
-                        supporter is charged.
+                        {hasFlatFee
+                            ? 'Percentages next to percentages, flat fees next to flat fees, every line for both of us.'
+                            : 'Every line, for both of us — and ours is one all-in percentage with the payment processing already inside it.'}{' '}
+                        Ours are read live from our checkout, so they can never
+                        drift from what a supporter is charged.
                     </p>
                 </>
             )}
@@ -145,23 +165,48 @@ export default function FeeBlock({
                                     )}
                                 </div>
 
+                                {/* 🚨 UNDER ALL-IN THERE IS ONE FEE, NOT THREE (11 Sep 2026). The stacked
+                                    lines printed "Platform 5.98% · Compliance 0% · Processing 3.4%" under
+                                    a 12% headline — a breakdown summing to 9.38% on the page whose claim
+                                    is that its figures cannot drift from the checkout, with a line for a
+                                    charge that no longer exists. Processing is INSIDE the rate, so it is
+                                    shown as what the rate includes, never as an addition. */}
                                 <dl className="mt-5 space-y-2 text-[15px] leading-[1.5]">
-                                    <Line
-                                        label="Platform fee"
-                                        value={`${rail.platform_rate}%`}
-                                    />
-                                    <Line
-                                        label="Compliance fee"
-                                        value={`${rail.compliance_rate}%`}
-                                    />
-                                    <Line
-                                        label="Payment processing"
-                                        value={
-                                            rail.processing_rate === null
-                                                ? rail.processing_note
-                                                : `${rail.processing_rate}% + ${money(rail.processing_fixed)}`
-                                        }
-                                    />
+                                    {rail.all_in ? (
+                                        <>
+                                            <Line
+                                                label="All-in fee"
+                                                value={`${rail.all_in_rate}%`}
+                                            />
+                                            <Line
+                                                label="Includes payment processing"
+                                                value={
+                                                    rail.processing_rate === null
+                                                        ? rail.processing_note
+                                                        : `${rail.processing_rate}% + ${money(rail.processing_fixed)}`
+                                                }
+                                            />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Line
+                                                label="Platform fee"
+                                                value={`${rail.platform_rate}%`}
+                                            />
+                                            <Line
+                                                label="Compliance fee"
+                                                value={`${rail.compliance_rate}%`}
+                                            />
+                                            <Line
+                                                label="Payment processing"
+                                                value={
+                                                    rail.processing_rate === null
+                                                        ? rail.processing_note
+                                                        : `${rail.processing_rate}% + ${money(rail.processing_fixed)}`
+                                                }
+                                            />
+                                        </>
+                                    )}
                                 </dl>
 
                                 {/*
@@ -178,11 +223,12 @@ export default function FeeBlock({
                                     </p>
                                 )}
 
-                                {rail.flat_fee !== null && (
-                                    <p className="mt-3 text-[15px] text-gray-300">
-                                        Plus {money(rail.flat_fee)} flat
-                                    </p>
-                                )}
+                                {typeof rail.flat_fee === 'number' &&
+                                    rail.flat_fee > 0 && (
+                                        <p className="mt-3 text-[15px] text-gray-300">
+                                            Plus {money(rail.flat_fee)} flat
+                                        </p>
+                                    )}
 
                                 {rail.supporter_pays !== null && (
                                     <p className="mt-5 border-t border-white/15 pt-4 text-[15px] leading-[1.5] text-gray-300">
@@ -289,9 +335,11 @@ export default function FeeBlock({
              * rule either way.
              */}
             <div className="mt-8 grid gap-2 border-t border-white/15 pt-6">
-                <p className="text-[15px] leading-[1.55] text-gray-300">
-                    {fees.lines.flat_fee}
-                </p>
+                {hasFlatFee && (
+                    <p className="text-[15px] leading-[1.55] text-gray-300">
+                        {fees.lines.flat_fee}
+                    </p>
+                )}
                 <p className="text-[15px] leading-[1.55] text-gray-300">
                     {fees.lines.creator}
                 </p>

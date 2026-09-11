@@ -182,6 +182,43 @@ class ProfileChangeRequest extends Model
      * @param  array<int, string>  $assets
      * @return array<string, self>
      */
+    /**
+     * Record an edit that has ALREADY been applied.
+     *
+     * 🚨 THIS IS WHAT A CHANGE REQUEST IS NOW (11 Sep 2026). It used to be a GATE: the
+     * proposed value sat here, the published value stayed on the profile, and an admin
+     * decided between them. Profiles approve themselves, so there is nothing to decide
+     * — the edit goes live as it is saved and this row is the RECORD that it did.
+     *
+     * Why keep the row at all: the client asked for edits to auto-apply **and** to be
+     * highlighted on a daily report. `status = approved` with `decided_by_admin_id`
+     * NULL is exactly "the machine decided this", which is what the admin console
+     * counts. Deleting the table would take that report with it.
+     *
+     * ⚠️ Written already-closed. A `pending` row means something is waiting on a
+     * person, and nothing is — leaving these open would refill a queue the whole change
+     * exists to empty, and `whereChangePending()` would put every ordinary bio edit
+     * back in front of a reviewer.
+     */
+    public static function record(User $user, string $asset, array $applied, array $previous = []): self
+    {
+        return static::create([
+            'user_id' => $user->id,
+            'asset' => $asset,
+            'status' => self::STATUS_APPROVED,
+            'proposed' => $applied,
+            'previous' => $previous,
+            'submitted_at' => now(),
+            'decided_at' => now(),
+            // 🚨 NULL is the whole signal. An admin id here would claim a person
+            // approved it.
+            'decided_by_admin_id' => null,
+            // Never holds the active key: that key is what marks a row as the one
+            // pending decision for an asset, and this one is already decided.
+            'active_key' => null,
+        ]);
+    }
+
     public static function openForAssets(int $userId, array $assets): array
     {
         if (! $assets) {
@@ -227,6 +264,59 @@ class ProfileChangeRequest extends Model
     public function isPending(): bool
     {
         return $this->status === self::STATUS_PENDING;
+    }
+
+    /**
+     * Copy the proposed value onto the live row.
+     *
+     * 🚨 MIRRORS THE ADMIN APP'S `ProfileChangeService::copyOntoLive()` FIELD FOR FIELD.
+     * Two apps, one table, no shared code — if that method learns a new asset or a new
+     * column, this one learns it in the same commit, or an automated approval and a
+     * human one write different things for the same request.
+     *
+     * ⚠️ Writes the VALUE only. The approved flag is `ProfileAutoApproval::markApproved()`,
+     * kept separate so a caller can apply-and-hold (a scan still pending) as well as
+     * apply-and-approve.
+     */
+    public function applyProposed(User $user): void
+    {
+        $proposed = $this->proposed ?? [];
+
+        switch ($this->asset) {
+            case self::ASSET_AVATAR:
+                $user->forceFill([
+                    'avatar' => $proposed['uuid'] ?? null,
+                    'avatar_cdn_modifier' => $proposed['cdn_modifier'] ?? null,
+                ])->save();
+
+                return;
+
+            case self::ASSET_COVER:
+                $user->forceFill([
+                    'cover' => $proposed['uuid'] ?? null,
+                    'cover_cdn_modifier' => $proposed['cdn_modifier'] ?? null,
+                ])->save();
+
+                return;
+
+            case self::ASSET_BIO:
+                $user->forceFill(['bio' => $proposed['bio'] ?? null])->save();
+
+                return;
+
+            case self::ASSET_SOCIALS:
+                $values = [];
+
+                foreach (self::SOCIAL_FIELDS as $field) {
+                    $values[$field] = $proposed[$field] ?? null;
+                }
+
+                SocialLinks::updateOrCreate(['user_id' => $user->id], $values);
+
+                return;
+        }
+
+        throw new \RuntimeException('Unknown profile change asset: '.$this->asset);
     }
 
     public function scopePending($query)

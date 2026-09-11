@@ -71,18 +71,19 @@ class CoverageArticles
                 'title' => 'My profile is approved — what now?',
                 'audience' => 'creator',
                 'keywords' => 'approved, accepted, profile approved, what next, next step, after approval, setup finished, done, now what, first listing, three listings',
-                'summary' => 'Approval means your photo, bio and social handle passed review. Next you add a payment card, connect your payouts and pass the ID check — then you can list and sell.',
+                'summary' => 'Your page is live once your photo, bio and handle pass the automatic checks. Next you connect your payouts and add a card — then list something. The ID check comes later, when there is money to pay out.',
                 'related' => ['what-do-i-do-next', 'connect-your-payouts', 'verify-your-identity', 'what-can-i-sell'],
                 'body' => <<<'MD'
-Approval means a person has looked at your photo, your bio and your social handle and accepted them. Your profile is public.
+Your photo, bio and social handle have passed the automatic checks, so your profile is public. Nobody had to approve it.
 
 ## What is left
 
 In this order:
 
-1. **Add a payment card.** This is your own platform subscription. It is asked for after approval, never before — see [what the subscription costs](/help/getting-started-creators/what-does-the-subscription-cost).
-2. **Connect your payouts** so money can reach your bank.
-3. **Pass the ID check.** Nothing can be listed until this is done.
+1. **Connect your payouts** so money can reach your bank.
+2. **Add a payment card.** This is your own platform subscription — see [what the subscription costs](/help/getting-started-creators/what-does-the-subscription-cost).
+
+**The ID check is not on that list.** You can list and sell before it is done; it is what releases your money to your bank, so you only need it once you have earnings waiting.
 
 ## Then list something
 
@@ -96,14 +97,14 @@ MD,
                 'title' => 'My profile was rejected — what do I do?',
                 'audience' => 'creator',
                 'keywords' => 'rejected, declined, turned down, refused, not approved, resubmit, submit again, fix, reason, why rejected, appeal',
-                'summary' => 'A rejection names what needs changing and puts your profile back in your hands. Change the thing it names and submit again — there is no limit on how many times you can.',
+                'summary' => 'A rejection names what needs changing and puts your profile back in your hands. Change the thing it names and save — it is checked again straight away, and there is no limit on how many times.',
                 'related' => ['why-is-my-profile-still-in-review', 'why-was-my-photo-rejected', 'what-content-is-allowed', 'getting-help-from-us'],
                 'body' => <<<'MD'
-Change what the reason names, then press **Submit for review** again. There is no limit on how many times you can submit.
+Change what the reason names and **save**. There is nothing to submit — the moment you save, that item is checked again and your page goes live on its own once everything is clean. There is no limit on how many times.
 
 ## The reason is on your own dashboard
 
-It is written by the person who reviewed it and it names which part was the problem — your photo, your bio, your cover image or your social handle. If it does not say enough for you to act on, [ask us](/help/trust-and-safety/getting-help-from-us) and we will explain.
+It names which part was the problem — your photo, your bio, your cover image or your social handle — and who pulled it: an automated check, or one of our team if a person looked. If it does not say enough for you to act on, [ask us](/help/trust-and-safety/getting-help-from-us) and we will explain.
 
 ## It is one decision about the whole profile
 
@@ -115,7 +116,7 @@ Your listings, your settings and anything you have already sold are untouched. T
 
 ## We keep the history
 
-Each decision is recorded, so if you submit again the reviewer can see what was asked for last time. That is there to stop you being told two different things by two different people.
+Each decision a person takes is recorded, so if one of our team looks again they can see what was asked for last time. That is there to stop you being told two different things by two different people.
 MD,
             ],
             [
@@ -123,7 +124,7 @@ MD,
                 'title' => 'How do I set my cover image?',
                 'audience' => 'creator',
                 'keywords' => 'cover, banner, header, cover photo, cover image, background, top image, change cover, cover banners, presets',
-                'summary' => 'Pick one of our ready-made covers or upload your own. An uploaded cover is reviewed before it appears; a ready-made one goes live straight away.',
+                'summary' => 'Pick one of our ready-made covers or upload your own. Both appear straight away; an uploaded one is checked automatically against the content rules.',
                 'related' => ['why-was-my-photo-rejected', 'what-happens-after-approval', 'what-content-is-allowed'],
                 'body' => <<<'MD'
 Open your profile editor and choose a cover. You have two options.
@@ -134,13 +135,13 @@ We keep a set of covers you can use as they are. They are already approved, so o
 
 ## Your own image
 
-Upload one and it goes for review with everything else on your profile. It appears once it is approved.
+Upload one and it appears straight away. It is checked automatically against the content rules, and pulled back with a reason if it fails.
 
 A cover is the first thing a visitor sees, so it is held to the same content rules as the rest of your page — see [what content is allowed](/help/content-rules/what-content-is-allowed).
 
 ## If it is refused
 
-You will be told which part was the problem and you can upload a different one. A refused cover never leaves your page blank — the previous one stays until a new one is approved.
+You will be told which part was the problem and you can upload a different one. A refused cover never leaves your page blank — the previous one stays until a new one clears.
 MD,
             ],
             [

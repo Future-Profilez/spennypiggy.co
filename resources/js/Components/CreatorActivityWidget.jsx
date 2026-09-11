@@ -180,12 +180,17 @@ const CreatorActivityWidget = (props) => {
             <div className={`${CARD} ${className}`}>
                 <Plate status={status} />
                 <h3 className="mt-3 font-gulfs text-2xl uppercase leading-[1.05] text-black">
-                    Finish verifying to start earning
+                    Finish setting up to get paid
                 </h3>
+                {/* ⚠️ Rewritten 11 Sep 2026. It said identity and profile approval must be
+                    done "before payments can run" and that nothing else was required —
+                    both false: the page goes live on its own, and identity gates only the
+                    money reaching the bank. The last sentence told a creator not to list. */}
                 <p className="mt-2 text-sm font-medium leading-relaxed text-black/70">
-                    Your identity check and profile approval have to be done
-                    before payments can run. Nothing else is required of you
-                    until they are.
+                    Your page goes live on its own once your photo, bio and
+                    handle pass the checks, and you can sell straight away.
+                    Connect your payouts so the money can reach you; the
+                    identity check is asked for before we send it.
                 </p>
                 <div className="mt-5">
                     <Link href={activityHref} className={BTN_QUIET}>

@@ -1,8 +1,9 @@
 import { Head } from "@inertiajs/react";
 import Guest from "@/Layouts/GuestLayout";
+import ClosedProgrammeNotice from "@/Components/Legal/ClosedProgrammeNotice";
 
 export default function Promotions(props) {
-    const { auth, user } = props;
+    const { auth, user, closedOn = null } = props;
 
     const print = () => {
         window.print();
@@ -16,6 +17,14 @@ export default function Promotions(props) {
                         <h1 className="text-xl md:text-3xl font-bold text-[#FF007F] mb-6">
                             Founder Bonus — We’ll Pay You to Get Spoiled
                         </h1>
+
+                        {/* 🚨 The promotion closed; the terms it ran under
+                            stay published and unedited. Renders nothing while
+                            the scheme is live. */}
+                        <ClosedProgrammeNotice
+                            closedOn={closedOn}
+                            programme="The Founder Bonus promotion"
+                        />
 
                         <header className="bg-white rounded-box ">
                             <div className="max-w-6xl mx-auto px-3 py-3 md:px-6 md:py-6 md:flex items-center justify-between">
@@ -70,6 +79,7 @@ export default function Promotions(props) {
                                             How the Bonus Works
                                         </h3>
                                         <ul className="mt-3 space-y-2 text-sm text-gray-700">
+                                            {/* fee-literal-ok: historic promotion terms — the Founder Bonus was retired 11 Sep 2026 and a published terms page states the rates as they stood on the day, never rewriting itself (routes/auth.php). */}
                                             <li>
                                                 Each month for 12 months you
                                                 receive an extra{" "}
@@ -77,6 +87,7 @@ export default function Promotions(props) {
                                                 Piggy's platform fee collected
                                                 from your supporters.
                                             </li>
+                                            {/* fee-literal-ok: historic promotion terms — the Founder Bonus was retired 11 Sep 2026 and a published terms page states the rates as they stood on the day, never rewriting itself (routes/auth.php). */}
                                             <li>
                                                 Example: if supporters spend{" "}
                                                 <strong>£5,000</strong> in a
@@ -169,6 +180,7 @@ export default function Promotions(props) {
                                             Bonus Award Details
                                         </h4>
                                         <ul className="mt-3 text-sm text-gray-700 space-y-2">
+                                            {/* fee-literal-ok: historic promotion terms — the Founder Bonus was retired 11 Sep 2026 and a published terms page states the rates as they stood on the day, never rewriting itself (routes/auth.php). */}
                                             <li>
                                                 Qualified creators receive a
                                                 12-month Founder Bonus equal to

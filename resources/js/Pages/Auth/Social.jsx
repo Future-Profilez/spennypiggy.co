@@ -416,7 +416,7 @@ export default function AddSocial({
                         <span className="text-xs font-semibold text-black/70">
                             {isPublic(platform.id)
                                 ? "Shown on your profile"
-                                : "Private — only you and our review team"}
+                                : "Private — only you and our team"}
                         </span>
                         <button
                             type="button"

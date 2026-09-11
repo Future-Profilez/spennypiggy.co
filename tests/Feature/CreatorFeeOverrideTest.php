@@ -6,6 +6,7 @@ use App\Helpers;
 use App\Models\CreatorFeeOverride;
 use App\Models\User;
 use App\Services\Pricing\CreatorFeeResolver;
+use App\Services\Pricing\FeeModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -18,6 +19,23 @@ class CreatorFeeOverrideTest extends TestCase
         parent::setUp();
 
         CreatorFeeResolver::flushCache();
+
+        /*
+         * 🚨 PINNED TO THE LEGACY MARKUP, DELIBERATELY (11 Sep 2026).
+         *
+         * This class tests the bespoke-deal MECHANICS — resolution, precedence, sanity
+         * bounds, recompute, cache — and every figure in it is a legacy-model figure
+         * (`platform_fee_rate` literally held the configured platform rate). The
+         * platform now ships the all-in model, where that column holds the effective
+         * take instead, so these numbers would all have to be restated.
+         *
+         * They are not restated, because the legacy model is still reachable through
+         * `payments.model` and its behaviour must stay pinned. The same override
+         * mechanics under the LIVE all-in model are covered by
+         * `AllInFeeModelTest::test_a_bespoke_deal_sets_the_supporter_rate` — that is
+         * where the shipping model is proved, and this is where the switch is.
+         */
+        config(['payments.model' => FeeModel::MODEL_LEGACY]);
 
         config([
             'payments.fee_profiles.card.platform_rate' => 17.0,

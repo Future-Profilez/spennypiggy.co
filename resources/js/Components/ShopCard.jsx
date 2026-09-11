@@ -7,6 +7,7 @@ import { creatorIdOf } from "@/utils/pricing";
 import ItemStatusBadge from "@/Components/ItemStatusBadge";
 import discoveryLink from "@/lib/discoveryLink";
 import SaveButton from "@/Components/SaveButton";
+import { supporterFeeCaption } from "@/lib/fees";
 
 export default function ShopCard({
     item,
@@ -18,6 +19,7 @@ export default function ShopCard({
     discoverySource,
 }) {
     const { auth, user } = usePage().props;
+    const __pageProps = usePage().props;
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
 
     const slug = (inputString = "") => {
@@ -238,7 +240,7 @@ export default function ShopCard({
                                     {isPhysical && shippingPrice === 0 && " · free shipping"}
                                 </span>
                                 <span className="mt-0.5 hidden text-[12px] font-normal text-gray-500 sm:inline">
-                                    *Includes platform and payment processing fees
+                                    {supporterFeeCaption(__pageProps)}
                                     {isPhysical && shippingPrice > 0 && " and shipping"}
                                     {isPhysical && shippingPrice === 0 && ". Free shipping"}
                                 </span>

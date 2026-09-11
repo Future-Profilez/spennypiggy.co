@@ -110,17 +110,37 @@ class PayoutAndStatusPropagationTest extends TestCase
 
     public function test_fee_calculation_uses_correct_rates(): void
     {
+        /*
+         * ⚠️ REWRITTEN 11 Sep 2026 TO BE MODEL-AGNOSTIC. It asserted 17% platform + 2%
+         * compliance, which was the legacy markup's composition — true until the day
+         * the platform moved to an all-in supporter fee, and then simply a restatement
+         * of one model's arithmetic.
+         *
+         * What it is really protecting is the INVARIANT, and that holds under both:
+         * every penny the supporter pays above the listed price is accounted for by
+         * exactly Stripe, the platform, compliance and the admin fee — nothing is
+         * unallocated and nothing is counted twice. `AllInFeeModelTest` and
+         * `StripeEstimateFreezeTest` pin each model's actual figures.
+         */
         $breakdown = Helpers::calculateStripeDirectChargeFlow(100.00, 'GBP');
 
-        // 17% platform
-        $this->assertEquals(
-            round($breakdown['total_supporter_pays'] * 0.17, 2),
-            $breakdown['platform_fee']
+        $accountedFor = $breakdown['stripe_fee']
+            + $breakdown['platform_fee']
+            + $breakdown['compliance_fee']
+            + $breakdown['admin_fee'];
+
+        $this->assertEqualsWithDelta(
+            $breakdown['total_supporter_pays'] - $breakdown['listed_price'],
+            $accountedFor,
+            0.02,
+            'Every penny of the supporter fee must be allocated to a named component'
         );
-        // 2% compliance
-        $this->assertEquals(
-            round($breakdown['total_supporter_pays'] * 0.02, 2),
-            $breakdown['compliance_fee']
+
+        $this->assertEqualsWithDelta(
+            $breakdown['platform_fee'] + $breakdown['compliance_fee'] + $breakdown['admin_fee'],
+            $breakdown['application_fee'],
+            0.02,
+            'The application fee must be exactly what the platform keeps'
         );
     }
 

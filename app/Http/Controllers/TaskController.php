@@ -21,6 +21,7 @@ use App\Models\TaskPurchase;
 use App\Models\User;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Rules\NoBlockedSymbols;
 use App\Rules\NoExpenseOrBrandName;
 use App\Services\AbandonedCheckoutService;
 use App\Services\CheckoutMethodResolver;
@@ -42,6 +43,7 @@ use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
 use App\Support\ContentDownloadMonitor;
 use App\Support\NotificationContext;
+use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
@@ -140,7 +142,7 @@ class TaskController extends Controller
         }
 
         $request->validate([
-            'title' => ['required', 'string', 'max:100', new NoExpenseOrBrandName],
+            'title' => ['required', 'string', 'max:100', new NoExpenseOrBrandName, new NoBlockedSymbols],
             'description' => 'required|string',
             'price' => [
                 'required',
@@ -229,6 +231,13 @@ class TaskController extends Controller
             );
         }
 
+        /*
+         * The paid deliverable, which is a different file from the listing image
+         * above and was never scanned at all — an instant task shipped whatever was
+         * attached straight to the buyer on payment.
+         */
+        RewardFileScan::dispatch($task, ['is_approved' => false]);
+
         // Clear user caches
         $user = Auth::user();
         app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
@@ -265,7 +274,7 @@ class TaskController extends Controller
         }
 
         $request->validate([
-            'title' => ['required', 'string', 'max:100', new NoExpenseOrBrandName],
+            'title' => ['required', 'string', 'max:100', new NoExpenseOrBrandName, new NoBlockedSymbols],
             'description' => 'required|string',
             'price' => [
                 'required',
@@ -306,6 +315,12 @@ class TaskController extends Controller
             return back()->withErrors(['title' => 'The task contains blocked words or phrases. Please check the title, description and deliverable content.']);
         }
 
+        // Captured before the model is mutated: both scans below must be able to
+        // tell a changed file from an unchanged one, or a re-scan re-produces a
+        // false positive and un-approves a task an admin has already cleared.
+        $previousMedia = (string) $task->media_url;
+        $previousDeliverable = (string) RewardFileScan::currentFile($task);
+
         $task->title = $request->title;
         $task->description = $request->description;
         $task->price = $request->price;
@@ -339,6 +354,24 @@ class TaskController extends Controller
             ['reward_title', 'reward_body', 'reward_description', 'title', 'description'],
             ['is_approved' => false]
         );
+
+        /*
+         * 🚨 AN EDIT USED TO BE A WAY PAST THE IMAGE SCAN. Only creation dispatched
+         * one, so a task could be published with a clean picture and then have its
+         * media swapped for anything at all. Same fault, same fix, as Shop's edit
+         * path.
+         */
+        if (! empty($task->media_url) && (string) $task->media_url !== $previousMedia) {
+            CheckMediaModeration::dispatch(
+                Task::class,
+                $task->id,
+                $task->media_url,
+                ['is_approved' => false],
+                'task_image'
+            );
+        }
+
+        RewardFileScan::dispatch($task, ['is_approved' => false], $previousDeliverable);
 
         // Clear user caches
         $user = Auth::user();

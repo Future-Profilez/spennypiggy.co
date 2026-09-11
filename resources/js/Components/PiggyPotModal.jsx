@@ -2,6 +2,12 @@ import React, { useEffect } from "react";
 import { useForm } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 import Popup from "@/Components/Popup";
+import {
+    itemErrorClass,
+    itemFieldClass,
+    itemLabelClass,
+} from "@/Components/ItemForm/ItemFormKit";
+import useDirtyGuard from "@/lib/useDirtyGuard";
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../css/uploader.module.css";
 
@@ -85,10 +91,20 @@ export default function PiggyPotModal({
     |--------------------------------------------------------------------------
     */
 
+    // Nine fields in one scroll: Esc or a backdrop tap must not throw them
+    // away silently. Returning false from onHide vetoes the dismissal.
+    const confirmDiscard = useDirtyGuard(show, data);
+
     const handleClose = () => {
         reset();
         clearErrors();
         onClose();
+    };
+
+    const requestClose = () => {
+        if (!confirmDiscard()) return false;
+        handleClose();
+        return true;
     };
 
     /*
@@ -144,13 +160,15 @@ export default function PiggyPotModal({
         // the post composer and the item shell — creating something to sell is
         // not a task for a 576px box.
         <Popup
+            title={pot ? "Edit content goal" : "New content goal"}
+            dismissable
             size="xl"
             classes="hidden"
             fullscreen
             hidecontrols
             hideclose
             action={show}
-            onHide={handleClose}
+            onHide={requestClose}
         >
             <div className="flex min-h-0 flex-1 flex-col bg-[#F2EFE7]">
                 {/* PWA standalone has no browser chrome — inset the header's content
@@ -201,34 +219,34 @@ export default function PiggyPotModal({
                         `ItemFormShell`. This panel is already the whole screen, so
                         the card around the form is a second frame on the same
                         content and costs 22px a side. It returns at `sm`. */}
-                    <div className="mx-auto w-full max-w-3xl rounded-box border-[3px] border-black bg-white p-5 sm:p-6 max-sm:!rounded-none max-sm:!border-0 max-sm:!bg-transparent max-sm:!p-0">
+                    <div className="mx-auto w-full max-w-3xl rounded-box border-2 border-black bg-white p-5 sm:p-6 max-sm:!rounded-none max-sm:!border-0 max-sm:!bg-transparent max-sm:!p-0">
 
                 <form id="piggy-pot-form" onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                        <label className="block text-sm font-bold text-gray-900 mb-1">
+                        <label className={itemLabelClass}>
                             Content Title*
                         </label>
                         <input
                             type="text"
-                            className="w-full border-2 border-black rounded-box p-3 focus:outline-none focus:ring-0 focus:border-pink-500 "
+                            className={itemFieldClass}
                             placeholder="e.g. Exclusive photo set"
                             value={data.title}
                             onChange={(e) => setData("title", e.target.value)}
                             required
                         />
                         {errors.title && (
-                            <div className="text-red-500 text-xs mt-1 font-bold">
+                            <div className={itemErrorClass}>
                                 {errors.title}
                             </div>
                         )}
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-gray-900 mb-1">
+                        <label className={itemLabelClass}>
                             Description
                         </label>
                         <textarea
-                            className="w-full border-2 border-black rounded-box p-3 focus:outline-none focus:ring-0 focus:border-pink-500 "
+                            className={itemFieldClass}
                             rows="3"
                             placeholder="Tell backers what they unlock by chipping in..."
                             value={data.description}
@@ -237,7 +255,7 @@ export default function PiggyPotModal({
                             }
                         />
                         {errors.description && (
-                            <div className="text-red-500 text-xs mt-1 font-bold">
+                            <div className={itemErrorClass}>
                                 {errors.description}
                             </div>
                         )}
@@ -245,14 +263,14 @@ export default function PiggyPotModal({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label className="block text-sm font-bold text-gray-900 mb-1">
+                            <label className={itemLabelClass}>
                                 Progress Goal* ({data.currency}) — optional
                             </label>
                             <input
                                 type="number"
                                 step="0.01"
                                 min="1"
-                                className="w-full border-2 border-black rounded-box p-3 focus:outline-none focus:ring-0 focus:border-pink-500 "
+                                className={itemFieldClass}
                                 placeholder="e.g. 500"
                                 value={data.target_amount}
                                 onChange={(e) =>
@@ -261,26 +279,26 @@ export default function PiggyPotModal({
                                 required
                             />
                             {errors.target_amount && (
-                                <div className="text-red-500 text-xs mt-1 font-bold">
+                                <div className={itemErrorClass}>
                                     {errors.target_amount}
                                 </div>
                             )}
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-gray-900 mb-1">
+                            <label className={itemLabelClass}>
                                 Deadline (Optional)
                             </label>
                             <input
                                 type="datetime-local"
-                                className="w-full border-2 border-black rounded-box p-3 focus:outline-none focus:ring-0 focus:border-pink-500 "
+                                className={itemFieldClass}
                                 value={data.deadline}
                                 onChange={(e) =>
                                     setData("deadline", e.target.value)
                                 }
                             />
                             {errors.deadline && (
-                                <div className="text-red-500 text-xs mt-1 font-bold">
+                                <div className={itemErrorClass}>
                                     {errors.deadline}
                                 </div>
                             )}
@@ -288,10 +306,10 @@ export default function PiggyPotModal({
                     </div>
 
                     <div className="pt-2">
-                        <label className="block text-sm font-bold text-gray-900 mb-2">
+                        <label className={itemLabelClass}>
                             Cover Image (Optional)
                         </label>
-                        <p className="text-xs text-gray-500 mb-3">
+                        <p className="text-xs text-black/60 mb-3">
                             Upload a cover image to make your pot stand out.
                         </p>
                         <div className="border-2 border-black rounded-box p-1 bg-gray-50 border-dashed hover:border-pink-500 transition-colors">
@@ -336,26 +354,26 @@ export default function PiggyPotModal({
                             </div>
                         </div>
                         {errors.cover_media && (
-                            <div className="text-red-500 text-xs mt-2 font-bold">
+                            <div className={itemErrorClass}>
                                 {errors.cover_media}
                             </div>
                         )}
                     </div>
 
                     <div className="pt-2 border-t-2 border-gray-200 mt-6">
-                        <label className="block text-sm font-bold text-gray-900 mb-2">
+                        <label className={itemLabelClass}>
                             Content the supporter receives
                         </label>
-                        <p className="text-xs text-gray-500 mb-3">
+                        <p className="text-xs text-black/60 mb-3">
                             Supporters automatically unlock this content after
                             they purchase.
                         </p>
                         <div className="mb-4">
-                            <label className="block text-sm font-bold text-gray-900 mb-1">
+                            <label className={itemLabelClass}>
                                 Content Description
                             </label>
                             <textarea
-                                className="w-full border-2 border-black rounded-box p-3 focus:outline-none focus:ring-0 focus:border-pink-500 "
+                                className={itemFieldClass}
                                 rows="2"
                                 placeholder="Describe the exclusive content they will get..."
                                 value={data.content_description}
@@ -367,7 +385,7 @@ export default function PiggyPotModal({
                                 }
                             />
                         </div>
-                        <label htmlFor="">Upload Content File*</label>
+                        <span className={itemLabelClass}>Upload content file *</span>
                         <div className="border-2 border-black rounded-box p-1 bg-gray-50 border-dashed hover:border-pink-500 transition-colors">
                             {data.content_file && (
                                 <div className="mb-3 p-3 bg-white border-2 border-black rounded-box-sm text-sm font-bold flex justify-between items-center">
@@ -405,7 +423,7 @@ export default function PiggyPotModal({
                             </div>
                         </div>
                         {errors.content_file && (
-                            <div className="text-red-500 text-xs mt-2 font-bold">
+                            <div className={itemErrorClass}>
                                 {errors.content_file}
                             </div>
                         )}
@@ -437,7 +455,7 @@ export default function PiggyPotModal({
                                     }`}
                                 ></div>
                             </div>
-                            <span className="ml-3 font-bold text-gray-900">
+                            <span className="ml-3 font-bold text-black">
                                 Pin to profile (Featured Goal)
                             </span>
                         </label>
@@ -470,7 +488,7 @@ export default function PiggyPotModal({
                                     }`}
                                 ></div>
                             </div>
-                            <span className="ml-3 font-bold text-gray-900">
+                            <span className="ml-3 font-bold text-black">
                                 Show most-active supporters
                             </span>
                         </label>
@@ -478,11 +496,11 @@ export default function PiggyPotModal({
 
                     {isEditing && (
                         <div className="pt-4">
-                            <label className="block text-sm font-bold text-gray-900 mb-1">
+                            <label className={itemLabelClass}>
                                 Status
                             </label>
                             <select
-                                className="w-full border-2 border-black rounded-box p-3 focus:outline-none focus:ring-0 focus:border-pink-500 bg-white appearance-none"
+                                className={`${itemFieldClass} appearance-none`}
                                 value={data.status}
                                 onChange={(e) =>
                                     setData("status", e.target.value)
@@ -500,7 +518,7 @@ export default function PiggyPotModal({
                         <button
                             type="submit"
                             disabled={processing}
-                            className="flex min-h-[52px] w-full items-center justify-center rounded-box-sm border-[3px] border-black bg-[#FF007F] px-8 text-sm font-black uppercase tracking-[0.14em] text-black transition-all disabled:opacity-50"
+                            className="flex min-h-[52px] w-full items-center justify-center rounded-box-sm border-2 border-black bg-[#FF007F] px-8 text-sm font-black uppercase tracking-[0.14em] text-black transition-all disabled:opacity-50"
                         >
                             {processing ? "Saving…" : isEditing ? "Save changes" : "Create pot"}
                         </button>

@@ -1,6 +1,8 @@
+import { usePage } from '@inertiajs/react';
 import { FaUniversity } from 'react-icons/fa';
 import FadeIn from '@/Components/animations/FadeIn';
 import StaggerItem from '@/Components/animations/StaggerItem';
+import { feeIsAllIn, feeRateLabel } from '@/lib/fees';
 
 /**
  * Landing-page announcement for Pay by Bank / Open Banking.
@@ -12,6 +14,26 @@ import StaggerItem from '@/Components/animations/StaggerItem';
  * Neo-brutalist: dark, font-gulfs, #FF007F / #A2E4B8, hard shadows, mono data.
  */
 export default function PayByBankAnnouncement() {
+    /*
+     * 🚨 THE PASS USED TO PRINT "£115" AGAINST A STRUCK-THROUGH "£121".
+     * Those were legacy-model totals — the platform rate, the compliance rate
+     * and a grossed-up Stripe estimate each stacked on the listed price. Since
+     * 11 Sep 2026 a £100 listing charges £112.01 on card and £109.01 by bank,
+     * so both figures on the boarding pass were wrong by several pounds, in an
+     * advert, with nothing anywhere that would ever report it.
+     *
+     * 🚨 AND NO REPLACEMENT FIGURE IS TYPED HERE EITHER. The card rate comes
+     * from the shared `fees` prop, i.e. from `FeeModel` — the class the
+     * checkout prices from. The BANK rate is deliberately NOT printed: it is
+     * not in that prop, `payments.bank.enabled` is false, and quoting an entry
+     * price on a rail a supporter cannot yet select is a claim the platform
+     * cannot honour (the same rule `FeeModel::lowestLiveRate()` enforces).
+     * "Lower than card" is what we can stand behind today.
+     */
+    const page = usePage();
+    const cardRate = feeRateLabel(page);
+    const allIn = feeIsAllIn(page);
+
     const stamps = [
         { flag: '🇬🇧', code: 'GBP', rail: 'Pay by Bank', tilt: '-rotate-6' },
         { flag: '🇪🇺', code: 'EUR', rail: 'SEPA', tilt: 'rotate-3' },
@@ -83,10 +105,16 @@ export default function PayByBankAnnouncement() {
                                 {/* Price + method */}
                                 <div className="flex flex-wrap items-end justify-between gap-4 pt-5 border-t-2 border-dashed border-white/15">
                                     <div>
-                                        <p className="text-[12px] font-black uppercase tracking-[0.18em] text-white/60">You pay</p>
+                                        <p className="text-[12px] font-black uppercase tracking-[0.18em] text-white/60">Supporter fee</p>
                                         <p className="mt-1 font-mono font-black text-white leading-none">
-                                            <span className="text-4xl md:text-4xl">£115</span>
-                                            <span className="text-lg text-white/60 line-through ml-3">£121</span>
+                                            <span className="text-4xl md:text-4xl">
+                                                {allIn ? `Under ${cardRate}` : 'Lower'}
+                                            </span>
+                                        </p>
+                                        <p className="mt-2 font-poppins text-[12px] leading-[1.4] text-white/60 max-w-[34ch]">
+                                            {allIn
+                                                ? `Card is ${cardRate} all-in, processing included. Paying straight from a bank costs us less, so it costs the supporter less.`
+                                                : 'Paying straight from a bank costs us less, so it costs the supporter less.'}
                                         </p>
                                     </div>
                                     <div className="text-right">

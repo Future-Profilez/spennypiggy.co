@@ -5,7 +5,8 @@ import { Link, router, usePage } from "@inertiajs/react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
+import { supporterFeeCaption } from "@/lib/fees";
+import { feeRatesFor, creatorIdOf, supporterTotal } from "@/utils/pricing";
 const AddBills = lazyRetry(() => import("@/Pages/bills/AddBills"));
 import { Menu, Transition } from "@headlessui/react";
 import RemoveBill from "@/Pages/bills/RemoveBill";
@@ -22,7 +23,7 @@ function BillItem(props) {
     const { auth, platform_fee_percentage, transaction_fee_percentage } =
         usePage().props;
     const __pageProps = usePage().props;
-    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency, supporterFixedFee } = PriceFormat();
     /* `discoverySource` is set ONLY by a Spenny-Piggy-chosen surface (Discover's
        grid and carousels). Undefined everywhere else — a creator's own profile
        listing their bills is their traffic, not ours. */
@@ -55,26 +56,20 @@ function BillItem(props) {
         const isZeroDecimal = isZeroDecimalCurrency(curr);
         const vatAmount = (listedPrice * (parseFloat(vatPercent) || 0)) / 100;
         const priceWithVat = listedPrice + vatAmount;
-        const stripeFeeRate = STRIPE_FEE_RATE;
-        const stripeFixedFee = isZeroDecimal ? 0 : STRIPE_FIXED_FEE;
-        // Per-creator: a creator on a bespoke platform rate must be QUOTED
-        // what checkout will CHARGE them. The global props cannot express that.
+        // 🚨 THE FORMULA LIVES IN ONE PLACE (`utils/pricing`), NEVER HERE. This
+        // card carried its own copy of the legacy gross-up, so when the platform
+        // moved to an all-in supporter fee on 11 Sep 2026 it went on quoting the
+        // old, higher total while checkout charged the new one — with nothing
+        // wrong in any log. `feeRatesFor` carries the live model with the rates,
+        // so the card cannot pick the wrong arithmetic.
         const __rates = feeRatesFor(creatorIdOf(itm), __pageProps);
-        const platformFeeRate = __rates.platform / 100;
-        const complianceFeeRate = __rates.compliance / 100;
-        const adminFee = adminFeeInCurrency(curr);
-        const totalDeductionRate =
-            stripeFeeRate + platformFeeRate + complianceFeeRate;
 
-        if (totalDeductionRate >= 1) return priceWithVat;
-
-        const totalSupporterPays =
-            (priceWithVat + stripeFixedFee + adminFee) /
-            (1 - totalDeductionRate);
-        if (!isZeroDecimal) {
-            return Math.ceil(totalSupporterPays * 100) / 100;
-        }
-        return Math.ceil(totalSupporterPays);
+        return supporterTotal(priceWithVat, {
+            ...__rates,
+            adminFee: adminFeeInCurrency(curr),
+            fixedFee: supporterFixedFee(curr),
+            isZeroDecimal,
+        });
     };
 
     const isCreator = auth?.user?.id === itm?.user_id;
@@ -163,7 +158,7 @@ function BillItem(props) {
             style={IsloggedIn ? style : stylenone}
             className={`relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""} transition-colors duration-200 hover:bg-black/[0.03]`}
         >
-            <div className="bg-white relative !rounded-box !border-[3px] border-black overflow-hidden w-full h-full flex flex-col">
+            <div className="bg-white relative !rounded-box !border-2 border-black overflow-hidden w-full h-full flex flex-col">
                 {/* 🚨 Same two faults the wish card had, and the same fix.
                     The approval notice carried `approvalmessge membership`,
                     which `home.css:531` pins `position:absolute; top:0; left:0`
@@ -326,8 +321,7 @@ function BillItem(props) {
                                         itm?.currency || "GBP",
                                     )}
                                     <div className="text-[12px] text-black/80 font-bold mt-1 leading-tight text-center">
-                                        *Includes platform and payment
-                                        processing fees
+                                        {supporterFeeCaption(__pageProps)}
                                     </div>
                                 </div>
                             )}
@@ -357,7 +351,7 @@ function BillItem(props) {
                                A second hidden <AddBills> would be a second
                                sheet with its own form state. */
                             <AddBills
-                                classes="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[11px] py-1 px-2 sm:text-[12px] sm:py-1.5 sm:px-4 rounded-box-sm transition-colors duration-200 hover:brightness-110 active:brightness-95"
+                                classes="bg-[#FF007F] border-2 border-black text-black font-black uppercase min-h-[44px] text-[11px] py-1 px-2 sm:text-[12px] sm:py-1.5 sm:px-4 rounded-box-sm transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                 text="Edit bill"
                                 item={itm}
                                 isEdit={true}
@@ -370,7 +364,7 @@ function BillItem(props) {
                                 href={route("bill.checkout", {
                                     uuid: itm.uuid,
                                 })}
-                                className="bg-[#FF007F] border-[3px] border-black text-black font-black uppercase text-xs py-2 px-6 rounded-box-sm transition-colors duration-200 hover:brightness-110 active:brightness-95"
+                                className="bg-[#FF007F] border-2 border-black text-black font-black uppercase text-xs py-2 px-6 rounded-box-sm transition-colors duration-200 hover:brightness-110 active:brightness-95"
                             >
                                 Subscribe
                             </Link>

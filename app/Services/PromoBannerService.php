@@ -6,6 +6,7 @@ use App\Models\CreatorBioLink;
 use App\Models\FastStartBonusPayout;
 use App\Models\GrowthBonusProfile;
 use App\Models\User;
+use App\Support\Incentives;
 use App\Support\SubscriptionPlan;
 use App\Support\VerifiedBadge;
 use Carbon\Carbon;
@@ -419,9 +420,19 @@ class PromoBannerService
         $isCreator = (int) $user->role === 1;
 
         return match ($key) {
-            'founder_bonus' => $isCreator && $this->founderWindowOpen($user),
+            /*
+             * 🚨 THE FEATURE FLAG FIRST, exactly as `growth_bonus` below does
+             * and for the same reason: both schemes were retired on 11 Sep 2026
+             * and their CTAs now point at routes that 404. A promo whose button
+             * leads to a missing page is worse than no promo — and a card
+             * selling a scheme nobody can join is the deck telling a creator
+             * something untrue about their own account.
+             */
+            'founder_bonus' => Incentives::founderEnabled()
+                && $isCreator && $this->founderWindowOpen($user),
 
-            'fast_start' => $isCreator && ! $this->hasFastStartBonus($user),
+            'fast_start' => Incentives::fastStartEnabled()
+                && $isCreator && ! $this->hasFastStartBonus($user),
 
             /*
              * 🚨 GATED ON THE FEATURE FLAG FIRST. The card's CTA points at

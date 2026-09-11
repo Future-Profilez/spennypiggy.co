@@ -17,6 +17,7 @@ import Turnstile from "@/Components/Turnstile";
 import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
 import { fieldClass } from "@/Components/Checkout/FormKit";
 import { creatorIdOf } from "@/utils/pricing";
+import { feeIsAllIn, feeRateLabel } from "@/lib/fees";
 import { riskMessageBody } from '@/constants/riskMessages';
 
 export default function BuyShopItem({
@@ -32,7 +33,20 @@ export default function BuyShopItem({
     card_capabilities,
 }) {
     const { formatMultiPrice, adminFeeInCurrency, calculateTotalSupporterPays } = PriceFormat();
-    const { auth, turnstileSiteKey, shop, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
+    const pageProps = usePage().props;
+    const { auth, turnstileSiteKey, shop, platform_fee_percentage, transaction_fee_percentage } = pageProps;
+    /*
+     * 🚨 ONE LINE, BECAUSE THERE IS ONE FEE. Under the all-in model (11 Sep 2026)
+     * the supporter pays the listed price plus ONE advertised percentage and the
+     * processor is paid from inside it — so "Platform & processing fees" names two
+     * charges the checkout does not make, on the one screen where the words and the
+     * total have to agree to the penny. The rate is read from the server's `fees`
+     * prop, never typed: a literal here cannot follow a config change, which is the
+     * whole point of `FeeModel`.
+     */
+    const feeLineLabel = feeIsAllIn(pageProps)
+        ? `Supporter fee (${feeRateLabel(pageProps)})`
+        : "Platform & processing fees";
     const turnstileRef = useRef(null);
     const [close, setClose] = useState();
 
@@ -642,7 +656,7 @@ export default function BuyShopItem({
                                             </div>
                                         )}
                                         <div className="flex justify-between text-sm font-bold text-black/80 py-1">
-                                            <span>Platform &amp; processing fees</span>
+                                            <span>{feeLineLabel}</span>
                                             <span>{formatMultiPrice(Math.max(0, totalSupporterPays - baseBeforeFees), itemCurrency)}</span>
                                         </div>
                                         <div className="flex justify-between items-baseline border-t-2 border-black mt-2 pt-2">

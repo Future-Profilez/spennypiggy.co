@@ -16,6 +16,7 @@ use Stripe\Balance;
 use Stripe\Checkout\Session;
 use Stripe\Collection;
 use Stripe\Customer;
+use Stripe\CustomerBalanceTransaction;
 use Stripe\Exception\ApiConnectionException;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\OAuth\InvalidRequestException;
@@ -285,6 +286,52 @@ class StripeControl
         } catch (\Throwable $e) {
             Log::error('Failed to fetch charge facts for payment intent', [
                 'payment_intent_id' => $paymentIntentId,
+                'connected_account_id' => $connectedAccountId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * The payment intent behind a Checkout Session.
+     *
+     * Five of the eight paid modules store only a session id, so measuring what
+     * their charges really cost needs this hop first — which is the second of
+     * the two Stripe reads `finance:record-processor-cost` pays per row, and
+     * half the reason it is a bounded out-of-band command rather than anything
+     * on the checkout path.
+     *
+     * ⚠️ A direct-charge session lives on the CONNECTED account, so omitting
+     * `$connectedAccountId` answers "no such session" rather than failing in a
+     * way anyone would read as a missing option.
+     *
+     * Returns null — never an empty string — when it cannot be read: the caller
+     * treats that as "not measured", and an empty id would be retrieved as one.
+     */
+    public static function paymentIntentIdForSession(string $sessionId, ?string $connectedAccountId = null): ?string
+    {
+        self::setClient();
+
+        try {
+            $opts = [];
+            if (! empty($connectedAccountId)) {
+                $opts['stripe_account'] = $connectedAccountId;
+            }
+
+            $session = self::$client->checkout->sessions->retrieve($sessionId, [], $opts);
+
+            $intent = $session->payment_intent ?? null;
+
+            if (is_object($intent)) {
+                $intent = $intent->id ?? null;
+            }
+
+            return is_string($intent) && $intent !== '' ? $intent : null;
+        } catch (\Throwable $e) {
+            Log::warning('Could not resolve the payment intent for a checkout session', [
+                'session_id' => $sessionId,
                 'connected_account_id' => $connectedAccountId,
                 'error' => $e->getMessage(),
             ]);
@@ -1838,6 +1885,75 @@ class StripeControl
      * @param  string  $sub_id  Stripe subscription ID
      * @return Throwable|Subscription
      */
+    /**
+     * Put a credit on the creator's own PLATFORM customer balance, which Stripe
+     * then applies to their next invoice by itself.
+     *
+     * 🚨 THIS IS HOW "EARN YOUR MEMBERSHIP BACK" PAYS, AND IT IS DELIBERATELY
+     * NOT A TRIAL EXTENSION. Pushing `trial_end` forward would move a paying
+     * creator's subscription back into `trialing`, which
+     * `SubscriptionActivationService::CONVERTIBLE_STATUSES`, the dashboard and
+     * the posting-cadence pauser all read as "not yet billed" — a free month
+     * would silently change what four other features believe about that
+     * account. A customer balance credit changes nothing except the next
+     * invoice's total.
+     *
+     * 🚨 A CREDIT IS A NEGATIVE AMOUNT. Stripe's customer balance is signed:
+     * negative is money we owe the customer, positive is money they owe us.
+     * Getting the sign wrong here does not error — it BILLS them extra.
+     * The caller passes a positive figure and this negates it, so the sign
+     * lives in exactly one place.
+     *
+     * 🚨 IT IS NOT CASH AND CANNOT BECOME CASH. A Stripe customer balance is
+     * only ever spent against that customer's own invoices; there is no path
+     * from it to a payout, which is precisely why it is the right instrument
+     * for a credit that must never be withdrawable.
+     *
+     * ⚠️ PLATFORM ACCOUNT, NO `stripe_account` OPTION. This is the creator's
+     * customer record on OUR account (their membership), not anything on their
+     * connected account.
+     *
+     * ⚠️ Pass an idempotency key. A retried apply must not credit twice — and
+     * unlike a transfer there is no downstream failure to notice it.
+     *
+     * @param  int  $amountMinor  a POSITIVE credit in minor units
+     * @return CustomerBalanceTransaction
+     */
+    public static function creditCustomerBalance(
+        string $customerId,
+        int $amountMinor,
+        string $currency,
+        string $description,
+        ?string $idempotencyKey = null,
+        array $metadata = [],
+    ) {
+        self::setClient();
+
+        if ($amountMinor <= 0) {
+            throw new Exception('creditCustomerBalance: the credit must be a positive amount.');
+        }
+
+        try {
+            $options = $idempotencyKey ? ['idempotency_key' => (string) $idempotencyKey] : [];
+
+            return self::$client->customers->createBalanceTransaction($customerId, [
+                // Negative = a credit to the customer. See the note above.
+                'amount' => -1 * $amountMinor,
+                'currency' => strtolower($currency),
+                'description' => $description,
+                'metadata' => $metadata,
+            ], $options);
+        } catch (RateLimitException $e) {
+            throw new Exception('Stripe RateLimit: '.$e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception('Stripe InvalidRequest: '.$e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception('Stripe API Connection: '.$e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception('Stripe API Error: '.$e->getMessage());
+        }
+    }
+
     public static function endSubscriptionTrial($sub_id, ?string $idempotencyKey = null)
     {
         self::setClient();

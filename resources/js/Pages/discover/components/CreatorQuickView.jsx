@@ -1,5 +1,6 @@
+import { supporterFeeCaption } from '@/lib/fees';
 import { useEffect, useState } from 'react';
-import { Link } from '@inertiajs/react';
+import { usePage, Link } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import Popup from '@/Components/Popup';
 import PriceFormat from '@/includes/PriceFormat';
@@ -59,7 +60,7 @@ export default function CreatorQuickView({ username, open, onClose }) {
                     {creator ? `What ${creator.name} sells` : 'Loading…'}
                 </h2>
                 <p className="mt-1 text-[13px] text-black/55">
-                    Prices include platform and payment processing fees.
+                    {supporterFeeCaption(usePage())}
                 </p>
 
                 {state === 'failed' && (

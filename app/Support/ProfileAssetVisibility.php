@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Models\ProfileChangeRequest;
 use App\Models\SocialLinks;
 use App\Models\User;
 
@@ -26,41 +25,12 @@ use App\Models\User;
  */
 class ProfileAssetVisibility
 {
-    /**
-     * ⚠️ Fails CLOSED on an unrecognised asset: an asset nobody can classify is
-     * treated as not live, so its edit is written directly rather than parked in a
-     * queue nothing will ever read.
+    /*
+     * 🚨 `isLive()` STOOD HERE AND IS GONE (11 Sep 2026). It answered "is this asset
+     * published, so an edit to it has to go through review instead of overwriting it"
+     * — and nothing goes through review any more. Every save writes straight through
+     * and records what changed; see App\Support\ProfileAutoApproval.
      */
-    public static function isLive(User $user, string $asset): bool
-    {
-        /*
-         * 🚨 A GIFTER NEVER GOES THROUGH REVIEW (25 Aug 2026, client direction).
-         *
-         * A change request exists to protect a PUBLISHED value while an admin
-         * looks at the replacement. Nothing about a gifter is reviewed — their
-         * assets are approved as they save them — so opening one would park
-         * their edit in a queue nobody works, and the value they typed would
-         * never appear. It bit exactly once the rule shipped: a gifter's FIRST
-         * save auto-approved, which made it "live", so every edit after that
-         * silently became a change request.
-         *
-         * ⚠️ This is the one place the whole rule can be enforced. All three
-         * callers (bio, avatar, socials) ask this question before deciding which
-         * branch to take, so gating them individually is three chances to miss
-         * one.
-         */
-        if ((int) $user->role === 0) {
-            return false;
-        }
-
-        return match ($asset) {
-            ProfileChangeRequest::ASSET_AVATAR => self::flagIsLive($user->avatar, $user->avatar_approved),
-            ProfileChangeRequest::ASSET_COVER => self::flagIsLive($user->cover, $user->cover_approved),
-            ProfileChangeRequest::ASSET_BIO => self::flagIsLive($user->bio, $user->bio_approved),
-            ProfileChangeRequest::ASSET_SOCIALS => self::socialsAreLive($user),
-            default => false,
-        };
-    }
 
     private static function flagIsLive(mixed $value, mixed $flag): bool
     {

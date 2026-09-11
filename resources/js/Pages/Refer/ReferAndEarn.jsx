@@ -11,8 +11,19 @@ import ShareProfile from "../../wishlist/ShareProfile";
 
 const PINK = "#FF007F";
 const MINT = "#A2E4B8";
-const GOAL = 1000;
-const REWARD = 50;
+
+/*
+ * 🚨 THE THRESHOLD AND THE REWARD ARE PROPS, NOT CONSTANTS. They were `1000`
+ * and `50` typed here, so when the threshold moved to £2,000 on 11 Sep 2026
+ * this page carried on promising the old figure on the very screen a creator
+ * shares their link from.
+ *
+ * 🚨 AND THEY ARE PER ROW ON THE LIST. A referral made before the change is
+ * judged at the figure it was made under, so `stats.qualifying_threshold` is
+ * only what a NEW referral needs — each row carries its own `threshold` and
+ * `reward`, and the bar must fill against that one or it reads as full and
+ * pays nothing (or reads as short when the money is already owed).
+ */
 
 const CARD =
  "bg-white border-[3px] border-black rounded-box ";
@@ -117,7 +128,7 @@ export default function ReferAndEarn({
                                     className="font-gulfs leading-none text-[64px] md:text-[88px]"
                                     style={{ color: PINK }}
                                 >
-                                    £{REWARD}
+                                    £{money(stats.reward_amount ?? 50)}
                                 </span>
                                 <span className="font-GillSans uppercase text-lg md:text-xl leading-tight">
                                     for every creator
@@ -130,8 +141,8 @@ export default function ReferAndEarn({
                             <ol className="mt-6 space-y-3">
                                 {[
                                     ["Share your link", "Send it to a creator you rate."],
-                                    ["They sign up and sell", `Your referral counts once they reach £${money(GOAL)} lifetime sales.`],
-                                    [`You earn £${REWARD}`, "Redeem to your Stripe account any time."],
+                                    ["They sign up and sell", `Your referral counts once they reach £${money(stats.qualifying_threshold ?? 2000)} in settled earnings.`],
+                                    [`You earn £${money(stats.reward_amount ?? 50)}`, "Redeem to your Stripe account any time."],
                                 ].map(([t, d], i) => (
                                     <li key={t} className="flex items-start gap-3">
                                         <span className="shrink-0 w-7 h-7 rounded-full border-2 border-black bg-[#A2E4B8] font-black text-sm flex items-center justify-center">
@@ -256,7 +267,7 @@ export default function ReferAndEarn({
                             <p className="text-xs text-white/80 mt-2 max-w-sm">
                                 {canRedeem
                                     ? "Requests are reviewed, then paid to your Stripe account."
-                                    : `Redeem opens at £${REWARD} available.`}
+                                    : `Redeem opens once a referral has qualified.`}
                             </p>
                         </div>
 
@@ -330,8 +341,13 @@ export default function ReferAndEarn({
 /* ============ ROW ============ */
 
 function ReferralRow({ r }) {
-    const pct = Math.min((Number(r.lifetime_gmv || 0) / GOAL) * 100, 100);
-    const done = pct >= 100;
+    // ⚠️ THIS REFERRAL'S OWN THRESHOLD, and the server has already worked the
+    // percentage out against it — recomputing here is a second answer waiting
+    // to disagree with the one that pays.
+    const goal = Number(r.threshold ?? 2000);
+    const reward = Number(r.reward ?? 50);
+    const pct = Math.min(Number(r.progress_pct ?? 0), 100);
+    const done = STAGE_ORDER.indexOf(r.stage) >= STAGE_ORDER.indexOf("qualified");
 
     return (
         <li className="py-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
@@ -355,7 +371,9 @@ function ReferralRow({ r }) {
                 </div>
             </div>
 
-            {/* Progress to £1,000 */}
+            {/* Progress to THIS ROW'S OWN threshold — never a figure typed here.
+                The comment used to say £1,000, which stopped being the number on
+                11 Sep 2026, and a stale comment is what the next reader copies. */}
             <div className="flex-1 min-w-0">
                 <div className="h-3.5 bg-gray-100 rounded-full border-2 border-black overflow-hidden">
                     <div
@@ -364,10 +382,10 @@ function ReferralRow({ r }) {
                     />
                 </div>
  <div className={`text-[12px] text-black/60 mt-1 ${NUM}`}>
-                    £{money(r.lifetime_gmv)} of £{money(GOAL)}
+                    £{money(r.lifetime_gmv)} of £{money(goal)}
                     {done && !r.rejection_reason && (
                         <span className="text-green-700 font-bold ml-2">
-                            Qualified — £{REWARD} earned
+                            Qualified — £{money(reward)} earned
                         </span>
                     )}
                 </div>
@@ -378,27 +396,46 @@ function ReferralRow({ r }) {
                 )}
             </div>
 
-            {/* Status */}
-            <div className="md:w-[130px] shrink-0 md:text-right">
-                <StatusBadge status={r.status} />
+            {/* 🚨 THE STAGE, NOT THE RAW ENUM. The client asked for
+                Signed up → Active → Earning → Qualified → Paid; the table's
+                `status` column is the payout machinery's own vocabulary
+                (IN_PROGRESS / PAYOUT_REQUESTED / REVOKED) and says nothing to
+                a creator about where their referral has got to. The server
+                derives it — see `CreatorReferralService::stageFor()`. */}
+            <div className="md:w-[150px] shrink-0 md:text-right">
+                <StageBadge stage={r.stage} status={r.status} />
             </div>
         </li>
     );
 }
 
-const StatusBadge = ({ status }) => {
+/** The five stages, in order. Exported shape only — the server decides. */
+const STAGE_ORDER = ["signed_up", "active", "earning", "qualified", "paid"];
+
+const StageBadge = ({ stage, status }) => {
     const map = {
-        IN_PROGRESS: "bg-yellow-100 text-yellow-800 border-yellow-300",
-        QUALIFIED: "bg-green-100 text-green-800 border-green-300",
-        PAYOUT_REQUESTED: "bg-blue-100 text-blue-800 border-blue-300",
-        PAID: "bg-purple-100 text-purple-800 border-purple-300",
-        REVOKED: "bg-red-100 text-red-800 border-red-300",
+        signed_up: ["Signed up", "bg-gray-100 text-black/80 border-gray-300"],
+        active: ["Active", "bg-yellow-100 text-yellow-800 border-yellow-300"],
+        earning: ["Earning", "bg-blue-100 text-blue-800 border-blue-300"],
+        qualified: ["Qualified", "bg-green-100 text-green-800 border-green-300"],
+        paid: ["Paid", "bg-purple-100 text-purple-800 border-purple-300"],
     };
+
+    /*
+     * ⚠️ REVOKED is not a stage — it is an outcome, and it must not be drawn
+     * as one of the five. A creator whose referral was revoked reading
+     * "Signed up" would be told nothing about the only fact that matters.
+     */
+    const [label, classes] =
+        status === "REVOKED"
+            ? ["Revoked", "bg-red-100 text-red-800 border-red-300"]
+            : map[stage] || ["—", "bg-gray-100 text-black/80 border-gray-300"];
+
     return (
         <span
- className={`inline-block px-3 py-1 rounded-full border-2 text-[12px] font-bold uppercase tracking-wide ${map[status] || "bg-gray-100 text-black/80 border-gray-300"}`}
+ className={`inline-block px-3 py-1 rounded-full border-2 text-[12px] font-bold uppercase tracking-wide ${classes}`}
         >
-            {status?.replaceAll("_", " ") || "—"}
+            {label}
         </span>
     );
 };

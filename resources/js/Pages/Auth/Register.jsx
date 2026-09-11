@@ -18,6 +18,7 @@ import SignupPausedPanel from "./register/SignupPausedPanel";
 import {
     MAX_CATEGORIES,
     MAX_PRIDE,
+    PASSWORD_MIN_LENGTH,
     ROLE_CREATOR,
     ROLE_SUPPORTER,
     accentFor,
@@ -419,7 +420,7 @@ export default function Register() {
 
         return (
             !!data.email.trim() &&
-            data.password.length >= 12 &&
+            data.password.length >= PASSWORD_MIN_LENGTH &&
             !liveErrors.email &&
             !liveErrors.password &&
             !!data.country &&

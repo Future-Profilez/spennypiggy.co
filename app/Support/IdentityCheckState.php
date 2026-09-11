@@ -108,9 +108,13 @@ final class IdentityCheckState
              * the social accounts. Somebody using another person's ID passes every
              * automated check there is.
              *
-             * Leaving it at 0 does NOT block the creator: the listing gate reads
-             * `identity_status`, which is 1 here. It only puts them in the admin
-             * sign-off queue.
+             * 🚨 SINCE 10 Sep 2026 LEAVING IT AT 0 BLOCKS THEIR PAYOUT. There is no
+             * listing gate any more — identity moved out of onboarding entirely —
+             * and `App\Support\PayoutEligibility` requires BOTH `identity_status = 1`
+             * AND `identity_admin_status = 1` before any of the six payout paths will
+             * pay. So a row sitting here at 0 is a creator who cannot receive money
+             * until a person looks, and the sign-off queue is load-bearing in a way
+             * it was not before. (`identity:signoff-backlog --all` lists them.)
              */
             'identity_admin_status' => 0,
             // ⚠️ Cleared with it, or the row says a review happened on a date
