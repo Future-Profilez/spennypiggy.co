@@ -17,15 +17,8 @@ import {
     PRICE_FORMATTED,
     SUBSCRIPTION_COPY,
 } from '@/constants/creatorSubscription';
-import {
-    FAST_START,
-    FOUNDER,
-    PRICE_LIMITS,
-    REFERRAL,
-    money,
-    percent,
-    price,
-} from '@/constants/creatorBonuses';
+import { PRICE_LIMITS, price } from '@/constants/creatorBonuses';
+import ThreeProgrammes from './components/ThreeProgrammes';
 
 /**
  * "7 ways to earn" — the detail page behind the paid-ads headline of the same
@@ -319,35 +312,16 @@ export default function Features() {
                             </span>
                         </SectionHead>
 
-                        <LedgerFrame className="mt-10">
-                            <LedgerRow
-                                title="Founder bonus"
-                                line={`First ${FOUNDER.seats} creators to earn ${money(FOUNDER.qualifyingNet)} net in ${FOUNDER.windowDays} days. Founders then earn ${percent(FOUNDER.monthlyRate)} on top of monthly earnings, up to ${money(FOUNDER.monthlyCap)} a month.`}
-                                figure={percent(FOUNDER.monthlyRate)}
-                                tag="monthly"
-                            />
-                            <LedgerRow
-                                title="Fast start bonus"
-                                line={`An extra ${percent(FAST_START.rate)} on everything you earn in your first ${FAST_START.windowDays} days, paid alongside your normal payout.`}
-                                figure={percent(FAST_START.rate)}
-                                tag={`${FAST_START.windowDays} days`}
-                            />
-                            <LedgerRow
-                                title="Creator referrals"
-                                line={`${money(REFERRAL.amount)} for every creator you bring, paid once they have earned ${money(REFERRAL.qualifyingGmv)}. Your link is in your dashboard from day one.`}
-                                figure={money(REFERRAL.amount)}
-                                tag="per creator"
-                            />
-                        </LedgerFrame>
-
-                        <Link
-                            href="/creators/founder-bonus"
-                            className="mt-6 inline-flex items-center gap-2 font-gulfs text-[12px] uppercase tracking-[0.18em] text-white underline decoration-2 underline-offset-4 hover:opacity-70 min-h-[44px]"
-                            style={{ textDecorationColor: ACCENT.bonus }}
-                        >
-                            How the founder bonus works
-                            <ArrowRight size={14} />
-                        </Link>
+                        {/* 🚨 WAS AN INLINE COPY OF `ThreeProgrammes`, AND THAT
+                            COPY IS WHY THIS HAD TO BE FIXED IN TWO PLACES.
+                            The component's own docblock says "reused unchanged
+                            … a second copy is the thing that stops being
+                            unchanged" — and when Founder and Fast Start were
+                            retired on 11 Sep 2026 the shared component stopped
+                            drawing them while this page went on advertising
+                            both, on a paid-ads destination. It renders the
+                            shared block now, gated on the server's own flags. */}
+                        <ThreeProgrammes className="mt-10" />
                     </div>
 
                     {/* Safety */}

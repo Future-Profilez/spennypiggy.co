@@ -166,7 +166,10 @@ class ComparisonPageTest extends TestCase
         $before = collect(ComparisonFeePayload::build('GBP')['rails'])
             ->firstWhere('key', 'card');
 
-        config(['payments.fee_profiles.card.platform_rate' => 25]);
+        // ⚠️ The LIVE key. Under the all-in model the advertised rate is
+        // `payments.all_in.card`; `fee_profiles.card.platform_rate` is the legacy
+        // markup's key and moving it now proves nothing about what the page shows.
+        config(['payments.all_in.card' => 25]);
 
         $after = collect(ComparisonFeePayload::build('GBP')['rails'])
             ->firstWhere('key', 'card');
@@ -174,7 +177,7 @@ class ComparisonPageTest extends TestCase
         // ⚠️ assertEquals, not assertSame: the pricing engine returns the rate
         // as a float and the point of this test is that the VALUE follows
         // config, not what PHP type it arrives as.
-        $this->assertEquals(25, $after['platform_rate']);
+        $this->assertEquals(25, $after['all_in_rate']);
         $this->assertNotEquals($before['all_in_rate'], $after['all_in_rate']);
         $this->assertGreaterThan($before['supporter_pays'], $after['supporter_pays']);
     }

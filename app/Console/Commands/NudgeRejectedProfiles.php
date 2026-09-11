@@ -8,7 +8,7 @@ use App\Models\ProfileRejection;
 use App\Models\User;
 use App\Services\NotificationDispatcher;
 use App\Support\MarketingConsent;
-use App\Support\ReviewSubmission;
+use App\Support\ProfileAssets;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -87,7 +87,7 @@ class NudgeRejectedProfiles extends Command
             }
 
             $reason = ProfileRejection::latestReasonFor($user) ?? (string) $user->profile_reject_reason;
-            $missing = ReviewSubmission::queueBlockers($user);
+            $missing = ProfileAssets::missing($user);
 
             if ($dryRun || ! $enabled) {
                 $sent++;

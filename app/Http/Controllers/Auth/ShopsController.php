@@ -26,6 +26,7 @@ use App\Models\UserPayment;
 use App\Models\UserShopCategories;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Rules\NoBlockedSymbols;
 use App\Rules\NoExpenseOrBrandName;
 use App\Services\AbandonedCheckoutService;
 use App\Services\CheckoutMethodResolver;
@@ -45,6 +46,7 @@ use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
 use App\Support\NotificationContext;
+use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
@@ -183,24 +185,17 @@ class ShopsController extends Controller
         return ! empty($request->reward_file) ? $existing : null;
     }
 
+    /**
+     * The paid file, not the shop front.
+     *
+     * ⚠️ The rules moved to `App\Support\RewardFileScan` on 11 Sep 2026 so the other
+     * five sellable modules could get the same gate — they had all been scanning
+     * their thumbnail and shipping the reward file unscanned. Behaviour here is
+     * unchanged; this is the same check, called from one place.
+     */
     private function moderateRewardFile(Shop $shop): void
     {
-        if (empty($shop->reward_file) || Str::startsWith($shop->reward_file, ['http://', 'https://'])) {
-            return;
-        }
-
-        $type = strtolower((string) $shop->reward_file_type);
-        if ($type !== '' && ! Str::contains($type, ['image', 'video'])) {
-            return;
-        }
-
-        CheckMediaModeration::dispatch(
-            Shop::class,
-            $shop->id,
-            $shop->reward_file,
-            ['approved' => 0],
-            'reward_file'
-        );
+        RewardFileScan::dispatch($shop, ['approved' => 0]);
     }
 
     /**
@@ -254,6 +249,7 @@ class ShopsController extends Controller
                     'required',
                     'string',
                     new NoExpenseOrBrandName,
+                    new NoBlockedSymbols,
                 ],
                 'description' => [
                     'required',
@@ -541,7 +537,7 @@ class ShopsController extends Controller
         // the £4.99–£10,000 rule and left a £0 item on sale).
         $request->validate([
             'type' => ['required', 'string'],
-            'name' => ['required', 'string', new NoExpenseOrBrandName],
+            'name' => ['required', 'string', new NoExpenseOrBrandName, new NoBlockedSymbols],
             'description' => ['required'],
             'price' => ['required', 'numeric'],
             'slot_limitation' => ['nullable', 'integer', 'min:0'],

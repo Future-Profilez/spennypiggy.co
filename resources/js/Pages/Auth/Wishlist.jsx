@@ -11,6 +11,14 @@ import st from "../../../css/uploader.module.css";
 import { Disclosure, Transition } from "@headlessui/react";
 import uploadedimg from "../../../assets/img/uploadedimg.png";
 import Popup from "@/Components/Popup";
+import {
+    itemCheckboxClass,
+    itemErrorClass,
+    itemFieldClass,
+    itemFieldCompactClass,
+    itemLabelClass,
+} from "@/Components/ItemForm/ItemFormKit";
+import useDirtyGuard from "@/lib/useDirtyGuard";
 import { Pagination, Navigation } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import PriceFormat from "@/includes/PriceFormat";
@@ -19,6 +27,7 @@ import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { FaRegHeart, FaChevronUp } from "react-icons/fa";
 import { RiCloseLine, RiCheckDoubleLine } from "react-icons/ri";
 import ContentFilePreview from "@/Components/ContentFilePreview";
+import { creatorFeeNote } from "@/lib/fees";
 import RewardEditor, {
     emptyReward,
     rewardFromItem,
@@ -39,6 +48,7 @@ const imageLinks = [
 
 export default function Wishlist(props) {
     const { global_currency, auth, wish_categories, all_user_categories, rates } = usePage().props;
+    const feeNote = creatorFeeNote(usePage().props);
     const {
         currency,
         item,
@@ -157,6 +167,20 @@ export default function Wishlist(props) {
         ai_generated: isAiImage ? 1 : 0,
     });
 
+    // Esc and the backdrop now close a Popup (they were dead), so a three-step
+    // wish plus an Uploadcare upload must not evaporate on a mis-tap. Returning
+    // false from onHide vetoes the dismissal.
+    const confirmDiscard = useDirtyGuard(close !== false, data);
+
+    // Popup owns its own open flag, so tell it (and any caller driving `openPop`)
+    // that the panel is closed — otherwise the next press repeats a value the
+    // effect has already seen and nothing reopens.
+    const requestClose = () => {
+        if (!confirmDiscard()) return false;
+        setClose(false);
+        return true;
+    };
+
     transform((payload) => {
         const { reward, ...rest } = payload;
         return { ...rest, ...rewardToPayload(reward) };
@@ -208,7 +232,7 @@ export default function Wishlist(props) {
         return (
             <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
                 <div
-                    className="bg-pink-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
+                    className="bg-[#FF007F] h-2.5 rounded-full transition-all duration-300 ease-in-out"
                     style={{ width: `${(step / totalSteps) * 100}%` }}
                 ></div>
             </div>
@@ -430,8 +454,7 @@ export default function Wishlist(props) {
 
     const AddItem = () => {
         return (
- <div className=" flex items-center p-3 rounded-box border-4 border-black 
-border-4 border-black ">
+ <div className="flex items-center p-3 rounded-box border-2 border-black">
  <div className="p-1 !rounded-box bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                     <FaRegHeart color="var(--pink)" size="1.5rem" />
                 </div>
@@ -451,6 +474,9 @@ border-4 border-black ">
         <Popup
             modalclass="pinkmodal full"
             action={close}
+            title={editpop ? "Edit wish" : "Add a wish"}
+            dismissable
+            onHide={requestClose}
             space="4"
             size="lg"
  classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-box mb-4 text-center"}`}
@@ -501,7 +527,7 @@ border-4 border-black ">
                                 </p>
 
                                 <div className="mb-4">
-                                    <label className="mb-2 text-left block font-semibold text-gray-700">
+                                    <label htmlFor="goal_label" className={itemLabelClass}>
                                         Goal{" "}
  <span className="text-black/60 font-normal">(optional)</span>
                                     </label>
@@ -512,7 +538,7 @@ border-4 border-black ">
                                         maxLength={60}
                                         placeholder="Eg. New camera fund"
                                         value={data.goal_label}
- className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-box px-4 py-3"
+ className={itemFieldClass}
                                         onChange={(e) =>
                                             setData("goal_label", e.target.value)
                                         }
@@ -524,14 +550,14 @@ border-4 border-black ">
                                         or expense (e.g. rent, phone bill).
                                     </p>
                                     {errors.goal_label && (
-                                        <p className="mt-1 text-xs text-red-500 text-left">
+                                        <p className={itemErrorClass}>
                                             {errors.goal_label}
                                         </p>
                                     )}
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="mb-2 text-left block font-semibold text-gray-700">
+                                    <label htmlFor="wishname" className={itemLabelClass}>
                                         Content Title
                                     </label>
                                     <input
@@ -540,7 +566,7 @@ border-4 border-black ">
                                         type="text"
                                         placeholder="Eg. Exclusive photo set"
                                         value={data.wishname}
- className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-box px-4 py-3"
+ className={itemFieldClass}
                                         autoComplete="name"
                                         onChange={(e) =>
                                             setData("wishname", e.target.value)
@@ -548,14 +574,14 @@ border-4 border-black ">
                                         required
                                     />
                                     {errors.wishname && (
-                                        <p className="mt-1 text-xs text-red-500 text-left">
+                                        <p className={itemErrorClass}>
                                             {errors.wishname}
                                         </p>
                                     )}
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="mb-2 text-left block font-semibold text-gray-700">
+                                    <label htmlFor="price" className={itemLabelClass}>
                                         Price ({defaultCurrency})
                                     </label>
                                     <div className="relative">
@@ -569,7 +595,7 @@ border-4 border-black ">
                                             placeholder="Eg. 50"
                                             value={data.price}
                                             step="0.01"
- className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-box pl-16 pr-4 py-3"
+ className={`${itemFieldClass} pl-16`}
                                             autoComplete="price"
                                             onChange={(e) =>
                                                 setData("price", e.target.value)
@@ -577,10 +603,10 @@ border-4 border-black ">
                                         />
                                     </div>
                                     {data.price > 0 && (
- <div className="mt-3 p-3 bg-gray-50 rounded-box border border-gray-100">
+ <div className="mt-3 p-3 bg-black/[0.03] rounded-box border border-gray-100">
                                             <div className="flex justify-between items-center mb-1">
-                                                <span className="text-sm text-gray-600">Fans pay:</span>
-                                                <span className="font-bold text-gray-900">
+                                                <span className="text-sm text-black/80">Fans pay:</span>
+                                                <span className="font-bold text-black">
                                                     {new Intl.NumberFormat('en-GB', {
                                                         style: 'currency',
                                                         currency: defaultCurrency
@@ -588,7 +614,7 @@ border-4 border-black ">
                                                 </span>
                                             </div>
                                             <div className="flex justify-between items-center">
-                                                <span className="text-sm text-gray-600">You receive:</span>
+                                                <span className="text-sm text-black/80">You receive:</span>
                                                 <span className="font-bold text-green-600">
                                                     {new Intl.NumberFormat('en-GB', {
                                                         style: 'currency',
@@ -597,7 +623,8 @@ border-4 border-black ">
                                                 </span>
                                             </div>
  <p className="mt-2 text-xs text-black/60 font-medium">Fans only see the total price to improve conversion</p>
- <p className="mt-1 text-xs text-black/60 font-medium">Our fee is 19%. Uplift will show higher due to stripe / conversions to ensure you always receive 100% or slightly more.</p>
+ {/* 🚨 Never a typed percentage — see resources/js/lib/fees.js. */}
+                                                    <p className="mt-1 text-xs text-black/60 font-medium">{feeNote}</p>
                                         </div>
                                     )}
                                     {defaultCurrency !== global_currency &&
@@ -614,9 +641,7 @@ border-4 border-black ">
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="mb-2 text-left block font-semibold text-gray-700">
-                                        Category
-                                    </label>
+                                    <span className={itemLabelClass}>Category</span>
                                     <div className="flex flex-wrap gap-2 mb-3 max-h-40 overflow-y-auto custom-scrollbar ">
                                         {categories && categories.length ? (
                                             categories.map((c, i) => {
@@ -651,7 +676,7 @@ border-4 border-black ">
                                                             htmlFor={
                                                                 "categories" + i
                                                             }
- className="block cursor-pointer select-none rounded-box-sm border border-gray-300 px-4 py-2 text-sm font-medium transition-colors peer-checked:bg-[#FF007F] peer-checked:text-black peer-checked:border-[#FF007F] hover:bg-gray-50"
+ className="block cursor-pointer select-none rounded-box-sm border border-gray-300 px-4 py-2 text-sm font-medium transition-colors peer-checked:bg-[#FF007F] peer-checked:text-black peer-checked:border-[#FF007F] hover:bg-black/[0.03]"
                                                         >
                                                             {c.category}
                                                         </label>
@@ -671,7 +696,7 @@ border-4 border-black ">
                                             type="text"
                                             ref={inputRef}
                                             placeholder="New Category"
- className="flex-1 border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 !rounded-box-sm p-3 text-sm"
+ className={`${itemFieldCompactClass} flex-1`}
                                         />
                                         <button
                                             type="button"
@@ -687,7 +712,7 @@ border-4 border-black ">
                             {/* Step 2: Visuals */}
                             <div className={step === 2 ? "block" : "hidden"}>
                                 <div className="mb-6">
-                                    <label className="mb-4 text-left block font-semibold text-gray-700">
+                                    <label className={itemLabelClass}>
                                         Choose Image or Upload
                                     </label>
 
@@ -713,7 +738,7 @@ border-4 border-black ">
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
- <div className="bg-gray-50 p-4 rounded-box ">
+ <div className="bg-black/[0.03] p-4 rounded-box ">
  <h4 className="text-sm font-medium text-black/60 mb-3 text-center">
                                                     Select from Default
                                                 </h4>
@@ -798,7 +823,7 @@ border-4 border-black ">
                                 </div>
 
                                 <div className="hidden mb-6 border-t border-gray-100 pt-6">
-                                    <label className="mb-4 text-left block font-semibold text-gray-700">
+                                    <label className={itemLabelClass}>
                                         Wish Type
                                     </label>
                                     <div className="md:flex gap-4 mb-6">
@@ -807,8 +832,8 @@ border-4 border-black ">
                                             onClick={() => setSubs(0)}
  className={`w-full mb-2 flex-1 py-3 px-4 rounded-box border font-medium transition-all ${
                                                 data.subscription === 0
- ? "border-[#FF007F] bg-pink-50 text-pink-700 "
-                                                    : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+ ? "border-[#FF007F] bg-[#FF007F] text-black "
+                                                    : "border-gray-200 bg-white text-black/80 hover:bg-black/[0.03]"
                                             }`}
                                         >
                                             One-Time Purchase
@@ -818,8 +843,8 @@ border-4 border-black ">
                                             onClick={() => setSubs(1)}
  className={`w-full mb-2 flex-1 py-3 px-4 rounded-box border font-medium transition-all ${
                                                 data.subscription === 1
- ? "border-[#FF007F] bg-pink-50 text-pink-700 "
-                                                    : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+ ? "border-[#FF007F] bg-[#FF007F] text-black "
+                                                    : "border-gray-200 bg-white text-black/80 hover:bg-black/[0.03]"
                                             }`}
                                         >
                                             Subscription
@@ -827,15 +852,15 @@ border-4 border-black ">
                                     </div>
 
                                     {data.subscription === 0 ? (
- <div className="bg-gray-50 p-4 rounded-box-sm">
+ <div className="bg-black/[0.03] p-4 rounded-box-sm">
                                             <label className="flex items-center gap-3 cursor-pointer">
                                                 <input
                                                     type="checkbox"
                                                     checked={repeat}
                                                     onChange={rpValue}
-                                                    className="w-5 h-5 text-[#FF007F] rounded border-gray-300 focus:ring-pink-500"
+                                                    className={itemCheckboxClass}
                                                 />
-                                                <span className="text-gray-700 font-medium">
+                                                <span className="text-black/80 font-medium">
                                                     Allow Repeat Purchases
                                                 </span>
                                             </label>
@@ -845,8 +870,8 @@ border-4 border-black ">
                                             </p>
                                         </div>
                                     ) : (
- <div className="bg-gray-50 p-6 rounded-box-sm">
-                                            <label className="block text-sm font-medium text-gray-700 mb-3">
+ <div className="bg-black/[0.03] p-6 rounded-box-sm">
+                                            <label className={itemLabelClass}>
                                                 Billing Period
                                             </label>
                                             <div className="flex flex-wrap gap-3">
@@ -870,7 +895,7 @@ border-4 border-black ">
                                                             onChange={spValue}
                                                             className="peer hidden"
                                                         />
- <div className="px-4 py-2 rounded-box border border-gray-200 bg-white text-black/70 text-sm font-medium peer-checked:border-[#FF007F] peer-checked:bg-pink-50 peer-checked:text-pink-700 transition-all hover:bg-gray-50 uppercase">
+ <div className="px-4 py-2 rounded-box border border-gray-200 bg-white text-black/70 text-sm font-medium peer-checked:border-[#FF007F] peer-checked:bg-[#FF007F] peer-checked:text-black transition-all hover:bg-black/[0.03] uppercase">
                                                             {period}
                                                         </div>
                                                     </label>
@@ -889,7 +914,7 @@ border-4 border-black ">
                                     <button
                                         type="button"
                                         onClick={prevStep}
- className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-box hover:bg-gray-200 transition-colors"
+ className="min-h-[48px] flex-1 py-3 px-4 bg-white text-black border-2 border-black font-black uppercase text-sm tracking-[0.14em] rounded-box-sm transition-colors hover:bg-[#F4F4F5]"
                                     >
                                         Back
                                     </button>
@@ -899,7 +924,7 @@ border-4 border-black ">
                                     <button
                                         type="button"
                                         onClick={nextStep}
- className="border-black flex-1 py-3 px-4 bg-[#FF007F] text-black font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-box hover:brightness-110 transition-colors"
+ className="min-h-[48px] flex-1 py-3 px-4 bg-[#FF007F] text-black border-2 border-black font-black uppercase text-sm tracking-[0.14em] rounded-box-sm transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                     >
                                         Next
                                     </button>
@@ -907,7 +932,7 @@ border-4 border-black ">
                                     <LoaderButton
                                         disabled={processing}
                                         type="submit"
- className="border-black !mt-0 flex-1 py-3 !border-0 px-4 !bg-[#FF007F] text-black font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-box transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
+ className="min-h-[48px] !mt-0 flex-1 py-3 px-4 bg-[#FF007F] text-black border-2 border-black font-black uppercase text-sm tracking-[0.14em] rounded-box-sm transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                         spinnerclass="fill-black"
                                     >
                                         {processing

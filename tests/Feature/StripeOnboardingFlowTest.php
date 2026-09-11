@@ -85,16 +85,17 @@ class StripeOnboardingFlowTest extends TestCase
     // ── Step order ──────────────────────────────────────────────────────────
 
     /**
-     * Connect comes BEFORE identity (Stripe Identity bills per check), and a card
-     * comes before Connect. `stripe/Stripe.jsx` used to hardcode its own order and
-     * still had identity second — the rail and the panel disagreed on one screen.
+     * 🚨 CONNECT, THEN THE CARD (11 Sep 2026, client direction). The order has moved
+     * twice: the card was step 3, then after review, and it is now LAST. Identity left
+     * the journey entirely for the payout gate.
      */
-    public function test_step_order_is_card_then_connect_then_identity(): void
+    public function test_step_order_is_connect_then_card(): void
     {
         $order = array_keys(CreatorJourneyService::STEPS);
 
-        $this->assertLessThan(array_search('stripe', $order, true), array_search('subscription', $order, true));
-        $this->assertLessThan(array_search('identity', $order, true), array_search('stripe', $order, true));
+        $this->assertLessThan(array_search('subscription', $order, true), array_search('stripe', $order, true));
+        $this->assertNotContains('identity', $order);
+        $this->assertNotContains('review', $order);
     }
 
     /** The rail renders from this, so it must carry every step with its real state. */
@@ -110,55 +111,56 @@ class StripeOnboardingFlowTest extends TestCase
         $byKey = collect($states)->keyBy('key');
         $this->assertTrue($byKey['subscription']['done']);
         $this->assertFalse($byKey['stripe']['done']);
-        $this->assertFalse($byKey['identity']['done']);
     }
 
     /**
-     * A step the creator has finished and an admin has not yet approved is not a
-     * task. The rail must be able to say "with us" rather than "you're here".
+     * 🚨 NO STEP WAITS ON A PERSON ANY MORE (11 Sep 2026). This test asserted that a
+     * submitted profile read as "with us" rather than "you're here" — the whole state
+     * it described is gone: profiles approve themselves, and the two steps that could
+     * wait (`review`, `identity`) have left the journey.
+     *
+     * What replaced it is the inverse guarantee, and it is the one worth pinning.
      */
-    public function test_a_submitted_profile_is_flagged_as_awaiting_review_not_as_a_task(): void
+    public function test_no_step_ever_waits_on_an_admin(): void
     {
         $creator = $this->creator([
-            'profile_status_lock' => 1,
             'avatar' => 'uuid',
-            'avatar_approved' => 0,
+            'avatar_approved' => 1,
             'bio' => 'Hello',
-            'bio_approved' => 0,
+            'bio_approved' => 1,
         ]);
 
-        // ⚠️ A handle is part of "complete" (ReviewSubmission::queueBlockers, 6 Sep
-        // 2026) — a lock-1 creator with no handle is `blocked`, not with the team,
-        // and this fixture pinned the bare-lock reading until 7 Sep 2026.
         SocialLinks::create([
             'uuid' => (string) Str::uuid(),
             'user_id' => $creator->id,
-            'status' => 0,
+            'status' => SocialLinks::STATUS_APPROVED,
             'instagram' => 'ben_lewis',
         ]);
 
-        // `review` is the step that waits on an admin (31 Aug 2026); `profile` is
-        // "photo and bio uploaded" and is done by the creator alone.
-        $review = collect(app(CreatorJourneyService::class)->stepStates($creator))
-            ->firstWhere('key', 'review');
-
-        $this->assertFalse($review['done']);
-        $this->assertTrue($review['awaiting_review']);
+        foreach (app(CreatorJourneyService::class)->stepStates($creator->fresh()) as $state) {
+            $this->assertFalse(
+                $state['awaiting_review'] ?? false,
+                "Step {$state['key']} reports that it is waiting on an admin."
+            );
+        }
     }
 
     // ── The subscription gate ───────────────────────────────────────────────
 
     /**
-     * The gate lived in CreatorVerification.jsx only, so opening /stripe/authorize
-     * directly walked straight past it.
+     * 🚨 THE CARD NO LONGER GATES CONNECT (11 Sep 2026). It is the LAST step, so a
+     * gate sending a creator from Connect back to the card page is a deadlock — the
+     * journey points at Connect and Connect points back. `subscriptionGate()` was
+     * deleted; this asserts it stays deleted.
      */
-    public function test_a_creator_with_no_card_cannot_reach_the_connect_page(): void
+    public function test_a_creator_with_no_card_reaches_the_connect_page(): void
     {
-        $creator = $this->creator();
+        $creator = $this->creator(['profile_status_lock' => 2]);
 
-        $this->actingAs($creator)
-            ->get('/stripe/authorize')
-            ->assertRedirect(route('activate-subscription'));
+        $this->actingAs($creator)->get('/stripe/authorize')->assertOk();
+
+        $source = (string) file_get_contents(app_path('Http/Controllers/Auth/StripeController.php'));
+        $this->assertStringNotContainsString('$this->subscriptionGate(', $source);
     }
 
     public function test_a_creator_with_a_card_reaches_the_connect_page(): void

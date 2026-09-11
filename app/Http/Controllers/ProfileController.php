@@ -46,10 +46,11 @@ use App\Models\UserVerificationStatus;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
+use App\Rules\NoBlockedSymbols;
+use App\Rules\NoContactDetails;
 use App\Rules\NoExpenseOrBrandName;
 use App\Services\Ledger\LedgerRules;
 use App\Services\NotificationDeliveryService;
-use App\Services\NotificationDispatcher;
 use App\Services\RekognitionModeration;
 use App\Services\Risk\EffectiveLimitsService;
 use App\Services\Risk\RiskIdentityService;
@@ -58,9 +59,8 @@ use App\StripeControl;
 use App\Support\Badges;
 use App\Support\InvisibleText;
 use App\Support\PresetCovers;
-use App\Support\ProfileAssetVisibility;
+use App\Support\ProfileAutoApproval;
 use App\Support\ProfileSelfCheck;
-use App\Support\ReviewSubmission;
 use App\Support\SecureMedia;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -280,7 +280,7 @@ class ProfileController extends Controller
                     // Same rule every listing title already passes; a failure
                     // lands as a normal field error (the ValidationException
                     // rethrow below keeps it out of the generic catch).
-                    'bio' => ['nullable', 'string', 'max:255', new NoExpenseOrBrandName],
+                    'bio' => ['nullable', 'string', 'max:255', new NoExpenseOrBrandName, new NoBlockedSymbols, new NoContactDetails],
                     // Checked against App\Support\Badges, the ONE definition —
                     // this used to accept any array of any strings, into a
                     // column two SEO builders print into meta keywords.
@@ -422,18 +422,17 @@ class ProfileController extends Controller
                 // form's `""` arrives as null too and `null !== null` is false. The clause
                 // was inert. It is gone because a condition nobody can evaluate by reading
                 // it is worse than no condition, and `$updatedFields['social']` with it.
-                // ⚠️ Compared against WHAT IS BEING SUBMITTED, not only against
-                // what is published. With a bio edit already pending, the live text is
-                // not what this save would change: `ProfileChangeRequest::open()`
-                // supersedes the open row, so saving the profile twice took the
-                // creator's own submission out of the queue and re-mailed them about
-                // it. Reverting to the published text still differs from that pending
-                // proposal, so it correctly opens a request that undoes the edit.
-                $pendingBio = ProfileChangeRequest::openFor($user->id, ProfileChangeRequest::ASSET_BIO);
-                $submittedBio = $pendingBio->proposed['bio'] ?? $user->bio;
-
-                if (self::bioDiffers($request, $submittedBio)) {
-
+                /*
+                 * 🚨 ONE PATH SINCE 11 Sep 2026. There used to be two: a published bio
+                 * was edited "through review" (the old text stayed up, the new one sat
+                 * in a queue) and an unpublished one was written straight through. With
+                 * profiles approving themselves there is nothing to queue — the
+                 * validator above has already refused banned wording and contact
+                 * details, which was the whole of the check. The edit lands, and a
+                 * closed `ProfileChangeRequest` records that the machine allowed it,
+                 * for the daily report.
+                 */
+                if (self::bioDiffers($request, $user->bio)) {
                     UserVerificationStatus::UpdateOrCreate([
                         'user_id' => $user->id,
                         'role' => $user->role,
@@ -446,46 +445,25 @@ class ProfileController extends Controller
                         dispatch(new SendBioSocialUpdateEmail($user, ['bio' => true, 'social' => false]));
                     }
 
-                    // A bio that is already published is edited through review: the
-                    // approved text stays on the profile until an admin decides, and a
-                    // rejection costs nothing because nothing was overwritten.
-                    if (ProfileAssetVisibility::isLive($user, ProfileChangeRequest::ASSET_BIO)) {
-                        ProfileChangeRequest::open(
+                    // Only a LIVE profile's edit is worth recording — a creator still
+                    // filling the form in is not editing anything anybody saw.
+                    if ((int) $user->role === 1 && (int) $user->profile_status_lock === 2) {
+                        ProfileChangeRequest::record(
                             $user,
                             ProfileChangeRequest::ASSET_BIO,
                             ['bio' => $request->bio],
                             ['bio' => $user->bio],
                         );
-                    } else {
-                        /*
-                         * 🚨 A GIFTER'S ASSETS ARE APPROVED AS THEY ARE SAVED
-                         * (19 Aug 2026, client direction). Only a creator's
-                         * profile is reviewed; a gifter reaches an admin for one
-                         * thing only, the £500 address check. Queueing their bio
-                         * put work in front of a reviewer that nobody had asked
-                         * for and that nothing downstream depended on.
-                         *
-                         * ⚠️ It can still go back to 0 — an admin asking them to
-                         * change something is exactly how a gifter row becomes
-                         * pending again, and that path is untouched.
-                         */
-                        $user->bio_approved = (int) $user->role === 0 ? 1 : 0;
-
-                        $user->bio = $request->bio;
                     }
 
-                    // 🚨 `profile_status_lock = 1` is NOT "under review" — it is a
-                    // punishment. It takes the verified badge (VerifiedBadge.php:95),
-                    // removes the creator from Discover, search, trending and top-earners
-                    // and DELISTS EVERY ITEM THEY SELL (24 hard `where('profile_status_lock', 2)`
-                    // in DiscoveryService), and blocks Stripe onboarding
-                    // (StripeController.php:551, :809). Nothing on the website ever sets it
-                    // back to 2 — only an admin can, so one bio edit cost a creator their
-                    // discoverability until someone in the back office noticed.
-                    //
-                    // The review queue does not need it: CreatorReviewService::queue()
-                    // already picks up `lock = 2 AND whereAssetPending()`, and the pending
-                    // change (or `bio_approved = 0` above) is exactly that signal.
+                    $user->bio_approved = 1;
+                    $user->bio = $request->bio;
+
+                    // ⚠️ The profile's own lock is NOT touched by an edit. A live
+                    // creator stays live; the value they typed has already passed the
+                    // checks. (It also used to be set to 1 here, which delisted every
+                    // item they sold for a bio typo — see the 2026_09_11_100000
+                    // migration for why the value 1 no longer exists at all.)
                     if ($userProfileStatus) {
                         $userProfileStatus->user_profile_status = 0;
                         $userProfileStatus->save();
@@ -493,9 +471,6 @@ class ProfileController extends Controller
                 }
 
                 $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
-
-                $pendingAvatarChange = null;
-                $pendingCoverChange = null;
 
                 // ⚠️ These were unconditional on "an image object was posted" — they
                 // never compared the uuid — so re-opening the form and saving re-zeroed
@@ -509,22 +484,31 @@ class ProfileController extends Controller
                 );
 
                 if ($avatarChanged) {
-                    if (ProfileAssetVisibility::isLive($user, ProfileChangeRequest::ASSET_AVATAR)) {
-                        // The approved photo stays on the profile. Nothing here writes
-                        // `users.avatar`, so there is no old uuid to lose.
-                        $pendingAvatarChange = ProfileChangeRequest::open(
+                    /*
+                     * 🚨 ONE PATH, AND IT PUBLISHES IMMEDIATELY (11 Sep 2026, client
+                     * direction: "no delay"). A published photo used to be replaced
+                     * "through review" — the old one stayed up while an admin looked.
+                     * Nobody looks now, so the new photo goes up as it is saved and the
+                     * scan below is what can pull it back down.
+                     *
+                     * ⚠️ THE TRADE IS REAL AND IS THE CLIENT'S CALL: a prohibited photo
+                     * is live for the seconds Rekognition takes. `flagOnViolation`
+                     * retracts it, writes the creator-facing reason and notifies them,
+                     * and `ProfileAutoApproval::isComplete()` reads the flag, so the
+                     * profile drops out of "live" with it.
+                     */
+                    if ((int) $user->role === 1 && (int) $user->profile_status_lock === 2) {
+                        ProfileChangeRequest::record(
                             $user,
                             ProfileChangeRequest::ASSET_AVATAR,
                             ['uuid' => $avatar['uuid'] ?? null, 'cdn_modifier' => $avatar['cdnUrlModifiers'] ?? null],
                             ['uuid' => $user->avatar, 'cdn_modifier' => $user->avatar_cdn_modifier],
                         );
-                    } else {
-                        $user->avatar = $avatar['uuid'] ?? null;
-                        // A gifter's photo is approved as it is saved — see the bio
-                        // branch above for why.
-                        $user->avatar_approved = (int) $user->role === 0 ? 1 : 0;
-                        $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
                     }
+
+                    $user->avatar = $avatar['uuid'] ?? null;
+                    $user->avatar_approved = 1;
+                    $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
 
                     if ($userProfileStatus) {
                         $userProfileStatus->user_profile_status = 0;
@@ -597,20 +581,7 @@ class ProfileController extends Controller
                 // so an unrelated profile edit does not re-scan (and re-flag) a
                 // photo an admin already cleared.
                 //
-                // 🚨 A PENDING change is scanned against its own row, never against
-                // `users`. `users.moderation_reason` describes the LIVE photo, and
-                // `CreatorReviewAdvisor::media()` reads it — writing a pending upload's
-                // verdict there would make the console recommend rejecting the photo the
-                // admin already approved and the public is still looking at.
-                if ($pendingAvatarChange) {
-                    CheckMediaModeration::dispatch(
-                        ProfileChangeRequest::class,
-                        $pendingAvatarChange->id,
-                        $pendingAvatarChange->proposed['uuid'] ?? null,
-                        ['scan_state' => ProfileChangeRequest::SCAN_FLAGGED],
-                        'avatar'
-                    );
-                } elseif ($avatarChanged && ! empty($user->avatar)) {
+                if ($avatarChanged && ! empty($user->avatar)) {
                     // 🚨 A NEW image gets a FRESH verdict. The scan only ever
                     // WRITES `users.moderation_reason` — a clean result writes
                     // nothing — so a reason left by the previous photo would
@@ -624,27 +595,26 @@ class ProfileController extends Controller
                         ])->save();
                     }
 
+                    /*
+                     * ⚠️ `approveOnClean` looks redundant beside the approval written
+                     * when the photo was saved, and is not: a scan that comes back
+                     * CLEAN after a previous one flagged the same asset has to be able
+                     * to clear it. `flagOnViolation` is the retraction.
+                     */
                     CheckMediaModeration::dispatch(
                         User::class,
                         $user->id,
                         $user->avatar,
                         ['avatar_approved' => 0],
-                        'avatar'
+                        'avatar',
+                        ['avatar_approved' => 1]
                     );
                 }
 
                 // A curated cover is never re-scanned: it has already been
                 // reviewed, and a false positive would pull the same banner off
                 // every profile using it, on an unrelated profile edit.
-                if ($pendingCoverChange) {
-                    CheckMediaModeration::dispatch(
-                        ProfileChangeRequest::class,
-                        $pendingCoverChange->id,
-                        $pendingCoverChange->proposed['uuid'] ?? null,
-                        ['scan_state' => ProfileChangeRequest::SCAN_FLAGGED],
-                        'cover'
-                    );
-                } elseif ($coverChanged && ! empty($user->cover) && ! PresetCovers::isPreApproved($user->cover)) {
+                if ($coverChanged && ! empty($user->cover) && ! PresetCovers::isPreApproved($user->cover)) {
                     // Same fresh-verdict rule as the avatar above.
                     if ($user->moderation_asset === 'cover') {
                         $user->forceFill([
@@ -658,9 +628,14 @@ class ProfileController extends Controller
                         $user->id,
                         $user->cover,
                         ['cover_approved' => 0],
-                        'cover'
+                        'cover',
+                        ['cover_approved' => 1]
                     );
                 }
+
+                // Bio and handles approve synchronously; the photo approves when its
+                // scan returns and calls this again. Whichever lands last goes live.
+                ProfileAutoApproval::activateIfComplete($user->fresh());
 
                 $this->userProfileService->clearUserCaches($user->username, $user->id);
 
@@ -704,171 +679,14 @@ class ProfileController extends Controller
         }
     }
 
-    /**
-     * Submit the creator's profile for review — `profile_status_lock` 0 → 1.
-     *
-     * 🚨 POST ONLY (7 Sep 2026). See the reasoning on the route declaration: as a GET
-     * this was submitted for creators by things that merely fetch a URL, and the one
-     * measured case came from an admin emulation session that clicked nothing.
+    /*
+     * 🚨 `updateProfileLockStatus()` — THE SUBMIT-FOR-REVIEW ENDPOINT — IS GONE
+     * (10 Sep 2026, client direction). There is nothing to submit: each asset is judged
+     * by the automated checks as it is saved and the profile goes live on its own the
+     * moment all three are clean (`ProfileAutoApproval::activateIfComplete`). Its route
+     * (`update.profile.lock.status`) was removed with it. Lock 1 is a state no new
+     * creator reaches.
      */
-    public function updateProfileLockStatus(Request $request)
-    {
-        try {
-            $user = User::where('id', Auth::id())->first();
-
-            if ($user->role != 1) {
-                return back()->with('error', 'Only creators submit a profile for review.');
-            }
-
-            /*
-             * 🚨 AN EMULATING ADMIN MAY NOT SUBMIT SOMEBODY ELSE'S PROFILE.
-             *
-             * Emulation carries no write guard of its own (`EnforceEmulationTimeBox`
-             * only expires the session), so an admin browsing a creator's own steps
-             * page holds full write access as that creator. Submitting for review is
-             * the creator's own declaration that they are ready — an admin making it
-             * for them puts a profile in the queue its owner never sent, and the
-             * reviewer cannot tell the difference. Measured live 7 Sep 2026:
-             * krystal555's submission was made under `emulated_by_admin: true`.
-             *
-             * ⚠️ Refused, not silently ignored — an admin who meant to do it needs to
-             * know it did not happen. Logged at warning: it is an attempt to act as
-             * somebody else, whether or not it was deliberate.
-             */
-            if ($request->session()->get('emulated_by_admin')) {
-                Log::warning('Profile submit refused: emulation session', [
-                    'user_id' => $user->id,
-                    'admin_id' => $request->session()->get('emulation_admin_id'),
-                ]);
-
-                return back()->with('error', 'You are viewing this account as an admin. Only the creator can submit their own profile for review.');
-            }
-
-            /*
-             * 🚨 CHECKED HERE, NOT ONLY IN THE BROWSER (19 Aug 2026).
-             *
-             * The journey card disables its button until these are done, but the
-             * server must not take the browser's word for it — otherwise an empty
-             * profile lands in the review queue and an admin is mailed to approve a
-             * creator with nothing to approve. The list is the client's own: photo,
-             * bio and a social handle.
-             */
-            $missing = $this->missingForReview($user);
-
-            if ($missing) {
-                return back()->with(
-                    'error',
-                    'Add '.$this->readableList($missing).' before submitting for review.'
-                );
-            }
-
-            $user->profile_status_lock = 1;
-            $user->profile_reject_reason = null;
-            $user->save();
-
-            $this->notifySelfCheckFindings($user);
-
-            return back()->with('success', 'Your Verification Request Submit Successfully.');
-        } catch (\Exception $e) {
-            Log::error('Error updating profile lock status: '.$e->getMessage());
-
-            return back()->with('error', 'Failed to update profile lock status. Please try again later.');
-        }
-    }
-
-    /**
-     * Tell a creator, at the moment they submit, what is likely to hold them up.
-     *
-     * 🚨 THE POINT IS THE TIMING. The review console has flagged these things to
-     * reviewers all along; the creator heard about them days later, as a
-     * rejection. Sending it now means they can fix it and resubmit today —
-     * `ProfileSelfCheck` only ever names things they can act on themselves.
-     *
-     * ⚠️ FIRES ON SUBMIT ONLY, so creators already sitting in the queue are not
-     * mailed about a submission they made before this existed. They still see
-     * every finding on their own profile steps.
-     *
-     * ⚠️ Bell + push, never email. This is a nudge about their own account, not
-     * a decision — a decision already has its own mail, and two messages about
-     * one submission reads as two separate problems.
-     *
-     * 🚨 NEVER THROWS. It runs inside the submit request, and a notification
-     * failure must not make a submitted profile look unsubmitted. Same house
-     * pattern as VisitTracker and BlockedPaymentAlert.
-     */
-    private function notifySelfCheckFindings(User $user): void
-    {
-        try {
-            $findings = ProfileSelfCheck::for($user, $user->social_links);
-
-            if (! $findings) {
-                return;
-            }
-
-            // ⚠️ Keyed on WHAT IS WRONG, not on the submission. A creator who
-            // resubmits without changing anything is not told the same thing
-            // twice; one who fixes the bio and still has a shortened link is,
-            // because that is a different sentence.
-            $key = 'findings:'.md5(implode('|', array_column($findings, 'message')));
-
-            if (! NotificationDispatcher::claim($user->id, 'profile_self_check', $key)) {
-                return;
-            }
-
-            $body = $findings[0]['message'];
-
-            if (count($findings) > 1) {
-                $body .= ' There '.(count($findings) === 2 ? 'is 1 other point' : 'are '.(count($findings) - 1).' other points')
-                    .' to look at on your profile.';
-            }
-
-            NotificationDispatcher::queue(
-                $user,
-                'profile_self_check',
-                [
-                    'title' => 'This may hold up your review',
-                    'body' => $body,
-                    'url' => '/'.$user->username,
-                    'module' => 'profile',
-                ],
-                [NotificationDispatcher::CHANNEL_BELL, NotificationDispatcher::CHANNEL_PUSH],
-                // Their own account's review state — a marketing opt-out must
-                // not silence it.
-                false
-            );
-        } catch (\Throwable $e) {
-            Log::warning('ProfileSelfCheck notification failed: '.$e->getMessage(), [
-                'user_id' => $user->id,
-            ]);
-        }
-    }
-
-    /**
-     * What a creator still has to add before anyone reviews them.
-     *
-     * 🚨 DELEGATED, NOT DUPLICATED. The same list decides whether this submit is
-     * accepted, whether the creator's own screen says "with our team" or "one thing
-     * left", and what `review:nudge-blocked` writes in the reminder mail. Three
-     * copies of it would be three answers — see App\Support\ReviewSubmission.
-     *
-     * @return array<int, string>
-     */
-    private function missingForReview(User $user): array
-    {
-        return ReviewSubmission::missing($user);
-    }
-
-    /** "a bio and a payment card" — a list a person can read. */
-    private function readableList(array $items): string
-    {
-        if (count($items) === 1) {
-            return $items[0];
-        }
-
-        $last = array_pop($items);
-
-        return implode(', ', $items).' and '.$last;
-    }
 
     /**
      * Delete the user's account.

@@ -46,10 +46,13 @@ class SetupCelebrationTest extends TestCase
     {
         $creator = $this->creator($overrides);
 
+        // ⚠️ APPROVED. Setup steps are done on approval now, not on presence — the
+        // `social` step stays open for a handle a check pulled.
         SocialLinks::create([
             'user_id' => $creator->id,
             'uuid' => (string) Str::uuid(),
             'instagram' => 'spenny',
+            'status' => SocialLinks::STATUS_APPROVED,
         ]);
 
         MonthlyCharge::create([
@@ -93,7 +96,7 @@ class SetupCelebrationTest extends TestCase
     public function test_a_creator_mid_setup_is_not_celebrated(): void
     {
         // Identity outstanding — the last setup step, and the one that gates listing.
-        $creator = $this->setUpCreator(['identity_status' => 0]);
+        $creator = $this->setUpCreator(['stripe_details_submitted' => 0]);
 
         $this->assertFalse(app(CreatorJourneyService::class)->setupComplete($creator));
         $this->assertNull(SetupCelebrationPayload::for($creator));
@@ -185,7 +188,7 @@ class SetupCelebrationTest extends TestCase
      */
     public function test_a_creator_mid_setup_cannot_spend_their_own_celebration(): void
     {
-        $creator = $this->setUpCreator(['identity_status' => 0]);
+        $creator = $this->setUpCreator(['stripe_details_submitted' => 0]);
 
         $this->actingAs($creator)
             ->postJson(route('creator.setup-celebration.seen'))

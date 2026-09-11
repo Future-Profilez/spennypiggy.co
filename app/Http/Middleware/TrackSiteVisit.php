@@ -35,16 +35,46 @@ class TrackSiteVisit
             // its presence alone is the signal.
             $isNewVisitor = ! $request->cookies->has(VisitTracker::VISITOR_COOKIE);
 
-            $source = $this->tracker->record($request, $isNewVisitor);
+            /*
+             * Which marker decides UNIQUENESS for this page type.
+             *
+             * 🚨 `sp_v` is set on a visitor's FIRST page of the day, whatever it
+             * is, so every page type they reach afterwards records zero uniques.
+             * That is tolerable for `landing` and fatal for `signup`, which is
+             * almost never anybody's first page — the stage would read zero for
+             * ever. `VisitTracker::uniqueCookieFor()` hands the signup form its
+             * own marker; every other page type keeps `sp_v` and therefore keeps
+             * reporting exactly the number it reported before this existed.
+             */
+            $pageType = $this->tracker->resolvePageType($request);
+            $uniqueCookie = VisitTracker::uniqueCookieFor($pageType);
+            $isNewForPage = $uniqueCookie === VisitTracker::VISITOR_COOKIE
+                ? $isNewVisitor
+                : ! $request->cookies->has($uniqueCookie);
+
+            $source = $this->tracker->record($request, $isNewForPage);
 
             // Secure flag follows session config — hardcoding true means the
             // browser drops the cookie on plain-http dev, so every request
             // looks like a brand-new visitor and uniques triple.
             $secure = (bool) config('session.secure');
 
+            /*
+             * ⚠️ `sp_v` is still written on exactly the same rule as before,
+             * INDEPENDENTLY of the per-page marker. Skipping it when a visitor's
+             * first page of the day happens to be /register would leave them
+             * counted unique a second time on the next page they open, quietly
+             * moving numbers this change is supposed to leave alone.
+             */
             if ($isNewVisitor) {
                 Cookie::queue(
                     Cookie::make(VisitTracker::VISITOR_COOKIE, (string) Str::uuid(), 60 * 24, null, null, $secure, true, false, 'lax')
+                );
+            }
+
+            if ($uniqueCookie !== VisitTracker::VISITOR_COOKIE && $isNewForPage) {
+                Cookie::queue(
+                    Cookie::make($uniqueCookie, (string) Str::uuid(), 60 * 24, null, null, $secure, true, false, 'lax')
                 );
             }
 

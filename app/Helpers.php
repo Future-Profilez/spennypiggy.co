@@ -2,10 +2,8 @@
 
 namespace App;
 
-use App\Jobs\SendReferralQualifiedEmailJob;
 use App\Models\Admin;
 use App\Models\Concerns\HasRewardContract;
-use App\Models\CreatorReferral;
 use App\Models\Currency;
 use App\Models\NotificationLog;
 use App\Models\Payment;
@@ -15,6 +13,7 @@ use App\Models\User;
 use App\Models\UserPayment;
 use App\Services\Discovery\AttributionService;
 use App\Services\Pricing\CreatorFeeResolver;
+use App\Services\Pricing\FeeModel;
 use App\Services\RewardService;
 use App\Services\Risk\EffectiveLimitsService;
 use App\Support\AlertRouter;
@@ -274,73 +273,27 @@ class Helpers
     }
 
     /**
-     * Recalculate GMV for an existing creator referral based on successful payments.
+     * Recalculate a creator referral's progress.
+     *
+     * 🚨 THE LOGIC MOVED TO `App\Services\CreatorReferralService` ON
+     * 11 Sep 2026 and this is a thin forward, kept because it has call sites
+     * across the checkout paths. What was here was wrong in three ways and all
+     * three are fixed there:
+     *
+     *   1. It summed `payments.amount` — the supporter's GROSS charge including
+     *      fees, which on this platform is ~30% above the listed price. A
+     *      creator crossed the £1,000 threshold at roughly £766 of real sales.
+     *   2. A refund never came back off the total, so a fully refunded referred
+     *      creator stayed qualified for ever.
+     *   3. The threshold and the reward were literals — `>= 1000` and the words
+     *      "£1,000" and "£50" in the notification — beside a config key that
+     *      said it was the one place to read them from.
      *
      * @param  int|string  $referredCreatorId  Creator who received payment (id or uuid)
      */
     public static function recalculateGmv($referredCreatorId): void
     {
-        try {
-
-            $user = User::where('id', $referredCreatorId)->orWhere('uuid', $referredCreatorId)->first();
-
-            if (! $user) {
-                return;
-            }
-
-            $referral = CreatorReferral::with('referrer', 'referred')->where('referred_creator_id', $user->id)->first();
-
-            if (! $referral) {
-                return;
-            }
-
-            // Stop once qualified
-            if ($referral->status === 'QUALIFIED' || $referral->lifetime_gmv >= (float) config('referral.qualifying_gmv', 1000)) {
-                return;
-            }
-
-            $payments = Payment::where('creator_id', $user->uuid)->whereIn('status', ['succeeded', 'completed'])->get();
-
-            $totalGmvGbp = $payments->sum(function ($payment) {
-                $amount = $payment->amount / 100;
-
-                return strtolower($payment->currency) === 'gbp' ? $amount : self::priceFormat($payment->currency, $amount, 'gbp');
-            });
-
-            $referral->lifetime_gmv = $totalGmvGbp;
-
-            // The REFERRER is the one who gets paid, so it is their bonus
-            // eligibility that decides this — not the referred creator's.
-            // Checked at qualification rather than at payout so nobody is told
-            // they have earned a bonus that will not be paid.
-            $referrerEligible = $referral->referrer ? $referral->referrer->isBonusEligible() : true;
-
-            if ($referrerEligible && $referral->status === 'IN_PROGRESS' && $totalGmvGbp >= 1000) {
-                $referral->status = 'QUALIFIED';
-                $referral->qualified_at = now();
-
-                SendReferralQualifiedEmailJob::dispatch($referral);
-
-                $referredCreatorName = $referral->referred->name;
-
-                self::sendNotification('🎉 Referral Goal Achieved!', "Your referred creator ({$referredCreatorName}) has reached £1,000 GMV. £50 has been unlocked in your wallet.", $referral->referrer->email);
-            }
-
-            $referral->save();
-
-            Log::info('Creator referral GMV recalculated', [
-                'referrer_creator_id' => $referral->referrer_creator_id,
-                'referred_creator_id' => $user->id,
-                'total_gmv_gbp' => $referral->lifetime_gmv,
-                'status' => $referral->status,
-            ]);
-        } catch (\Throwable $e) {
-
-            Log::error('CreatorReferralHelper::recalculateGmv failed', [
-                'referred_creator_id' => $referredCreatorId,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        app(\App\Services\CreatorReferralService::class)->recalculate($referredCreatorId);
     }
 
     /**
@@ -632,7 +585,95 @@ class Helpers
 
         $platformFeeRate = ($profile['platform_rate'] ?? config('app.platform_fee_percentage', 17)) / 100;
         $complianceFeeRate = ($profile['compliance_rate'] ?? config('app.transaction_fee_percentage', 2)) / 100;
-        $adminFee = self::administrationFeeInCurrency($currency); // £1 converted
+        /*
+         * 🚨 THE ALL-IN MODEL (11 Sep 2026, client direction). Under it the supporter
+         * pays the listed price plus ONE advertised percentage and **Stripe comes out
+         * of that percentage**, where the legacy model added platform + compliance +
+         * Stripe on top of each other. The creator receives 100% of the listed price
+         * under both — that is not what changed.
+         *
+         * ⚠️ A HISTORIC CHARGE IS ALWAYS RE-COST AS LEGACY unless its override says
+         * otherwise. Every row written before today was priced with the old formula,
+         * and re-costing one at the new model would restate a fee nobody charged.
+         */
+        $allIn = is_array($rateOverride)
+            ? (($rateOverride['fee_model'] ?? FeeModel::MODEL_LEGACY) === FeeModel::MODEL_ALL_IN)
+            : FeeModel::isAllIn();
+
+        // 🚨 NO £1 ADMINISTRATION FEE UNDER ALL-IN (client §2: "No separate £1 fee at
+        // launch"). It is inside the advertised percentage now, not beside it.
+        $adminFee = $allIn ? 0.0 : self::administrationFeeInCurrency($currency);
+
+        /*
+         * ALL-IN: the supporter's total is the listed price plus the advertised rate,
+         * full stop. There is no gross-up to solve — the rate IS the price difference,
+         * and everything the platform pays comes out of it.
+         */
+        if ($allIn) {
+            $supporterRate = ($rateOverride['supporter_rate'] ?? null) !== null
+                ? (float) $rateOverride['supporter_rate'] / 100
+                : FeeModel::supporterRate($feeProfile, $creatorId) / 100;
+
+            $supporterFixedFee = FeeModel::fixedFee($currency);
+
+            $totalSupporterPays = ($listedPrice * (1 + $supporterRate)) + $supporterFixedFee;
+
+            // CEIL for the same reason as the legacy path: the creator must never be a
+            // rounding penny short of what they listed.
+            $precision = $isZeroDecimal ? 0 : 2;
+            $totalSupporterPays = $isZeroDecimal
+                ? ceil($totalSupporterPays)
+                : ceil($totalSupporterPays * 100) / 100;
+
+            $actualStripeFee = round(($totalSupporterPays * $stripeFeeRate) + $stripeFixedFee, $precision, PHP_ROUND_HALF_UP);
+
+            /*
+             * Whatever is left after the creator and Stripe. 🚨 It can go NEGATIVE on a
+             * listing small enough that Stripe's fixed component outruns the whole
+             * percentage — `FeeModel::minimumSellable()` computes exactly where that
+             * happens, and at 12% on the current estimate it is £3.66, below the
+             * platform's own £4.99 floor. Clamped at zero so a Stripe application fee is
+             * never asked to be negative, and logged loudly because it means the
+             * configured rate cannot pay for itself at that price.
+             */
+            $platformFee = round($totalSupporterPays - $listedPrice - $actualStripeFee, $precision, PHP_ROUND_HALF_UP);
+
+            if ($platformFee < 0) {
+                Log::error('calculateStripeDirectChargeFlow: the all-in rate does not cover processing at this price', [
+                    'listed_price' => $listedPrice,
+                    'currency' => $currency,
+                    'fee_profile' => $feeProfile,
+                    'supporter_rate' => $supporterRate * 100,
+                    'minimum_sellable' => FeeModel::minimumSellable($feeProfile, $currency, $creatorId),
+                ]);
+
+                $platformFee = 0.0;
+            }
+
+            // Compliance is folded into the one advertised rate — there is no second
+            // line, which is the whole point of "all-in".
+            $complianceFee = 0.0;
+            $applicationFee = $platformFee;
+            $netToCreator = round($totalSupporterPays - $actualStripeFee - $applicationFee, $precision);
+
+            // Recorded as a PERCENTAGE OF THE TOTAL, the same shape the legacy model
+            // persists, so `feeRateColumns()` and every admin revenue report keep
+            // reading one thing. The supporter rate is recorded separately below.
+            $platformFeeRate = $totalSupporterPays > 0 ? ($platformFee / $totalSupporterPays) : 0.0;
+            $complianceFeeRate = 0.0;
+
+            $reserveAmount = $reserveRate > 0
+                ? round(($listedPrice * $reserveRate) / 100, $precision, PHP_ROUND_HALF_UP)
+                : 0;
+
+            return self::chargeFlowResult(
+                $feeProfile, $profile, $listedPrice, $totalSupporterPays, $applicationFee,
+                $platformFee, $complianceFee, $adminFee, $actualStripeFee, $reserveAmount,
+                $netToCreator, $platformFeeRate, $complianceFeeRate, $stripeFeeRate,
+                $stripeFixedFee, $precision, $currency, FeeModel::MODEL_ALL_IN,
+                $supporterRate * 100
+            );
+        }
 
         // Correct gross-up formula to ensure creator receives exactly listedPrice:
         // TotalAmount = (ListedPrice + StripeFixedFee + AdminFee) / (1 - StripeFeeRate - PlatformFeeRate - ComplianceFeeRate)
@@ -725,6 +766,51 @@ class Helpers
             }
         }
 
+        return self::chargeFlowResult(
+            $feeProfile, $profile, $listedPrice, $totalSupporterPays, $applicationFee,
+            $platformFee, $complianceFee, $adminFee, $actualStripeFee, $reserveAmount,
+            $netToCreator, $platformFeeRate, $complianceFeeRate, $stripeFeeRate,
+            $stripeFixedFee, $precision, $currency, FeeModel::MODEL_LEGACY, null
+        );
+    }
+
+    /**
+     * The one shape both fee models answer in.
+     *
+     * 🚨 TWO MODELS, ONE RETURN ARRAY. Every caller of
+     * `calculateStripeDirectChargeFlow` — nine payment tables, the ledger sync, the
+     * admin revenue reports, the bio-page price preview — reads these keys and must not
+     * have to know which model priced the charge. A second shape would mean auditing
+     * all of them twice.
+     *
+     * ⚠️ `fee_model` and `supporter_rate` are ADDITIONS, not replacements. They are what
+     * lets a future recompute re-cost an all-in charge as all-in; a legacy row carries
+     * `legacy_markup` and a null rate, which is exactly what every existing row is.
+     *
+     * @param  array<string, mixed>  $profile
+     * @return array<string, mixed>
+     */
+    private static function chargeFlowResult(
+        string $feeProfile,
+        array $profile,
+        float $listedPrice,
+        float $totalSupporterPays,
+        float $applicationFee,
+        float $platformFee,
+        float $complianceFee,
+        float $adminFee,
+        float $actualStripeFee,
+        float $reserveAmount,
+        float $netToCreator,
+        float $platformFeeRate,
+        float $complianceFeeRate,
+        float $stripeFeeRate,
+        float $stripeFixedFee,
+        int $precision,
+        string $currency,
+        string $feeModel,
+        ?float $supporterRate
+    ): array {
         return [
             'fee_profile' => $feeProfile,
             // The rates that priced THIS charge. Persisted alongside the amounts
@@ -738,6 +824,11 @@ class Helpers
             'stripe_fixed_fee' => round($stripeFixedFee, 2),
             'fee_source' => $profile['fee_source'] ?? 'standard',
             'fee_override_id' => $profile['fee_override_id'] ?? null,
+            // 🚨 Which model priced it. Without this a recompute cannot tell an all-in
+            // charge from a legacy one and would restate a fee nobody charged.
+            'fee_model' => $feeModel,
+            'supporter_rate' => $supporterRate === null ? null : round($supporterRate, 2),
+            'currency' => strtoupper($currency ?: 'GBP'),
             'listed_price' => round($listedPrice, $precision),
             'platform_fee' => $platformFee,
             'compliance_fee' => $complianceFee,

@@ -8,6 +8,8 @@ use App\Models\Currency;
 use App\Models\FounderBonus;
 use App\Models\PayoutRecord;
 use App\StripeControl;
+use App\Support\Incentives;
+use App\Support\PayoutEligibility;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -37,6 +39,20 @@ class ProcessFounderPayouts implements ShouldQueue
      */
     public function handle(): void
     {
+        /*
+         * 🚨 THIS READS THE PAYER SWITCH, NEVER `founderEnabled()` (11 Sep
+         * 2026). The scheme is retired and this job is STILL RUNNING, on
+         * purpose: a creator who qualified before it closed met the published
+         * condition and is owed the money. `payouts_enabled` is turned off only
+         * once no bonus is left pending or approved — see
+         * `config/founder_bonus.php`.
+         */
+        if (! Incentives::founderPayoutsEnabled()) {
+            Log::info('Founder Bonus payouts are switched off (founder_bonus.payouts_enabled = false).');
+
+            return;
+        }
+
         Log::info('Starting founder payout processing for month: '.now()->format('Y-m'));
 
         // Process pending payouts for qualified founders
@@ -79,6 +95,11 @@ class ProcessFounderPayouts implements ShouldQueue
             throw new \Exception('Creator Stripe account is not ready');
         }
         if (! empty($bonus->creator?->payout_paused_at)) {
+            return;
+        }
+        // 🚨 A bonus is a payout. Gating the weekly run and not this would pay an
+        // unverified creator their whole Founder bonus. See PayoutEligibility.
+        if (PayoutEligibility::blocksPayout($bonus->creator)) {
             return;
         }
         if (! empty($bonus->payout_record_uuid) || ! empty($bonus->stripe_payout_id)) {

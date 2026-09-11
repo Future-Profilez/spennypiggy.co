@@ -328,41 +328,23 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const profileStatusLock = creatorUser?.profile_status_lock;
     const profileRejectReason =
         creatorUser?.profile_reject_reason || user?.profile_reject_reason;
-    // 🚨 NO CARD CLAUSE (client decision, 7 Sep 2026). The card is asked AFTER the
-    // profile is approved, before payouts — see the `trial` step below. Mirrors
-    // `ReviewSubmission::missing()` on the server: if that gate gains a clause,
-    // this list gains it in the same commit, or the button and the refusal disagree.
+    // Everything the creator supplies themselves. Approval is not part of it — that
+    // is `profileHolds`, and the two are deliberately separate: "you have not written
+    // a bio" and "your bio was pulled" are different sentences.
     const hasBasicDetails =
         hasAnySocialMedia && creatorUser?.avatar && creatorUser?.bio;
     /*
-     * 🚨 "SUBMITTED" IS NOT "WITH THE REVIEW TEAM", AND READING THE BARE LOCK
-     * PUT 22 CREATORS IN A WAIT THAT COULD NEVER END (6 Sep 2026).
+     * 🚨 THE `reviewSubmission` PROP AND ITS THREE FLAGS STOOD HERE AND ARE GONE
+     * (11 Sep 2026). There is no submission and no review team: each asset is judged
+     * as it is saved and the page goes live on its own.
      *
-     * The admin queue also requires a photo, a bio, a handle and a card, so a
-     * creator carrying `profile_status_lock = 1` with one of those missing sits
-     * in NO queue — no admin can see them and nobody will ever decide. This
-     * screen told them "our team is checking it now… there is nothing else to
-     * do", which was the exact opposite of the truth.
-     *
-     * The server answers it now (App\Support\ReviewSubmission), because the
-     * admin queue's own rule is what has to agree — a copy of it derived here
-     * would drift the first time that rule changes.
+     * `profile_holds` is what replaced them — the assets an automated check or an
+     * admin has PULLED, which is the only thing that can now stand between a creator
+     * and a live page. Server-decided (`ProfileAutoApproval::holding`), shared on the
+     * user because three separate steps below read it.
      */
-    const reviewSubmission = auth?.user?.review_submission;
-    const isSubmittedForReview = reviewSubmission
-        ? reviewSubmission.state === "with_team"
-        : profileStatusLock == 1;
-    const submissionBlocked = reviewSubmission?.state === "blocked";
-    const blockedMissing = submissionBlocked
-        ? reviewSubmission?.missing || []
-        : [];
-    const canSubmitForReview =
-        profileStatusLock != 1 &&
-        profileStatusLock != 2 &&
-        hasBasicDetails &&
-        !isSocialRejected &&
-        avatarStatus != 2 &&
-        bioStatus != 2;
+    const profileHolds = auth?.user?.profile_holds || [];
+    const isHeld = (asset) => profileHolds.includes(asset);
 
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -450,17 +432,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         creatorUser?.identity_verification_error,
     );
 
-    // "Submit for review" stays locked until socials, photo and bio are in and
-    // nothing is rejected. Name what's still outstanding — a bare "Locked" tells
-    // the creator nothing about why, or what would unlock it. ⚠️ The card is NOT
-    // a blocker here (7 Sep 2026) — it is asked after approval.
-    const submitBlockers = [
-        !hasAnySocialMedia && "socials",
-        !creatorUser?.avatar && "photo",
-        !creatorUser?.bio && "bio",
-        (isSocialRejected || avatarStatus == 2 || bioStatus == 2) &&
-            "fixes for rejected items",
-    ].filter(Boolean);
     const listItems = (items) =>
         items.length > 1
             ? `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`
@@ -500,10 +471,18 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
      * approval — they are not: they are checked together, once, when the profile
      * is submitted. The page now just asks them to add things and ticks them off.
      */
-    const REVIEW_NOTE = "Usually reviewed within a few hours.";
+    // ⚠️ There is no review to note a time for. Checks run as each asset is saved.
 
     // The whole journey as one registry: status, what we check, the editor that
     // acts on it, and why it's locked. Everything below renders from this.
+    // Held assets are named in the creator's words, not the column's.
+    const HOLD_LABELS = {
+        avatar: "photo",
+        bio: "bio",
+        socials: "social handle",
+        cover: "cover image",
+    };
+
     const steps = [
         {
             key: "social",
@@ -519,21 +498,25 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
              * switch.
              */
             description:
-                "Add at least one social account so our team can check you are really you.",
+                "Add at least one social account you actually post on. It stays private on your page unless you switch it on.",
             hint: [
                 "At least one handle you actually post on",
                 "Account must be active and older than 6 months",
-                "Profile must be publicly visible so we can check it",
-                "Kept private on your page unless you choose to show it",
+                "Profile must be publicly visible so it can be checked",
+                // 🚨 Said twice on purpose, in the description AND here. It is the most
+                // common reason a creator refuses this step, and it is the one thing
+                // about it that is not obvious (client direction, 10 Sep 2026).
+                "🔒 Private by default — nothing is shown on your page unless you choose to",
+                "Checked against your ID when you set up payouts, not now",
             ],
+            // Approved on save when the checks pass. "rejected" only ever means a
+            // person said no; there is no "pending" — nobody is looking.
             state: isSocialApproved
                 ? "done"
-                : isSocialRejected
+                : isSocialRejected || isHeld("socials")
                   ? "rejected"
                   : hasAnySocialMedia
-                    ? profileStatusLock == 1
-                        ? "pending"
-                        : "done"
+                    ? "done"
                     : "todo",
             approvedState: isSocialApproved ? 1 : 0,
             reason: slinks?.reason,
@@ -559,16 +542,24 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 "No nudity or explicit content",
                 "No logos, group photos or screenshots",
             ],
+            /*
+             * Approved the moment it is uploaded (client direction: no delay). The
+             * automated scan runs behind it and can pull it back down — that is what
+             * `isHeld("avatar")` reads, and the reason comes with it.
+             */
             state:
-                avatarStatus == 1
-                    ? "done"
-                    : avatarStatus == 2
-                      ? "rejected"
-                      : creatorUser?.avatar
-                        ? profileStatusLock == 1
-                            ? "pending"
-                            : "done"
-                        : "todo",
+                isHeld("avatar")
+                    ? "rejected"
+                    : avatarStatus == 1
+                      ? "done"
+                      : avatarStatus == 2
+                        ? "rejected"
+                        : creatorUser?.avatar
+                          ? "done"
+                          : "todo",
+            reason: creatorUser?.moderation_asset === "avatar"
+                ? creatorUser?.moderation_reason
+                : null,
             approvedState: avatarStatus == 1 ? 1 : 0,
             action: (
                 <EditProfile
@@ -595,16 +586,18 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 "No contact details or links to other sites",
                 "No gift, donation or tribute wording",
             ],
+            // Approved on save — the two content rules run in the validator, so a bio
+            // that saved at all has passed them. `isHeld` covers an admin's later no.
             state:
-                bioStatus == 1
-                    ? "done"
-                    : bioStatus == 2
-                      ? "rejected"
-                      : creatorUser?.bio
-                        ? profileStatusLock == 1
-                            ? "pending"
-                            : "done"
-                        : "todo",
+                isHeld("bio")
+                    ? "rejected"
+                    : bioStatus == 1
+                      ? "done"
+                      : bioStatus == 2
+                        ? "rejected"
+                        : creatorUser?.bio
+                          ? "done"
+                          : "todo",
             approvedState: bioStatus == 1 ? 1 : 0,
             reason: creatorUser?.edit_bio_reason || user?.edit_bio_reason,
             action: (
@@ -617,76 +610,13 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 />
             ),
         },
-        {
-            key: "submit",
-            label: "Submit",
-            title: "Submit profile for review",
-            mins: 1,
-            description: canSubmitForReview
-                ? "Everything’s ready — send your profile for final verification."
-                : "Send your profile to our team for final approval.",
-            hint: [
-                "We check your socials, photo and bio together",
-                "You’ll get an email as soon as it’s decided",
-            ],
-            state:
-                profileStatusLock == 2
-                    ? "done"
-                    : isSubmittedForReview
-                      ? "pending"
-                      : profileRejectReason
-                        ? "rejected"
-                        : "todo",
-            approvedState: profileStatusLock == 2,
-            reason: profileRejectReason,
-            reviewNote: REVIEW_NOTE,
-            locked: !canSubmitForReview,
-            lockReason: submitBlockers.length
-                ? `Unlocks once you add or fix your ${listItems(submitBlockers)}.`
-                : null,
-            action: (
-                /* 🚨 POST. As a GET this was a plain <a href> that anything fetching a
-                   URL submitted for the creator — a browser link-preload, a hover
-                   prerender, an extension link scanner. Measured live 7 Sep 2026. A
-                   prefetch of a POST route is a 405 and changes nothing. */
-                <Link
-                    className={primaryBtn}
-                    href={route("update.profile.lock.status")}
-                    method="post"
-                    as="button"
-                >
-                    {profileRejectReason ? "Submit again" : "Submit for review"}
-                </Link>
-            ),
-        },
-        {
-            key: "trial",
-            label: "Payment method",
-            title: "Add your card",
-            mins: 1,
-            /*
-             * 🚨 THE CARD COMES AFTER APPROVAL (client decision, 7 Sep 2026). It sat
-             * before Submit and was the step most creators stopped on — asked of
-             * somebody no human had looked at yet. It still gates Connect
-             * (`StripeController::subscriptionGate()`), so it sits right before it.
-             * ⚠️ No deadlock by construction: Submit no longer asks for a card, and
-             * this step asks only for approval — never for a Submit.
-             */
-            description: `Your page is approved. Add a card to unlock payouts — ${SUBSCRIPTION_COPY.promise}, then ${PRICE_FORMATTED} + VAT a month.`,
-            hint: [
-                SUBSCRIPTION_COPY.reassurance,
-                "Cancel any time from your account settings",
-            ],
-            state: hasSubscription ? "done" : "todo",
-            approvedState: hasSubscription,
-            locked: profileStatusLock != 2,
-            lockReason: "Unlocks once your profile is approved.",
-            action: (
-                <Link className={primaryBtn} href="/activate-subscription">
-                    Add your card
-                </Link>
-            ),
-        },
+        /*
+         * 🚨 THE `submit` STEP STOOD HERE AND IS GONE (10 Sep 2026, client direction).
+         * There is no Submit-for-review: each asset above is judged by the automated
+         * checks as it is saved, and the profile goes live on its own the moment photo,
+         * bio and a handle are all approved (App\Support\ProfileAutoApproval). A held
+         * asset keeps ITS OWN step open with the reason on it — see `profile_holds`.
+         */
         {
             key: "stripe",
             label: "Payouts",
@@ -715,63 +645,40 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 </Link>
             ),
         },
-        {
-            key: "identity",
-            label: "Verify ID",
-            title: identityUnfinished
-                ? "Finish your ID check"
-                : "Verify your identity",
-            mins: 3,
-            description: identityUnfinished
-                ? "You opened the passport check but did not finish it, so nothing has reached Stripe yet. It takes about two minutes."
-                : "A quick ID check by Stripe. You need this before you can list anything for sale.",
+        /*
+         * 🚨 THE `identity` STEP LEFT THIS RAIL ON 10 Sep 2026 (client direction).
+         * A creator builds, publishes and sells with no ID check; it is asked at the
+         * PAYOUT gate instead, where the money it holds is visible — see
+         * Components/PayoutIdentityGate.jsx and App\Support\PayoutEligibility.
+         */        {
+            key: "trial",
+            label: "Payment method",
+            title: "Add your card",
+            mins: 1,
+            /*
+             * 🚨 THE CARD COMES AFTER APPROVAL (client decision, 7 Sep 2026). It sat
+             * before Submit and was the step most creators stopped on — asked of
+             * somebody no human had looked at yet. It still gates Connect
+             * (`StripeController::subscriptionGate()`), so it sits right before it.
+             * ⚠️ No deadlock by construction: Submit no longer asks for a card, and
+             * this step asks only for approval — never for a Submit.
+             */
+            description: `Your page is approved. Add a card to unlock payouts — ${SUBSCRIPTION_COPY.promise}, then ${PRICE_FORMATTED} + VAT a month.`,
             hint: [
-                "A government photo ID — passports only",
-                "A quick selfie on your phone",
-                "Handled securely by Stripe; we never see your documents",
+                SUBSCRIPTION_COPY.reassurance,
+                "Cancel any time from your account settings",
             ],
-            // identity_status: 1 = verified · 2 = a session is OPEN · 3 = flagged by
-            // the security review · 0 = failed.
-            //
-            // 🚨 2 IS NOT "PENDING". It is written when the Stripe session is CREATED,
-            // not on submit, and Stripe sends no event for a closed tab — so a creator
-            // who opened the check and walked away read "In review" here forever, on a
-            // step only they could finish. Only `identity_session_status === 'processing'`
-            // means a document actually reached Stripe.
-            state:
-                creatorUser?.identity_status == 1
-                    ? "done"
-                    : creatorUser?.identity_status == 3 || identityError
-                      ? "rejected"
-                      : identityProcessing
-                        ? "pending"
-                        : "todo",
-            reason: identityError
-                ? `${identityError.title} — ${identityError.whatHappened}`
-                : creatorUser?.identity_status == 3
-                  ? "Your identity check didn’t pass our security review. Please contact support."
-                  : null,
-            // The steps that actually fix it, straight from the stored payload.
-            fixSteps: identityError?.whatToDo || [],
-            note: identityError?.note || null,
-            reviewNote: "Stripe usually decides within a few minutes.",
-            locked: creatorUser?.stripe_details_submitted != 1,
-            lockReason: "Unlocks once your payouts are connected.",
+            state: hasSubscription ? "done" : "todo",
+            approvedState: hasSubscription,
+            locked: profileStatusLock != 2,
+            lockReason: "Unlocks once your profile is approved.",
             action: (
-                <Link
-                    className={primaryBtn}
-                    href="/stripe/identity-verification"
-                >
-                    {identityError
-                        ? "Try verification again"
-                        : identityProcessing
-                          ? "Check status"
-                          : identityUnfinished
-                            ? "Finish ID check"
-                            : "Verify identity"}
+                <Link className={primaryBtn} href="/activate-subscription">
+                    Add your card
                 </Link>
             ),
         },
+
     ];
 
     const activeMilestone = steps.findIndex(
@@ -857,52 +764,29 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         {profileRejectReason}
                     </p>
                     <p className="mt-2 text-sm text-black/70">
-                        Fix the point above, then submit again — you do not have
-                        to redo anything else.
+                        Fix the point above and save — your page goes live on its
+                        own once it clears. Nothing else needs redoing.
                     </p>
                 </div>
             ) : null}
 
             {/*
-                Submitted, and held out of the queue by something the creator can
-                fix. Amber, never red — nothing was refused and nobody said no.
-                It names the missing items rather than saying "incomplete", so
-                the fix is on screen instead of behind a search.
+                🚨 An asset an automated check or an admin has PULLED. Amber, never
+                red: the profile is simply not live yet, and everything it names is
+                something the creator can fix and re-save. There is nothing to submit
+                again — saving re-judges it and the page goes live on its own.
             */}
-            {submissionBlocked ? (
+            {profileHolds.length > 0 ? (
                 <div className="mb-4 rounded-box-sm border-2 border-black bg-[#FFF6D6] p-4">
                     <p className="text-[13px] font-bold uppercase tracking-wide text-black">
-                        One thing left before we can review you
+                        Your page is not live yet
                     </p>
                     <p className="mt-1 text-sm text-black/80">
-                        Your profile is submitted. We cannot start the review
-                        until you add{" "}
-                        {blockedMissing.length > 1
-                            ? `${blockedMissing.slice(0, -1).join(", ")} and ${blockedMissing[blockedMissing.length - 1]}`
-                            : blockedMissing[0] || "the last missing detail"}
-                        . Add it and your profile goes to the team on its own —
-                        there is nothing to submit again.
-                    </p>
-                    {blockedMissing.includes("a payment card") ? (
-                        <Link
-                            href="/activate-subscription"
-                            className="mt-3 inline-block rounded-box-sm border-2 border-black bg-[#FF007F] px-4 py-2 text-sm font-bold text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
-                        >
-                            Add your card
-                        </Link>
-                    ) : null}
-                </div>
-            ) : null}
-
-            {/* Submitted and waiting: say so plainly, so nobody submits twice. */}
-            {isSubmittedForReview ? (
-                <div className="mb-4 rounded-box-sm border-2 border-black bg-[#FFF6D6] p-4">
-                    <p className="text-[13px] font-bold uppercase tracking-wide text-black">
-                        Your profile is being verified
-                    </p>
-                    <p className="mt-1 text-sm text-black/80">
-                        Our team is checking it now. You will get an email as
-                        soon as it is decided — there is nothing else to do.
+                        {profileHolds.length > 1
+                            ? "Two things on your profile need another look"
+                            : `Your ${HOLD_LABELS[profileHolds[0]] || "profile"} needs another look`}
+                        . Fix it below and save — your page goes live on its own once
+                        it clears.
                     </p>
                 </div>
             ) : null}
@@ -912,7 +796,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     ? "All set — supporters can now pay you for your content."
                     : minsLeft > 0
                       ? `${doneCount} of ${steps.length} done — about ${minsLeft} min of setup left.`
-                      : `${doneCount} of ${steps.length} done — the rest is with our team.`}
+                      : `${doneCount} of ${steps.length} done.`}
             </p>
 
             {/*

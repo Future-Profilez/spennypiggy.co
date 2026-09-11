@@ -11,6 +11,8 @@ use App\Models\FinancialTransaction;
 use App\Models\PayoutRecord;
 use App\Models\User;
 use App\StripeControl;
+use App\Support\Incentives;
+use App\Support\PayoutEligibility;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +37,23 @@ class ProcessFastStartBonusPayouts extends Command
 
     public function handle(): int
     {
+        /*
+         * 🚨 THE PAYER SWITCH, AND IT IS STILL ON (11 Sep 2026). Fast Start is
+         * retired, but a creator whose thirty days closed with a bonus owed
+         * earned it under the published 5%-of-net terms. This command both
+         * CREATES awards and PAYS them; the create half is gated per creator in
+         * the loop below on `fastStartEnabled()`, so with the scheme off this
+         * run can only ever settle rows that already exist.
+         *
+         * ⚠️ A no-op, never a throw: a scheduled command that errors takes the
+         * rest of the tick with it.
+         */
+        if (! Incentives::fastStartPayoutsEnabled()) {
+            $this->info('Fast Start payouts are switched off (fast_start_bonus.payouts_enabled = false). Nothing to do.');
+
+            return self::SUCCESS;
+        }
+
         $dryRun = (bool) $this->option('dry-run');
         $limit = (int) $this->option('limit');
         $creatorFilter = trim((string) $this->option('creator'));
@@ -80,6 +99,21 @@ class ProcessFastStartBonusPayouts extends Command
 
             $existing = FastStartBonusPayout::where('creator_uuid', $creator->uuid)->first();
             if ($existing && in_array($existing->status, ['pending', 'in_transit', 'paid', 'processing'], true)) {
+                $skipped++;
+
+                continue;
+            }
+
+            /*
+             * 🚨 NO NEW AWARDS WHILE THE SCHEME IS RETIRED — but an award that
+             * ALREADY EXISTS is still settled and still paid.
+             *
+             * This is the whole reason the two switches are separate. A blanket
+             * return at the top of `handle()` would have stranded every creator
+             * whose window closed before the scheme did, holding a bonus they
+             * earned under the published terms and will never receive.
+             */
+            if (! $existing && ! Incentives::fastStartEnabled()) {
                 $skipped++;
 
                 continue;
@@ -153,6 +187,20 @@ class ProcessFastStartBonusPayouts extends Command
 
             if ($creator->payout_paused_at) {
                 $payoutRow->status = 'payout_paused';
+                $payoutRow->save();
+                $skipped++;
+
+                continue;
+            }
+
+            /*
+             * 🚨 Identity is a payout gate (10 Sep 2026) — see PayoutEligibility.
+             * ⚠️ Its own status, not `payout_paused`: nobody paused this creator, and
+             * a run report saying "paused" sends somebody looking for an admin hold
+             * that was never placed.
+             */
+            if (PayoutEligibility::blocksPayout($creator)) {
+                $payoutRow->status = 'identity_unverified';
                 $payoutRow->save();
                 $skipped++;
 

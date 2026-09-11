@@ -2,10 +2,12 @@
 
 namespace App\Support;
 
+use App\Jobs\CheckMediaModeration;
 use App\Jobs\LinkUserToCrmCreator;
 use App\Mail\CreatorAccountOpened;
 use App\Models\CreatorReferral;
 use App\Models\Dispute;
+use App\Models\ProfileChangeRequest;
 use App\Models\ReferralCode;
 use App\Models\SocialLinks;
 use App\Models\User;
@@ -13,6 +15,7 @@ use App\Models\UserVerificationStatus;
 use App\Services\ActivityLogger;
 use App\Services\CreatorJourneyService;
 use App\Services\UserProfileService;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -203,6 +206,14 @@ final class GifterToCreator
              * Submit, and a submission nobody made is what
              * `NoWritingGetRoutesTest` exists to prevent.
              */
+            /*
+             * 🚨 RESET TO 0 HERE, THEN RE-JUDGED BY THE MACHINE BELOW (10 Sep 2026).
+             * A fan's photo and bio were approved under the fan rules — nobody looked.
+             * They are not thrown away: `judgeConvertedAssets()` runs the creator
+             * checks on what is already there, so a clean bio is approved in the same
+             * transaction and a photo is scanned; the profile goes live on its own the
+             * moment all three clear. Nothing waits on a person.
+             */
             'avatar_approved' => 0,
             'bio_approved' => 0,
             'profile_status_lock' => 0,
@@ -302,6 +313,8 @@ final class GifterToCreator
          * `role = 0` row (written at the £500 card-verification gate), and a second
          * row would leave two rows disagreeing about the same account's state.
          */
+        self::judgeConvertedAssets($user->fresh());
+
         UserVerificationStatus::updateOrCreate(
             ['user_id' => $user->id],
             [
@@ -428,5 +441,52 @@ final class GifterToCreator
             'lifetime_gmv' => 0,
             'status' => 'IN_PROGRESS',
         ]);
+    }
+
+    /**
+     * Run the creator checks over what the fan already had, so conversion does not
+     * park a clean profile at "not yet".
+     *
+     * ⚠️ Bio and handles are synchronous and approve here. The photo cannot be — it
+     * needs the Rekognition round trip — so it is dispatched and approves (or holds)
+     * when the scan returns, which is also when `activateIfComplete()` is asked again.
+     * ⚠️ Never throws: a judging failure must not fail a conversion that has already
+     * been written. The assets stay at 0 and are re-judged on the creator's next save.
+     */
+    private static function judgeConvertedAssets(User $user): void
+    {
+        try {
+            if (filled($user->bio) && ProfileAutoApproval::judgeBio($user->bio) === null) {
+                ProfileAutoApproval::markApproved($user, ProfileChangeRequest::ASSET_BIO);
+            }
+
+            $links = SocialLinks::where('user_id', $user->id)->first();
+
+            if ($links) {
+                $handles = Arr::only($links->getAttributes(), SocialLinks::ACCEPTED_PLATFORMS);
+
+                if (ProfileAutoApproval::judgeSocials($handles, $user->id) === null) {
+                    ProfileAutoApproval::markApproved($user, ProfileChangeRequest::ASSET_SOCIALS);
+                }
+            }
+
+            if (filled($user->avatar)) {
+                CheckMediaModeration::dispatch(
+                    User::class,
+                    $user->id,
+                    $user->avatar,
+                    ['avatar_approved' => 0],
+                    'avatar',
+                    ['avatar_approved' => 1]
+                );
+            }
+
+            ProfileAutoApproval::activateIfComplete($user->fresh());
+        } catch (\Throwable $e) {
+            Log::warning('Conversion: could not auto-judge existing assets', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

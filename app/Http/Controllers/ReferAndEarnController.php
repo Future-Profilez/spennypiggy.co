@@ -6,6 +6,8 @@ use App\Models\CreatorReferral;
 use App\Models\CreatorReferralPayout;
 use App\Models\FinancialTransaction;
 use App\Models\ReferralCode;
+use App\Services\CreatorReferralService;
+use App\Support\PayoutEligibility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -79,38 +81,67 @@ class ReferAndEarnController extends Controller
 
         $totalReferrals = $referralQuery->count();
 
-        $referrals = $referralQuery->orderByDesc('created_at')->get()->map(function ($ref) use ($user) {
-            // Get latest rejected payout (if any)
-            $rejectedPayout = CreatorReferralPayout::where('creator_id', $user->id)
-                ->where('status', 'REJECTED')
-                ->latest()
-                ->first();
+        /*
+         * ⚠️ ONE QUERY, NOT ONE PER ROW. The rejected-payout lookup sat inside
+         * the map and does not depend on the referral at all, so a creator
+         * with twenty referrals paid for twenty identical queries.
+         */
+        $rejectedPayout = CreatorReferralPayout::where('creator_id', $user->id)
+            ->where('status', 'REJECTED')
+            ->latest()
+            ->first();
 
-            return [
-                'id' => $ref->id,
-                'name' => $ref->referred->name ?? '-',
-                'username' => $ref->referred->username ?? '-',
-                'joined_at' => optional($ref->referred->created_at)->format('d M Y'),
-                'lifetime_gmv' => (float) $ref->lifetime_gmv,
-                'status' => $ref->status,
-                'rejection_reason' => $rejectedPayout?->rejection_reason,
-            ];
-        });
+        $service = app(CreatorReferralService::class);
 
-        /* =====================================================| Qualified Referrals (LIFETIME)===================================================== */
-        // One threshold, read from config — the promo card, the progress bar and
-        // these two queries all have to agree or a creator is shown a reward they
-        // are not going to be paid.
-        $qualifyingGmv = (float) config('referral.qualifying_gmv', 1000);
+        $referrals = $referralQuery
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($ref) use ($rejectedPayout, $service) {
+                $threshold = $ref->qualifyingThreshold();
 
+                return [
+                    'id' => $ref->id,
+                    'name' => $ref->referred->name ?? '-',
+                    'username' => $ref->referred->username ?? '-',
+                    'joined_at' => optional($ref->referred->created_at)->format('d M Y'),
+                    'lifetime_gmv' => (float) $ref->lifetime_gmv,
+                    'status' => $ref->status,
+                    /*
+                     * 🚨 PER-ROW, NEVER THE CONFIG VALUE. A referral made
+                     * before 11 Sep 2026 qualifies at £1,000 while a new one
+                     * needs £2,000, and the creator must see the bar their own
+                     * referral is actually judged against.
+                     */
+                    'threshold' => $threshold,
+                    'reward' => $ref->rewardAmount(),
+                    'progress_pct' => round($ref->progressPercentage(), 1),
+                    // Signed up → Active → Earning → Qualified → Paid.
+                    'stage' => $service->stageFor($ref),
+                    'rejection_reason' => $rejectedPayout?->rejection_reason,
+                ];
+            });
+
+        /* =====================================================| Qualified Referrals===================================================== */
+        /*
+         * 🚨 `qualified_at` IS THE FACT, AND THE THRESHOLD COMPARISON IS GONE.
+         * These two queries used to re-test `lifetime_gmv >= config(...)` — so
+         * the day the threshold moved from £1,000 to £2,000 every referral
+         * qualified under the old terms silently stopped counting, and a
+         * creator with money owed read zero. `CreatorReferralService` applies
+         * the row's OWN threshold when it stamps `qualified_at`; nothing
+         * downstream may second-guess it against a different number.
+         */
         $qualifiedCount = CreatorReferral::where('referrer_creator_id', $user->id)
             ->whereNotNull('qualified_at')
-            ->where('lifetime_gmv', '>=', $qualifyingGmv)
             ->count();
 
         /* =====================================================| Earnings (LIFETIME)===================================================== */
-        $rewardAmount = config('referral.reward_amount', 50);
-        $totalEarned = $qualifiedCount * $rewardAmount;
+        // ⚠️ SUMMED PER ROW, not count × today's reward: each referral carries
+        // the reward it was made under.
+        $totalEarned = (float) CreatorReferral::where('referrer_creator_id', $user->id)
+            ->whereNotNull('qualified_at')
+            ->get(['reward_amount'])
+            ->sum(fn ($r) => $r->rewardAmount());
 
         /* =====================================================| Payout State===================================================== */
         $hasActivePayout = CreatorReferralPayout::where('creator_id', $user->id)
@@ -118,22 +149,26 @@ class ReferAndEarnController extends Controller
             ->exists();
 
         /* =====================================================| Available Balance===================================================== */
-        $availableForPayouts = CreatorReferral::where('referrer_creator_id', $user->id)
+        $payableReferrals = CreatorReferral::where('referrer_creator_id', $user->id)
             ->whereNotNull('qualified_at')
-            ->where('lifetime_gmv', '>=', $qualifyingGmv)
             ->where('status', 'QUALIFIED')
-            ->count();
+            ->get(['reward_amount']);
 
-        $totalEarn = $availableForPayouts * $rewardAmount;
-
-        $availableForPayout = $availableForPayouts ? $totalEarn : 0;
+        $rewardAmount = (float) config('referral.reward_amount', 50);
+        $availableForPayout = (float) $payableReferrals->sum(fn ($r) => $r->rewardAmount());
 
         /* =====================================================| Paid Out Amount===================================================== */
         $paidOutAmount = CreatorReferralPayout::where('creator_id', $user->id)
             ->where('status', 'PAID')
             ->sum('amount');
 
-        $canRedeem = $availableForPayout >= $rewardAmount && ! $hasActivePayout;
+        /*
+         * ⚠️ ANY payable referral, not "at least one reward's worth at today's
+         * price". A creator holding a single £50 referral made under the old
+         * terms would be refused by a `>= config(...)` test the day that
+         * figure was raised.
+         */
+        $canRedeem = $payableReferrals->isNotEmpty() && ! $hasActivePayout;
 
         /* =====================================================| Response===================================================== */
         // dd($referrals, $qualifiedCount, $totalEarned, $hasActivePayout, $availableForPayout, $canRedeem);
@@ -153,6 +188,11 @@ class ReferAndEarnController extends Controller
                 'total_earned' => $totalEarned,
                 'available_for_payout' => $availableForPayout,
                 'paid_out_amount' => (float) $paidOutAmount,
+                // 🚨 The figures a NEW referral is made under. The per-row
+                // `threshold` above is what an EXISTING one is judged at, and
+                // for a pre-11-Sep-2026 referral the two differ.
+                'reward_amount' => $rewardAmount,
+                'qualifying_threshold' => (float) config('referral.qualifying_gmv', 2000),
             ],
 
             'referrals' => $referrals,
@@ -216,6 +256,21 @@ class ReferAndEarnController extends Controller
             return back()->with('error', 'Your payouts are currently disabled. Please contact support.');
         }
 
+        /*
+         * 🚨 IDENTITY IS A PAYOUT GATE (10 Sep 2026) — see
+         * `App\Support\PayoutEligibility`, which every path that moves money
+         * off this platform reads. A referral reward IS money leaving, and
+         * this request is what puts it into a payout batch.
+         *
+         * ⚠️ Refused here rather than at the batch, so the creator is told
+         * what to do while they are looking at the button. The reward is not
+         * lost — the referral stays QUALIFIED and they can request it the
+         * moment their check clears.
+         */
+        if (PayoutEligibility::blocksPayout($creator)) {
+            return back()->with('error', 'We need to finish verifying your identity before we can send a referral reward. Your reward is safe — request it again once your check is complete.');
+        }
+
         try {
             DB::beginTransaction();
 
@@ -244,8 +299,10 @@ class ReferAndEarnController extends Controller
             }
 
             // 3️⃣ Calculate payout amount
-            $rewardAmount = config('referral.reward_amount', 50);
-            $amount = $qualifiedReferrals->count() * $rewardAmount;
+            // ⚠️ SUMMED PER REFERRAL, not count × today's reward. A referral
+            // carries the reward it was made under, and after 11 Sep 2026 a
+            // creator can legitimately hold referrals at two different values.
+            $amount = (float) $qualifiedReferrals->sum(fn ($r) => $r->rewardAmount());
 
             // 4️⃣ Check for last rejected payout
             $rejectedPayout = CreatorReferralPayout::where('creator_id', $creator->id)
@@ -292,6 +349,16 @@ class ReferAndEarnController extends Controller
                 ],
                 [
                     'user_id' => $creator->id,
+                    /*
+                     * 🚨 `referral_payout`, NEVER `income`. Every qualifying
+                     * earnings definition on this platform filters on
+                     * `type = 'income'`, so a reward recorded as income would
+                     * count towards the referrer's own membership credits and
+                     * towards any future scheme measured the same way — a
+                     * bonus feeding its own qualifying total. Fast Start, the
+                     * Growth Bonus and the membership credit all avoid the
+                     * identical loop.
+                     */
                     'type' => 'referral_payout',
                     'gross_amount' => $amount,
                     'platform_fee' => 0,

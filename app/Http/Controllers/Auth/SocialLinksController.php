@@ -11,7 +11,7 @@ use App\Models\User;
 use App\Models\UserVerificationStatus;
 use App\Services\UserProfileService;
 use App\Support\InvisibleText;
-use App\Support\ProfileAssetVisibility;
+use App\Support\ProfileAutoApproval;
 use App\Support\SocialVisibility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -175,7 +175,27 @@ class SocialLinksController extends Controller
              * back to 0, and that path is untouched — which is why a pending
              * gifter row now always means "an admin asked for this".
              */
-            $data['status'] = (int) (Auth::user()->role ?? 1) === 0 ? 1 : 0;
+            /*
+             * 🚨 HANDLES ARE JUDGED BY THE MACHINE AND APPROVED ON SAVE (10 Sep 2026,
+             * client direction). Known platform, https, no shortener, not already on
+             * another creator — a refusal is a 422 the creator fixes on the spot, never
+             * a queue. "Is this really them" is the one thing a machine cannot answer,
+             * and it is asked at the payout gate's identity sign-off instead. See
+             * ProfileAutoApproval::judgeSocials.
+             */
+            $refusal = ProfileAutoApproval::judgeSocials(
+                Arr::only($data, SocialLinks::ACCEPTED_PLATFORMS),
+                $userId,
+            );
+
+            if ($refusal !== null) {
+                return response([
+                    'status' => 422,
+                    'message' => $refusal,
+                ], 422);
+            }
+
+            $data['status'] = SocialLinks::STATUS_APPROVED;
             $data['reason'] = null;
 
             // ⚠️ Provenance follows the latest submission: a handle first given at
@@ -214,26 +234,24 @@ class SocialLinksController extends Controller
             /*
              * 🚨 A SAVE THAT CHANGES NOTHING IS NOT AN EDIT.
              *
-             * There was no comparison here at all: pressing Save re-opened the
-             * handles for review, zeroed `social_links.status`, reset the whole
-             * profile's verification status and mailed the creator — for a form
-             * they had only looked at. `ProfileChangeRequest::open()` supersedes
-             * any request already pending, so a creator who saved twice also took
-             * their own earlier submission out of the queue.
+             * There was no comparison here at all: pressing Save re-opened the handles
+             * for review, zeroed `social_links.status`, reset the whole profile's
+             * verification status and mailed the creator — for a form they had only
+             * looked at.
              *
-             * ⚠️ Compared against WHAT IS BEING SUBMITTED, not only against what is
-             * published: with a request already pending, the live row is not what
-             * this save would change. Re-submitting the pending values is a no-op;
-             * going BACK to the published ones differs from that pending proposal,
-             * so it correctly opens a request that reverts it.
+             * ⚠️ Compared against the STORED row. It used to be compared against a
+             * pending change request instead, because a published edit sat in a queue
+             * and the live row was not what the save would change. Nothing queues now
+             * (11 Sep 2026) — every save lands — so the stored row IS what is being
+             * changed, and the pending lookup went with the queue.
              *
              * ⚠️ A REJECTED row is deliberately let through. `status = 2` means an
              * admin asked for something, and refusing to re-submit would leave the
              * creator holding a rejection they cannot clear.
              */
-            $pending = ProfileChangeRequest::openFor($userId, ProfileChangeRequest::ASSET_SOCIALS);
-            $current = $pending?->proposed
-                ?? ($existing ? Arr::only($existing->getAttributes(), ProfileChangeRequest::SOCIAL_FIELDS) : []);
+            $current = $existing
+                ? Arr::only($existing->getAttributes(), ProfileChangeRequest::SOCIAL_FIELDS)
+                : [];
 
             $unchanged = $existing
                 && (int) $existing->status !== SocialLinks::STATUS_REJECTED
@@ -263,35 +281,36 @@ class SocialLinksController extends Controller
                 ]);
             }
 
-            // Handles that are already published are edited through review — the
-            // approved set stays on the profile until an admin decides.
-            //
-            // ⚠️ The proposed map carries EXPLICIT NULLS. `social_links` is one row
-            // with one column per platform, and this controller deliberately writes
-            // every column, so "I removed my Instagram" is a change carried by a null.
-            // Filtering them out would silently drop deletions.
-            if (ProfileAssetVisibility::isLive($user, ProfileChangeRequest::ASSET_SOCIALS)) {
-                ProfileChangeRequest::open(
+            /*
+             * 🚨 ONE PATH SINCE 11 Sep 2026. Published handles used to be edited
+             * "through review" — the approved set stayed on the profile while an admin
+             * decided. Nobody decides now: the checks above have already refused a
+             * shortened link, an http:// address, an unknown platform and a handle
+             * another creator has claimed, which is the whole of what a machine can
+             * judge. The edit lands, and a closed `ProfileChangeRequest` records that
+             * the machine allowed it, for the daily report.
+             *
+             * ⚠️ The proposed map carries EXPLICIT NULLS. `social_links` is one row with
+             * one column per platform and this controller writes every accepted column,
+             * so "I removed my Instagram" is a change carried by a null. Filtering them
+             * out would silently drop deletions.
+             */
+            if ((int) $user->role === 1 && (int) $user->profile_status_lock === 2) {
+                ProfileChangeRequest::record(
                     $user,
                     ProfileChangeRequest::ASSET_SOCIALS,
                     Arr::except($data, ['status', 'reason', 'updated_at', 'source']),
                     $existing ? Arr::only($existing->getAttributes(), ProfileChangeRequest::SOCIAL_FIELDS) : [],
                 );
-
-                // The published handles stay on the profile while the edit is reviewed,
-                // so the creator's show/hide choice has to reach the LIVE row now — it
-                // governs what is on the page today, not what the reviewer is deciding.
-                self::persistVisibility($existing, $visibility);
-            } else {
-                // ✅ Update or create (DO NOT filter nulls)
-                SocialLinks::updateOrCreate(
-                    ['user_id' => $userId],
-                    array_merge($data, [
-                        'uuid' => $existing->uuid ?? Uuid::uuid4(),
-                        'public_platforms' => $visibility,
-                    ])
-                );
             }
+
+            SocialLinks::updateOrCreate(
+                ['user_id' => $userId],
+                array_merge($data, [
+                    'uuid' => $existing->uuid ?? Uuid::uuid4(),
+                    'public_platforms' => $visibility,
+                ])
+            );
 
             // ✅ Verification logic
             $role = $user->role;
@@ -323,6 +342,10 @@ class SocialLinksController extends Controller
                     'social' => true,
                 ]));
             }
+
+            // Handles approved above; if the photo and bio are already clear this is
+            // the save that takes the profile live.
+            ProfileAutoApproval::activateIfComplete($user->fresh());
 
             $this->userProfileService->clearUserCaches($user->username, $user->id);
 

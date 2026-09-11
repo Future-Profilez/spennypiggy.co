@@ -526,41 +526,82 @@ MD,
                 'slug' => 'bonuses-explained',
                 'title' => 'Which bonuses can I earn?',
                 'audience' => 'creator',
-                'keywords' => 'bonus, fast start, referral, founder, growth bonus, milestone, extra money, earn more, rewards, incentive',
-                'summary' => 'Four: the Founder bonus, the Creator Growth Bonus, the Fast Start bonus, and {{referral.reward}} for referring a creator who goes on to sell.',
-                'related' => ['founder-bonus', 'growth-bonus', 'fast-start-bonus', 'refer-a-creator', 'when-do-i-get-paid'],
+                'keywords' => 'bonus, referral, membership back, free month, extra money, earn more, rewards, incentive, founder, fast start, growth bonus, closed',
+                'summary' => 'Two: {{referral.reward}} for referring a creator who goes on to sell, and a free month of your membership for every {{membership_credit.threshold}} you earn.',
+                'related' => ['refer-a-creator', 'earn-your-membership-back', 'when-do-i-get-paid'],
+                /*
+                 * 🚨 REWRITTEN 11 Sep 2026 WHEN THREE SCHEMES WERE RETIRED. The
+                 * question this article answers is "which bonuses can I EARN",
+                 * so a closed scheme does not belong in the list — it belongs
+                 * in one line at the foot saying it is closed, which is what a
+                 * creator who has heard of it needs to read.
+                 *
+                 * ⚠️ The three closed schemes are NOT deleted from the
+                 * keywords: somebody searching "founder bonus" must find the
+                 * answer, and that answer is "it is closed", not nothing.
+                 */
                 'body' => <<<'MD'
-## Founder
-
-Earn {{founder.min_earnings}} net in your first {{founder.window_days}} days after connecting payouts and you become a Founder — {{founder.seats}} seats in total. Founders then earn {{founder.monthly_pct}} of their monthly earnings, capped at {{founder.monthly_cap}} a month. See [the Founder bonus](/help/money-and-payouts/founder-bonus).
-
-## Creator Growth Bonus
-
-A ladder of milestones — up to {{growth.max_reward}} as your sales grow, for the first {{growth.seats}} creators to activate. Reach {{growth.activation_gmv}} in qualifying earnings within {{growth.window_days}} days of connecting payouts to claim a place. See [the Growth Bonus](/help/money-and-payouts/growth-bonus).
-
-## Fast Start
-
-{{faststart.rate}} of what you earn in your first {{faststart.window_days}} days, paid once those sales settle. See [the Fast Start bonus](/help/money-and-payouts/fast-start-bonus).
-
 ## Referral
 
-{{referral.reward}} for a creator you referred — **once that creator passes {{referral.threshold}} in lifetime sales**. The threshold is the part worth telling people about: a signup on its own earns nothing. See [referring another creator](/help/money-and-payouts/refer-a-creator).
+{{referral.reward}} for a creator you referred — **once that creator reaches {{referral.threshold}} in settled earnings**. The threshold is the part worth telling people about: a signup on its own earns nothing. See [referring another creator](/help/money-and-payouts/refer-a-creator).
+
+## Earn your membership back
+
+Every {{membership_credit.threshold}} you earn buys you a free month of your creator membership. Free months stack, and there is no cap. It is a credit against your own bill, so it is never paid to you as money. See [earning your membership back](/help/money-and-payouts/earn-your-membership-back).
 
 ## They pay automatically
 
-Every bonus is paid with a normal payout once it qualifies. There is no claim to make and no approval to wait on.
+Both are applied once you qualify. There is no claim to make and no approval to wait on.
 
-## They stack, and they measure different things
+## They stack
 
-Qualifying for one does not affect any other. But the figures they report are not the same number and are not meant to be: Founder and Fast Start are measured on your earnings **after** VAT, and the Growth Bonus on your **listed sale value including** VAT. For a VAT-registered creator those legitimately differ, which is why the two progress figures on your dashboard can disagree.
+Qualifying for one does not affect the other.
 
 ## What they do not change
 
 A bonus does not alter your fees, your reserve, or your payout schedule. It is added on top.
 
+## Programmes that have closed
+
+The **Founder bonus**, the **Fast Start bonus** and the **Creator Growth Bonus** are closed and no longer accept new qualifications. Anything already earned under them is unaffected and will still be paid. Their published terms remain available if you took part in one.
+
 ## Eligibility
 
-Bonus eligibility is set per account. If you believe you qualified and were not paid, contact support with the period — the qualifying figure is calculated from completed sales only, so a refunded or pending payment does not count towards it.
+Bonus eligibility is set per account. If you believe you qualified and were not paid, contact support with the period — the qualifying figure is calculated from settled sales only, so a refunded or pending payment does not count towards it.
+MD,
+            ],
+            [
+                'slug' => 'earn-your-membership-back',
+                'title' => 'Earning your membership back',
+                'audience' => 'creator',
+                'keywords' => 'membership back, free month, credit, subscription credit, earn membership, free subscription, 500',
+                'feature_flag' => 'membership_credits.enabled',
+                'summary' => 'Every {{membership_credit.threshold}} you earn buys a free month of your creator membership. It is a credit against your own bill and is never paid as cash.',
+                'related' => ['bonuses-explained', 'what-does-the-subscription-cost', 'when-do-i-get-paid'],
+                'body' => <<<'MD'
+Every **{{membership_credit.threshold}}** of settled earnings buys you **{{membership_credit.months}} free month** of your creator membership. {{membership_credit.threshold}} earns one, twice that earns two, and so on. There is no cap.
+
+## It is a credit, not cash
+
+A free month is applied to your own membership bill. It is not money paid to you, it cannot be withdrawn, and it cannot be transferred to anybody else.
+
+## What counts towards it
+
+Settled sales — the listed price of what you sold, including VAT where it applies. The same measure the rest of your bonus progress uses.
+
+Refunds and chargebacks come back off the total, so a sale that is later refunded stops counting. Buying from yourself does not count, and money still held in escrow on an unaccepted task does not count until the buyer accepts.
+
+## When a free month is applied
+
+As soon as you have earned one, it is credited against your next membership bill automatically. Where a bill is smaller than the credit, the remainder stays on your account for the bill after it.
+
+## Where to see it
+
+Your subscription screen shows how many free months you have earned, how many you have used, and how far you are from the next one.
+
+## If a refund takes you back below
+
+A free month you have not used yet is removed, and earned again if later sales take you back over. A free month you have already used is never taken back.
 MD,
             ],
             [

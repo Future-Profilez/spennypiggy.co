@@ -6,6 +6,7 @@ use App\Helpers;
 use App\Models\FastStartBonusPayout;
 use App\Models\FounderBonus;
 use App\Models\User;
+use App\Support\Incentives;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -20,10 +21,29 @@ class SendBonusProgressAlerts extends Command
     {
         $dryRun = (bool) $this->option('dry-run');
 
-        $this->sendFastStartCountdowns($dryRun);
-        $this->sendFastStartMilestones($dryRun);
-        $this->sendFounderCountdowns($dryRun);
-        $this->sendFounderThresholdProximity($dryRun);
+        /*
+         * 🚨 EVERY ONE OF THESE FOUR IS A MESSAGE ABOUT A SCHEME A CREATOR CAN
+         * STILL JOIN — "three days left to hit your Fast Start window", "you are
+         * 80% of the way to the Founder threshold". Both schemes were retired on
+         * 11 Sep 2026, so all four are silenced by their own scheme's switch.
+         *
+         * 🚨 GATED PER SCHEME, NOT WITH ONE `return` AT THE TOP. The two retire
+         * independently, and a single gate here would mean switching either one
+         * back on silently left the other's nudges off.
+         *
+         * ⚠️ These follow the SCHEME switch, never the payer switch. They coach
+         * somebody toward qualifying; a creator who already qualified hears
+         * about their money from the payout mails instead.
+         */
+        if (Incentives::fastStartEnabled()) {
+            $this->sendFastStartCountdowns($dryRun);
+            $this->sendFastStartMilestones($dryRun);
+        }
+
+        if (Incentives::founderEnabled()) {
+            $this->sendFounderCountdowns($dryRun);
+            $this->sendFounderThresholdProximity($dryRun);
+        }
 
         return self::SUCCESS;
     }

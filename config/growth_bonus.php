@@ -35,13 +35,48 @@ return [
      * ⚠️ Config is cached in production (`config:cache` on deploy), so a change
      * here reaches the site on the next deploy, not instantly.
      *
-     * ✅ ON SINCE 28 Aug 2026 (client approval). It was held off from 26 Aug while
-     * the published terms carried clauses this engine did not honour; Part A and
-     * Part B were corrected, the client signed both off, and it was switched on
-     * with that deploy. Turning it off again is safe and reversible — no rows
-     * are deleted and the admin screens keep working.
+     * ✅ ON 28 Aug 2026 (client approval) — 🚨 RETIRED 11 Sep 2026 (simplification
+     * programme §6, `docs/simplification-sept-2026/08-incentive-retirement.md`).
+     * The client confirmed NO live participants, so nothing part-earned was
+     * taken away.
+     *
+     * 🚨 THIS ONE LINE TAKES DOWN EVERY SURFACE AND NOTHING ELSE WAS DELETED.
+     * `/growth-bonus` 404s, the landing lead card and the profile promo card
+     * vanish, the dashboard widget renders nothing, `growth-bonus:evaluate`,
+     * `:announce` and `:pay` all no-op, and the milestone / approval / hold
+     * mails stop. Profiles, rewards and every admin screen are untouched, so
+     * switching this back to `true` RESUMES the programme rather than
+     * restarting it.
+     *
+     * ⚠️ THE PUBLISHED TERMS PAGE IS THE ONE EXCEPTION AND STAYS REACHABLE.
+     * `/growth-bonus-terms` is a legal document: anybody who agreed to it is
+     * entitled to read what they agreed to. It renders a dated CLOSED notice
+     * above wording that is never rewritten — see `closed_on` below.
      */
-    'enabled' => true,
+    'enabled' => false,
+
+    /*
+     * 🚨 THE PAYER OUTLIVES THE SCHEME, AND THAT IS THE WHOLE POINT OF A SECOND
+     * SWITCH (11 Sep 2026). `enabled` above stops NEW qualifications; this keeps
+     * paying rewards somebody has already earned. Switching this off is a separate,
+     * later, deliberate act — done once the last honoured reward has gone out.
+     *
+     * ⚠️ Not to be confused with `payout.enabled` further down, which is the Phase 3
+     * AUTOMATIC payout and is a different question entirely.
+     *
+     * ⚠️ Mirror this in the admin app, the `fee_profiles` rule.
+     */
+    'payouts_enabled' => true,
+
+    /*
+     * The date the programme closed to new participation. Read ONLY by the
+     * terms page's closed notice — never by the engine, which is governed by
+     * `enabled` above.
+     *
+     * 🚨 A DATE, NOT A BOOLEAN, because "closed" without "closed when" is not a
+     * legal statement. Null while the scheme is live.
+     */
+    'closed_on' => '2026-09-11',
 
     // Only creators whose Stripe Connect activation is ON or AFTER this date
     // are in the scheme (client, 26 Aug 2026). Earlier creators are excluded —

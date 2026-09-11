@@ -5989,6 +5989,31 @@ creator account"). **Read that before touching any of this.** What lives HERE:
   — one transactional confirmation, queued. **Needs `queue:work`.**
 - Tests: `tests/Feature/GifterToCreatorConversionTest.php` (23).
 
+## The activation funnel's one new counter — `signup` (11 Sep 2026)
+
+The fourteen stages, the baseline and the cross-app rules are in the root `../CLAUDE.md`.
+This app's whole contribution is **one page type**, and the reason it needed a second cookie.
+
+- **`VisitTracker::SIGNUP_PAGE_TYPE = 'signup'`**, resolved for route name `register` (and for
+  the bare path, since the no-matched-route fallback reads a single segment as a username and
+  would file the form under `creator_profile`). Added to `PAGE_TYPES` — 🚨 **`flush()`
+  ENUMERATES that list**, so a page type missing from it is a counter written on every view
+  and collected by nothing, reporting zero for ever with nothing in any log.
+- 🚨 **`VisitTracker::SIGNUP_COOKIE` (`sp_vr`) EXISTS BECAUSE `sp_v` IS SET ON A VISITOR'S
+  FIRST PAGE OF THE DAY, WHATEVER IT IS.** So `unique_visitors` is structurally zero for every
+  page type after the first — measured live: `ad_link_in_bio`, 4 visits and 0 uniques — and
+  `/register` is almost never anybody's first page. `uniqueCookieFor()` is the one mapping;
+  `TrackSiteVisit` reads it. ⚠️ **ADDITIVE ONLY: `sp_v` is still written on exactly the old
+  rule**, so `landing`, `creator_profile` and every `ad_*` counter report what they reported
+  yesterday. A funnel whose earlier stages move when you extend it cannot judge a change.
+- ⚠️ **It counts BOTH ROLES.** `/register` is one route and the creator/supporter choice is
+  made inside the form, so this stage cannot be split by role and the admin screen says so.
+- ⚠️ **It records only from deploy day.** Nothing is backfillable — a person who abandoned the
+  form last month left nothing behind — which is exactly why it had to ship with the changes.
+- Tests: `tests/Feature/SignupFunnelStageTest.php` (6). ⚠️ Verified red twice: without the page
+  type 5 of 6 fail; with the per-page marker removed the uniques case fails and the control
+  ("every other page type still uses the original marker") correctly stays green.
+
 ## Detailed topic index — load the skill, do not inline this content
 
 The dated feature write-ups that used to sit in this file now live as **skills**: only the

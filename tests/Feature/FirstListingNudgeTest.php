@@ -250,8 +250,19 @@ class FirstListingNudgeTest extends TestCase
             'identity_status' => 1,
         ]);
 
-        // A social handle is its own step now (31 Aug 2026).
-        SocialLinks::create(['user_id' => $creator->id, 'uuid' => (string) Str::uuid(), 'instagram' => 'spenny']);
+        /*
+         * A social handle is its own step, and since 11 Sep 2026 that step reads
+         * APPROVAL, not merely presence — handles are judged by the machine as they are
+         * saved and the profile activates on its own once all three assets are clear.
+         * A handle at status 0 is one the checks have not cleared, so the journey
+         * correctly stops on `social` and never reaches the listing step.
+         */
+        SocialLinks::create([
+            'user_id' => $creator->id,
+            'uuid' => (string) Str::uuid(),
+            'instagram' => 'spenny',
+            'status' => SocialLinks::STATUS_APPROVED,
+        ]);
 
         // A card on file is its own step and sits before Connect (4 Aug 2026).
         MonthlyCharge::create([

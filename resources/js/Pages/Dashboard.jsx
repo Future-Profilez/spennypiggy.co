@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect, Suspense, lazy, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Head, Link, usePage } from "@inertiajs/react";
+// A drawn icon for the add trigger; it was a bare "+" glyph nudged into place.
+import { Plus } from "lucide-react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.png";
 const Wishlist = lazyRetry(() => import("./Auth/Wishlist"));
 const Wishlistbox = lazyRetry(() => import("@/wishlist/Wishlistbox"));
@@ -536,21 +538,76 @@ export default function Dashboard(props) {
         // and lands on a menu they never asked for.
         const [postOpen, setPostOpen] = useState(() => addIntent === "post");
 
+        /* 🚨 An empty state's CTA used to re-open the seven-option chooser: press
+           "Create Task" and you are shown a menu, where you pick "Create Task"
+           again. The creator had already stated their choice. `toggleAddOptions`
+           now carries an intent, and these two pieces of state open that module's
+           own form directly.
+
+           `directMounted` keeps the form mounted after it has been asked for once;
+           `directPulse` is the literal `true` its `openPop` reads and is cleared a
+           tick later so the NEXT press opens it again (a value that stayed set
+           would never change, so nothing would re-fire). Same pattern
+           `Wishlistbox` already uses to drive the wish editor. */
+        const [directMounted, setDirectMounted] = useState({});
+        const [directPulse, setDirectPulse] = useState(null);
+        const openDirectForm = (key) => {
+            setDirectMounted((mounted) => ({ ...mounted, [key]: true }));
+            setDirectPulse(key);
+            setTimeout(() => setDirectPulse(null), 60);
+        };
+
+        /* 🚨 ONE lock, not two. There were two effects on `showAdd`: this one
+           saved and restored the previous overflow, and a second one further
+           down set it and then cleared it to `""` — so whichever ran last won
+           and the saved value was discarded. Esc lives here too: the chooser is
+           a hand-rolled portal rather than a Dialog, so nothing was closing it
+           from the keyboard. */
         useEffect(() => {
-            if (!showAdd) return;
-            const prev = document.body.style.overflow;
+            if (!showAdd) {
+                setWishOptions(false);
+                return undefined;
+            }
+            const previousBody = document.body.style.overflow;
+            const previousRoot = document.documentElement.style.overflow;
             document.body.style.overflow = "hidden";
+            document.documentElement.style.overflow = "hidden";
             // Same full-screen contract as Sheet: while this chooser covers the
             // phone, the fixed bottom nav must not float over its CANCEL button.
             document.body.classList.add("sheet-open");
+            const onKeyDown = (event) => {
+                if (event.key === "Escape") setShowAdd(false);
+            };
+            document.addEventListener("keydown", onKeyDown);
             return () => {
-                document.body.style.overflow = prev;
+                document.body.style.overflow = previousBody;
+                document.documentElement.style.overflow = previousRoot;
                 document.body.classList.remove("sheet-open");
+                document.removeEventListener("keydown", onKeyDown);
             };
         }, [showAdd]);
         useEffect(() => {
-            const handleToggleEvent = () => {
-                setShowAdd(true);
+            const handleToggleEvent = (event) => {
+                // No intent means "I have not decided" — that is what the
+                // chooser is for. An intent names one module, so open it.
+                const intent = event?.detail?.intent || null;
+                if (!intent) {
+                    setShowAdd(true);
+                    return;
+                }
+                if (intent === "task") {
+                    window.location.href = route("task.create");
+                    return;
+                }
+                if (intent === "pot") {
+                    openCreateModal();
+                    return;
+                }
+                if (intent === "post") {
+                    setPostOpen(true);
+                    return;
+                }
+                openDirectForm(intent);
             };
 
             const handleCloseEvent = () => {
@@ -580,20 +637,7 @@ export default function Dashboard(props) {
                 window.removeEventListener("closeAddOptions", handleCloseEvent);
             };
         }, []);
-        useEffect(() => {
-            if (showAdd) {
-                document.body.style.overflow = "hidden";
-                document.documentElement.style.overflow = "hidden";
-            } else {
-                document.body.style.overflow = "";
-                document.documentElement.style.overflow = "";
-                setWishOptions(false);
-            }
-            return () => {
-                document.body.style.overflow = "";
-                document.documentElement.style.overflow = "";
-            };
-        }, [showAdd]);
+
 
         return (
             <>
@@ -607,26 +651,79 @@ export default function Dashboard(props) {
                         />
                     </Suspense>
                 )}
+
+                {/* The forms an empty state opens directly. Each is mounted only
+                    once it has been asked for, renders no trigger of its own, and
+                    is opened by the `directPulse` flag (see `openDirectForm`). The
+                    chooser above is for a creator who has NOT decided yet. */}
+                {directMounted.wish && (
+                    <Suspense fallback={null}>
+                        <Wishlist
+                            hidetrigger
+                            openPop={directPulse === "wish"}
+                            currency={global_currency}
+                            setuped={AuthUserStripeConnected == 1}
+                        />
+                    </Suspense>
+                )}
+                {directMounted.bill && (
+                    <Suspense fallback={null}>
+                        <AddBills hidetrigger openPop={directPulse === "bill"} />
+                    </Suspense>
+                )}
+                {directMounted.membership && (
+                    <Suspense fallback={null}>
+                        <AddMembership
+                            hidetrigger
+                            openPop={directPulse === "membership"}
+                        />
+                    </Suspense>
+                )}
+                {directMounted.digital && (
+                    <Suspense fallback={null}>
+                        <AddItem
+                            hideTrigger
+                            openPop={directPulse === "digital"}
+                            product_type="digital_products"
+                        />
+                    </Suspense>
+                )}
+                {directMounted.physical && (
+                    <Suspense fallback={null}>
+                        <AddItem
+                            hideTrigger
+                            openPop={directPulse === "physical"}
+                            product_type="physical"
+                        />
+                    </Suspense>
+                )}
                 {IsloggedIn ? (
                     <>
                         {/* Desktop only. On a phone the same action is the "+" in the
                             fixed bottom nav, which is reachable from every screen —
                             two buttons opening one chooser, one of them buried in a
                             horizontally-scrolling tab strip, is the worse of the two. */}
-                        <div
+                        {/* 🚨 This was a `<div onClick>` holding a bare "+": the
+                            single entry point to every earning surface on the
+                            product, unreachable by keyboard and announced as
+                            nothing. It is a real button with a real name now. */}
+                        <button
+                            type="button"
                             onClick={() => setShowAdd(true)}
-                            className="addoption-action hidden md:block cursor-pointer p-2 py-[8px] bg-[#FF007F] border-4 border-black !rounded-box-sm transition-[filter] duration-200 hover:brightness-110 active:brightness-95 z-50"
-                            // dangerouslySetInnerHTML={{ __html: addicon.replace('fill="#fff"', 'fill="#000"') }}
+                            aria-label="Add a listing"
+                            aria-haspopup="dialog"
+                            className="addoption-action hidden md:grid h-11 min-h-[44px] w-12 place-items-center bg-[#FF007F] border-2 border-black !rounded-box-sm transition-[filter] duration-200 hover:brightness-110 active:brightness-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/40 z-50"
                         >
-                            <b className="text-2xl md:text-3xl px-3 text-black !leading-[8px] top-[4px] relative">
-                                +
-                            </b>
-                        </div>
+                            <Plus size={26} strokeWidth={4} className="text-black" aria-hidden="true" />
+                        </button>
                         {showAdd
                             ? createPortal(
                                   <div
                                       onClick={() => setShowAdd(false)}
                                       data-lenis-prevent
+                                      role="dialog"
+                                      aria-modal="true"
+                                      aria-label="Add a listing"
                                       className="bg-[#00000088] backdrop-blur-sm fixed z-[9990] flex items-stretch justify-center top-0 left-0 w-full h-full overflow-y-auto overscroll-contain"
                                   >
                                       {/* ⚠️ Full page on every size, like the post
@@ -674,8 +771,12 @@ export default function Dashboard(props) {
                                                       ×
                                                   </button>
                                                   <div className="text-center mb-5 max-w-[480px] mx-auto">
-                                                      <div className="inline-block bg-gradient-to-r from-[#FF007F] to-[#FF8E25] border-[3px] border-black rounded-box-sm px-6 py-3 mb-3 -rotate-1">
-                                                          <h2 className="text-white font-anton tracking-wide uppercase text-2xl md:text-2xl !leading-none m-0">
+                                                      {/* 🚨 White on this gradient was 2.3:1 at the
+                                                          orange end, and orange is a second accent the
+                                                          system does not have. Flat brand pink, black
+                                                          type — the house rule for any pink fill. */}
+                                                      <div className="inline-block bg-[#FF007F] border-2 border-black rounded-box-sm px-6 py-3 mb-3 -rotate-1">
+                                                          <h2 className="text-black font-anton tracking-wide uppercase text-2xl md:text-2xl !leading-none m-0">
                                                               🐷 Turn Content
                                                               Into Cash 💰
                                                           </h2>
@@ -689,11 +790,28 @@ export default function Dashboard(props) {
 
                                                   {AuthUserStripeConnected !==
                                                   1 ? (
-                                                      <p className="!mb-2 text-center">
-                                                          Please complete your
-                                                          Stripe account setup
-                                                          to add your wishlist.
-                                                      </p>
+                                                      <div
+                                                          // Was: "complete your Stripe account setup
+                                                          // to add your wishlist" — the wrong noun
+                                                          // (every option below is disabled, not just
+                                                          // wishes) and no way to go and do it, at the
+                                                          // highest-intent moment in the product.
+                                                          // ⚠️ A {/* */} comment inside a ternary's
+                                                          // parenthesised branch is an object literal
+                                                          // and fails the build — see CLAUDE.md.
+                                                          className="mx-auto mb-4 w-full max-w-[480px] rounded-box-sm border-2 border-black bg-white p-4 text-center"
+                                                      >
+                                                          <p className="text-sm font-bold text-black">
+                                                              Connect your payout account before you
+                                                              can list anything for sale.
+                                                          </p>
+                                                          <Link
+                                                              href="/stripe"
+                                                              className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-box-sm border-2 border-black bg-[#FF007F] px-6 text-xs font-black uppercase tracking-[0.14em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
+                                                          >
+                                                              Set up payouts
+                                                          </Link>
+                                                      </div>
                                                   ) : (
                                                       ""
                                                   )}
@@ -717,9 +835,16 @@ export default function Dashboard(props) {
                                                                           : false
                                                                   }
                                                               />
-                                                              <div className="w-full font-bold disabled addop bg-white border-4 border-black rounded-box p-3 mb-4 text-center">
+                                                              {/* The Oink Store is kill-switched
+                                                                  (`RYE_ENABLED`), so this row has no
+                                                                  action. It read as an ordinary
+                                                                  option at 80% opacity — say it. */}
+                                                              <div
+                                                                  aria-disabled="true"
+                                                                  className="w-full font-bold disabled addop bg-white border-2 border-black rounded-box p-3 mb-4 text-center"
+                                                              >
                                                                   <div className="flex items-center">
-                                                                      <div className="p-1 rounded-box border-2 border-black bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                      <div className="p-1 rounded-box border-2 border-black bg-[#FF007F]/10 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                           <CiShoppingCart
                                                                               color="#000"
                                                                               size="1.5rem"
@@ -733,13 +858,13 @@ export default function Dashboard(props) {
                                                                               the surface is branded "Oink Store" and
                                                                               never "Gift Store", and a gift-box icon
                                                                               carries the same meaning as the word. */}
-                                                                          <h2 className="font-gulfs font-light text-md font-black uppercase text-black">
-                                                                              Add
-                                                                              Oink
-                                                                              Store
-                                                                              item
+                                                                          <h2 className="flex flex-wrap items-center gap-2 font-gulfs font-light text-md uppercase text-black">
+                                                                              <span>Add Oink Store item</span>
+                                                                              <span className="rounded-box-xs border-2 border-black bg-[#F2EFE7] px-2 py-0.5 text-[10px] font-black tracking-[0.14em]">
+                                                                                  Coming soon
+                                                                              </span>
                                                                           </h2>
-                                                                          <p className="text-sm font-bold text-gray-700">
+                                                                          <p className="text-sm font-bold text-black/80">
                                                                               Lets
                                                                               supporters
                                                                               pick
@@ -763,7 +888,7 @@ export default function Dashboard(props) {
                                                                               !wishOptions,
                                                                           )
                                                                       }
-                                                                      className="bg-gray-200 text-back rounded-box px-3 py-2"
+                                                                      className="min-h-[44px] rounded-box-sm border-2 border-black bg-white px-6 text-xs font-black uppercase tracking-[0.14em] text-black transition-colors hover:bg-[#F4F4F5]"
                                                                   >
                                                                       Back
                                                                   </button>
@@ -784,22 +909,22 @@ export default function Dashboard(props) {
                                                                                   true,
                                                                               )
                                                                           }
-                                                                          className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                          className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-2 border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                       >
                                                                           <div className="flex items-center">
-                                                                              <div className="p-1 rounded-box-sm border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
+                                                                              <div className="p-1 rounded-box-sm border-2 border-black bg-[#FF007F]/10 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
                                                                                   <FaRegHeart
                                                                                       color="#FF007F"
                                                                                       size="1.6rem"
                                                                                   />
                                                                               </div>
                                                                               <div className="pl-4 text-left">
-                                                                                  <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
+                                                                                  <h2 className="font-gulfs text-base md:text-xl font-light text-black uppercase tracking-normal md:tracking-wide leading-tight">
                                                                                       Sell
                                                                                       exclusive
                                                                                       content
                                                                                   </h2>
-                                                                                  <p className="text-sm font-bold text-gray-700">
+                                                                                  <p className="text-sm font-bold text-black/80">
                                                                                       Offer
                                                                                       a
                                                                                       one-off
@@ -817,22 +942,22 @@ export default function Dashboard(props) {
                                                                           ?.role ===
                                                                           1 && (
                                                                           <Link
-                                                                              className="w-full block font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                              className="w-full block font-bold addop bg-white hover:bg-[#FFF0DF] border-2 border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                               href="/task/create"
                                                                           >
                                                                               <div className="flex items-center">
-                                                                                  <div className="p-1 rounded-box-sm border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
+                                                                                  <div className="p-1 rounded-box-sm border-2 border-black bg-[#FF007F]/10 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
                                                                                       <BiTask
                                                                                           color="#FF007F"
                                                                                           size="1.6rem"
                                                                                       />
                                                                                   </div>
                                                                                   <div className="pl-4 text-left">
-                                                                                      <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
+                                                                                      <h2 className="font-gulfs text-base md:text-xl font-light text-black uppercase tracking-normal md:tracking-wide leading-tight">
                                                                                           Create
                                                                                           Task
                                                                                       </h2>
-                                                                                      <p className="text-sm font-bold text-gray-700">
+                                                                                      <p className="text-sm font-bold text-black/80">
                                                                                           Sell
                                                                                           a
                                                                                           personalised
@@ -856,20 +981,20 @@ export default function Dashboard(props) {
                                                                                   );
                                                                                   openCreateModal();
                                                                               }}
-                                                                              className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                              className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-2 border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                           >
                                                                               <div className="flex items-center">
-                                                                                  <div className="p-1 rounded-box-sm border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
+                                                                                  <div className="p-1 rounded-box-sm border-2 border-black bg-[#FF007F]/10 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
                                                                                       <span className="text-2xl">
                                                                                           🐷
                                                                                       </span>
                                                                                   </div>
                                                                                   <div className="pl-4 text-left">
-                                                                                      <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
+                                                                                      <h2 className="font-gulfs text-base md:text-xl font-light text-black uppercase tracking-normal md:tracking-wide leading-tight">
                                                                                           Content
                                                                                           goal
                                                                                       </h2>
-                                                                                      <p className="text-sm font-bold text-gray-700">
+                                                                                      <p className="text-sm font-bold text-black/80">
                                                                                           Sell
                                                                                           content
                                                                                           toward
@@ -883,7 +1008,7 @@ export default function Dashboard(props) {
                                                                       )}
 
                                                                       <AddItem
-                                                                          classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                          classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-2 border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                           product_type="digital_products"
                                                                           addIntent={
                                                                               addIntent
@@ -900,7 +1025,7 @@ export default function Dashboard(props) {
                                                                           hover instead of falling back to the shared cream. */}
                                                                       <AddPost
                                                                           highlight
-                                                                          classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-[#D9F9EE] hover:bg-[#C2F3E1] border-[3px] border-black transition-colors rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#00B98C] after:transition-colors hover:after:text-[#05EFB8]"
+                                                                          classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-[#D9F9EE] hover:bg-[#C2F3E1] border-2 border-black transition-colors rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#00B98C] after:transition-colors hover:after:text-[#05EFB8]"
                                                                       />
                                                                       {/* <AddGift
                                                                             text="Add Gift"
@@ -913,8 +1038,8 @@ export default function Dashboard(props) {
                                                                             ?.is_creator_address_found
                                                                     }
                                                                 /> */}
-                                                                      <AddMembership classes=" font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box !w-full relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
-                                                                      <AddBills classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
+                                                                      <AddMembership classes=" font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-2 border-black transition-colors rounded-box !w-full relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
+                                                                      <AddBills classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-2 border-black transition-colors rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
                                                                   </div>
                                                               </div>
                                                           </>
@@ -939,7 +1064,7 @@ export default function Dashboard(props) {
                                                                 w-full
                                                                 max-w-[220px]
                                                                 h-[56px]
-                                                                bg-[#E9E1D7]
+                                                                bg-white
                                                                 border-[3px]
                                                                 border-black
                                                                 rounded-box-sm
@@ -970,6 +1095,38 @@ export default function Dashboard(props) {
             </>
         );
     };
+
+    /**
+     * 🚨 `Toggle` IS DECLARED INSIDE `Dashboard`, SO IT IS A NEW FUNCTION ON
+     * EVERY RENDER — and `InstantTabSystem` renders it as `<Toggle />`. A
+     * different function at the same position is a different COMPONENT TYPE to
+     * React, so the entire chooser subtree is unmounted and remounted: `showAdd`,
+     * `postOpen`, `wishOptions` and every `Popup`'s own `open` flag all go back
+     * to false.
+     *
+     * Reported as "the post composer closes while I am typing the headline".
+     * Focusing a field opens the phone keyboard, the keyboard fires `resize`,
+     * `useWidthCount` re-rendered Dashboard, and the sheet vanished mid-sentence.
+     * `useWidthCount` now ignores height-only resizes, but that only removes one
+     * trigger — ANY Dashboard re-render did this, so the identity is what has to
+     * be fixed.
+     *
+     * ⚠️ The proxy keeps ONE stable component type while still calling the
+     * latest closure, so `Toggle`'s state survives. Its hooks run as this
+     * component's hooks — which is exactly what preserves them — so `Toggle`'s
+     * hook order must stay unconditional.
+     * ⚠️ `useRef`, not `useMemo`: React is allowed to drop a `useMemo` cache, and
+     * one dropped entry here is one silent remount of the composer.
+     */
+    const toggleRef = useRef(Toggle);
+    toggleRef.current = Toggle;
+    const stableToggleRef = useRef(null);
+    if (!stableToggleRef.current) {
+        stableToggleRef.current = function ChooserToggle(toggleProps) {
+            return toggleRef.current(toggleProps);
+        };
+    }
+    const StableToggle = stableToggleRef.current;
 
     const [UserStripeConnected, setUserStripeConnected] = useState(
         user && user?.stripe_details_submitted == 1 ? 1 : 0,
@@ -1060,7 +1217,7 @@ export default function Dashboard(props) {
 
                 {creatorTags.length > 0 && (
                     <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                        <span className="text-[11px] font-black uppercase tracking-[0.16em] text-black/45">
+                        <span className="text-[11px] font-black uppercase tracking-[0.16em] text-black/60">
                             Makes
                         </span>
                         <CategoryTags value={user?.creator_category} />
@@ -1218,7 +1375,7 @@ export default function Dashboard(props) {
                                             introProp?.approved == 1) && (
                                             <Suspense
                                                 fallback={
-                                                    <div className="h-40 animate-pulse rounded-box border-[3px] border-black bg-gray-100"></div>
+                                                    <div className="h-40 animate-pulse rounded-box border-2 border-black bg-gray-100"></div>
                                                 }
                                             >
                                                 <AddIntro
@@ -1345,7 +1502,7 @@ export default function Dashboard(props) {
                                                     >
                                                         <div className="inlinetab">
                                                             <InstantTabSystem
-                                                                Toggle={Toggle}
+                                                                Toggle={StableToggle}
                                                                 activeTab={
                                                                     page ||
                                                                     "about"
@@ -1511,7 +1668,7 @@ export default function Dashboard(props) {
                                                                                             <div className="text-[18px] font-black uppercase text-black md:text-[22px]">
                                                                                                 Revenue opportunities
                                                                                             </div>
-                                                                                            <div className="mt-0.5 text-[13px] font-semibold text-gray-600 md:text-[15px]">
+                                                                                            <div className="mt-0.5 text-[13px] font-semibold text-black/80 md:text-[15px]">
                                                                                                 Who is buying, what they are worth, and
                                                                                                 what to do next.
                                                                                             </div>
@@ -1571,7 +1728,7 @@ export default function Dashboard(props) {
                                                                                             <div className="text-[18px] md:text-[22px] font-black uppercase tracking-tigher text-black">
                                                                                                 My listings
                                                                                             </div>
-                                                                                            <div className="text-[13px] md:text-[15px] font-semibold text-gray-600 mt-0.5">
+                                                                                            <div className="text-[13px] md:text-[15px] font-semibold text-black/80 mt-0.5">
                                                                                                 Everything you sell
                                                                                                 in one place — and
                                                                                                 anything that is
@@ -1880,7 +2037,7 @@ export default function Dashboard(props) {
                                                                                                 slinks?.reason ||
                                                                                                 user?.avatar_approved ==
                                                                                                     2) ? (
-                                                                                                <div className="bg-white border-1 border-black rounded-box mb-4 p-4">
+                                                                                                <div className="bg-white border-2 border-black rounded-box mb-4 p-4">
                                                                                                     <h2 className="text-red-600 font-bold text-xl">
                                                                                                         Action
                                                                                                         Required
@@ -1897,7 +2054,7 @@ export default function Dashboard(props) {
                                                                                                                     Edit
                                                                                                                     Request
                                                                                                                 </p>
-                                                                                                                <p className="text-red-500 text-sm">
+                                                                                                                <p className="text-sm font-bold text-[#C81E5B]">
                                                                                                                     Reason:
                                                                                                                     {
                                                                                                                         ""
@@ -1923,7 +2080,7 @@ export default function Dashboard(props) {
                                                                                                                     ""
                                                                                                                 }
                                                                                                             </p>
-                                                                                                            <p className="text-red-500 text-sm">
+                                                                                                            <p className="text-sm font-bold text-[#C81E5B]">
                                                                                                                 Reason
                                                                                                                 :
                                                                                                                 {
@@ -1950,7 +2107,7 @@ export default function Dashboard(props) {
                                                                                                                 Edit
                                                                                                                 Request
                                                                                                             </p>
-                                                                                                            <p className="text-red-500 text-sm">
+                                                                                                            <p className="text-sm font-bold text-[#C81E5B]">
                                                                                                                 Profile
                                                                                                                 avatar
                                                                                                                 has
@@ -1974,7 +2131,7 @@ export default function Dashboard(props) {
                                                                                                                 Edit
                                                                                                                 Request
                                                                                                             </p>
-                                                                                                            <p className="text-red-500 text-sm">
+                                                                                                            <p className="text-sm font-bold text-[#C81E5B]">
                                                                                                                 Reason:
                                                                                                                 {
                                                                                                                     slinks.reason
@@ -2008,7 +2165,7 @@ export default function Dashboard(props) {
                                                                                                 user?.username ? (
                                                                                                 <div className="mb-6 !mt-6 relative group">
                                                                                                     {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#FF007F] to-[#05EFB8] rounded-box blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
-                                                                                                    <div className="relative overflow-hidden p-5 md:p-6 rounded-box bg-[#fdfbf7] border-[3px] border-black min-h-[120px] md:min-h-[140px]">
+                                                                                                    <div className="relative overflow-hidden p-5 md:p-6 rounded-box bg-[#fdfbf7] border-2 border-black min-h-[120px] md:min-h-[140px]">
                                                                                                         <div className="items-stretch md:items-center justify-between gap-5 relative z-10">
                                                                                                             <div className="flex items-center gap-4 order-1 w-full md:w-auto justify-center md:justify-start">
                                                                                                                 <div className="relative">
@@ -2020,7 +2177,7 @@ export default function Dashboard(props) {
                                                                                                                             ""
                                                                                                                         }
                                                                                                                         alt="you"
-                                                                                                                        className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black"
+                                                                                                                        className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-2 border-black"
                                                                                                                     />
                                                                                                                 </div>
                                                                                                                 <div className="text-black text-xl font-black tracking-widest">
@@ -2033,12 +2190,12 @@ export default function Dashboard(props) {
                                                                                                                             ""
                                                                                                                         }
                                                                                                                         alt="creator"
-                                                                                                                        className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black"
+                                                                                                                        className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-2 border-black"
                                                                                                                     />
                                                                                                                 </div>
                                                                                                             </div>
                                                                                                             <div className="flex-1 order-2 text-center md:text-left mt-6">
-                                                                                                                <p className="text-[12px] font-black tracking-[0.25em] uppercase text-gray-700 mb-1">
+                                                                                                                <p className="text-[12px] font-black tracking-[0.25em] uppercase text-black/80 mb-1">
                                                                                                                     Support
                                                                                                                     Story
                                                                                                                 </p>
@@ -2054,7 +2211,7 @@ export default function Dashboard(props) {
                                                                                                                         "@" +
                                                                                                                             user?.username}
                                                                                                                 </p>
-                                                                                                                <p className="text-gray-700 font-bold text-sm md:text-sm mt-1">
+                                                                                                                <p className="text-black/80 font-bold text-sm md:text-sm mt-1">
                                                                                                                     Purchases,
                                                                                                                     thank‑yous
                                                                                                                     and
@@ -2069,7 +2226,7 @@ export default function Dashboard(props) {
                                                                                                             <div className="order-3 w-full md:w-auto md:shrink-0 mt-6">
                                                                                                                 <Link
                                                                                                                     href={`/support/${user?.username}/${auth?.user?.username}`}
-                                                                                                                    className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-box-sm text-sm uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
+                                                                                                                    className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-box-sm text-sm uppercase tracking-widest bg-yellow-300 border-2 border-black text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                                                                                                 >
                                                                                                                     View
                                                                                                                     Your
@@ -2214,8 +2371,8 @@ export default function Dashboard(props) {
                                                                                                             className={`${
                                                                                                                 selectedCategory ==
                                                                                                                 ""
-                                                                                                                    ? "bg-[#FF007F] text-black border-[3px] border-black translate-x-[-1px] translate-y-[-1px]"
-                                                                                                                    : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
+                                                                                                                    ? "bg-[#FF007F] text-black border-2 border-black translate-x-[-1px] translate-y-[-1px]"
+                                                                                                                    : "bg-[#1c1c24] text-white border-2 border-black hover:bg-gray-800"
                                                                                                             } px-4 py-1 rounded-box-sm font-black uppercase tracking-widest text-sm transition-all`}
                                                                                                         >
                                                                                                             All
@@ -2241,8 +2398,8 @@ export default function Dashboard(props) {
                                                                                                                         className={`${
                                                                                                                             selectedCategory ==
                                                                                                                             c.id
-                                                                                                                                ? "bg-[#FF007F] text-black border-[3px] border-black translate-x-[-1px] translate-y-[-1px]"
-                                                                                                                                : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
+                                                                                                                                ? "bg-[#FF007F] text-black border-2 border-black translate-x-[-1px] translate-y-[-1px]"
+                                                                                                                                : "bg-[#1c1c24] text-white border-2 border-black hover:bg-gray-800"
                                                                                                                         } px-4 py-1 rounded-box-sm font-black uppercase tracking-widest text-sm transition-all`}
                                                                                                                         key={`cats-${i}`}
                                                                                                                     >
@@ -2363,8 +2520,9 @@ export default function Dashboard(props) {
                                                                                                                     subtitle="Create a new wish for your supporters."
                                                                                                                     onClick={() =>
                                                                                                                         window.dispatchEvent(
-                                                                                                                            new Event(
+                                                                                                                            new CustomEvent(
                                                                                                                                 "toggleAddOptions",
+                                                                                                                                { detail: { intent: "wish" } },
                                                                                                                             ),
                                                                                                                         )
                                                                                                                     }
@@ -2437,7 +2595,7 @@ export default function Dashboard(props) {
                                                                                                 <div className="w-full">
                                                                                                     {IsloggedIn ? (
                                                                                                         <>
-                                                                                                            <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
+                                                                                                            <div className="w-full bg-white border-2 border-black rounded-box p-8 text-center mt-4">
                                                                                                                 {/* ⚠️ Content-first: a 🎁 emoji and "let your
                                                                                                                     fans buy them for you" framed this as a
                                                                                                                     gift, which is the framing a wish is
@@ -2448,7 +2606,7 @@ export default function Dashboard(props) {
                                                                                                                     wishes
                                                                                                                     yet
                                                                                                                 </h3>
-                                                                                                                <p className="text-gray-600 font-bold mb-6">
+                                                                                                                <p className="text-black/80 font-bold mb-6">
                                                                                                                     List
                                                                                                                     exclusive
                                                                                                                     content
@@ -2460,8 +2618,9 @@ export default function Dashboard(props) {
                                                                                                                 <button
                                                                                                                     onClick={() =>
                                                                                                                         window.dispatchEvent(
-                                                                                                                            new Event(
+                                                                                                                            new CustomEvent(
                                                                                                                                 "toggleAddOptions",
+                                                                                                                                { detail: { intent: "wish" } },
                                                                                                                             ),
                                                                                                                         )
                                                                                                                     }
@@ -2536,7 +2695,7 @@ export default function Dashboard(props) {
                                                                                             tasks.length ===
                                                                                                 0) && (
                                                                                             <>
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-2 border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         📋
                                                                                                     </div>
@@ -2545,7 +2704,7 @@ export default function Dashboard(props) {
                                                                                                         Active
                                                                                                         Tasks
                                                                                                     </h3>
-                                                                                                    <p className="text-gray-600 font-bold mb-6">
+                                                                                                    <p className="text-black/80 font-bold mb-6">
                                                                                                         Create
                                                                                                         tasks
                                                                                                         and
@@ -2561,8 +2720,9 @@ export default function Dashboard(props) {
                                                                                                     <button
                                                                                                         onClick={() =>
                                                                                                             window.dispatchEvent(
-                                                                                                                new Event(
+                                                                                                                new CustomEvent(
                                                                                                                     "toggleAddOptions",
+                                                                                                                    { detail: { intent: "task" } },
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
@@ -2612,7 +2772,7 @@ export default function Dashboard(props) {
                                                                                                 ?.length ===
                                                                                                 0) && (
                                                                                             <>
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-2 border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         ⭐
                                                                                                     </div>
@@ -2621,7 +2781,7 @@ export default function Dashboard(props) {
                                                                                                         Memberships
                                                                                                         Yet
                                                                                                     </h3>
-                                                                                                    <p className="text-gray-600 font-bold mb-6">
+                                                                                                    <p className="text-black/80 font-bold mb-6">
                                                                                                         Create
                                                                                                         membership
                                                                                                         tiers
@@ -2634,8 +2794,9 @@ export default function Dashboard(props) {
                                                                                                     <button
                                                                                                         onClick={() =>
                                                                                                             window.dispatchEvent(
-                                                                                                                new Event(
+                                                                                                                new CustomEvent(
                                                                                                                     "toggleAddOptions",
+                                                                                                                    { detail: { intent: "membership" } },
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
@@ -2679,7 +2840,7 @@ export default function Dashboard(props) {
                                                                                                 ?.length ===
                                                                                                 0) && (
                                                                                             <>
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-2 border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         🧾
                                                                                                     </div>
@@ -2688,7 +2849,7 @@ export default function Dashboard(props) {
                                                                                                         Active
                                                                                                         Bills
                                                                                                     </h3>
-                                                                                                    <p className="text-gray-600 font-bold mb-6">
+                                                                                                    <p className="text-black/80 font-bold mb-6">
                                                                                                         Offer
                                                                                                         a
                                                                                                         content
@@ -2702,8 +2863,9 @@ export default function Dashboard(props) {
                                                                                                     <button
                                                                                                         onClick={() =>
                                                                                                             window.dispatchEvent(
-                                                                                                                new Event(
+                                                                                                                new CustomEvent(
                                                                                                                     "toggleAddOptions",
+                                                                                                                    { detail: { intent: "bill" } },
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
@@ -2750,7 +2912,7 @@ export default function Dashboard(props) {
                                                                                                 .length ===
                                                                                                 0) && (
                                                                                             <>
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-2 border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         🛍️
                                                                                                     </div>
@@ -2760,7 +2922,7 @@ export default function Dashboard(props) {
                                                                                                         Items
                                                                                                         Yet
                                                                                                     </h3>
-                                                                                                    <p className="text-gray-600 font-bold mb-6">
+                                                                                                    <p className="text-black/80 font-bold mb-6">
                                                                                                         Create
                                                                                                         physical
                                                                                                         or
@@ -2775,8 +2937,9 @@ export default function Dashboard(props) {
                                                                                                     <button
                                                                                                         onClick={() =>
                                                                                                             window.dispatchEvent(
-                                                                                                                new Event(
+                                                                                                                new CustomEvent(
                                                                                                                     "toggleAddOptions",
+                                                                                                                    { detail: { intent: "digital" } },
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
@@ -2883,7 +3046,7 @@ export default function Dashboard(props) {
                                                                                     ) : (
                                                                                         <div className="w-full">
                                                                                             {IsloggedIn ? (
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-2 border-black rounded-box p-8 text-center mt-4">
                                                                                                     {/* ⚠️ Content-first: this read "🎁 / No Active
                                                                                                         Gifts / Create physical gifts for your fans to
                                                                                                         buy for you". "Gift" is banned vocabulary on
@@ -2895,7 +3058,7 @@ export default function Dashboard(props) {
                                                                                                         listed
                                                                                                         yet
                                                                                                     </h3>
-                                                                                                    <p className="text-gray-600 font-bold mb-6">
+                                                                                                    <p className="text-black/80 font-bold mb-6">
                                                                                                         List
                                                                                                         a
                                                                                                         physical
@@ -2908,8 +3071,9 @@ export default function Dashboard(props) {
                                                                                                     <button
                                                                                                         onClick={() =>
                                                                                                             window.dispatchEvent(
-                                                                                                                new Event(
+                                                                                                                new CustomEvent(
                                                                                                                     "toggleAddOptions",
+                                                                                                                    { detail: { intent: "physical" } },
                                                                                                                 ),
                                                                                                             )
                                                                                                         }

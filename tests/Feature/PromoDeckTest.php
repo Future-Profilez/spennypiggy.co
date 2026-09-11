@@ -113,6 +113,15 @@ class PromoDeckTest extends TestCase
             'stripe_connected_at' => now()->subDays(90),
         ]);
 
+        /*
+         * ⚠️ The Founder scheme was RETIRED on 11 Sep 2026 and its card leaves the deck
+         * entirely while the flag is off — see `App\Support\Incentives`. This test is
+         * about the WINDOW closing the card, which is a different rule and still has to
+         * work: the scheme can be switched back on, and when it is, a creator past
+         * their 30 days must not be shown it.
+         */
+        config(['founder_bonus.enabled' => true]);
+
         $this->assertContains('founder_bonus', $this->keys($this->deck($inside)));
         $this->assertNotContains('founder_bonus', $this->keys($this->deck($outside)));
     }
@@ -201,7 +210,10 @@ class PromoDeckTest extends TestCase
         $card = collect($this->deck(null))->firstWhere('key', 'refer_and_earn');
 
         $this->assertSame('£75', $card['facts']['reward']);
-        $this->assertSame('£1,000', $card['facts']['threshold']);
+        // ⚠️ £2,000 since 11 Sep 2026 (client §5). The card reads the live config, which
+        // is the point of the test — a referral already in flight keeps the figure it
+        // was made under, and that is pinned in CreatorReferralRewardTest.
+        $this->assertSame('£2,000', $card['facts']['threshold']);
     }
 
     /**

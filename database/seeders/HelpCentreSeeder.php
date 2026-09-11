@@ -958,10 +958,111 @@ We do not file anything for you and we are not your accountant. What we provide 
 MD,
             ],
             [
+                /*
+                 * ⚠️ WRITTEN 11 Sep 2026 BECAUSE THE GUARD ASKED FOR IT. `HelpAnswerCasesTest`
+                 * has expected `shipping-physical-products` since it was written and the
+                 * article never existed — a creator asking "how do I post something to a
+                 * buyer" was handed three articles about publishing POSTS, because the word
+                 * means two different things and only one of them had any copy.
+                 *
+                 * ⚠️ The keywords carry the POSTAL sense deliberately ("post a parcel",
+                 * "send it", "royal mail") — the publishing sense is already well covered
+                 * and was winning the search outright.
+                 */
+                'slug' => 'shipping-physical-products',
+                'title' => 'Sending a physical item to a buyer',
+                'audience' => 'creator',
+                'keywords' => 'shipping, postage, post a parcel, posting, send it, sending, delivery, dispatch, royal mail, courier, tracking, shipping profile, shipping zones, worldwide, domestic',
+                'summary' => 'Set your postage rates before you list, pack and send within your stated delivery time, then mark the order delivered.',
+                'related' => ['when-do-i-get-paid', 'what-fees-are-deducted'],
+                'body' => <<<'MD'
+When you sell something physical, the buyer pays your **listed price plus the postage you set**. Postage is yours to set and yours to pay out of — so set it before you list, not after somebody has bought.
+
+## Set your postage first
+
+Each physical item needs at least one postage rate. You can set rates in two ways:
+
+- **A shipping profile** — one set of rates you reuse across many items. Change it once and every item using it follows. This is the one to use if you post similar things.
+- **Per item** — rates typed on that listing alone.
+
+⚠️ A profile always wins where one is selected. Saving an item with a profile chosen **removes** any per-item rates it had, so the two can never both apply.
+
+## Zones
+
+Within either, a buyer's own country is matched first and **Worldwide** is the fallback. Set your own country's rate deliberately — it is the one most of your buyers will use.
+
+🚨 **If you delete a shipping profile, every item still pointing at it ships free.** Nothing warns the buyer and nothing warns you — the order simply arrives with no postage on it and you pay to send it. Move those items onto another profile, or give them their own rates, before deleting one.
+
+## Delivery time and restrictions
+
+Delivery time and any restrictions are **per item**, always shown, and they are a promise: they are what the buyer is shown before paying and what we measure a late order against. Say what is true for the way you actually post, not the best case.
+
+## After the sale
+
+1. You are notified, and the order appears in your orders list.
+2. Pack and send it within the delivery time you stated.
+3. **Mark it delivered** — the money is released on your normal payout schedule, and an order left unmarked can hold up that payment.
+
+If a parcel goes missing or a buyer says it never arrived, message support from the chat bubble before refunding — we can see the order, the dates and what the buyer was told.
+MD,
+            ],
+
+            [
+                /*
+                 * 🚨 THE ANSWER FOR SOMEBODY WHO ALREADY EARNED ONE (11 Sep 2026).
+                 *
+                 * The three bonus schemes were retired and their how-to-join articles
+                 * are unpublished with them — an article explaining how to join
+                 * something nobody can join sends a creator to a 404. But the question
+                 * does not stop being asked, and the people most likely to ask it are
+                 * the ones holding an entitlement and wondering where it stands.
+                 *
+                 * ⚠️ NO `feature_flag`. This one is visible precisely BECAUSE the
+                 * schemes are closed, and it stays accurate if they are switched back
+                 * on: it says what closed and that earned entitlements are honoured,
+                 * never how to join.
+                 */
+                'slug' => 'closed-programmes',
+                'title' => 'Closed bonus programmes',
+                'audience' => 'creator',
+                'keywords' => 'founder bonus, growth bonus, fast start, closed, retired, ended, discontinued, still get paid, already earned, what happened to',
+                'summary' => 'The Founder, Growth and Fast Start bonuses are closed to new participation. Anything already earned is unaffected.',
+                'related' => ['when-do-i-get-paid', 'what-fees-are-deducted'],
+                'body' => <<<'MD'
+The **Founder bonus**, the **Creator Growth bonus** and the **Fast Start bonus** are closed to new participation. No new qualifications are being accepted for any of them.
+
+## If you already earned one
+
+**It is unaffected and it will still be paid.** Closing a programme stops new qualifications — it does not cancel anything somebody has already earned. Payments carry on to their normal schedule, and you will see them on your payouts page like any other.
+
+## Why they closed
+
+We simplified what the platform charges and what it offers. You now keep **100% of your listed price** on every sale, and supporters cover one simple fee at checkout with card processing included — rather than a lower headline rate topped up with bonuses that only some creators reached.
+
+## What is open instead
+
+- **Earn your membership back** — every {{credits.threshold}} of settled earnings gives you a free month of your creator membership.
+- **Refer a creator** — when someone you refer reaches {{referral.threshold}} in settled earnings, you receive {{referral.reward}}.
+
+If you think a bonus you earned has not been paid, message support from the chat bubble and we will look at your account.
+MD,
+            ],
+
+            [
                 'slug' => 'founder-bonus',
                 'title' => 'The Founder bonus',
                 'audience' => 'creator',
                 'keywords' => 'founder, bonus, seats, qualify, earnings bonus, 30 days, monthly bonus',
+                /*
+                 * 🚨 UNPUBLISHED WITH THE SCHEME (11 Sep 2026). `feature_flag`
+                 * is read by `HelpArticle::isVisible()`, so the article leaves
+                 * the Help Centre, the search index and the sitemap the moment
+                 * the config line flips — and comes back if it flips again. An
+                 * article explaining how to join a scheme nobody can join is
+                 * worse than no article: a creator reads it, tries, and finds
+                 * a 404.
+                 */
+                'feature_flag' => 'founder_bonus.enabled',
                 'summary' => 'Earn {{founder.min_earnings}} net in your first {{founder.window_days}} days and you become a Founder — {{founder.seats}} seats in total.',
                 'related' => ['when-do-i-get-paid', 'what-fees-are-deducted'],
                 'body' => <<<'MD'

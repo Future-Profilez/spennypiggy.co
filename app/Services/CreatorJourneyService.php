@@ -5,9 +5,7 @@ namespace App\Services;
 use App\Models\FinancialTransaction;
 use App\Models\Post;
 use App\Models\User;
-use App\Support\IdentityCheckState;
 use App\Support\ProfileAssetVisibility;
-use App\Support\ReviewSubmission;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
@@ -70,34 +68,16 @@ class CreatorJourneyService
             'route' => 'dashboard',
             'params' => [],
         ],
-        'review' => [
-            'title' => 'Submit your profile for review',
-            'body' => 'Photo, bio and handle are in — send it to the team. Payouts unlock once it is approved.',
-            'cta' => 'Submit for review',
-            // 🚨 THIS STEP IS WHAT WAS MISSING (31 Aug 2026). `ProfileController::
-            // updateProfileLockStatus` is the only thing that puts a creator in the review
-            // queue (`profile_status_lock` 0 → 1), and it is a manual click. The journey
-            // used to treat "photo and bio uploaded" as "under review", so a creator who
-            // did both and stopped read "Nothing to do — we check every photo and bio"
-            // while sitting in no queue at all. Measured on the live DB: that was the
-            // stall for most of the August ad-campaign signups.
-            'route' => 'update.profile.lock.status',
-            'params' => [],
-        ],
-        'subscription' => [
-            'title' => 'Add your card',
-            // 🚨 AFTER approval, BEFORE payouts (client decision, 7 Sep 2026). It was
-            // step 3 of 9, asked of somebody no human had looked at yet, and it was
-            // the step most creators stopped on — see ReviewSubmission::missing().
-            // Approval is free and is the real filter; the card is what unlocks
-            // Connect (`StripeController::subscriptionGate()`), so it sits right
-            // before it. A creator can add it at ANY point — `activate-subscription`
-            // carries no gate — so nothing here can deadlock against the review.
-            'body' => 'Your page is approved. Add a card to unlock payouts — you are not charged until your first sale.',
-            'cta' => 'Add your card',
-            'route' => 'activate-subscription',
-            'params' => [],
-        ],
+        // 🚨 `review` USED TO SIT HERE AND LEFT THE JOURNEY ON 10 Sep 2026 (client
+        // direction). There is no Submit: photo, bio and handles are judged by the
+        // automated checks as they are saved and the profile goes live on its own the
+        // moment all three are clean — App\Support\ProfileAutoApproval. Lock 1 is a
+        // state no new creator reaches. The `profile` and `social` steps above now
+        // read "approved", not merely "uploaded", so a HELD asset keeps its step open
+        // with the reason on it rather than pretending a review is in progress.
+        // 🚨 Connect comes BEFORE the card (10 Sep 2026). Connect is free to us and to
+        // the creator, and it is what proves they can actually be paid; the card is the
+        // platform's own subscription and is asked last.
         'stripe' => [
             'title' => 'Connect your payouts',
             'body' => 'Add your bank details so the money you earn can reach you.',
@@ -109,11 +89,20 @@ class CreatorJourneyService
             'route' => 'stripe.index',
             'params' => [],
         ],
-        'identity' => [
-            'title' => 'Verify your identity',
-            'body' => 'A quick passport check. You cannot list anything for sale until this is done.',
-            'cta' => 'Verify identity',
-            'route' => 'stripe.identity.verification',
+        'subscription' => [
+            'title' => 'Add your card',
+            /*
+             * 🚨 THE CARD IS THE LAST SETUP STEP (10 Sep 2026, client direction). It
+             * has now moved twice: it was step 3 (before review), then after review and
+             * before Connect, and it is now after Connect. Each move was the same
+             * finding — it is the step creators stop on, and everything asked before it
+             * is free. `StripeController::subscriptionGate()` was DELETED in the same
+             * change: with the card last, a gate sending a creator from Connect back to
+             * the card page is a deadlock.
+             */
+            'body' => 'Payouts are connected. Add a card to finish — you are not charged until your first sale.',
+            'cta' => 'Add your card',
+            'route' => 'activate-subscription',
             'params' => [],
         ],
         'first_listing' => [
@@ -160,7 +149,7 @@ class CreatorJourneyService
      * ⚠️ Order matters and mirrors STEPS. A step added to STEPS before `first_listing` must
      * be added here too, or the celebration fires while a real setup task is outstanding.
      */
-    public const SETUP_STEPS = ['profile', 'social', 'review', 'subscription', 'stripe', 'identity'];
+    public const SETUP_STEPS = ['profile', 'social', 'stripe', 'subscription'];
 
     /**
      * What a step says once the creator has done their part and it is with an admin.
@@ -169,67 +158,37 @@ class CreatorJourneyService
      * them a reason for the wait rather than silence.
      */
     public const REVIEW_COPY = [
-        'review' => [
-            'title' => 'Your profile is being reviewed',
-            'body' => 'Nothing to do — the team checks every photo, bio and handle before a page goes live. This is usually quick.',
-            'cta' => null,
-            'route' => null,
-            'params' => [],
-        ],
-        // ⚠️ Reached ONLY once Stripe has told us a document was actually submitted
-        // (`identity.verification_session.processing` → `identity_session_status`).
-        // A session that is merely OPEN renders UNFINISHED_COPY instead — see there.
-        'identity' => [
-            'title' => 'Your ID check is being processed',
-            'body' => 'Your passport is with Stripe. They usually answer within minutes and we will tell you either way — there is nothing else for you to do.',
-            'cta' => null,
-            'route' => null,
-            'params' => [],
-        ],
+        // ⚠️ Empty since 10 Sep 2026 and kept as the mechanism: no step waits on a
+        // person any more. `identity` left for the payout gate, `review` left because
+        // profiles approve themselves. A step that genuinely needs an admin again
+        // belongs here with its wait copy — that is the contract this array carries.
     ];
 
     /**
-     * The creator STARTED something and did not finish it. Their move, not ours.
+     * 🚨 `UNFINISHED_COPY` AND `BLOCKED_COPY` USED TO LIVE HERE AND ARE NOW IN
+     * `App\Support\PayoutEligibility` (10 Sep 2026, client direction).
      *
-     * 🚨 This exists because `identity_status = 2` is written when the Stripe session is
-     * CREATED, not when a document is submitted — and Stripe emits no event for a closed
-     * tab. Every abandoned creator was therefore shown REVIEW_COPY: "being processed",
-     * with an IN REVIEW pill and their step filed under "with our team", waiting on an
-     * answer that nothing was ever going to send. One creator sat like that for days.
+     * Both existed for one step — identity — and identity is no longer part of the
+     * journey: a creator builds and publishes with no ID check, and the check is asked
+     * for at the payout gate instead. The three states they encoded (started and
+     * abandoned · with Stripe · flagged) are real and unchanged; they are simply read on
+     * the payout page now, where the money they block is visible.
+     *
+     * The mechanism was not kept "for the next step that needs it". An empty copy array
+     * behind a method that can never fire reads as coverage and is not.
      */
-    public const UNFINISHED_COPY = [
-        'identity' => [
-            'title' => 'Finish your ID check',
-            'body' => 'You opened the passport check but did not finish it, so nothing has reached Stripe yet. It takes about two minutes and you cannot list anything for sale until it is done.',
-            'cta' => 'Finish ID check',
-            'route' => 'stripe.identity.verification',
-            'params' => [],
-        ],
-    ];
 
     /**
-     * A step the creator cannot move on their own — a person has said no, and the next
-     * move is a conversation, not a click. Rendered instead of the task copy, never nudged.
-     */
-    public const BLOCKED_COPY = [
-        // 3 = flagged by Stripe's fraud signals. Retrying is another billable check with
-        // the same answer; support can look at the actual reason.
-        'identity' => [
-            'title' => 'We could not verify your ID',
-            'body' => 'Your identity check did not pass the security review. Message support from the chat bubble and we will sort it out with you.',
-            'cta' => null,
-            'route' => null,
-            'params' => [],
-        ],
-    ];
-
-    /**
-     * A rejected profile submission. The stored reason is what the reviewer wrote for the
+     * An admin turned an asset down. The stored reason is what the reviewer wrote for the
      * creator, so it is the body — a generic "needs changes" would send them hunting.
+     *
+     * ⚠️ Rendered on the `profile` or `social` step (whichever the reason belongs to),
+     * not on a review step: there is no resubmit. Fixing the asset re-judges it and the
+     * profile goes live on its own.
      */
     public const REJECTED_REVIEW_COPY = [
         'title' => 'Your profile needs a change before it can go live',
-        'cta' => 'Fix and resubmit',
+        'cta' => 'Fix it',
         'route' => 'dashboard',
         'params' => [],
     ];
@@ -341,11 +300,13 @@ class CreatorJourneyService
             return null;
         }
 
-        // A step a person has said no to is not "stuck"; chasing it is asking the creator
-        // to retry a check that will answer the same way.
-        if ($this->isBlocked($creator, $step)) {
-            return null;
-        }
+        /*
+         * ⚠️ A `isBlocked()` CHECK SAT HERE AND WENT WITH THE IDENTITY STEP
+         * (10 Sep 2026). It kept a creator whose ID Stripe had flagged from being
+         * chased to retry a check that would answer the same way — identity was the
+         * only step that could be blocked like that, and it is no longer a step.
+         * A refused ID is now the payout gate's conversation.
+         */
 
         // 🚨 Nor is a step we owe THEM. `nextStep()` has always carried `awaiting_review`
         // with a note that callers must not nudge on it, and this caller never read it —
@@ -457,35 +418,17 @@ class CreatorJourneyService
      */
     private function copyFor(User $creator, string $step, bool $waiting): array
     {
-        if ($waiting && $this->isBlocked($creator, $step)) {
-            return self::BLOCKED_COPY[$step];
-        }
-
         if ($waiting) {
             return self::REVIEW_COPY[$step];
         }
 
-        // Started, not finished, and nobody is waiting on us. Rendered as a task with a
-        // way back in rather than as the plain "Verify identity" first-run copy, which
-        // would tell a creator to start something they already started.
-        if (isset(self::UNFINISHED_COPY[$step]) && $this->isUnfinished($creator, $step)) {
-            return self::UNFINISHED_COPY[$step];
-        }
-
-        if ($step === 'review' && filled($creator->profile_reject_reason)) {
+        // A reviewer's written reason belongs to the asset they turned down, which is
+        // always one of these two steps now.
+        if (in_array($step, ['profile', 'social'], true) && filled($creator->profile_reject_reason)) {
             return self::REJECTED_REVIEW_COPY + ['body' => (string) $creator->profile_reject_reason];
         }
 
         return self::STEPS[$step];
-    }
-
-    /**
-     * The step is stopped by a decision the creator cannot reverse themselves.
-     * Reported through `awaiting_review` so every "do not nudge" rule already covers it.
-     */
-    public function isBlocked(User $creator, string $step): bool
-    {
-        return $step === 'identity' && (int) ($creator->identity_status ?? 0) === 3;
     }
 
     /**
@@ -535,31 +478,10 @@ class CreatorJourneyService
             // also requires a photo, bio, handle and card, so a creator carrying the lock
             // with one of those missing is in NO queue and nobody will ever decide. Saying
             // "awaiting review" there is a wait with no end — measured live, all 22
-            // creators at lock 1 were in exactly that state. ReviewSubmission is the one
             // definition the queue, this and the nudge mail all read.
-            'review' => ReviewSubmission::isWithReviewTeam($creator),
-
-            // 🚨 2 alone is NOT "with us". It is written when the Stripe session is
-            // CREATED, so it also covers a creator who opened the check and walked away
-            // — and Stripe sends no event for that, so they would wait forever. Only a
-            // session Stripe has told us is `processing` (a document was submitted) is
-            // genuinely out of the creator's hands. 3 = flagged, see isBlocked().
-            'identity' => IdentityCheckState::isProcessing($creator)
-                || (int) ($creator->identity_status ?? 0) === 3,
 
             default => false,
         };
-    }
-
-    /**
-     * The creator began this step and stopped part-way — it is still their move.
-     *
-     * Distinct from "not started": the copy has to acknowledge what they already did,
-     * or the card reads as though the last five minutes never happened.
-     */
-    public function isUnfinished(User $creator, string $step): bool
-    {
-        return $step === 'identity' && IdentityCheckState::isUnfinished($creator);
     }
 
     /**
@@ -633,14 +555,15 @@ class CreatorJourneyService
             // also flip independently of `profile_status_lock` (a creator at lock 1 can
             // carry an approved avatar — ProfileAssetVisibility), so they were never a
             // reliable proxy for "the page is live" either.
-            'profile' => empty($this->missingProfileParts($creator)),
+            // 🚨 APPROVED, not merely uploaded (10 Sep 2026). With no review step, a
+            // held photo or bio has to keep THIS step open, or a creator whose avatar
+            // the scan held reads "done" on a profile that is not live.
+            'profile' => empty($this->missingProfileParts($creator))
+                && (int) ($creator->avatar_approved ?? 0) === 1
+                && (int) ($creator->bio_approved ?? 0) === 1,
 
-            'social' => ProfileAssetVisibility::hasAnyHandle($creator->social_links),
-
-            // 2 = approved and live. Only an admin writes it.
-            'review' => (int) ($creator->profile_status_lock ?? 0) === 2,
-
-            'identity' => (int) ($creator->identity_status ?? 0) === 1,
+            'social' => ProfileAssetVisibility::hasAnyHandle($creator->social_links)
+                && (int) ($creator->social_links?->status ?? 0) === 1,
 
             // Same allow-list the eight supporter-checkout gates use: 1 is
             // billing, 2 is the free period. Both mean a card is on file, which

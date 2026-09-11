@@ -38,6 +38,7 @@ use App\Http\Controllers\GifterHubController;
 use App\Http\Controllers\PiggyPotController;
 use App\Http\Controllers\PiggyPotPaymentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\MembershipCreditController;
 use App\Http\Controllers\ReferAndEarnController;
 use App\Http\Controllers\SavedItemController;
 use App\Http\Controllers\StaticPageController;
@@ -58,6 +59,7 @@ use App\SeoMeta;
 use App\Services\Discovery\BirthdayDiscoveryService;
 use App\Services\Discovery\CollectionService;
 use App\Services\DiscoveryService;
+use App\Services\MembershipCreditService;
 use App\Services\SubscriptionActivationService;
 use App\Support\Badges;
 use App\Support\SubscriptionPayload;
@@ -770,19 +772,24 @@ Route::middleware('auth')->group(function () {
 
     // Content creation routes - NO subscription requirements.
     //
-    // ⚠️ `identityBeforeListing` is on the CREATE endpoints only, never on edit or
-    // delete. Identity moved to sit after Stripe Connect (31 July 2026); blocking
-    // edits too would strand a creator who listed before the change with items they
-    // can neither sell nor take down.
+    // 🚨 THERE IS NO IDENTITY GATE ON LISTING ANY MORE (10 Sep 2026, client direction).
+    // `identityBeforeListing` sat on the seven CREATE endpoints below and is gone: a
+    // creator now builds and publishes with no ID check at all. The check is asked for
+    // at the PAYOUT gate instead — `App\Support\PayoutEligibility` — so an unverified
+    // creator can list and can be bought from, and simply cannot be paid until they
+    // verify. ⚠️ That is a deliberate trade: the fraud window moved from "cannot list"
+    // to "cannot withdraw", which leaves supporter money already taken. Refund exposure
+    // is the accepted cost of removing the onboarding gate.
+    // Pinned by tests/Feature/PayoutIdentityGateTest.php.
     Route::middleware(['mustHaveToVerify'])->group(function () {
         // Wish item routes - accessible without subscription
-        Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->middleware('identityBeforeListing')->name('save_wish_item');
+        Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->name('save_wish_item');
         Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
         Route::get('/delete-wish-item/{uuid}', [WishitemController::class, 'deleteWishItem'])->name('delete_wish_item');
 
         // Bills - accessible without subscription
         Route::prefix('bill')->name('bill.')->group(function () {
-            Route::post('save', [BillsController::class, 'billSave'])->middleware('identityBeforeListing')->name('save');
+            Route::post('save', [BillsController::class, 'billSave'])->name('save');
             Route::post('edit/{id}', [BillsController::class, 'billEdit'])->name('edit');
             Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
             /*
@@ -815,7 +822,7 @@ Route::middleware('auth')->group(function () {
 
         // Memberships - accessible without subscription
         Route::prefix('membership')->name('membership.')->group(function () {
-            Route::post('save', [MembershipController::class, 'membershipLevelSave'])->middleware('identityBeforeListing')->name('save');
+            Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
             Route::post('edit/{uuid}', [MembershipController::class, 'updateLevel'])->name('edit');
             Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
 
@@ -858,13 +865,13 @@ Route::middleware('auth')->group(function () {
 
         // Piggy Pots
         Route::get('/piggy-pots', [PiggyPotController::class, 'index'])->name('piggy-pots.index');
-        Route::post('/piggy-pots', [PiggyPotController::class, 'store'])->middleware('identityBeforeListing')->name('piggy-pots.store');
+        Route::post('/piggy-pots', [PiggyPotController::class, 'store'])->name('piggy-pots.store');
         Route::post('/piggy-pots/{id}', [PiggyPotController::class, 'update'])->name('piggy-pots.update');
         Route::delete('/piggy-pots/{id}', [PiggyPotController::class, 'destroy'])->name('piggy-pots.destroy');
 
         // Shop items - accessible without subscription
         Route::prefix('shop')->group(function () {
-            Route::post('/add', [ShopsController::class, 'addShopItems'])->middleware('identityBeforeListing')->name('add-shop');
+            Route::post('/add', [ShopsController::class, 'addShopItems'])->name('add-shop');
             Route::post('/update/{uuid}', [ShopsController::class, 'updateShopItems'])->name('update-shop');
             Route::post('/add/save-category', [ShopsController::class, 'saveUserShopCategory'])->name('shop.save-category');
             // POST, not GET: a GET carries no CSRF token, so `<img src=".../shop/delete/{uuid}">`
@@ -1213,6 +1220,18 @@ Route::middleware('auth')->group(function () {
 
                 return Inertia::render('Profile/ActivateSubscription', [
                     'monthly_charges' => $monthlyCharges,
+                    /*
+                     * "Earn your membership back" — the creator's own progress
+                     * towards a free month.
+                     *
+                     * 🚨 NULL for a visitor, for a gifter and while the scheme
+                     * is off; the panel renders on the PRESENCE of the prop, so
+                     * there is no second gate in JSX to keep in step. Never
+                     * throws — `panelFor()` reports and returns null, because a
+                     * failed count must not 500 the page a creator uses to
+                     * manage their own billing.
+                     */
+                    'membership_credits' => app(MembershipCreditService::class)->panelFor($user),
                     // Price and the "no charge until your first sale" wording come
                     // from config, never from the JSX — the same figure is printed
                     // on eleven other surfaces.
@@ -1224,6 +1243,23 @@ Route::middleware('auth')->group(function () {
                         : false,
                 ]);
             })->name('activate-subscription');
+
+            /*
+             * "Earn your membership back" (11 Sep 2026).
+             *
+             * 🚨 THE APPLY IS A POST. It spends a credit and credits money at
+             * Stripe, and a GET that writes needs nothing to click it — a link
+             * prefetch, a hover prerender or an inbox scanning a link is
+             * enough. `NoWritingGetRoutesTest` guards exactly this.
+             *
+             * ⚠️ Throttled: it makes a Stripe call, and a creator needs one
+             * press.
+             */
+            Route::get('/membership-credits/status', [MembershipCreditController::class, 'status'])
+                ->name('membership-credits.status');
+            Route::post('/membership-credits/apply', [MembershipCreditController::class, 'apply'])
+                ->middleware('throttle:10,1')
+                ->name('membership-credits.apply');
 
             Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');
 
@@ -1298,8 +1334,8 @@ Route::middleware('auth')->group(function () {
 
         // Duplicate a listing. POST, and rate-limited: each press creates a real Stripe
         // product on the creator's connected account, so an unthrottled button is a cheap
-        // way to fill it with junk. `identityBeforeListing` because this CREATES a
-        // listing — the same gate as every other create route.
+        // way to fill it with junk. ⚠️ It carried `identityBeforeListing` until
+        // 10 Sep 2026; identity is a payout gate now, not a listing one.
         // Set or clear a scheduled publish time. POST — it changes when real money can
         // start being taken, and a GET carries no CSRF token.
         Route::post('/my-listings/{type}/{id}/schedule', [CatalogueController::class, 'schedule'])
@@ -1309,7 +1345,7 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/my-listings/{type}/{id}/duplicate', [CatalogueController::class, 'duplicate'])
             ->whereNumber('id')
-            ->middleware(['identityBeforeListing', 'throttle:10,1'])
+            ->middleware('throttle:10,1')
             ->name('catalogue.duplicate');
 
         /*
@@ -1498,7 +1534,10 @@ Route::middleware('auth')->group(function () {
          * `OnboardingNudge`) reads its verb from `CreatorJourneyService::STEPS['method']`
          * so the three cannot drift from the route.
          */
-        Route::post('/update-profile-lock-status', [ProfileController::class, 'updateProfileLockStatus'])->name('update.profile.lock.status');
+        // 🚨 `POST /update-profile-lock-status` (Submit for review) WAS HERE AND IS GONE
+        // (10 Sep 2026). Profiles approve themselves as assets are saved —
+        // App\Support\ProfileAutoApproval. Nothing may re-add a submit route: the whole
+        // point is that no creator waits on a person to build or publish.
 
         Route::post('/user-follow-unfollow', [PwaNotification::class, 'userFollowUnFollow'])->name('user.follow.unfollow');
         Route::post('send-pwa-to-follower', [PwaNotification::class, 'sendPwaToFollower'])->name('send.pwa.to.follower');
@@ -1593,8 +1632,17 @@ Route::controller(StaticPageController::class)->middleware('ssr')->group(functio
     Route::post('/accept-terms', 'acceptTerms')->name('accept-terms')->middleware('auth');
 });
 
+/*
+ * 🚨 THE FOUNDER BONUS PROMOTION TERMS. A published terms page, so it stays
+ * reachable at its existing address even though the programme was retired on
+ * 11 Sep 2026 — see the terms-page exception in
+ * `docs/simplification-sept-2026/08-incentive-retirement.md`. The wording is
+ * never rewritten; a dated closed notice is drawn above it.
+ */
 Route::get('/promotion-terms', function () {
-    return Inertia::render('Promotions');
+    return Inertia::render('Promotions', [
+        'closedOn' => \App\Support\Incentives::closedOn('founder_bonus'),
+    ]);
 })->middleware('ssr')->name('promotion-terms');
 
 // Removed: GET /files/{filename}. It passed asset($filename) — a full URL — to
@@ -1689,7 +1737,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->prefix('task')->name('task.')->group(function () {
     Route::get('/dashboard', [TaskController::class, 'index'])->name('dashboard');
     Route::get('/create', [TaskController::class, 'create'])->name('create');
-    Route::post('/', [TaskController::class, 'store'])->middleware('identityBeforeListing')->name('store');
+    Route::post('/', [TaskController::class, 'store'])->name('store');
     Route::post('/{uuid}/purchase', [TaskController::class, 'purchase'])->name('purchase')->middleware('mustCompletedCardVerification');
     Route::get('/{uuid}/success', [TaskController::class, 'success'])->name('success');
     Route::get('/{uuid}/download', [TaskController::class, 'download'])->name('download');

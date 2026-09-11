@@ -25,6 +25,7 @@ use App\Services\Discovery\CreatorRecommendationService;
 use App\Services\SeoTemplateService;
 use App\Services\Stripe\StripeAccountState;
 use App\Services\UserProfileService;
+use App\Support\Incentives;
 use App\Support\Badges;
 use App\Support\DiscoveryPayload;
 use App\Support\DiscoverySources;
@@ -1516,6 +1517,35 @@ class AuthenticatedSessionController extends Controller
      */
     private function getFounderData($user): array
     {
+        /*
+         * 🚨 THE DASHBOARD TRACKER AND THE MISSED BANNER BOTH DIE HERE
+         * (11 Sep 2026). `FounderProgressTracker` renders on
+         * `founderData.isEligible`, and the missed banner on the same flag with
+         * `founder_missed_at` — so returning "not eligible" takes down the
+         * progress card, the countdown and the missed banner in one place,
+         * with no JSX change and nothing to keep in step.
+         *
+         * ⚠️ The shape is unchanged, deliberately: every key the component
+         * reads is still present. A null payload would be a second contract to
+         * maintain for a component that has to work again the moment the scheme
+         * is switched back on.
+         *
+         * ⚠️ It also skips `calculateCompletedNetEarnings`, which is a ledger
+         * scan on the busiest authenticated page on the site — paid on every
+         * owner profile load to compute a number nothing renders.
+         */
+        if (! Incentives::founderEnabled()) {
+            return [
+                'first30DayEarnings' => 0.0,
+                'isEligible' => false,
+                'daysLeft' => 0,
+                'minEarnings' => (float) config('founder_bonus.qualification.min_first_30d_earnings', 2500),
+                'qualificationDays' => (int) config('founder_bonus.qualification.qualification_period_days', 30),
+                'windowStart' => null,
+                'windowEnd' => null,
+            ];
+        }
+
         $first30DayEarnings = 0;
         $isEligible = false;
         $daysLeft = 0;

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Helpers;
 use App\Models\Currency;
+use App\Services\Pricing\FeeModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -217,10 +218,32 @@ class StripeEstimateFreezeTest extends TestCase
 
     public function test_the_supporter_price_moved_by_the_expected_amount(): void
     {
-        // Stated so a change to either rate cannot quietly move the published
-        // figures without this failing.
+        /*
+         * 🚨 BOTH MODELS ARE PINNED, and that is deliberate (11 Sep 2026).
+         *
+         * The platform moved to an all-in supporter fee — the listed price plus one
+         * advertised percentage, with Stripe paid out of it. The legacy markup is still
+         * reachable through `payments.model`, so its published figures stay pinned too:
+         * a config switch that quietly produces different numbers than it used to is
+         * worse than no switch.
+         */
+        config(['payments.model' => FeeModel::MODEL_LEGACY]);
+
         $this->assertSame(130.55, Helpers::calculateStripeDirectChargeFlow(100, 'GBP')['total_supporter_pays']);
         $this->assertSame(8.11, Helpers::calculateStripeDirectChargeFlow(4.99, 'GBP')['total_supporter_pays']);
         $this->assertSame(646.01, Helpers::calculateStripeDirectChargeFlow(500, 'GBP')['total_supporter_pays']);
+
+        config([
+            'payments.model' => FeeModel::MODEL_ALL_IN,
+            'payments.all_in.card' => 12,
+            'payments.fixed_fee.enabled' => false,
+        ]);
+
+        // ⚠️ £112.01, not £112.00. The total is CEILed so the creator is never a
+        // rounding penny short of what they listed — the promise the whole model rests
+        // on, and the reason a figure quoted to the client as £112.00 renders as .01.
+        $this->assertSame(112.01, Helpers::calculateStripeDirectChargeFlow(100, 'GBP')['total_supporter_pays']);
+        $this->assertSame(5.59, Helpers::calculateStripeDirectChargeFlow(4.99, 'GBP')['total_supporter_pays']);
+        $this->assertSame(560.0, Helpers::calculateStripeDirectChargeFlow(500, 'GBP')['total_supporter_pays']);
     }
 }

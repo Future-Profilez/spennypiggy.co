@@ -6,10 +6,23 @@ use App\Jobs\CheckFounderQualifications;
 use App\Jobs\ProcessFounderPayouts;
 use App\Models\FounderBonus;
 use App\Models\User;
+use App\Support\Incentives;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
+/**
+ * 🚨 RETIRED 11 Sep 2026 (simplification programme §6). Every PUBLIC entry
+ * point here 404s while `founder_bonus.enabled` is false — the page, the
+ * all-time winners feed, the leaderboard and the programme-info endpoint.
+ * Nothing is deleted: switching the flag back on restores all four.
+ *
+ * 🚨 THE TWO ADMIN TRIGGERS AT THE BOTTOM ARE GATED SEPARATELY AND ON PURPOSE.
+ * `qualifyWinners()` CREATES liability and follows the master switch;
+ * `settlePayouts()` PAYS somebody who already qualified and follows
+ * `payouts_enabled`, which is still true. Retiring a scheme must not strand a
+ * creator who met the published condition — see `App\Support\Incentives`.
+ */
 class FounderBonusController extends Controller
 {
     /**
@@ -17,6 +30,8 @@ class FounderBonusController extends Controller
      */
     public function index(Request $request)
     {
+        abort_unless(Incentives::founderEnabled(), 404);
+
         $user = $request->user();
 
         // Get current month's leaderboard data
@@ -248,6 +263,8 @@ class FounderBonusController extends Controller
 
     public function getAllTimeWinners(Request $request)
     {
+        abort_unless(Incentives::founderEnabled(), 404);
+
         $limit = (int) $request->query('limit', 10);
         $limit = max(1, min(100, $limit));
 
@@ -289,6 +306,8 @@ class FounderBonusController extends Controller
      */
     public function programInfo(Request $request)
     {
+        abort_unless(Incentives::founderEnabled(), 404);
+
         $user = $request->user();
 
         // Get configurable qualification days
@@ -383,6 +402,8 @@ class FounderBonusController extends Controller
      */
     public function getLeaderboard(Request $request)
     {
+        abort_unless(Incentives::founderEnabled(), 404);
+
         $user = $request->user();
 
         // Get current month's leaderboard data
@@ -452,6 +473,21 @@ class FounderBonusController extends Controller
      */
     public function qualifyWinners()
     {
+        /*
+         * 🚨 THE SCHEME SWITCH, NOT THE PAYER SWITCH. This mints new
+         * `founder_bonuses` rows, sets `users.is_founder`, consumes a seat and
+         * emails the creator — i.e. it creates a real financial liability. It
+         * must be silent the moment the scheme closes, however many bonuses are
+         * still waiting to be paid.
+         */
+        if (! Incentives::founderEnabled()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The Founder Bonus is closed to new qualifications. Existing bonuses are unaffected and are still being paid.',
+                'qualified_count' => 0,
+            ], 409);
+        }
+
         try {
             $beforeCount = FounderBonus::count();
 
@@ -481,6 +517,19 @@ class FounderBonusController extends Controller
      */
     public function settlePayouts()
     {
+        /*
+         * 🚨 THE PAYER SWITCH, WHICH OUTLIVES THE SCHEME. A creator who
+         * qualified before the programme closed is owed the money, so this
+         * deliberately does NOT read `founderEnabled()`.
+         */
+        if (! Incentives::founderPayoutsEnabled()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Founder Bonus payouts are switched off.',
+                'processed_count' => 0,
+            ], 409);
+        }
+
         try {
             $duePendingCount = FounderBonus::where('payout_status', FounderBonus::STATUS_PENDING)
                 ->where('bonus_amount', '>', 0)

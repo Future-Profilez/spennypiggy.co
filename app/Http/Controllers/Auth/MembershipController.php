@@ -25,6 +25,7 @@ use App\Models\User;
 use App\Models\UserPayment;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Rules\NoBlockedSymbols;
 use App\Rules\NoExpenseOrBrandName;
 use App\Services\AbandonedCheckoutService;
 use App\Services\CreatorActivityService;
@@ -40,6 +41,7 @@ use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
@@ -119,6 +121,18 @@ class MembershipController extends Controller
         );
     }
 
+    /**
+     * SFW gate on the paid file — the welcome content a member receives.
+     *
+     * ⚠️ The thumbnail scan above covers the shop front only. Memberships gained a
+     * `content_file` with the reward contract (24 July 2026) and nothing ever
+     * scanned it, so a level with a clean tile delivered unscanned media.
+     */
+    private function moderateMembershipFile(?Membership $mem, ?string $previousFile = null): void
+    {
+        RewardFileScan::dispatch($mem, ['approved' => 0], $previousFile);
+    }
+
     public static function hasOnPlatformContent($rewards): bool
     {
         return RewardService::hasOnPlatformPerk($rewards);
@@ -157,6 +171,7 @@ class MembershipController extends Controller
                 'required',
                 'string',
                 new NoExpenseOrBrandName,
+                new NoBlockedSymbols,
             ],
             'month_price' => [
                 'required',
@@ -241,6 +256,7 @@ class MembershipController extends Controller
 
         $this->moderateMembership($mem);
         $this->moderateMembershipText($mem);
+        $this->moderateMembershipFile($mem);
 
         // Get currency metadata to handle zero-decimal currencies properly
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
@@ -305,6 +321,7 @@ class MembershipController extends Controller
                     'required',
                     'string',
                     new NoExpenseOrBrandName,
+                    new NoBlockedSymbols,
                 ],
                 'month_price' => [
                     'required',
@@ -365,6 +382,7 @@ class MembershipController extends Controller
                 $totalTaxAmount = $breakdown['application_fee'];
 
                 $previousThumbnail = (string) $mem->thumbnail;
+                $previousRewardFile = (string) RewardFileScan::currentFile($mem);
 
                 $mem->level = $newLevel;
                 $mem->price = $price;
@@ -381,6 +399,7 @@ class MembershipController extends Controller
 
                 $this->moderateMembership($mem, $previousThumbnail);
                 $this->moderateMembershipText($mem);
+                $this->moderateMembershipFile($mem, $previousRewardFile);
 
                 $stripe = new StripeClient(config('services.stripe.secret'));
                 $connectedAccountId = $user->account_id;

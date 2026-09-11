@@ -163,7 +163,7 @@ function BillItem(props) {
             style={IsloggedIn ? style : stylenone}
             className={`relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""} transition-colors duration-200 hover:bg-black/[0.03]`}
         >
-            <div className="bg-white relative !rounded-box !border-[3px] border-black overflow-hidden w-full h-full flex flex-col">
+            <div className="bg-white relative !rounded-box !border-2 border-black overflow-hidden w-full h-full flex flex-col">
                 {/* 🚨 Same two faults the wish card had, and the same fix.
                     The approval notice carried `approvalmessge membership`,
                     which `home.css:531` pins `position:absolute; top:0; left:0`
@@ -357,7 +357,7 @@ function BillItem(props) {
                                A second hidden <AddBills> would be a second
                                sheet with its own form state. */
                             <AddBills
-                                classes="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[11px] py-1 px-2 sm:text-[12px] sm:py-1.5 sm:px-4 rounded-box-sm transition-colors duration-200 hover:brightness-110 active:brightness-95"
+                                classes="bg-[#FF007F] border-2 border-black text-black font-black uppercase min-h-[44px] text-[11px] py-1 px-2 sm:text-[12px] sm:py-1.5 sm:px-4 rounded-box-sm transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                 text="Edit bill"
                                 item={itm}
                                 isEdit={true}
@@ -370,7 +370,7 @@ function BillItem(props) {
                                 href={route("bill.checkout", {
                                     uuid: itm.uuid,
                                 })}
-                                className="bg-[#FF007F] border-[3px] border-black text-black font-black uppercase text-xs py-2 px-6 rounded-box-sm transition-colors duration-200 hover:brightness-110 active:brightness-95"
+                                className="bg-[#FF007F] border-2 border-black text-black font-black uppercase text-xs py-2 px-6 rounded-box-sm transition-colors duration-200 hover:brightness-110 active:brightness-95"
                             >
                                 Subscribe
                             </Link>

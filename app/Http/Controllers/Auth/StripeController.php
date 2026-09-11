@@ -562,16 +562,17 @@ class StripeController extends Controller
         // for every creator who got as far as an approved profile. Connect onboarding
         // demands bank details and runs Stripe's own KYC, so anyone who completes it
         // has already proved they are serious — running the paid check on that much
-        // smaller set is what saves the fee. Identity is enforced instead at the point
-        // a creator tries to LIST something (EnsureIdentityVerifiedForListings).
+        // smaller set is what saves the fee. ⚠️ Identity is no longer enforced on
+        // listing at all (10 Sep 2026) — it is a PAYOUT gate now, App\Support\PayoutEligibility.
         if (($user->profile_status_lock ?? 0) != 2) {
             return redirect(route('user.show', $user->username))->with('error', 'Your profile is not approved yet.');
         }
 
-        if ($blocked = $this->subscriptionGate($user)) {
-            return $blocked;
-        }
-
+        // 🚨 THE CARD NO LONGER GATES CONNECT (10 Sep 2026, client direction). It is the
+        // LAST step now — connect payouts, then add the card. `subscriptionGate()` used
+        // to bounce a creator here back to the card page; with the new order that is a
+        // deadlock, because the journey sends them to Connect and Connect sent them
+        // back for a card the journey had not asked for yet.
         // Check if MoR consent exists in the database
         $morConsentGiven = MorConsent::userHasGivenConsent($user->id);
 
@@ -836,16 +837,17 @@ class StripeController extends Controller
         // for every creator who got as far as an approved profile. Connect onboarding
         // demands bank details and runs Stripe's own KYC, so anyone who completes it
         // has already proved they are serious — running the paid check on that much
-        // smaller set is what saves the fee. Identity is enforced instead at the point
-        // a creator tries to LIST something (EnsureIdentityVerifiedForListings).
+        // smaller set is what saves the fee. ⚠️ Identity is no longer enforced on
+        // listing at all (10 Sep 2026) — it is a PAYOUT gate now, App\Support\PayoutEligibility.
         if (($user->profile_status_lock ?? 0) != 2) {
             return redirect(route('user.show', $user->username))->with('error', 'Your profile is not approved yet.');
         }
 
-        if ($blocked = $this->subscriptionGate($user)) {
-            return $blocked;
-        }
-
+        // 🚨 THE CARD NO LONGER GATES CONNECT (10 Sep 2026, client direction). It is the
+        // LAST step now — connect payouts, then add the card. `subscriptionGate()` used
+        // to bounce a creator here back to the card page; with the new order that is a
+        // deadlock, because the journey sends them to Connect and Connect sent them
+        // back for a card the journey had not asked for yet.
         // Log MoR consent verification
         $morConsent = MorConsent::getLatestConsent($user->id);
         Log::info('Stripe connection initiated with MoR consent', [
@@ -1142,39 +1144,6 @@ class StripeController extends Controller
     private function applyContentDescriptorToAccount(User $user): void
     {
         StripeControl::applyContentDescriptorToConnectedAccount($user->account_id, $user->username, $user->name);
-    }
-
-    /**
-     * A creator must have a card on file before they can connect payouts.
-     *
-     * ⚠️ The gate existed on the frontend only. `CreatorVerification.jsx` locked
-     * the Connect step on `!hasSubscription` while the server never looked, so
-     * opening /stripe/authorize directly walked straight past it — the documented
-     * order (profile → card → connect → identity) held on one screen and nowhere
-     * else.
-     *
-     * ⚠️ Applies ONLY while `account_id` is empty. A creator who is already
-     * mid-onboarding, or already connected, must never be stranded by a rule
-     * introduced after they started: this method is also Stripe's refresh_url,
-     * and blocking it would leave them with an account they cannot finish.
-     *
-     * Statuses 1 and 2 are the same allow-list the checkout gates use — 2 is the
-     * free period, which IS payment-eligible.
-     *
-     * @return RedirectResponse|null Null when the creator may proceed.
-     */
-    private function subscriptionGate(User $user)
-    {
-        if (! empty($user->account_id)) {
-            return null;
-        }
-
-        if (in_array((int) $user->subscription_status, [1, 2], true)) {
-            return null;
-        }
-
-        return redirect()->route('activate-subscription')
-            ->with('error', 'Add your card first — it takes a minute, and you are not charged until your first sale. Then you can connect your payouts.');
     }
 
     /**

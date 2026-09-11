@@ -1,8 +1,9 @@
 import { Head } from "@inertiajs/react";
 import Guest from "@/Layouts/GuestLayout";
+import ClosedProgrammeNotice from "@/Components/Legal/ClosedProgrammeNotice";
 
 export default function Promotions(props) {
-    const { auth, user } = props;
+    const { auth, user, closedOn = null } = props;
 
     const print = () => {
         window.print();
@@ -16,6 +17,14 @@ export default function Promotions(props) {
                         <h1 className="text-xl md:text-3xl font-bold text-[#FF007F] mb-6">
                             Founder Bonus — We’ll Pay You to Get Spoiled
                         </h1>
+
+                        {/* 🚨 The promotion closed; the terms it ran under
+                            stay published and unedited. Renders nothing while
+                            the scheme is live. */}
+                        <ClosedProgrammeNotice
+                            closedOn={closedOn}
+                            programme="The Founder Bonus promotion"
+                        />
 
                         <header className="bg-white rounded-box ">
                             <div className="max-w-6xl mx-auto px-3 py-3 md:px-6 md:py-6 md:flex items-center justify-between">

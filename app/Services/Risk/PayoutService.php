@@ -23,6 +23,7 @@ use App\Models\User;
 use App\Services\Ledger\LedgerRules;
 use App\StripeControl;
 use App\Support\PayoutCycle;
+use App\Support\PayoutEligibility;
 use App\Support\PayoutLock;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -136,6 +137,24 @@ class PayoutService
             ->select('payments.creator_id')
             ->join('users', 'users.uuid', '=', 'payments.creator_id')
             ->whereNull('users.payout_paused_at')
+            /*
+             * 🚨 THERE IS DELIBERATELY NO IDENTITY FILTER HERE, unlike the paused
+             * check above it (10 Sep 2026).
+             *
+             * A paused creator is not shown a figure, because an admin has stopped
+             * their money and the amount is not the point. An identity-blocked creator
+             * IS shown one — the payout page says "£X is waiting for you, verify your
+             * identity to receive it", and that number has to come from somewhere.
+             * This is where it comes from: the creator's own dashboard calls this
+             * scoped to their uuid.
+             *
+             * Filtering them out here would compute £0 for exactly the creator the
+             * whole feature exists to prompt, and the page would ask them to verify
+             * for nothing.
+             *
+             * The gate is in `executePayouts()`, which is the only place that issues a
+             * real transfer. See `App\Support\PayoutEligibility`.
+             */
             ->when($creatorUuids !== null, fn ($q) => $q->whereIn('payments.creator_id', $creatorUuids))
             ->where(function ($q) {
                 $q->where(function ($q2) {
@@ -618,6 +637,25 @@ class PayoutService
                     $reason = ! $creator
                         ? 'Creator not found'
                         : ('Payouts paused'.($creator->payout_pause_reason ? (': '.$creator->payout_pause_reason) : ''));
+                    Log::warning("Payout: creator {$creatorId} {$reason} — skipping payout.");
+                    $data['failure_reason'] = $reason;
+                    $skippedPayouts[$creatorId] = $data;
+
+                    continue;
+                }
+
+                /*
+                 * 🚨 IDENTITY IS A PAYOUT GATE (10 Sep 2026). It is checked in
+                 * `calculatePayouts` too, and BOTH are needed: that one keeps the
+                 * creator out of the run's figures, this one is the last thing before
+                 * a real Stripe payout is issued. A creator whose sign-off is revoked
+                 * between the calculation and the transfer must not be paid.
+                 *
+                 * ⚠️ Not an error. It is a state the creator can leave, and their
+                 * money is still theirs — it stays unpaid and rides the next run.
+                 */
+                if (PayoutEligibility::blocksPayout($creator)) {
+                    $reason = 'Identity not verified — '.PayoutEligibility::reasonFor($creator);
                     Log::warning("Payout: creator {$creatorId} {$reason} — skipping payout.");
                     $data['failure_reason'] = $reason;
                     $skippedPayouts[$creatorId] = $data;

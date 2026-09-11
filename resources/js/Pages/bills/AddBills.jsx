@@ -21,10 +21,15 @@ import RewardEditor, {
     validateReward,
 } from "@/Components/Reward/RewardEditor";
 import RewardPreview from "@/Components/Reward/RewardPreview";
+import { itemFieldClass, itemLabelClass } from "@/Components/ItemForm/ItemFormKit";
+import useDirtyGuard from "@/lib/useDirtyGuard";
 
-const FIELD =
- "w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-medium placeholder:text-neutral-400 focus:outline-none focus:ring-0 ";
-const FIELD_LABEL = "mb-2 block text-left text-[12px] font-black uppercase tracking-[0.14em]";
+// The field and label recipes are shared with every other add-item form.
+// Two local copies of this constant had already drifted apart
+// (`font-medium` here, `font-bold` in the membership form) and both
+// had `focus:ring-0` with nothing put back.
+const FIELD = itemFieldClass;
+const FIELD_LABEL = itemLabelClass;
 
 const PERIODS = [
     { value: "weekly", label: "Weekly" },
@@ -110,9 +115,15 @@ export default function AddBills(props) {
         uploaderRef.current?.reset?.();
     };
 
+    // Returning false vetoes the dismissal (see `Sheet`'s requestClose), so a
+    // half-filled subscription is not lost to a backdrop tap.
+    const confirmDiscard = useDirtyGuard(open, data);
+
     const closeSheet = () => {
+        if (!confirmDiscard()) return false;
         setOpen(false);
         resetForm();
+        return true;
     };
 
     const submit = () => {
@@ -168,7 +179,7 @@ export default function AddBills(props) {
             render: () => (
                 <div className="space-y-6">
                     {item?.is_suspended == 1 && (
-                        <div className="rounded-box-sm border-[3px] border-black bg-[#FFE0EC] p-4 text-left">
+                        <div className="rounded-box-sm border-2 border-black bg-[#FFE0EC] p-4 text-left">
                             <p className="text-sm font-black uppercase tracking-wide">Item suspended</p>
                             {item.suspend_reason && (
                                 <p className="mt-1 text-sm font-medium">{item.suspend_reason}</p>
@@ -189,7 +200,7 @@ export default function AddBills(props) {
                             onChange={(event) => setData("name", event.target.value)}
                         />
                         {fieldError("name") && (
-                            <p className="mt-2 text-left text-xs font-bold text-[#FF007F]">
+                            <p className="mt-2 text-left text-xs font-bold text-[#C81E5B]">
                                 {fieldError("name")}
                             </p>
                         )}
@@ -197,7 +208,7 @@ export default function AddBills(props) {
 
                     <div>
                         <label htmlFor="bill-goal" className={FIELD_LABEL}>
-                            Goal <span className="text-neutral-400">(optional)</span>
+                            Goal <span className="text-black/60">(optional)</span>
                         </label>
                         <input
                             id="bill-goal"
@@ -208,12 +219,12 @@ export default function AddBills(props) {
                             value={data.goal_label}
                             onChange={(event) => setData("goal_label", event.target.value)}
                         />
-                        <p className="mt-2 text-left text-xs font-medium text-neutral-500">
+                        <p className="mt-2 text-left text-xs font-medium text-black/60">
                             Context only — never what the supporter buys. Don't name a bill, debt or
                             expense.
                         </p>
                         {fieldError("goal_label") && (
-                            <p className="mt-2 text-left text-xs font-bold text-[#FF007F]">
+                            <p className="mt-2 text-left text-xs font-bold text-[#C81E5B]">
                                 {fieldError("goal_label")}
                             </p>
                         )}
@@ -222,7 +233,7 @@ export default function AddBills(props) {
                     <div>
                         <span className={FIELD_LABEL}>Cover image</span>
                         {item?.perma_link ? (
-                            <div className="overflow-hidden rounded-box-sm border-[3px] border-black">
+                            <div className="overflow-hidden rounded-box-sm border-2 border-black">
                                 <img
                                     src={item.perma_link}
                                     alt={item?.name || "Subscription image"}
@@ -230,7 +241,7 @@ export default function AddBills(props) {
                                 />
                             </div>
                         ) : (
-                            <div className="overflow-hidden rounded-box-sm border-[3px] border-black">
+                            <div className="overflow-hidden rounded-box-sm border-2 border-black">
                                 <Swiper
                                     spaceBetween={0}
                                     pagination={{ clickable: true }}
@@ -254,7 +265,7 @@ export default function AddBills(props) {
                             </div>
                         )}
 
- <p className="my-3 text-center text-[12px] font-black uppercase tracking-[0.14em] text-neutral-400">
+ <p className="my-3 text-center text-[12px] font-black uppercase tracking-[0.14em] text-black/60">
                             or upload your own
                         </p>
 
@@ -339,20 +350,20 @@ export default function AddBills(props) {
                             value={data.price}
                             onChange={(event) => setData("price", event.target.value)}
                         />
-                        <p className="mt-2 text-left text-xs font-medium text-neutral-500">
+                        <p className="mt-2 text-left text-xs font-medium text-black/60">
                             Between {formatPrice(priceBounds.min, defaultCurrency)} and{" "}
                             {formatPrice(priceBounds.max, defaultCurrency)} per period.
                         </p>
                         {fieldError("price") && (
-                            <p className="mt-2 text-left text-xs font-bold text-[#FF007F]">
+                            <p className="mt-2 text-left text-xs font-bold text-[#C81E5B]">
                                 {fieldError("price")}
                             </p>
                         )}
 
                         {data.price > 0 && (
-                            <div className="mt-4 rounded-box-sm border-[3px] border-black bg-[#F7F7F7] p-4">
+                            <div className="mt-4 rounded-box-sm border-2 border-black bg-[#F7F7F7] p-4">
                                 <div className="mb-1 flex items-center justify-between">
-                                    <span className="text-sm font-semibold text-neutral-600">
+                                    <span className="text-sm font-semibold text-black/80">
                                         Supporters pay
                                     </span>
                                     <span className="font-black">
@@ -366,7 +377,7 @@ export default function AddBills(props) {
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-semibold text-neutral-600">
+                                    <span className="text-sm font-semibold text-black/80">
                                         You receive
                                     </span>
                                     <span className="font-black text-green-600">
@@ -376,7 +387,7 @@ export default function AddBills(props) {
                                         }).format(data.price)}
                                     </span>
                                 </div>
-                                <p className="mt-3 text-left text-xs font-medium text-neutral-500">
+                                <p className="mt-3 text-left text-xs font-medium text-black/60">
                                     All platform and processing fees are inside the supporter price, so
                                     you always receive your listed amount.
                                 </p>
@@ -384,7 +395,7 @@ export default function AddBills(props) {
                         )}
 
                         {defaultCurrency !== global_currency && data.price > 0 && (
-                            <p className="mt-2 text-left text-sm font-medium text-neutral-500">
+                            <p className="mt-2 text-left text-sm font-medium text-black/60">
                                 ≈ {formatMultiPrice(data.price, defaultCurrency)} ({global_currency})
                             </p>
                         )}
@@ -401,7 +412,7 @@ export default function AddBills(props) {
                                         type="button"
                                         onClick={() => setData("period", period.value)}
                                         aria-pressed={active}
-                                        className={`min-h-[48px] rounded-box-sm border-[3px] border-black text-sm font-black uppercase tracking-wide transition-all ${
+                                        className={`min-h-[48px] rounded-box-sm border-2 border-black text-sm font-black uppercase tracking-wide transition-all ${
                                             active
  ? "translate-x-[2px] translate-y-[2px] bg-[#A2E4B8] "
  : "bg-white "
@@ -414,14 +425,14 @@ export default function AddBills(props) {
                         </div>
                     </div>
 
-                    <p className="rounded-box-sm border-[3px] border-black bg-[#FFF6D6] p-4 text-left text-xs font-medium">
+                    <p className="rounded-box-sm border-2 border-black bg-[#FFF6D6] p-4 text-left text-xs font-medium">
                         Describe the recurring content supporters receive. Do not list bills, personal
                         expenses, or brand names — these are rejected. Adult content is blocked
                         automatically and overly suggestive images are removed.
                     </p>
 
                     {!isEdit && subscriberOnlyPostsCount === 0 && (
-                        <p className="rounded-box-sm border-[3px] border-black bg-[#FFE0EC] p-4 text-left text-sm font-bold">
+                        <p className="rounded-box-sm border-2 border-black bg-[#FFE0EC] p-4 text-left text-sm font-bold">
                             You haven't added any subscriber-only posts yet. Create at least one before
                             selling a subscription.
                         </p>
@@ -479,7 +490,7 @@ export default function AddBills(props) {
 function AddItemTrigger() {
     return (
         <span className="flex items-center">
- <span className="flex h-[44px] min-h-[44px] w-[44px] min-w-[44px] items-center justify-center rounded-box-sm border-2 border-black bg-pink-100 p-1 md:h-[52px] md:min-h-[52px] md:w-[52px] md:min-w-[52px]">
+ <span className="flex h-[44px] min-h-[44px] w-[44px] min-w-[44px] items-center justify-center rounded-box-sm border-2 border-black bg-[#FF007F]/10 p-1 md:h-[52px] md:min-h-[52px] md:w-[52px] md:min-w-[52px]">
                 <SlCalender color="var(--pink)" size="1.5rem" />
             </span>
             <span className="pl-3 text-left">

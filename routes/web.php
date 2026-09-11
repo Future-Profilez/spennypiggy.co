@@ -76,6 +76,7 @@ use App\Services\DiscoveryService;
 use App\Services\PendingApprovalService;
 use App\Support\CompetitorSheet;
 use App\Support\DiscoveryPayload;
+use App\Support\Incentives;
 use App\Support\MonetisationPillars;
 use App\Support\PresetCovers;
 use App\Support\PwaSplash;
@@ -292,14 +293,23 @@ Route::get('/', function (DiscoveryService $discoveryService) {
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
-        'founderBonus' => [
-            'minMonthlyEarnings' => config('founder_bonus.bonus.min_monthly_earnings'),
-            'bonusPercentage' => config('founder_bonus.bonus.bonus_percentage') * 100, // Convert to percentage
-            'maxBonusPerMonth' => config('founder_bonus.bonus.max_bonus_per_month'),
-            'maxFounderSeats' => config('founder_bonus.limits.max_founder_seats'),
-            'currencySymbol' => config('founder_bonus.display.currency_symbol'),
-            'founderSpotsRemaining' => $founderSpots,
-        ],
+        /*
+         * 🚨 NULL WHILE THE FOUNDER BONUS IS RETIRED (11 Sep 2026), exactly as
+         * `growthBonus` is — the landing card keys on the prop, never on the JS
+         * constants mirror, which is always importable and would advertise a
+         * scheme nobody can join. Switching `founder_bonus.enabled` back on
+         * restores the card with no JSX change.
+         */
+        'founderBonus' => Incentives::founderEnabled()
+            ? [
+                'minMonthlyEarnings' => config('founder_bonus.bonus.min_monthly_earnings'),
+                'bonusPercentage' => config('founder_bonus.bonus.bonus_percentage') * 100, // Convert to percentage
+                'maxBonusPerMonth' => config('founder_bonus.bonus.max_bonus_per_month'),
+                'maxFounderSeats' => config('founder_bonus.limits.max_founder_seats'),
+                'currencySymbol' => config('founder_bonus.display.currency_symbol'),
+                'founderSpotsRemaining' => $founderSpots,
+            ]
+            : null,
         'growthBonus' => $growthBonus,
         // Load cached creator lists directly for the homepage showcase
         'trendingCreators' => $trendingCreators(),
@@ -526,7 +536,44 @@ Route::middleware('ssr')->group(function () {
         return Inertia::render('creators/Disputes');
     })->name('creators.disputes');
 
+    /*
+     * 🚨 404s WHILE THE SCHEME IS RETIRED (11 Sep 2026). It is a paid-ads
+     * landing page whose whole copy is the offer, so there is nothing to
+     * "replace the copy" with — an empty page that still ranks and still takes
+     * ad spend is worse than a not-found. The route is kept, not deleted, so
+     * switching the scheme back on restores it.
+     */
     Route::get('/creators/founder-bonus', function () {
+        /*
+         * 🚨 A RETIRED SCHEME SHOWS A CLOSED NOTICE, NOT A 404 — this is an AD LANDING
+         * PAGE and live spend points at this exact URL. A 404 spends the click and
+         * tells the visitor nothing; the platform learned this on /giftstore, where a
+         * header link sat above a kill-switched feature and every visitor who clicked
+         * it got an error page.
+         *
+         * ⚠️ The page itself is NOT rendered while the scheme is off — it advertises a
+         * bonus nobody can now earn. The notice says the programme is closed, when, and
+         * that entitlements already earned are unaffected, then points at what IS open.
+         *
+         * Switching the scheme back on restores the real page with no code change.
+         */
+        if (! Incentives::founderEnabled()) {
+            /*
+             * ⚠️ `ComingSoon` is the house component for exactly this — a page somebody
+             * has arrived at for something they cannot have. All copy is supplied by
+             * the caller, so it reads as "closed" here rather than "coming soon".
+             */
+            return Inertia::render('ComingSoon', [
+                'title' => 'The Founder Bonus has closed',
+                'message' => 'We are not accepting new Founder qualifications. Anything already earned is unaffected and will still be paid. There is still a reason to start today — you keep 100% of what you list, and supporters cover one simple fee at checkout.',
+                'highlights' => [
+                    'You keep 100% of your listed price',
+                    'Build and publish straight away — no waiting to be approved',
+                    'One all-in supporter fee, card processing included',
+                ],
+            ]);
+        }
+
         return Inertia::render('creators/FounderBonus');
     })->name('creators.founder-bonus');
 
@@ -1166,7 +1213,11 @@ Route::withoutMiddleware([])->group(function () {
             ['url' => '/creators/features', 'priority' => '0.7', 'changefreq' => 'weekly'],
             ['url' => '/creators/memberships', 'priority' => '0.8', 'changefreq' => 'weekly'],
             ['url' => '/creators/disputes', 'priority' => '0.6', 'changefreq' => 'monthly'],
-            ['url' => '/creators/founder-bonus', 'priority' => '0.7', 'changefreq' => 'weekly'],
+            // 🚨 Only while the scheme is live — a sitemap entry for a route that
+            // 404s is how a retired page keeps being crawled and re-indexed.
+            ...(Incentives::founderEnabled()
+                ? [['url' => '/creators/founder-bonus', 'priority' => '0.7', 'changefreq' => 'weekly']]
+                : []),
             ['url' => '/creators/discovery', 'priority' => '0.7', 'changefreq' => 'weekly'],
             ['url' => '/creators/link-in-bio', 'priority' => '0.7', 'changefreq' => 'weekly'],
 

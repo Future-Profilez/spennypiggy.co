@@ -9,9 +9,21 @@ import Magnetic from '@/Components/animations/Magnetic';
 // docblock says it: "A number that is wrong here is a number in an advert." The
 // homepage is the biggest advert on the site and was the one page not reading it.
 // One of the eight was materially wrong — see the Founder card below.
-import { FOUNDER, FAST_START, GROWTH, REFERRAL, money, percent } from '@/constants/creatorBonuses';
+import { FOUNDER, FAST_START, GROWTH, money, percent } from '@/constants/creatorBonuses';
+import { useIncentives } from '@/lib/incentives';
 
 export default function EarnMoreAnnouncement({ founderBonus, growthBonus }) {
+    /* 🚨 THREE OF THE FOUR BLOCKS BELOW WERE RETIRED ON 11 Sep 2026
+       (simplification programme §6) and every one of them is gated on the
+       SERVER, never on the constants — `FOUNDER`, `FAST_START` and `GROWTH`
+       are always importable, and this is the biggest advert on the site.
+
+       ⚠️ `founderBonus` is null while the scheme is off (the Welcome route
+       stops sending it), so the founder card keys on the prop exactly as the
+       growth card keys on `growthBonus`. `incentives` is the belt to that
+       braces and is what the two live cards read their figures from. */
+    const incentives = useIncentives();
+    const founderLive = !!founderBonus && incentives.founderBonus;
     const spotsRemaining = founderBonus?.founderSpotsRemaining;
     const maxSeats = founderBonus?.maxFounderSeats ?? 150;
 
@@ -142,7 +154,16 @@ export default function EarnMoreAnnouncement({ founderBonus, growthBonus }) {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 md:gap-y-10 px-2 md:px-4">
+                {/* ⚠️ `md:grid-cols-2` when only the two live schemes remain: a
+                    three-column grid holding two cards leaves a hole where a
+                    retired scheme used to be, which reads as a card that failed
+                    to load. */}
+                <div className={`grid grid-cols-1 gap-x-8 gap-y-6 md:gap-y-10 px-2 md:px-4 ${
+                    (incentives.fastStart ? 1 : 0) + (founderLive ? 1 : 0) + (incentives.membershipCredits ? 1 : 0) >= 2
+                        ? 'md:grid-cols-3'
+                        : 'md:grid-cols-2'
+                }`}>
+                    {incentives.fastStart && (
                     <StaggerItem index={0} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
                     <TiltCard max={8} className="rounded-box h-full">
                     <div className="bg-[#E6EA7B] border-black rounded-box p-6 md:p-8 relative group h-full">
@@ -161,7 +182,9 @@ export default function EarnMoreAnnouncement({ founderBonus, growthBonus }) {
                     </div>
                     </TiltCard>
                     </StaggerItem>
+                    )}
 
+                    {founderLive && (
                     <StaggerItem index={1} x={80} y={0} rotate={-1} stagger={0.15} duration={0.6}>
                     <TiltCard max={8} className="rounded-box h-full">
                     <div className="bg-[#05EFB8] border-black rounded-box p-6 md:p-8 relative group h-full">
@@ -187,6 +210,7 @@ export default function EarnMoreAnnouncement({ founderBonus, growthBonus }) {
                     </div>
                     </TiltCard>
                     </StaggerItem>
+                    )}
 
                     <StaggerItem index={2} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
                     <TiltCard max={8} className="rounded-box h-full">
@@ -199,8 +223,12 @@ export default function EarnMoreAnnouncement({ founderBonus, growthBonus }) {
                             mint cards beside this one already take black, so this was
                             also the only card in the row reading in a different ink. */}
                         <h3 className="text-2xl font-gulfs text-black mb-2 uppercase">Creator Referral Bonus</h3>
+                        {/* ⚠️ FIGURES FROM THE SERVER, NOT FROM `REFERRAL`. The
+                            threshold moved from £1,000 to £2,000 on 11 Sep 2026
+                            and this is an advert: it must read the config that
+                            actually pays, not a mirror that can lag it. */}
                         <p className="text-black/80 text-lg mb-5 leading-snug">
-                            Refer creators and earn {money(REFERRAL.amount)} when they reach {money(REFERRAL.qualifyingGmv)} in earnings.
+                            Refer creators and earn {money(incentives.referral.reward)} when they reach {money(incentives.referral.threshold)} in earnings.
                         </p>
                         <ul className="space-y-2 text-black font-semibold">
                             <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> Unlimited referrals</li>
@@ -210,6 +238,31 @@ export default function EarnMoreAnnouncement({ founderBonus, growthBonus }) {
                     </div>
                     </TiltCard>
                     </StaggerItem>
+
+                    {/* ── Earn your membership back (new, 11 Sep 2026) ──
+                        🚨 IT IS A CREDIT AGAINST THEIR OWN BILL AND NEVER CASH,
+                        and this copy must never imply otherwise: "a free
+                        month", not "£8.99 back". */}
+                    {incentives.membershipCredits && (
+                    <StaggerItem index={3} x={80} y={0} rotate={-2} stagger={0.15} duration={0.6}>
+                    <TiltCard max={8} className="rounded-box h-full">
+                    <div className="bg-[#8C52FF] border-black rounded-box p-6 md:p-8 relative group h-full">
+                        <div className="absolute -top-4 -right-3 md:-top-6 md:-right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-black transform -rotate-6">
+                            <FaCrown />
+                        </div>
+                        <h3 className="text-2xl font-gulfs text-black mb-2 uppercase">Earn Your Membership Back</h3>
+                        <p className="text-black/80 text-lg mb-5 leading-snug">
+                            Every {money(incentives.membershipCredit.threshold)} you earn buys you a free month of your creator membership.
+                        </p>
+                        <ul className="space-y-2 text-black font-semibold">
+                            <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> Free months stack</li>
+                            <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> Applied to your own bill</li>
+                            <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> No cap on how many you earn</li>
+                        </ul>
+                    </div>
+                    </TiltCard>
+                    </StaggerItem>
+                    )}
                 </div>
 
                 <FadeIn y={20} delay={0.3}>

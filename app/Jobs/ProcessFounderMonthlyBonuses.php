@@ -10,6 +10,8 @@ use App\Models\FounderBonus;
 use App\Models\FounderBonusMonthly;
 use App\Models\PayoutRecord;
 use App\StripeControl;
+use App\Support\Incentives;
+use App\Support\PayoutEligibility;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -28,6 +30,29 @@ class ProcessFounderMonthlyBonuses implements ShouldQueue
 
     public function handle(): void
     {
+        /*
+         * 🚨 THIS IS THE FOUNDERS' ONGOING MONTHLY UPLIFT, NOT THE FIRST-30-DAYS
+         * QUALIFICATION, AND IT WAS DELIBERATELY LEFT RUNNING WHEN THE SCHEME
+         * WAS RETIRED (11 Sep 2026).
+         *
+         * §6 retires the first-30-days uplift. Existing founders were promised a
+         * monthly bonus for as long as they are founders, and no new founder can
+         * be created while `founder_bonus.enabled` is false — so this job's
+         * population can only shrink. Stopping it would withdraw a published
+         * entitlement from people who already met the condition, which is the
+         * one thing retiring a scheme must not do.
+         *
+         * ⚠️ IT IS AN OPEN CLIENT DECISION whether the monthly uplift should
+         * also close, and that is NOT decided here. When it is, the switch is
+         * `founder_bonus.payouts_enabled` below — the same last-switch that
+         * stops `ProcessFounderPayouts`.
+         */
+        if (! Incentives::founderPayoutsEnabled()) {
+            Log::info('Founder Bonus payouts are switched off (founder_bonus.payouts_enabled = false) — no monthly bonuses.');
+
+            return;
+        }
+
         if (! Schema::hasTable('founder_bonus')) {
             return;
         }
@@ -124,6 +149,10 @@ class ProcessFounderMonthlyBonuses implements ShouldQueue
             $row->save();
 
             if (! empty($creator->payout_paused_at) || $bonusAmount <= 0) {
+                continue;
+            }
+            // 🚨 Identity is a payout gate (10 Sep 2026) — see PayoutEligibility.
+            if (PayoutEligibility::blocksPayout($creator)) {
                 continue;
             }
             if (! empty($row->payout_record_uuid) || ! empty($row->stripe_payout_id) || $row->payout_status === 'paid') {

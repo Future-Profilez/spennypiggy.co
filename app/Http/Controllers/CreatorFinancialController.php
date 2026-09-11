@@ -34,6 +34,8 @@ use App\Services\Risk\PayoutService;
 use App\Services\Risk\ReservePolicy;
 use App\Support\OpportunityPanelPayload;
 use App\Support\PayoutCycle;
+use App\Support\Incentives;
+use App\Support\PayoutIdentityGatePayload;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -475,8 +477,22 @@ class CreatorFinancialController extends Controller
         $releasedReserves = $this->payoutService->getReleasedReserves($user->uuid, 100, $displayCurrency);
         $upcomingPayout = $this->payoutService->getUpcomingPayoutPreview($user->uuid, $displayCurrency);
 
+        /*
+         * 🚨 FAST START IS RETIRED (11 Sep 2026) — the LIVE window tracker is
+         * gone and an EXISTING award is still shown.
+         *
+         * The `active` branch below coaches a creator toward a bonus they can
+         * no longer earn, so it is gated on the scheme switch. The settled
+         * branch reads a real `fast_start_bonus_payouts` row: that is money the
+         * creator earned under the published terms and is still owed, and
+         * hiding it would leave them with a payment arriving from nowhere.
+         */
+        $fastStartRow = Incentives::fastStartEnabled()
+            ? null
+            : FastStartBonusPayout::where('creator_uuid', $user->uuid)->latest()->first();
+
         $fastStartBonus = null;
-        if ($user->stripe_connected_at) {
+        if ($user->stripe_connected_at && (Incentives::fastStartEnabled() || $fastStartRow)) {
             $windowStart = Carbon::parse($user->stripe_connected_at);
             $windowEnd = $windowStart->copy()->addDays((int) config('fast_start_bonus.bonus.window_days', 30));
             $now = now();
@@ -499,7 +515,11 @@ class CreatorFinancialController extends Controller
                 return ($amount / $rates[$from]) * $rates[$to];
             };
 
-            if ($now->lt($windowEnd)) {
+            // ⚠️ `Incentives::fastStartEnabled()` as well as the date: with the
+            // scheme retired a creator still inside their thirty days has an
+            // OPEN window and no bonus coming, and the live branch would tell
+            // them what they were "on track for".
+            if (Incentives::fastStartEnabled() && $now->lt($windowEnd)) {
                 $txs = FinancialTransaction::query()
                     ->where('user_id', $user->id)
                     ->where('type', 'income')
@@ -529,15 +549,23 @@ class CreatorFinancialController extends Controller
                     'tiered_enabled' => (bool) config('fast_start_bonus.bonus.enable_tiered'),
                 ];
             } else {
-                $row = FastStartBonusPayout::where('creator_uuid', $user->uuid)->latest()->first();
-                $fastStartBonus = [
+                $row = $fastStartRow ?: FastStartBonusPayout::where('creator_uuid', $user->uuid)->latest()->first();
+
+                // With the scheme retired and no row, there is nothing to
+                // report and no bonus coming — say nothing rather than draw a
+                // card reading "ready · £0".
+                if (! $row && ! Incentives::fastStartEnabled()) {
+                    $row = null;
+                }
+
+                $fastStartBonus = ($row || Incentives::fastStartEnabled()) ? [
                     'status' => $row?->status ?? 'ready',
                     'currency' => $currency,
                     'window_start' => $windowStart->toDateTimeString(),
                     'window_end' => $windowEnd->toDateTimeString(),
                     'earnings_so_far' => $row ? ($row->earnings_minor / 100) : 0,
                     'bonus_so_far' => $row ? ($row->bonus_minor / 100) : 0,
-                ];
+                ] : null;
             }
         }
 
@@ -855,6 +883,18 @@ class CreatorFinancialController extends Controller
                 'current_window_paid_at' => $currentEnd->copy()->startOfDay()->addDays(PayoutCycle::MIN_HOLD_DAYS)->toDateTimeString(),
             ],
             'payout_history' => $payoutHistory,
+            /*
+             * 🚨 IDENTITY IS A PAYOUT GATE (10 Sep 2026). Null unless this creator has
+             * money waiting AND their check is incomplete — see the payload class for
+             * why both conditions are load-bearing. The page renders on its presence.
+             */
+            'identity_gate' => PayoutIdentityGatePayload::for(
+                $user,
+                (float) ($upcomingPayout['total_net'] ?? 0),
+                (float) ($reserveBreakdown['total_held'] ?? 0),
+                (string) ($upcomingPayout['currency'] ?? $displayCurrency),
+                $nextPayoutAt->toDateTimeString(),
+            ),
             'fast_start_bonus' => $fastStartBonus,
             'founder_bonus' => $founderBonus,
             'growth_bonus_upcoming' => $this->growthBonusUpcoming($user),
@@ -919,6 +959,18 @@ class CreatorFinancialController extends Controller
     public function fastStartBonus(Request $request)
     {
         $user = Auth::user();
+
+        /*
+         * 🚨 404 WHILE THE SCHEME IS RETIRED — unless this creator has a real
+         * award row, in which case the page is the record of money they are
+         * owed and must stay reachable. Not an empty page: a page that renders
+         * with nothing on it reads as the feature being broken.
+         */
+        abort_unless(
+            Incentives::fastStartEnabled()
+                || FastStartBonusPayout::where('creator_uuid', $user->uuid)->exists(),
+            404
+        );
 
         if (! $user->stripe_connected_at) {
             return Inertia::render('Creator/Financial/FastStartBonus', [

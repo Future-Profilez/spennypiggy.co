@@ -115,7 +115,7 @@ export default function ItemFormShell({
                     {visibleError && (
                         <p
                             role="alert"
-                            className="rounded-box-sm border-[3px] border-black bg-[#FFE0EC] px-4 py-3 text-left text-xs font-bold text-black"
+                            className="rounded-box-sm border-2 border-black bg-[#FFE0EC] px-4 py-3 text-left text-xs font-bold text-black"
                         >
                             {visibleError}
                         </p>
@@ -129,7 +129,7 @@ export default function ItemFormShell({
                                 type="button"
                                 onClick={goBack}
                                 disabled={processing}
-                                className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-box-sm border-[3px] border-black bg-white transition-all active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-50"
+                                className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-box-sm border-2 border-black bg-white transition-all active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-50"
                                 aria-label="Back"
                             >
                                 <ArrowLeft size={20} strokeWidth={3} />
@@ -139,14 +139,14 @@ export default function ItemFormShell({
                             type="button"
                             onClick={goNext}
                             disabled={processing}
-                            className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-box-sm border-[3px] border-black bg-[#FF007F] px-8 text-base font-black uppercase tracking-wide text-black transition-all active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-60 md:flex-none md:min-w-[220px]"
+                            className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-box-sm border-2 border-black bg-[#FF007F] px-8 text-base font-black uppercase tracking-wide text-black transition-all active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-60 md:flex-none md:min-w-[220px]"
                         >
                             {processing && <Loader2 size={18} className="animate-spin" strokeWidth={3} />}
                             {actionLabel}
                         </button>
                     </div>
                     {activeSteps.length > 1 && (
-                        <p className="text-center text-[12px] font-bold uppercase tracking-[0.14em] text-neutral-400 md:hidden">
+                        <p className="text-center text-[12px] font-bold uppercase tracking-[0.14em] text-black/60 md:hidden">
                             Step {index + 1} of {activeSteps.length}
                         </p>
                     )}
@@ -176,9 +176,9 @@ export default function ItemFormShell({
                     `resources/css/index.css` as a full `border` shorthand AFTER
                     the utilities layer — an unflagged `max-sm:border-0` loses on
                     source order and the frame silently survives at 2px. */}
-                <div className="min-w-0 rounded-box border-[3px] border-black bg-white p-5 sm:p-6 max-sm:!rounded-none max-sm:!border-0 max-sm:!bg-transparent max-sm:!p-0">
+                <div className="min-w-0 rounded-box border-2 border-black bg-white p-5 sm:p-6 max-sm:!rounded-none max-sm:!border-0 max-sm:!bg-transparent max-sm:!p-0">
                     {step?.hint && (
-                        <p className="mb-5 text-left text-sm font-medium text-neutral-500">{step.hint}</p>
+                        <p className="mb-5 text-left text-sm font-medium text-black/60">{step.hint}</p>
                     )}
                     {step?.render?.()}
                 </div>

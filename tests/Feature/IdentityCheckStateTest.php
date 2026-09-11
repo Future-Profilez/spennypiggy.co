@@ -104,19 +104,34 @@ class IdentityCheckStateTest extends TestCase
     }
 
     /**
-     * The nudge email says "you started this check but it was never completed". True for an
-     * abandoned session; false and unactionable for one Stripe is deciding.
+     * ⚠️ `test_the_reminder_body_matches_the_state_it_is_about` STOOD HERE.
+     *
+     * It asserted the journey nudge said "you started this check but it was never
+     * completed" only to somebody who had, never to a creator whose passport was
+     * genuinely with Stripe. Identity left the journey on 10 Sep 2026 for the payout
+     * gate, so no nudge speaks about it at all now.
+     *
+     * The distinction it protected is unchanged and is tested where the creator now
+     * reads it — `PayoutIdentityGateTest`, which asserts that an abandoned check and a
+     * processing one get different copy and that only one of them offers a button.
      */
-    public function test_the_reminder_body_matches_the_state_it_is_about(): void
+    public function test_the_abandoned_and_processing_states_are_still_told_apart(): void
     {
         $unfinished = $this->creator([
-            'journey_step' => 'identity',
+            'identity_status' => 2,
             'identity_session_status' => IdentityCheckState::REQUIRES_INPUT,
         ]);
 
-        $body = app(NudgeStuckJourney::class)->payloadFor($unfinished, 2)['body'];
+        $processing = $this->creator([
+            'identity_status' => 2,
+            'identity_session_status' => IdentityCheckState::PROCESSING,
+        ]);
 
-        $this->assertSame(CreatorJourneyService::UNFINISHED_COPY['identity']['body'], $body);
+        $this->assertTrue(IdentityCheckState::isUnfinished($unfinished));
+        $this->assertFalse(IdentityCheckState::isProcessing($unfinished));
+
+        $this->assertTrue(IdentityCheckState::isProcessing($processing));
+        $this->assertFalse(IdentityCheckState::isUnfinished($processing));
     }
 
     /** Reaches into the private handler the same way the webhook router does. */

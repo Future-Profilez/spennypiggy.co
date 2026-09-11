@@ -52,10 +52,8 @@ class FinishYourSetup extends Mailable
         return match ($step) {
             'profile' => $second ? 'Your page is still missing a photo' : 'Finish your Spenny Piggy page',
             'social' => $second ? 'Your page still has no social handle' : 'Add a social handle to your page',
-            'subscription' => $second ? 'Your payouts are still locked' : 'Your page is approved — add a card to unlock payouts',
-            'review' => $second ? 'Your profile is still waiting to be submitted' : 'Send your profile for review',
+            'subscription' => $second ? 'One step left on your account' : 'Last step — add your card',
             'stripe' => $second ? 'Your earnings have nowhere to go yet' : 'Connect your payouts',
-            'identity' => $second ? 'Your identity check is still unfinished' : 'Finish your identity check',
             'first_post' => $second ? 'Your members are waiting for a post' : 'Write your first post',
             'first_sale' => $second ? 'Your page is ready — share it' : 'Share your page',
             default => 'Finish setting up your Spenny Piggy page',
@@ -74,10 +72,8 @@ class FinishYourSetup extends Mailable
         return match ($step) {
             'profile' => 'Supporters decide whether to buy from a page that looks finished, and this is the fastest thing you can do today.',
             'social' => 'The review team checks one account you post on to confirm the page is yours — it is the quickest thing standing between you and approval.',
-            'subscription' => 'Your profile has been approved. A card on file is what unlocks your payouts — nothing is charged until your first sale.',
-            'review' => 'Your photo, bio and handle are on your page. It is not in the queue until you press Submit — nothing is checked, and payouts stay locked, until you do.',
+            'subscription' => 'Your payouts are connected. A card on file is the last step — nothing is charged until your first sale.',
             'stripe' => 'Until your bank details are connected, anything you sell has nowhere to be paid out to.',
-            'identity' => 'You started this check but it was never completed, so it is still open. Nothing on your page can be listed for sale until it is finished — it takes about two minutes with your passport.',
             'first_post' => 'Posts are what your members see after they buy, and one is enough to give a subscriber a reason to stay.',
             'first_sale' => 'Most first sales come from the creator sharing their link, not from someone finding the page on their own.',
             default => 'You are part-way through setting up your page.',
@@ -136,7 +132,7 @@ class FinishYourSetup extends Mailable
      * dashboard rather than throwing: a missing Ziggy-style name must not stop a reminder.
      *
      * 🚨 AN EMAIL MAY NEVER LINK TO AN ACTION ROUTE (7 Sep 2026). `review`'s route is
-     * `update.profile.lock.status`, and while that was a GET this mail's button SUBMITTED
+     * `update.profile.lock.status` (deleted 10 Sep 2026), and while that was a GET this mail's button SUBMITTED
      * the creator's profile — not only when they clicked it, but whenever anything
      * fetched the URL: Outlook Safe Links, a Gmail link check, a spam filter, a link
      * preview. So the reminder asking somebody to submit could submit for them, from an
@@ -182,9 +178,7 @@ class FinishYourSetup extends Mailable
             'profile' => '🎀',
             'social' => '🔗',
             'subscription' => '💳',
-            'review' => '✅',
             'stripe' => '💸',
-            'identity' => '🪪',
             'first_post' => '📝',
             'first_sale' => '📣',
             default => '🐷',

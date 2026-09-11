@@ -1,10 +1,10 @@
 import {
     FAST_START,
     FOUNDER,
-    REFERRAL,
     money,
     percent,
 } from '@/constants/creatorBonuses';
+import { useIncentives } from '@/lib/incentives';
 import { Eyebrow } from './Ledger';
 
 /**
@@ -26,6 +26,8 @@ import { Eyebrow } from './Ledger';
  * to keep reading that way.
  */
 export default function WhyTheFee({ accent, headless = false }) {
+    const incentives = useIncentives();
+
     return (
         <section>
             {/* ⚠️ See `FeatureMatrix` for why `headless` exists. */}
@@ -102,14 +104,36 @@ export default function WhyTheFee({ accent, headless = false }) {
                     </p>
                 </Block>
 
+                {/* 🚨 EVERY SENTENCE HERE IS A SCHEME, AND THREE OF THEM WERE
+                    RETIRED ON 11 Sep 2026. This is a paid-ads page arguing the
+                    fee is worth it BECAUSE of what it pays back — a retired
+                    scheme quoted here is not a stale link, it is the argument
+                    itself being untrue. Each clause is gated on the server's
+                    own flag. */}
                 <Block title="And it pays you back">
-                    {percent(FAST_START.rate)} extra on everything in your first{' '}
-                    {FAST_START.windowDays} days. {percent(FOUNDER.monthlyRate)}{' '}
-                    extra every month for founders, up to{' '}
-                    {money(FOUNDER.monthlyCap)} a month.{' '}
-                    {money(REFERRAL.amount)} for every creator you refer, paid
-                    once they have earned {money(REFERRAL.qualifyingGmv)}. And
-                    further bonuses at our discretion through the year — we
+                    {incentives.fastStart && (
+                        <>
+                            {percent(FAST_START.rate)} extra on everything in
+                            your first {FAST_START.windowDays} days.{' '}
+                        </>
+                    )}
+                    {incentives.founderBonus && (
+                        <>
+                            {percent(FOUNDER.monthlyRate)} extra every month for
+                            founders, up to {money(FOUNDER.monthlyCap)} a month.{' '}
+                        </>
+                    )}
+                    {money(incentives.referral.reward)} for every creator you
+                    refer, paid once they have earned{' '}
+                    {money(incentives.referral.threshold)}.{' '}
+                    {incentives.membershipCredits && (
+                        <>
+                            Every {money(incentives.membershipCredit.threshold)}{' '}
+                            you earn buys a free month of your creator
+                            membership.{' '}
+                        </>
+                    )}
+                    And further bonuses at our discretion through the year — we
                     would rather hand fee back to creators who are earning than
                     to anyone else.
                 </Block>
