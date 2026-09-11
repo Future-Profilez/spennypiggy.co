@@ -465,6 +465,18 @@ export default function AddSocial({
                         Social Media Links
                     </h2>
 
+                    {/* Feedback / Rejection reason banner */}
+                    {(sLinks?.reason || links?.reason || (auth?.user?.profile_reject_reason && /social|instagram|tiktok|twitter|handle/i.test(auth?.user?.profile_reject_reason))) && (
+                        <div className="mb-4 rounded-box-sm border-2 border-red-500 bg-red-50 p-4">
+                            <p className="text-xs font-bold uppercase tracking-wider text-red-700">
+                                Feedback on your social links
+                            </p>
+                            <p className="mt-1 text-sm text-red-900">
+                                {sLinks?.reason || links?.reason || auth?.user?.profile_reject_reason}
+                            </p>
+                        </div>
+                    )}
+
                     {/* Information Banner */}
                     <div
                         className={clsx(

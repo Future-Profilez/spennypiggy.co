@@ -692,6 +692,13 @@ export default function EditProfile({
                                 to keep.
                             </p>
                         )}
+                        {((profileUser?.moderation_asset === "avatar" && profileUser?.moderation_reason) ||
+                            (profileUser?.profile_reject_reason && /photo|avatar/i.test(profileUser?.profile_reject_reason))) && (
+                            <div className="mb-3 rounded-box-sm border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+                                <span className="font-bold">Photo Feedback:</span>{" "}
+                                {profileUser?.moderation_reason || profileUser?.profile_reject_reason}
+                            </div>
+                        )}
                         <UpdateAvatar
                             type="avatar"
                             getImageUID={getImageUID}
@@ -810,22 +817,27 @@ export default function EditProfile({
                                                         Approved
                                                     </span>
                                                 )}
-                                            {user?.bio &&
-                                                user?.bio_approved === 2 && (
+                                            {(profileUser?.bio || user?.bio) &&
+                                                (profileUser?.bio_approved === 2 || user?.bio_approved === 2) && (
                                                     <span className="text-xs font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded-full border border-red-200">
                                                         Rejected
                                                     </span>
                                                 )}
                                         </div>
-                                        {user?.bio_approved === 2 &&
-                                            user?.edit_bio_reason && (
- <div className="mb-2 text-sm text-red-600 bg-red-50 p-3 rounded-box-sm border border-red-200">
-                                                    <span className="font-bold">
-                                                        Rejection Reason:
-                                                    </span>{" "}
-                                                    {user.edit_bio_reason}
-                                                </div>
-                                            )}
+                                        {(profileUser?.edit_bio_reason ||
+                                            user?.edit_bio_reason ||
+                                            (profileUser?.moderation_asset === "bio" ? profileUser?.moderation_reason : null) ||
+                                            (profileUser?.profile_reject_reason && /bio/i.test(profileUser?.profile_reject_reason) ? profileUser?.profile_reject_reason : null)) && (
+                                            <div className="mb-2 text-sm text-red-600 bg-red-50 p-3 rounded-box-sm border border-red-200">
+                                                <span className="font-bold">
+                                                    Feedback from review:
+                                                </span>{" "}
+                                                {profileUser?.edit_bio_reason ||
+                                                    user?.edit_bio_reason ||
+                                                    profileUser?.moderation_reason ||
+                                                    profileUser?.profile_reject_reason}
+                                            </div>
+                                        )}
                                         {/*
                                             🚨 `profileUser`, never the bare `user` prop. The form
                                             POSTS `profileUser.bio`, and three of the four mount

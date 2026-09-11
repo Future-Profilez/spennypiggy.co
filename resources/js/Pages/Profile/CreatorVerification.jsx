@@ -509,7 +509,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     ? "done"
                     : "todo",
             approvedState: isSocialApproved ? 1 : 0,
-            reason: slinks?.reason,
+            reason:
+                slinks?.reason ||
+                (profileRejectReason && /social|instagram|tiktok|twitter|handle/i.test(profileRejectReason) ? profileRejectReason : null) ||
+                null,
             action: (
                 <Social
                     buttontext={
@@ -547,9 +550,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         : creatorUser?.avatar
                           ? "done"
                           : "todo",
-            reason: creatorUser?.moderation_asset === "avatar"
-                ? creatorUser?.moderation_reason
-                : null,
+            reason:
+                (creatorUser?.moderation_asset === "avatar" ? creatorUser?.moderation_reason : null) ||
+                (profileRejectReason && /photo|avatar/i.test(profileRejectReason) ? profileRejectReason : null) ||
+                creatorUser?.moderation_reason ||
+                null,
             approvedState: avatarStatus == 1 ? 1 : 0,
             action: (
                 <EditProfile
@@ -589,7 +594,12 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                           ? "done"
                           : "todo",
             approvedState: bioStatus == 1 ? 1 : 0,
-            reason: creatorUser?.edit_bio_reason || user?.edit_bio_reason,
+            reason:
+                creatorUser?.edit_bio_reason ||
+                user?.edit_bio_reason ||
+                (creatorUser?.moderation_asset === "bio" ? creatorUser?.moderation_reason : null) ||
+                (profileRejectReason && /bio/i.test(profileRejectReason) ? profileRejectReason : null) ||
+                null,
             action: (
                 <EditProfile
                     text={bioStatus == 2 ? "Rewrite bio" : "Write bio"}

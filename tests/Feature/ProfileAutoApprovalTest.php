@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Mail\ProfileApprovalStatusMail;
 use App\Models\ProfileChangeRequest;
 use App\Models\SocialLinks;
 use App\Models\User;
 use App\Services\CreatorJourneyService;
 use App\Support\ProfileAutoApproval;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -95,6 +97,8 @@ class ProfileAutoApprovalTest extends TestCase
 
     public function test_three_clean_assets_take_the_profile_live_with_no_admin(): void
     {
+        Mail::fake();
+
         $creator = $this->creator([
             'avatar' => 'uuid-1', 'avatar_approved' => 1,
             'bio' => 'Weekly photo sets.', 'bio_approved' => 1,
@@ -103,6 +107,9 @@ class ProfileAutoApprovalTest extends TestCase
 
         $this->assertTrue(ProfileAutoApproval::activateIfComplete($creator->fresh()));
         $this->assertSame(2, (int) $creator->fresh()->profile_status_lock);
+        Mail::assertQueued(ProfileApprovalStatusMail::class, function ($mail) {
+            return $mail->status === true;
+        });
     }
 
     public function test_a_held_photo_keeps_the_profile_off(): void

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Mail\ProfileApprovalStatusMail;
 use App\Models\ProfileChangeRequest;
 use App\Models\SocialLinks;
 use App\Models\User;
@@ -9,6 +10,7 @@ use App\Rules\NoContactDetails;
 use App\Services\CreatorJourneyService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * A creator's profile approves ITSELF — a person only ever sees what the checks hold.
@@ -239,6 +241,14 @@ class ProfileAutoApproval
         ]);
 
         Log::info('Profile auto-activated', ['user_id' => $user->id]);
+
+        try {
+            if ($user->email && (int) ($user->notification_send ?? 1) !== 0) {
+                Mail::to($user->email)->queue(new ProfileApprovalStatusMail($user->fresh(), true));
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Queueing profile approval mail failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
 
         try {
             app(CreatorJourneyService::class)->syncStep($user->fresh());
