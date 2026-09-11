@@ -184,7 +184,7 @@ class VerifiedBadge
     {
         return match ($tier) {
             self::CREATOR => 'Verified creator — identity confirmed and payouts set up',
-            self::BASIC => 'Verified — profile reviewed and approved',
+            self::BASIC => 'Verified profile — automated checks passed',
             default => null,
         };
     }
