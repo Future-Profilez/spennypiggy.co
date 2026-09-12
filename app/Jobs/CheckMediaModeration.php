@@ -82,6 +82,7 @@ class CheckMediaModeration implements ShouldQueue
         'WishItem' => 'wish item',
         'Bills' => 'bill',
         'Membership' => 'membership level',
+        'Post' => 'post',
         'User' => 'profile photo',
     ];
 

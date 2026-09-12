@@ -70,7 +70,7 @@ export function PostMeter({ have, required, nextDropOut, dark, pending = 0 }) {
                     {have} / {required} posts
  {waiting > 0 && (
  <span className={dark ? 'text-white/60' : 'text-black/60'}>
- {' '}&middot; {waiting} in review
+ {' '}&middot; {waiting} need a fix
                 </span>
  )}
  </span>
@@ -118,7 +118,7 @@ export default function ActivityStatusBanner({ cadence, className = '', showDeta
                 </span>
  <span className="text-[12px] font-semibold text-black/60">
                     {have} of {required} member posts
- {pendingReview > 0 ? ` · ${pendingReview} waiting for approval` : ''}
+ {pendingReview > 0 ? ` · ${pendingReview} need a fix` : ''}
                     {formatDate(nextDropOut) ? ` · oldest expires ${formatDate(nextDropOut)}` : ''}
                 </span>
                 {showDetailsLink && (

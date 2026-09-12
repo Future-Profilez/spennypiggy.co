@@ -20,24 +20,36 @@ import { AlertTriangle, Clock, Ban, X } from "lucide-react";
  */
 
 /**
- * ⚠️ Ranked most severe first, and the ORDER IS THE BEHAVIOUR — the chip wears
- * the worst state and the dialog lists them worst-first. A suspended listing
- * that is also unapproved is a SUSPENDED listing; leading with "in review"
- * would tell its creator to wait for something that is not coming.
+ * 🚨 NOTHING HERE TELLS A CREATOR TO WAIT (11 Sep 2026, client direction).
+ *
+ * Listings publish themselves; a check retracts one only when it finds something.
+ * So an unapproved listing is no longer "queued behind a person" — it is a listing
+ * with something to FIX, and the creator is the only one who can move it. The old
+ * `in_review` state said *"waiting for approval … there is nothing for you to do"*,
+ * which under the new model is a creator sitting still in front of a thing only they
+ * can unblock. Review still happens; it is OUR internal work and is never drawn on a
+ * creator's screen.
+ *
+ * ⚠️ Ranked most severe first, and the ORDER IS THE BEHAVIOUR — the chip wears the
+ * worst state and the dialog lists them worst-first. A suspended listing that also
+ * needs a fix is a SUSPENDED listing.
  */
-const RANK = ["suspended", "changes", "in_review"];
+const RANK = ["suspended", "changes", "flagged"];
 
 const TONES = {
-    in_review: {
-        Icon: Clock,
-        label: "In review",
-        // Amber, not red: waiting is not a failure, and a card that shouts at a
-        // creator who has done nothing wrong is how these get ignored.
+    flagged: {
+        Icon: AlertTriangle,
+        label: "Needs a fix",
+        // Amber, not red: an automated check is not a person saying no, and a card
+        // that shouts at a creator who has done nothing wrong is how these get
+        // ignored. Red on this platform means somebody decided.
         chip: "border-[#E8B400] bg-[#FFF6DF] text-[#8A6A00]",
         dot: "bg-[#E8B400]",
-        heading: "Waiting for review",
+        heading: "Not visible yet",
+        // ⚠️ Says what to DO. The stored `moderation_reason` replaces this whenever
+        // there is one, and it already names the thing that was flagged.
         fallback:
-            "This listing is waiting for approval. Only you can see it until it goes live — there is nothing for you to do.",
+            "An automated check flagged something on this listing, so only you can see it. Edit it and it goes live again straight away.",
     },
     changes: {
         Icon: AlertTriangle,
@@ -46,7 +58,7 @@ const TONES = {
         dot: "bg-[#D11A2A]",
         heading: "Changes requested",
         fallback:
-            "An admin asked for a change before this can go live. Edit the listing and it returns for review.",
+            "A change was asked for before this can go live. Edit the listing and it goes live again.",
     },
     suspended: {
         Icon: Ban,

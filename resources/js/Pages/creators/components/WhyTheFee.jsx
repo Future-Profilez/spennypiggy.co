@@ -77,9 +77,12 @@ export default function WhyTheFee({ accent, headless = false }) {
                     on the page. Restore "two rates" here only if the bank rate
                     is added to the shared prop and rendered. */}
                 <Block title="What you are charged">
+                    {/* 🚨 NO "CHEAPER RAIL" CLAIM (11 Sep 2026, client D2: *"Do not
+                        centre the proposition on one rail being cheaper."*). One
+                        advertised percentage, whichever rail the supporter picks —
+                        the difference in processing cost is ours to carry. */}
                     Two rails you can use today — Pay by Bank and card — and a
-                    third on the way. Bank costs less to process, so it is the
-                    cheaper of the two for your supporter.{' '}
+                    third on the way. Both cost your supporter the same.{' '}
                     {allIn
                         ? `On card that is ${rate}, all-in: the payment processing is inside it and nothing is added afterwards. `
                         : ''}
@@ -181,7 +184,7 @@ export default function WhyTheFee({ accent, headless = false }) {
             <div className="mt-8 grid gap-3 md:grid-cols-3">
                 <Card
                     heading="Pay by Bank"
-                    body="Supporters who pay straight from their bank pay a lower fee than card, because bank payments cost us less to process. Available in the UK, EU and US. Recommended on higher-value payments."
+                    body="Supporters can pay straight from their bank instead of by card. The fee is the same either way; the limits are higher and there is no card to be declined."
                 />
                 <Card
                     heading="Stablecoin Tips — coming soon"

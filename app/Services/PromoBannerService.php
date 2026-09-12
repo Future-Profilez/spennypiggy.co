@@ -8,7 +8,6 @@ use App\Models\GrowthBonusProfile;
 use App\Models\User;
 use App\Support\Incentives;
 use App\Support\SubscriptionPlan;
-use App\Support\VerifiedBadge;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -448,12 +447,6 @@ class PromoBannerService
             'free_until_first_sale' => $isCreator
                 && (bool) ($context['free_until_first_sale'] ?? false)
                 && ! (bool) ($context['has_ever_sold'] ?? false),
-
-            // 🚨 Only once an admin has APPROVED the profile — see
-            // VerifiedBadge::awaitingIdentityCheck(). The old rule was
-            // `tierFor() === NONE`, which is the state of an unapproved account, so
-            // this card was shown to exactly the creators who cannot act on it.
-            'verified_badge' => $isCreator && VerifiedBadge::awaitingIdentityCheck($user),
 
             /*
              * 🚨 ONLY WHILE THERE IS SOMETHING TO DO. The card asks a creator to

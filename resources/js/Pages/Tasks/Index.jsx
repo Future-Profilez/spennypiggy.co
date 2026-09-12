@@ -143,7 +143,7 @@ export default function Index({
                 return {
                     title: "⚠️ Action Required",
                     message:
-                        "Your task has been rejected. Please review the feedback below, make necessary edits, and resubmit for admin review.",
+                        "This task was turned down. Read the reason below, edit it, and save — it goes live again straight away.",
                     color: "red",
                     bgColor: "bg-red-50",
                     borderColor: "!border-red-300",
@@ -168,10 +168,10 @@ export default function Index({
 
             case "pending":
                 return {
-                    title: "⏳ Under Review",
+                    title: "⚠️ Needs a fix",
                     message:
-                        "Your task is currently being reviewed by our admin team. This usually takes 24-48 hours. You'll be notified once a decision is made.",
-                    action: "Wait for Review",
+                        "An automated check flagged something on this task, so only you can see it. Edit it and it goes live again straight away.",
+                    action: "Edit the task",
                     color: "yellow",
                     bgColor: "bg-yellow-50",
                     borderColor: "!border-yellow-300",

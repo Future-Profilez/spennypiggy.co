@@ -114,8 +114,17 @@ class PiggyPotExpiryTest extends TestCase
             $this->pot($creator, ['status' => 'moderation_hold'])
         );
         $this->assertSame('moderation_hold', $held['code']);
-        // Nothing for the creator to do while an admin reviews it.
-        $this->assertNull($held['fix']);
+        /*
+         * 🚨 THIS ASSERTED `null` UNTIL 11 Sep 2026 — "nothing for the creator to do
+         * while an admin reviews it". That was true while a person released every hold;
+         * it is the opposite of true now. Nothing is queued behind anybody: a check
+         * pulled the pot back and the creator is the only one who can move it, so a
+         * held pot that offers no fix is a dead end.
+         */
+        $this->assertNotNull(
+            $held['fix'],
+            'A held pot must tell its creator what to do — nobody is coming to release it.'
+        );
     }
 
     /** Another pot holding the slot is a different problem from a lapsed date. */

@@ -42,40 +42,101 @@ class VerifiedBadgeTest extends TestCase
         $this->assertNull(VerifiedBadge::tierFor($this->user(['profile_status_lock' => 0])));
     }
 
-    public function test_an_approved_gifter_gets_the_basic_tier(): void
+    /**
+     * 🚨 A SUPPORTER'S BADGE IS WHAT THEY HAVE SPENT (client direction,
+     * 12 Sep 2026). It was `profile_status_lock = 2` — the verdict of the £500
+     * address review — and that review, its screen and the spend gate were all
+     * removed the same day. Nothing sets that lock for a supporter again, so
+     * leaving the badge on it would have meant no supporter could ever carry
+     * one. This test asserted the lock rule until that day.
+     */
+    public function test_a_supporter_earns_the_basic_tier_by_spending(): void
     {
-        $gifter = $this->user([
+        $base = [
             'role' => 0,
-            // A gifter has neither of these and never will.
+            // A supporter has neither of these and never will.
             'identity_status' => 0,
             'stripe_details_submitted' => 0,
-        ]);
+        ];
 
-        $this->assertSame(VerifiedBadge::BASIC, VerifiedBadge::tierFor($gifter));
+        $this->assertNull(
+            VerifiedBadge::tierFor($this->user($base + ['is_500_limit_exceeded' => 0])),
+            'An approved profile is no longer what earns a supporter the badge.'
+        );
+
+        $this->assertSame(
+            VerifiedBadge::BASIC,
+            VerifiedBadge::tierFor($this->user($base + ['is_500_limit_exceeded' => 1]))
+        );
     }
 
-    public function test_a_creator_needs_identity_and_stripe_for_the_creator_tier(): void
+    /**
+     * ⚠️ The lock still governs the CREATOR tier, and it has to — it is the one
+     * record that their profile is live rather than drafting or pulled back by
+     * a check. The two roles no longer share a basis, which is why the resolver
+     * branches on role BEFORE reading the lock.
+     */
+    public function test_a_supporters_badge_ignores_the_profile_lock(): void
+    {
+        $spender = $this->user([
+            'role' => 0,
+            'is_500_limit_exceeded' => 1,
+            'profile_status_lock' => 0,
+        ]);
+
+        $this->assertSame(VerifiedBadge::BASIC, VerifiedBadge::tierFor($spender));
+    }
+
+    /**
+     * 🚨 THIS PAIR USED TO PIN THE IDENTITY CLAUSES, AND THEY ARE GONE.
+     * It was `test_a_creator_needs_identity_and_stripe_for_the_creator_tier`
+     * plus `test_an_admin_rejection_outranks_stripes_pass`, and between them
+     * they required `identity_status = 2` and `identity_admin_status = 2` each
+     * to drop a creator to the basic badge. Spenny Piggy runs no identity check
+     * at all since 11 Sep 2026 (client D5/Q20), so neither column is written
+     * any more and both assertions pinned a rule the client had removed.
+     *
+     * ⚠️ THE CONTROL IS THE POINT OF THE REPLACEMENT. An identity column is set
+     * to its old failing value and the creator tier must survive it — that is
+     * what proves the clause was removed rather than merely passing today
+     * because nothing writes the column. Deleting these tests would have proved
+     * nothing either way.
+     */
+    public function test_the_creator_tier_now_turns_on_stripe_alone(): void
     {
         $this->assertSame(VerifiedBadge::CREATOR, VerifiedBadge::tierFor($this->user()));
 
-        // Approved, but the platform still cannot pay them — client decision
-        // 5 Aug 2026: they keep the basic badge rather than losing it.
-        $this->assertSame(
-            VerifiedBadge::BASIC,
-            VerifiedBadge::tierFor($this->user(['identity_status' => 2]))
-        );
+        // Connect not finished — the platform genuinely cannot pay them, which
+        // is the one thing the higher tier still claims. Client decision
+        // 5 Aug 2026: they keep the basic badge rather than losing it outright.
         $this->assertSame(
             VerifiedBadge::BASIC,
             VerifiedBadge::tierFor($this->user(['stripe_details_submitted' => 0]))
         );
     }
 
-    public function test_an_admin_rejection_outranks_stripes_pass(): void
+    public function test_a_dead_identity_column_no_longer_moves_the_badge(): void
     {
+        // Both of these used to force the basic tier. They are leftovers on old
+        // rows now and must not decide anything.
         $this->assertSame(
-            VerifiedBadge::BASIC,
+            VerifiedBadge::CREATOR,
+            VerifiedBadge::tierFor($this->user(['identity_status' => 2]))
+        );
+        $this->assertSame(
+            VerifiedBadge::CREATOR,
             VerifiedBadge::tierFor($this->user(['identity_admin_status' => 2]))
         );
+    }
+
+    public function test_the_creator_label_does_not_claim_an_identity_check(): void
+    {
+        /* The platform runs none, so the badge must not say it does. This is
+           the only place a visitor reads what the tick means. */
+        $label = VerifiedBadge::labelFor(VerifiedBadge::CREATOR);
+
+        $this->assertNotNull($label);
+        $this->assertStringNotContainsStringIgnoringCase('identity', $label);
     }
 
     public function test_a_suspended_account_never_carries_a_badge(): void

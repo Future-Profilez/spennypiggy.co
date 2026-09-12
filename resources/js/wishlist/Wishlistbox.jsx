@@ -68,10 +68,29 @@ export default function Wishlistbox(props) {
         },
         IsloggedIn &&
             Number(itm?.is_approved) === 0 && {
-                // A reason means an admin looked and refused; no reason means
-                // nobody has reached it yet. Two different things to do.
-                state: editedReason ? "changes" : "in_review",
+                /*
+                 * A reason means an admin looked and refused; no reason means
+                 * nobody has reached it yet. Two different things to do.
+                 *
+                 * 🚨 `flagged`, NOT `in_review`. That state was removed from
+                 * `ItemStatusBadge` on 11 Sep 2026 — listings publish
+                 * themselves and a check retracts one, so nothing is "queued
+                 * behind a person" any more. A state the component does not
+                 * define renders NO CHIP AT ALL, so the held wish said nothing.
+                 */
+                state: editedReason ? "changes" : "flagged",
                 reason: editedReason || null,
+            },
+        /*
+         * 🚨 A REVIEWER'S REQUEST ON A LIVE WISH. Deliberately NOT inside the
+         * `is_approved === 0` branch above: an edit request leaves the item
+         * SELLING, so it has to render on an approved listing — which is the
+         * only state it will ever be seen in.
+         */
+        IsloggedIn &&
+            itm?.edit_requested_reason && {
+                state: "changes",
+                reason: itm.edit_requested_reason,
             },
     ].filter(Boolean);
 

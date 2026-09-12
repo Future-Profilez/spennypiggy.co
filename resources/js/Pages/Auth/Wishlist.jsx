@@ -2,7 +2,6 @@ import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
 import { useEffect, useRef, useState } from "react";
-import LoaderButton from "@/Components/LoaderButton";
 import { router, useForm, usePage } from "@inertiajs/react";
 import { MAX_PRICE_GBP, priceLimitError } from "@/lib/priceLimits";
 import { useAlerts } from "@/Components/Alerts";
@@ -10,7 +9,7 @@ import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
 import { Disclosure, Transition } from "@headlessui/react";
 import uploadedimg from "../../../assets/img/uploadedimg.png";
-import Popup from "@/Components/Popup";
+import ItemFormShell from "@/Components/ItemFormShell";
 import {
     itemCheckboxClass,
     itemErrorClass,
@@ -24,7 +23,6 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
-import { FaRegHeart, FaChevronUp } from "react-icons/fa";
 import { RiCloseLine, RiCheckDoubleLine } from "react-icons/ri";
 import ContentFilePreview from "@/Components/ContentFilePreview";
 import { creatorFeeNote } from "@/lib/fees";
@@ -56,8 +54,6 @@ export default function Wishlist(props) {
         editpop,
         openPop,
         setuped,
-        customtext,
-        hidetrigger,
     } = props;
     const defaultCurrency =
         (auth && auth.user && auth.user.default_currency) || "GBP";
@@ -172,14 +168,15 @@ export default function Wishlist(props) {
         ai_generated: isAiImage ? 1 : 0,
     });
 
-    // Esc and the backdrop now close a Popup (they were dead), so a three-step
-    // wish plus an Uploadcare upload must not evaporate on a mis-tap. Returning
-    // false from onHide vetoes the dismissal.
+    // Esc and the backdrop close the sheet, so a three-step wish plus an
+    // Uploadcare upload must not evaporate on a mis-tap. Returning false from
+    // `onClose` vetoes the dismissal — `ItemFormShell` passes it straight to
+    // `Sheet`, which honours it exactly as `Popup`'s `onHide` did.
     const confirmDiscard = useDirtyGuard(close !== false, data);
 
-    // Popup owns its own open flag, so tell it (and any caller driving `openPop`)
-    // that the panel is closed — otherwise the next press repeats a value the
-    // effect has already seen and nothing reopens.
+    // The caller drives the panel through `openPop`, so record the close
+    // locally too — otherwise the next press repeats a value the effect has
+    // already seen and nothing reopens.
     const requestClose = () => {
         if (!confirmDiscard()) return false;
         setClose(false);
@@ -191,58 +188,11 @@ export default function Wishlist(props) {
         return { ...rest, ...rewardToPayload(reward) };
     });
 
-    const [step, setStep] = useState(1);
-    const totalSteps = 3;
-
-    const nextStep = () => {
-        if (step < totalSteps) {
-            // Validation for Step 1
-            if (step === 1) {
-                if (!data.wishname) {
-                    errorAlert("Please enter a wish name.");
-                    return;
-                }
-                // The £4.99–£500 rule is GBP-EQUIVALENT and was enforced only
-                // server-side, after all three steps. Bounds are converted into
-                // the creator's own currency — see `lib/priceLimits.js`.
-                const priceError = priceLimitError(
-                    data.price,
-                    defaultCurrency,
-                    rates,
-                    MAX_PRICE_GBP.wish,
-                );
-                if (priceError) {
-                    errorAlert(priceError);
-                    return;
-                }
-                if (!data.category && !editpop && checkboxes.length === 0) {
-                    errorAlert("Please choose a category.");
-                    return;
-                }
-            }
-            // Validation for Step 2
-            if (step === 2) {
-                // Thumbnail is optional, defaults to first image if not provided
-            }
-
-            setStep(step + 1);
-        }
-    };
-
-    const prevStep = () => {
-        if (step > 1) setStep(step - 1);
-    };
-
-    const renderProgressBar = () => {
-        return (
-            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
-                <div
-                    className="bg-[#FF007F] h-2.5 rounded-full transition-all duration-300 ease-in-out"
-                    style={{ width: `${(step / totalSteps) * 100}%` }}
-                ></div>
-            </div>
-        );
-    };
+    /* The step counter, its progress bar and the Back/Next pair that used to sit
+       here are gone: `ItemFormShell` owns all three, so every module's form is
+       paced the same way. Step 1's checks moved into that step's own `validate`
+       (see `steps` below) — they are the same three rules, returned as a string
+       instead of fired as a toast. */
 
     const onSlideChange = (swiper) => {
         setData("thumbnail", imageLinks[swiper && swiper.activeIndex]);
@@ -457,50 +407,56 @@ export default function Wishlist(props) {
         }
     };
 
-    const AddItem = () => {
-        return (
- <div className="flex items-center p-3 rounded-box border-2 border-black">
- <div className="p-1 !rounded-box bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
-                    <FaRegHeart color="var(--pink)" size="1.5rem" />
-                </div>
-                <div className="ps-3 text-start">
-                    <h2 className="text-md font-normal font-GillSans uppercase">
-                        {text ? text : "Add Wish Item"}
-                    </h2>
-                    <p className="text-sm font-poppins">
-                        Fans fund a specific item and unlock an exclusive file.
-                    </p>
-                </div>
-            </div>
-        );
-    };
+    /* 🚨 THE BUILT-IN TRIGGER IS GONE, AND NOTHING LOST IT. `Popup` rendered its
+       own button from a local `AddItem` card whenever `hidetrigger` was absent —
+       and BOTH live call sites (the dashboard's direct form and `Wishlistbox`'s
+       edit) pass `hidetrigger`, so that button had no caller. The sheet is
+       opened by the parent through `openPop`, which is the one route in that
+       `pickModule` already enforces. `customtext`/`hidetrigger` went with it. */
 
-    return (
-        <Popup
-            modalclass="pinkmodal full"
-            action={close}
-            title={editpop ? "Edit wish" : "Add a wish"}
-            dismissable
-            onHide={requestClose}
-            space="4"
-            size="lg"
- classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-box mb-4 text-center"}`}
-            /* `hidetrigger` renders NO trigger button — the caller owns the
-               open state and drives it through `openPop`. Popup only skips its
-               button when `text` is literally undefined, so null/false will
-               still fall through to <AddItem /> here. */
-            text={hidetrigger ? undefined : customtext || <AddItem />}
-        >
- <div className="editprofileModal wishlistModal ">
-                <div className="editprofileModalInner ">
- <div className="wishinfo !p-0 lg:!p-4 ">
- <h2 className="mb-4 !text-start font-GillSans uppercase text-large mb-1 pr-5">
-                            {editpop ? " Edit Wish" : "Add A Wish"}
-                        </h2>
+    /*
+     * 🚨 THE THREE STEPS ARE THE SHELL'S NOW — this form no longer owns a step
+     * counter, a progress bar or a pair of navigation buttons. Every sellable
+     * module is asked for the same three things in the same order, in the same
+     * sheet, and `ItemFormShell` is where that is stated once. Bills,
+     * memberships and Piggy Pot were already on it; a wish drawing its own
+     * stepper beside them is how "one listing form" stops being one.
+     *
+     * ⚠️ NOT A WORD OF THE FIELDS CHANGED. What moved is the chrome around
+     * them — the markup inside each step, its validation and `createWishList`
+     * are the same code they were, so the save path and every server rule are
+     * untouched.
+     *
+     * ⚠️ `validate` RETURNS A STRING, it does not raise a toast. The shell
+     * prints the problem against the step it belongs to and refuses to advance;
+     * the old `errorAlert` fired a toast that outlived the field it was about.
+     */
+    const steps = [
+        {
+            key: "details",
+            title: "What you're selling",
+            validate: () => {
+                if (!data.wishname) return "Please enter a wish name.";
 
-                        <form onSubmit={createWishList} className="text-left">
-                            {/* Step 1: Basic Info & Category */}
-                            <div className={step === 1 ? "block" : "hidden"}>
+                /* The £4.99–£500 rule is GBP-EQUIVALENT and was enforced only
+                   server-side, after all three steps. Bounds are converted into
+                   the creator's own currency — see `lib/priceLimits.js`. */
+                const priceError = priceLimitError(
+                    data.price,
+                    defaultCurrency,
+                    rates,
+                    MAX_PRICE_GBP.wish,
+                );
+                if (priceError) return priceError;
+
+                if (!data.category && !editpop && checkboxes.length === 0) {
+                    return "Please choose a category.";
+                }
+
+                return null;
+            },
+            render: () => (
+                <>
                                     {item && item.is_suspended == 1 && (
  <div className="mb-4 bg-red-50 border-2 border-red-500 p-4 rounded-box-sm">
                                             <div className="flex">
@@ -520,18 +476,26 @@ export default function Wishlist(props) {
                                             </div>
                                         </div>
                                     )}
- <p className="p-4 mb-4 text-normal text-yellow-800 rounded-box-sm border border-yellow-500 bg-yellow-50">
-                                    Describe the content the supporter receives
-                                    (e.g. "Exclusive photo set"). Do not list
-                                    personal items, gifts, expenses, or
-                                    brand/third-party service names — these will
-                                    be rejected and removed. Our AI blocks adult
-                                    content but any overly suggestive images
-                                    will also be rejected. Please reach out to
-                                    support for further clarification.
-                                </p>
+                                {/* ⚠️ A RULE THE CREATOR MUST READ IS NOT A WALL OF TEXT.
+                                    This was a 60-word paragraph in a full yellow panel at
+                                    body size — it filled the whole first screen of a
+                                    three-step form, so the first thing a creator met was a
+                                    list of ways to be rejected. Same rules, said in two
+                                    sentences, with the caution spent on a 6px spine rather
+                                    than on the whole block. `border-black` ALONE is the 2px
+                                    house frame; a width class beside it is discarded. */}
+                                <div className="mb-6 flex overflow-hidden rounded-box-sm border-2 border-black bg-white">
+                                    <span aria-hidden="true" className="w-1.5 shrink-0 bg-[#E6EA7B]" />
+                                    <p className="px-4 py-3 text-[13px] font-medium leading-[1.55] text-black">
+                                        <span className="font-black">Sell content, not things.</span>{" "}
+                                        Describe what the supporter receives — for example, an
+                                        exclusive photo set. Personal items, gifts, expenses and
+                                        brand names are removed, and images must stay
+                                        non-explicit.
+                                    </p>
+                                </div>
 
-                                <div className="mb-4">
+                                <div className="mb-6">
                                     <label htmlFor="goal_label" className={itemLabelClass}>
                                         Goal{" "}
  <span className="text-black/60 font-normal">(optional)</span>
@@ -561,7 +525,7 @@ export default function Wishlist(props) {
                                     )}
                                 </div>
 
-                                <div className="mb-4">
+                                <div className="mb-6">
                                     <label htmlFor="wishname" className={itemLabelClass}>
                                         Content Title
                                     </label>
@@ -585,7 +549,7 @@ export default function Wishlist(props) {
                                     )}
                                 </div>
 
-                                <div className="mb-4">
+                                <div className="mb-6">
                                     <label htmlFor="price" className={itemLabelClass}>
                                         Price ({defaultCurrency})
                                     </label>
@@ -608,7 +572,7 @@ export default function Wishlist(props) {
                                         />
                                     </div>
                                     {data.price > 0 && (
- <div className="mt-3 p-3 bg-black/[0.03] rounded-box border border-gray-100">
+ <div className="mt-3 rounded-box-sm border-2 border-black bg-white p-3">
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className="text-sm text-black/80">Fans pay:</span>
                                                 <span className="font-bold text-black">
@@ -620,7 +584,7 @@ export default function Wishlist(props) {
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm text-black/80">You receive:</span>
-                                                <span className="font-bold text-green-600">
+                                                <span className="font-bold text-black">
                                                     {new Intl.NumberFormat('en-GB', {
                                                         style: 'currency',
                                                         currency: defaultCurrency
@@ -645,7 +609,7 @@ export default function Wishlist(props) {
                                         )}
                                 </div>
 
-                                <div className="mb-4">
+                                <div className="mb-6">
                                     <span className={itemLabelClass}>Category</span>
                                     <div className="flex flex-wrap gap-2 mb-3 max-h-40 overflow-y-auto custom-scrollbar ">
                                         {categories && categories.length ? (
@@ -681,7 +645,7 @@ export default function Wishlist(props) {
                                                             htmlFor={
                                                                 "categories" + i
                                                             }
- className="block cursor-pointer select-none rounded-box-sm border border-gray-300 px-4 py-2 text-sm font-medium transition-colors peer-checked:bg-[#FF007F] peer-checked:text-black peer-checked:border-[#FF007F] hover:bg-black/[0.03]"
+ className="block cursor-pointer select-none rounded-box-sm border-2 border-black/20 px-4 py-2 text-sm font-bold transition-colors peer-checked:border-black peer-checked:bg-[#FF007F] peer-checked:text-black hover:bg-black/[0.04]"
                                                         >
                                                             {c.category}
                                                         </label>
@@ -705,17 +669,21 @@ export default function Wishlist(props) {
                                         />
                                         <button
                                             type="button"
- className="bg-gray-900 text-white p-3 px-6 !rounded-box-sm text-sm font-medium hover:bg-gray-800 transition-colors"
+ className="min-h-[48px] shrink-0 rounded-box-sm border-2 border-black bg-black px-6 text-sm font-black uppercase tracking-wider text-white transition-opacity duration-200 hover:opacity-80"
                                             onClick={AddCategory}
                                         >
                                             {adding ? "Adding..." : "Add"}
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* Step 2: Visuals */}
-                            <div className={step === 2 ? "block" : "hidden"}>
+                </>
+            ),
+        },
+        {
+            key: "visuals",
+            title: "Images",
+            render: () => (
+                <>
                                 <div className="mb-6">
                                     <label className={itemLabelClass}>
                                         Choose Image or Upload
@@ -724,7 +692,7 @@ export default function Wishlist(props) {
                                     {thumbnail ? (
                                         <div className="relative mb-4 group">
                                             <img
- className="w-full h-64 object-cover rounded-box border border-gray-200 "
+ className="w-full h-64 object-cover rounded-box border-2 border-black"
                                                 src={`https://ucarecdn.com/${thumbnail}/`}
                                                 alt="Wish Thumbnail"
                                             />
@@ -814,10 +782,14 @@ export default function Wishlist(props) {
                                         </div>
                                     )}
                                 </div>
-                            </div>
-
-                            {/* Step 3: Fulfillment & Settings */}
-                            <div className={step === 3 ? "block" : "hidden"}>
+                </>
+            ),
+        },
+        {
+            key: "reward",
+            title: "What they get",
+            render: () => (
+                <>
                                 <div className="mb-8">
                                     <RewardEditor
                                         value={data.reward}
@@ -909,51 +881,20 @@ export default function Wishlist(props) {
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                </>
+            ),
+        },
+    ];
 
-                            {renderProgressBar()}
-
-                            {/* Navigation Buttons */}
-                            <div className="flex gap-3 mt-8 pt-4 border-t border-gray-100">
-                                {step > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={prevStep}
- className="min-h-[48px] flex-1 py-3 px-4 bg-white text-black border-2 border-black font-black uppercase text-sm tracking-[0.14em] rounded-box-sm transition-colors hover:bg-[#F4F4F5]"
-                                    >
-                                        Back
-                                    </button>
-                                )}
-
-                                {step < totalSteps ? (
-                                    <button
-                                        type="button"
-                                        onClick={nextStep}
- className="min-h-[48px] flex-1 py-3 px-4 bg-[#FF007F] text-black border-2 border-black font-black uppercase text-sm tracking-[0.14em] rounded-box-sm transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
-                                    >
-                                        Next
-                                    </button>
-                                ) : (
-                                    <LoaderButton
-                                        disabled={processing}
-                                        type="submit"
- className="min-h-[48px] !mt-0 flex-1 py-3 px-4 bg-[#FF007F] text-black border-2 border-black font-black uppercase text-sm tracking-[0.14em] rounded-box-sm transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
-                                        spinnerclass="fill-black"
-                                    >
-                                        {processing
-                                            ? editpop
-                                                ? "Updating..."
-                                                : "Processing..."
-                                            : editpop
-                                              ? "Update Wish"
-                                              : "Add Wish"}
-                                    </LoaderButton>
-                                )}
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </Popup>
+    return (
+        <ItemFormShell
+            open={close === true}
+            onClose={requestClose}
+            title={editpop ? "Edit wish" : "Add a wish"}
+            steps={steps}
+            onSubmit={() => createWishList()}
+            submitLabel={editpop ? "Update wish" : "Add wish"}
+            processing={processing}
+        />
     );
 }

@@ -672,34 +672,44 @@ MD,
             ],
             [
                 'slug' => 'why-is-my-listing-under-review',
-                'title' => 'Why is my listing under review?',
+                'title' => 'Why can only I see my listing?',
                 'audience' => 'creator',
-                'keywords' => 'under review, held, moderation, not live, pending approval, listing hidden, flagged',
-                'summary' => 'Every new listing is checked before it goes on sale. Most clear without you doing anything.',
+                /*
+                 * ⚠️ KEYWORDS ARE RETRIEVAL TERMS, NOT COPY — nothing here is shown to a
+                 * creator. The visible wording dropped "review" on 11 Sep 2026, and the
+                 * acceptance harness immediately caught that a reader asking "why is my
+                 * listing being reviewed" then reached no answer. People still type the
+                 * word, including anyone who remembers the old flow, so the article has
+                 * to answer it while never using it back.
+                 */
+                'keywords' => 'not visible, needs a fix, held, moderation, not live, hidden, flagged, only I can see, being reviewed, under review, pending approval, waiting for approval',
+                'summary' => 'Listings go on sale the moment you save them. One is hidden only when an automatic check flags something.',
                 'related' => ['what-content-is-allowed', 'words-you-cannot-use', 'schedule-a-listing'],
                 'body' => <<<'MD'
-Every new listing is created unpublished and checked before it can be bought. There are two different states and they mean different things.
+Your listing goes on sale **the moment you save it**. Nobody approves it first and there is no queue to wait in.
 
-## "Waiting for review"
-
-Nobody has looked at it yet, and there is nothing for you to do. This is the normal path for most listings.
-
-## "Changes needed"
-
-Someone — or the automatic scan — has looked and something needs fixing. The reason is shown on the listing's own card, in plain words. Fix that one thing and it goes back into the queue automatically.
+A listing is hidden from buyers only when an automatic check flags something on it. When that happens the card says **Needs a fix** and names the reason.
 
 ## What gets checked
 
-- **Images and files** — an automatic scan, then a person.
-- **Your words** — the listing title, description and reward text are checked against the platform's content rules.
+- **Images and files** — an automatic scan of the picture buyers see *and* of the file they pay for.
+- **Your words** — the title, description and reward text are checked against the platform's content rules.
 
-## Why an item can be held twice
+The checks run as you save. A picture scan takes a few seconds, so a listing can go on sale and then be pulled back if the scan finds something.
 
-A Shop listing has both a product image and a paid reward file. Both are scanned, so an item can be held for either. The reason names which one.
+## How to make it live again
+
+Fix the thing the reason names and save. It goes back on sale straight away — there is nothing to submit and nobody to wait for.
+
+If you think a check got it wrong, use **Get help** on the listing itself and a person will look.
+
+## Why an item can be flagged twice
+
+A Shop listing has both a product image and a paid reward file, and both are scanned — so an item can be flagged for either. The reason names which one.
 
 ## If your listing is scheduled
 
-Approving a scheduled listing does not put it on sale early — it still goes live at the time you set. See [scheduling a listing](/help/selling/schedule-a-listing).
+A scheduled listing still goes live at the time you set. Fixing a flag before then does not publish it early.
 MD,
             ],
             [
@@ -935,7 +945,7 @@ List something at {{price.min}} and {{price.min}} is what reaches your balance. 
 
 **{{fee.all_in}} on a card payment, {{fee.all_in.bank}} on a bank payment.** That is the whole fee — card processing is inside it, not added afterwards, and there is no separate administration charge.
 
-A bank payment costs less to process than a card, which is why it is the cheaper of the two for your supporter. A few creators are on individually negotiated rates; if that is you, yours is the one on your own transactions.
+A bank payment costs less to process than a card, but the supporter pays the same either way — Spenny Piggy charges one advertised percentage whichever rail they use. Bank's advantages are higher limits and no card to be declined.
 
 The exact breakdown for any sale is on that transaction in your financial dashboard.
 
@@ -1295,7 +1305,7 @@ Take the money reason out of the title. Does what is left still describe somethi
 
 All three are refused **as you save**, with a message naming the problem, on every kind of listing and on the reward title.
 
-Saving successfully still does not mean approved — every new listing is reviewed by a person before it goes on sale, and review looks at the whole thing rather than the wording alone. If yours is held, [why is my listing under review?](/help/selling/why-is-my-listing-under-review) explains what happens next.
+A listing goes on sale the moment you save it. A check can still pull it back afterwards — if it does, the card says what to fix.
 
 ## Words that are fine
 

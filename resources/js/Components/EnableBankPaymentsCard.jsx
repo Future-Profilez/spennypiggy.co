@@ -63,8 +63,8 @@ export default function EnableBankPaymentsCard() {
                     Bank payments enabled ✓
                 </p>
                 <p className="text-sm mt-1">
-                    Supporters can now pay you straight from their bank at a
-                    lower fee.
+                    Supporters can now pay you straight from their bank — same
+                    fee as card, higher limits.
                 </p>
             </div>
         );
@@ -80,8 +80,11 @@ export default function EnableBankPaymentsCard() {
                         Accept bank payments 🏦
                     </p>
                     <p className="text-sm mt-1 text-gray-700">
-                        Let supporters pay you straight from their bank —
-                        cheaper for them, same payout for you. One tap to
+                        {/* ⚠️ NOT "cheaper for them" (11 Sep 2026, client D2). Both rails
+                            carry the same 12% supporter fee; bank's advantage is higher
+                            limits and no card to decline, not price. */}
+                        Let supporters pay you straight from their bank — higher
+                        limits, same fee, same payout for you. One tap to
                         switch on{" "}
                         {(status.missing || [])
                             .map((c) => LABELS[c] || c)

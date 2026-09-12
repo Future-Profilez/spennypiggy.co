@@ -124,6 +124,25 @@ export function setSaved(productType, itemId, saved) {
     notify();
 }
 
+/**
+ * How many items this viewer has saved, across every product type.
+ *
+ * ⚠️ Returns 0 — never null — before the first load resolves, and the caller is
+ * expected to subscribe: a shelf that renders "0 saved" and then corrects itself
+ * is the honest shape, where a spinner on a figure nobody asked for is not.
+ *
+ * ⚠️ Counts the SETS this module already holds, so it costs nothing and can
+ * never disagree with the hearts on screen — a second endpoint answering "how
+ * many" is a second answer waiting to drift from the one the buttons read.
+ */
+export function savedCount() {
+    if (cache === null) {
+        return 0;
+    }
+
+    return Object.values(cache).reduce((total, ids) => total + ids.size, 0);
+}
+
 /** Test / logout hook — drops the cache so the next mount refetches. */
 export function resetSavedItems() {
     cache = null;

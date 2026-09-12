@@ -21,7 +21,7 @@
             <tr>
                 <td align="center"
                     style="font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:30px;font-weight:bold;color:#111111;padding:0 0 12px 0;">
-                    Your {{ $feature }} is under review
+                    Your {{ $feature }} needs a fix
                 </td>
             </tr>
 
@@ -71,7 +71,7 @@
             <tr>
                 <td align="center"
                     style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;color:#888888;padding:0 0 8px 0;">
-                    Most reviews are quick. If you think this is a mistake, reply to this email and our team will take
+                    Fix what is named above and save — it goes live again straight away. If you think a check got this wrong, reply to this email and a person will look.
                     a look.
                 </td>
             </tr>

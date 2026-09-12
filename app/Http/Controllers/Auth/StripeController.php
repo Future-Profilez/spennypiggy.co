@@ -62,8 +62,6 @@ use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\AnalyticsEvent;
 use App\Support\BlockedPaymentAlert;
-use App\Support\IdentityCheckState;
-use App\Support\IdentityRejection;
 use App\Support\NotificationContext;
 use App\Support\PayoutDestinationAudit;
 use App\Support\StripeChargesFlag;
@@ -84,7 +82,6 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\SignatureVerificationException;
-use Stripe\Identity\VerificationSession;
 use Stripe\PaymentIntent;
 use Stripe\Stripe;
 use Stripe\StripeClient;
@@ -3819,13 +3816,16 @@ class StripeController extends Controller
         ]);
 
         $user = Auth::user();
-        if (! empty($user) && $user->role === 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
-            return response()->json([
-                'status' => false,
-                'card_verification_required' => true,
-                'msg' => 'Please complete your card verification process. Go your profile and complete your card verification process.',
-            ]);
-        }
+        /*
+         * 🚨 THE £500 CARD-VERIFICATION GATE WAS REMOVED HERE (12 Sep 2026,
+         * client direction). A supporter past £500 used to be refused until an
+         * admin compared their address against the one their bank returned —
+         * and the screen that took that decision was deleted the same day, so
+         * the gate had become a permanent block with nobody able to clear it.
+         * `is_500_limit_exceeded` is still written and now earns the grey badge
+         * (`App\Support\VerifiedBadge`); nothing reads it to refuse a purchase
+         * any more, and nothing may start to.
+         */
         $creator = User::where('uuid', $creator_uid)->first();
         if (! $creator) {
             return response()->json([
@@ -5110,170 +5110,10 @@ class StripeController extends Controller
         }
     }
 
-    public function createVerificationSession()
-    {
-        try {
-            /** @var User $user */
-            $user = Auth::user();
-            if (! $user) {
-                return response()->json(['error' => 'User not found.'], 404);
-            }
-
-            /*
-             * 🚨 THIS ENDPOINT CARRIES ITS OWN GATE. The identity-page middleware that
-             * used to mirror it (`CheckStripeIdentityVerification`) was deleted on
-             * 11 Sep 2026 — identity is a payout gate, not a page wall — so this is the
-             * ONLY gate left in front of a billable session. Do not loosen it.
-             *
-             * This endpoint used to sit under "Public routes (no middleware)" with only
-             * the `$user` check above, so any signed-in account — a gifter included —
-             * could POST it in a loop and open Stripe Identity sessions on the
-             * platform's account. Identity was moved BEHIND Connect precisely because
-             * the check is billable (EnsureIdentityVerifiedForListings), and a gate on
-             * the page is worth nothing if the action it fronts has none.
-             */
-            if ((int) $user->role !== 1
-                || (int) $user->profile_status_lock !== 2
-                || (int) $user->stripe_details_submitted !== 1) {
-                return response()->json(['error' => 'Identity verification opens once your profile is approved and your payouts are connected.'], 403);
-            }
-
-            if ((int) $user->identity_status === 1) {
-                return response()->json(['error' => 'Your identity is already verified.'], 409);
-            }
-
-            // 3 = flagged by the security review. Another session is another billable
-            // check with the same answer; support has to look at it.
-            if ((int) $user->identity_status === 3) {
-                return response()->json(['error' => 'Your identity check did not pass our security review. Please contact support.'], 409);
-            }
-
-            Stripe::setApiKey(config('services.stripe.secret'));
-
-            // A session Stripe is still working on must not be duplicated: the
-            // creator finished uploading and is waiting on the webhook. A session
-            // still at `requires_input` is an abandoned tab (Stripe sends no event
-            // for that), and a fresh one is the way back in.
-            if ((int) $user->identity_status === 2 && filled($user->stripe_user_id)) {
-                try {
-                    $existing = VerificationSession::retrieve($user->stripe_user_id);
-
-                    // Stripe has just told us the truth about this session — record it
-                    // whichever way it went, so the creator's own screen stops guessing.
-                    $user->forceFill(IdentityCheckState::attributes((string) $existing->status))->save();
-
-                    // 🚨 Stripe has ALREADY PASSED THEM and the `verified` webhook never
-                    // landed. Answering "still being processed" here sends the creator
-                    // back to a wait that finished days ago, and leaves them blocked from
-                    // listing until the daily reconcile picks it up. Same field set as the
-                    // webhook — the passport rule stays with the webhook, which is the
-                    // path that can tell them why a document was refused.
-                    if ($existing->status === IdentityCheckState::VERIFIED
-                        && IdentityCheckState::documentTypeAllowed($existing)) {
-                        $user->forceFill(IdentityCheckState::verifiedAttributes())->save();
-
-                        Log::info('Identity repaired from a session Stripe had already verified', [
-                            'user_id' => $user->id,
-                            'session_id' => $existing->id,
-                        ]);
-
-                        return response()->json(['error' => 'Your identity is already verified.'], 409);
-                    }
-
-                    if (in_array($existing->status, ['processing', 'verified'], true)) {
-                        return response()->json(['error' => 'Your identity check is already being processed. We will tell you as soon as there is a result.'], 409);
-                    }
-                } catch (Exception $e) {
-                    // Unknown session id — fall through and open a new one.
-                }
-            }
-            // Create Passport-Only Stripe Identity Verification Session
-            $session = VerificationSession::create([
-                'type' => 'document',
-                'options' => [
-                    'document' => [
-                        'allowed_types' => ['passport'],
-                        'require_live_capture' => true,
-                        'require_matching_selfie' => true,
-                    ],
-                ],
-                'metadata' => [
-                    'user_id' => $user->id,
-                ],
-                'provided_details' => [
-                    'email' => $user->email,
-                ],
-                'return_url' => route('user.show', $user->username),
-            ]);
-
-            // Update user with verification session ID. Everything below is
-            // written only AFTER Stripe accepted the session — clearing the
-            // previous rejection first meant a failed Stripe call wiped the
-            // reason the creator still needed to read.
-            $user->stripe_user_id = $session->id;
-            $user->identity_verification_error = null;
-
-            // Stripe's own status for the session we just opened — 'requires_input'
-            // until a document is actually submitted. Without it, `identity_status = 2`
-            // reads as "with our team" from the moment the tab opens, which is what
-            // left abandoned creators waiting on an answer nobody was writing.
-            $user->forceFill(IdentityCheckState::attributes((string) $session->status));
-
-            // A previous admin rejection is cleared now that a fresh check is
-            // genuinely under way, so the item leaves the admin queue as
-            // "awaiting result" rather than staying rejected.
-            if ($user->identity_admin_status == 2) {
-                $user->identity_admin_status = 0;
-
-                /*
-                 * 🚨 AND THE RESTRICTION COMES OFF WITH IT.
-                 *
-                 * A rejection stops the creator's money in both directions
-                 * (`IdentityRejection`), and the banner that carries the reason
-                 * tells them to run the check again — so this is the button
-                 * they were sent to press. Clearing the admin status without
-                 * lifting the hold would leave them restricted with the banner
-                 * gone: no explanation on screen and nothing left to press.
-                 *
-                 * ⚠️ It lifts ONLY a hold this feature applied — the reason code
-                 * is checked inside. A policy suspension is untouched, so this
-                 * cannot become a way to un-suspend yourself.
-                 *
-                 * ⚠️ The creator is NOT verified again by pressing it: Stripe
-                 * still has to pass and an admin still has to sign off. This
-                 * only returns them to where they were before the refusal.
-                 */
-                IdentityRejection::lift($user);
-            }
-
-            // 2 = check submitted, waiting on Stripe's webhook. Without it the
-            // creator returns from Stripe to a screen still saying "Verify
-            // identity" and starts a second (billable) session.
-            if ((int) $user->identity_status !== 1) {
-                $user->identity_status = 2;
-            }
-
-            // Skip verification outside production. ⚠️ `app()->environment()`, not a raw
-            // `env()` read — with config cached, `env()` outside config/ returns null.
-            if (! app()->isProduction()) {
-                $user->identity_status = 1;
-                $user->identity_session_status = IdentityCheckState::VERIFIED;
-            }
-
-            $user->save();
-
-            return response()->json([
-                'sessionId' => $session->id,
-                'url' => $session->url,
-            ]);
-        } catch (Exception $e) {
-            Log::error('Error creating verification session', ['error' => $e->getMessage()]);
-
-            return response()->json([
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
+    /* 🚨 `createVerificationSession()` IS GONE (11 Sep 2026, client D5/Q20).
+       It minted a BILLABLE Stripe Identity session on Spenny Piggy's own account.
+       We no longer run an identity check of our own — Stripe Connect performs its
+       KYC when payment capability requires it, and we follow the status it returns. */
 
     public function deleteConnectedAccount($accountId)
     {

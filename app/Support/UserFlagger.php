@@ -2,10 +2,12 @@
 
 namespace App\Support;
 
+use App\Mail\UserFlagRaised;
 use App\Models\SecurityEvent;
 use App\Models\User;
 use App\Models\UserFlag;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -92,7 +94,7 @@ class UserFlagger
                 return $existing->refresh();
             }
 
-            return UserFlag::create([
+            $flag = UserFlag::create([
                 'user_id' => $userId,
                 'user_role' => self::roleOf($user, $userId),
                 'flag_type' => $flagType,
@@ -106,6 +108,10 @@ class UserFlagger
                 'last_seen_at' => now(),
                 'raised_by_admin_id' => $raisedByAdminId,
             ]);
+
+            self::alertOnCritical($flag);
+
+            return $flag;
         } catch (\Throwable $e) {
             Log::warning('UserFlagger::raise failed', [
                 'flag_type' => $flagType,
@@ -172,6 +178,63 @@ class UserFlagger
      * row — otherwise the resolution silently swallows a recurrence, which is
      * the one case where a recurrence matters most.
      */
+    /**
+     * Tell somebody when the platform flags an account for something that stops
+     * money moving.
+     *
+     * 🚨 THE SCREEN WAS THE ONLY SURFACE, AND NOBODY OPENS IT DAILY. Measured
+     * 12 Sep 2026: two creators had been unpayable since **26 August** because
+     * Stripe had revoked our access to their connected accounts. The platform
+     * noticed every ten minutes, logged it once a day, raised a flag — and told
+     * no person at all.
+     *
+     * ⚠️ ON CREATION ONLY, NEVER ON A REPEAT. A recurrence inside the dedupe
+     * window bumps `occurrences` and returns early above this line, so a
+     * ten-minute sweep cannot mail the same thing 144 times a day. The row on
+     * the screen still carries every occurrence.
+     *
+     * ⚠️ CRITICAL ONLY. The warning-level flags — a failed-login burst, an
+     * e-mail change, bulk downloads — are exactly the volume that turns an alert
+     * list into one nobody reads. They stay on the screen.
+     *
+     * 🚨 NEVER THROWS, and the flag is already written before this runs. Every
+     * caller is a webhook, a sweep or a checkout refusal; an alert failing must
+     * not lose the record it was announcing. Same house rule as the raise itself.
+     */
+    private static function alertOnCritical(UserFlag $flag): void
+    {
+        try {
+            if ($flag->severity !== 'critical') {
+                return;
+            }
+
+            $recipients = AlertRouter::recipients('user_flag_critical');
+
+            if (empty($recipients)) {
+                return;
+            }
+
+            $label = (string) config('user_flags.types.'.$flag->flag_type.'.label', $flag->flag_type);
+
+            /*
+             * ⚠️ The REASON is already redacted — `SecurityRedactor::scrub()`
+             * runs on the way into the column, not on the way out, so what is
+             * mailed is what an admin reads on the screen.
+             */
+            Mail::to($recipients)->queue(new UserFlagRaised(
+                $label,
+                (string) ($flag->reason ?? ''),
+                (int) $flag->user_id,
+                (string) (config('services.admin.url') ?: config('app.url')),
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('UserFlagger critical alert failed', [
+                'flag_type' => $flag->flag_type,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     private static function openFlagWithinWindow(int $userId, string $flagType): ?UserFlag
     {
         $days = (int) config('user_flags.dedupe_days', 30);

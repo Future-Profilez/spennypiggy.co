@@ -67,6 +67,22 @@ return [
             'label' => 'Payout destination changed',
             'description' => 'The Stripe account or bank account money is paid into was changed.',
         ],
+        /*
+         * 🚨 THIS CREATOR CANNOT BE PAID AT ALL, AND ONLY THEY CAN FIX IT.
+         *
+         * Stripe answers "does not have access to account … Application access
+         * may have been revoked" — the creator disconnected the platform, or
+         * Stripe closed or rejected the account. Every payout to them fails,
+         * the ten-minute schedule sweep cannot reach them, and until 12 Sep 2026
+         * the ONLY record was one ERROR log line a day that named an
+         * `acct_…` and no person. Measured on production that day: two creators,
+         * unreachable since at least 26 August.
+         */
+        'payout_connection_lost' => [
+            'severity' => 'critical',
+            'label' => 'Stripe connection lost',
+            'description' => 'Stripe refuses this connected account to our key — the creator disconnected us, or Stripe closed the account. No payout to them can succeed until they reconnect.',
+        ],
         'refund_volume' => [
             'severity' => 'critical',
             'label' => 'Unusual refund volume',

@@ -21,7 +21,10 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
         task?.moderation_reason ||
         task?.reason ||
         task?.is_approved_reason ||
-        "Item is currently under review. Please check again after 30 minutes.";
+        /* 🚨 NOT "under review, check back later" (11 Sep 2026). Nobody is queued to
+           look at this — a check flagged it and only the creator can move it. The old
+           sentence sent them away to wait for something that is not coming. */
+        "An automated check flagged something here, so only you can see it. Edit it and it goes live again straight away.";
 
     const isZeroDecimalCurrency = (curr) => {
         const zeroDecimalCurrencies = [
@@ -131,7 +134,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                 )}
                 {isPending && task?.is_suspended != 1 && (
                     <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-black border-2 border-black bg-yellow-300 text-black">
-                        Pending Approval
+                        Needs a fix
                     </span>
                 )}
                 {task?.status && String(task.status).trim() !== "" && (
@@ -218,7 +221,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                 ) : isPending ? (
                     <div className="!pt-3">
                         <p className="block text-yellow-700 font-bold text-sm">
-                            Under Review: {reviewMessage}
+                            Not visible yet: {reviewMessage}
                         </p>
                         {/* `IsloggedIn` here means the OWNER is viewing (documented). */}
                         {IsloggedIn && task?.moderation_reason ? (

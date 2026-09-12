@@ -150,7 +150,7 @@ export default function MembershipItem({
                                 item?.approved == 0 &&
                                 item?.is_suspended != 1 && (
                                     <span className="group/approval relative cursor-help rounded-full border-2 border-black bg-yellow-400 px-3 py-1 text-[12px] font-black uppercase tracking-wider text-black">
-                                        Pending approval
+                                        Needs a fix
                                         {item?.edited_reason && (
                                             <span className="pointer-events-none absolute left-0 top-full z-30 mt-2 hidden w-64 rounded-box-sm bg-black p-3 text-[12px] normal-case leading-relaxed tracking-normal text-white group-hover/approval:block">
                                                 <span className="mb-1 block font-bold text-yellow-300">

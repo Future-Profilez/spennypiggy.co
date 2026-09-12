@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Field from "./Field";
+import { REAL_DETAILS_WARNING } from "@/constants/accountIntegrity";
 import StepShell, { RHYTHM } from "./StepShell";
 import BadgePicker, { PrideBadgePicker } from "@/Components/Badges/BadgePicker";
 import {
@@ -117,10 +118,10 @@ export default function CreatorProfileStep({
                 <p className="text-sm font-semibold text-black">
                     Add a social account
                 </p>
-                <p className="mt-1 text-xs leading-[1.55] text-black/60">
-                    We only use this to check you are really you. It stays
-                    private unless you choose to show it, and we never post
-                    anything.
+                {/* The same sentence as the socials editor and the profile form —
+                    one wording, from `constants/accountIntegrity.js`. */}
+                <p className="mt-2 rounded-box-sm border-2 border-black bg-[#FDF6C3] px-3 py-2 text-xs font-bold leading-[1.5] text-black">
+                    {REAL_DETAILS_WARNING}
                 </p>
 
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -164,6 +165,25 @@ export default function CreatorProfileStep({
                         status={socialError ? "error" : "idle"}
                         onChange={(e) => onSocialHandleChange(e.target.value)}
                     />
+                    {/* 🚨 THE PRIVACY LINE SITS UNDER THE FIELD, NOT ABOVE THE SECTION
+                        (client direction, 12 Sep 2026). Above the platform chips it was
+                        four lines away from the box it is about, with a yellow warning
+                        panel between them — so the reassurance was read before there
+                        was anything to be reassured about, and forgotten by the time
+                        the creator was actually typing their handle. This is the one
+                        question on the form somebody hesitates over; the answer belongs
+                        where the hesitation is.
+
+                        ⚠️ Hidden while a field error is showing. `Field` renders its
+                        error directly beneath the input, and two lines of small grey
+                        text under one box is how the one that matters gets skipped. */}
+                    {! socialError && (
+                        <p className="mt-2 text-xs leading-[1.55] text-black/60">
+                            We only use this to check you are really you. It
+                            stays private unless you choose to show it, and we
+                            never post anything.
+                        </p>
+                    )}
                 </div>
             </div>
 

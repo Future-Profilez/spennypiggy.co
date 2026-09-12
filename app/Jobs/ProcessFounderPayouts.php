@@ -9,7 +9,6 @@ use App\Models\FounderBonus;
 use App\Models\PayoutRecord;
 use App\StripeControl;
 use App\Support\Incentives;
-use App\Support\PayoutEligibility;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -97,11 +96,10 @@ class ProcessFounderPayouts implements ShouldQueue
         if (! empty($bonus->creator?->payout_paused_at)) {
             return;
         }
-        // 🚨 A bonus is a payout. Gating the weekly run and not this would pay an
-        // unverified creator their whole Founder bonus. See PayoutEligibility.
-        if (PayoutEligibility::blocksPayout($bonus->creator)) {
-            return;
-        }
+        /* 🚨 NO IDENTITY GATE (11 Sep 2026, client D5/Q20: "Remove the SP-specific
+           ID-document and human identity-sign-off process entirely. Do not move it to
+           payout."). Stripe Connect's own KYC decides whether an account may receive
+           money; Spenny Piggy does not run a second check on top of it. */
         if (! empty($bonus->payout_record_uuid) || ! empty($bonus->stripe_payout_id)) {
             return;
         }

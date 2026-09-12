@@ -298,7 +298,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                                                         : { background: "#EAF7F0", color: "#1B7F4F" }
                                                 }
                                             >
-                                                {isPending ? "⏳ In review" : "✅ Live"}
+                                                {isPending ? "⚠️ Needs a fix" : "✅ Live"}
                                             </span>
                                         )}
                                         {audience.label && (
@@ -383,10 +383,10 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                                     an unapproved post is a 404 to everyone else. */}
                                 {isPending && (
                                     <p className="mt-4 rounded-box-sm bg-[#FEF3C7] px-4 py-3 text-sm leading-relaxed text-[#92400E]">
-                                        <strong className="font-black">Waiting for approval.</strong>{" "}
-                                        Only you can see this post for now — it usually goes live
-                                        within 24 hours, and it counts towards your posting activity
-                                        once approved.
+                                        <strong className="font-black">Not visible yet.</strong>{" "}
+                                        An automated check flagged something here, so only you
+                                        can see it. Edit the post and it goes live again — it
+                                        counts towards your posting activity once it is live.
                                     </p>
                                 )}
 

@@ -54,6 +54,24 @@ class CreatorRecommendationService
     public const SLOTS = [self::SLOT_SIMILAR, self::SLOT_EMERGING, self::SLOT_POPULAR, self::SLOT_PICK];
 
     /**
+     * Two extra slots that exist ONLY on a supporter's profile.
+     *
+     * 🚨 `for_you` IS DERIVED FROM WHO THE SUPPORTER BUYS FROM, so it is
+     * OWNER-ONLY and `forSupporter()` refuses to build it for anybody else. The
+     * card itself names no creator the supporter backs — but the LABEL says out
+     * loud that this person's taste runs a certain way, and collecting that onto
+     * a public page is the exact exposure `UserProfileService::getGifterCreators()`
+     * refuses in its own docblock. One rule, two surfaces.
+     *
+     * ⚠️ `nearby` is NOT owner-only: `users.country` is already on the public
+     * profile payload, so a visitor learning that a supporter's row leans British
+     * learns nothing the page did not already say.
+     */
+    public const SLOT_FOR_YOU = 'for_you';
+
+    public const SLOT_NEARBY = 'nearby';
+
+    /**
      * How long the platform-wide candidate pool lives.
      *
      * 15 minutes. The pool is the only thing here that touches the database, and
@@ -151,6 +169,193 @@ class CreatorRecommendationService
             $bucket = (int) floor(Carbon::now()->getTimestamp() / self::ROTATION_SECONDS);
             Cache::forget('discovery_more_creators_v1_'.$creatorId.'_'.$bucket);
         }
+    }
+
+    /**
+     * The row at the foot of a SUPPORTER's profile.
+     *
+     * 🚨 THE FAULT THIS CLOSES: `more_creators` was gated `role == 1`, and
+     * `ProfileRightRail` returns null for anything but a creator — so a fan's own
+     * profile carried no link onward to anywhere. A supporter with no purchases
+     * yet landed on a default cover, an empty About tab and an empty Feed, with
+     * nothing on the page to click. The one surface whose whole job is to send a
+     * supporter somewhere was switched off for supporters.
+     *
+     * 🚨 A CREATOR THEY ALREADY BACK IS NEVER A CARD. They leave the pool before
+     * a slot is filled, the same way the viewed creator does in `select()` —
+     * "find someone new" is the entire point, and a row that recommends the
+     * person whose page they bought from last week has discovered nobody.
+     *
+     * ⚠️ FEWER THAN FOUR IS THE NORMAL CASE HERE, not the edge one. A brand-new
+     * supporter has no taste signal and may have no country, which is two slots
+     * unavailable by construction — so the row is built from the slots that can
+     * honestly be filled rather than padded to four. `MoreCreators` renders a
+     * short row deliberately.
+     *
+     * @param  bool  $personalised  true only when the supporter is viewing their OWN profile.
+     * @return array<int, array{slot: string, name: string, username: string, avatar_url: ?string, cover_url: ?string, line: string}>
+     */
+    public function forSupporter(User $supporter, bool $personalised = false): array
+    {
+        if ((int) $supporter->role !== 0) {
+            return [];
+        }
+
+        $bucket = (int) floor(Carbon::now()->getTimestamp() / self::ROTATION_SECONDS);
+
+        return Cache::remember(
+            'discovery_supporter_row_v1_'.$supporter->id.'_'.($personalised ? 'own' : 'pub').'_'.$bucket,
+            self::SELECTION_TTL,
+            fn () => $this->selectForSupporter($supporter, $personalised, $bucket),
+        );
+    }
+
+    /**
+     * Pick the supporter's cards. One extra query (their backed creator ids),
+     * cached on its own; everything else is PHP over the shared pool.
+     */
+    private function selectForSupporter(User $supporter, bool $personalised, int $bucket): array
+    {
+        $pool = $this->pool();
+
+        if ($pool === []) {
+            return [];
+        }
+
+        $backed = $this->backedCreatorIds($supporter->id);
+
+        /*
+         * Their taste, read OUT OF THE POOL rather than queried — the pool
+         * already carries every eligible creator's categories, so this costs
+         * nothing. A backed creator who is no longer eligible simply contributes
+         * no categories, which is the right answer: we should not steer a row by
+         * a profile we would not recommend.
+         */
+        $taste = [];
+        if ($personalised) {
+            foreach ($backed as $id) {
+                foreach ($pool[$id]['categories'] ?? [] as $cat) {
+                    $taste[$cat] = true;
+                }
+            }
+        }
+        $taste = array_keys($taste);
+
+        // 🚨 Removed before a single slot is filled, never filtered afterwards.
+        foreach ($backed as $id) {
+            unset($pool[$id]);
+        }
+
+        if ($pool === []) {
+            return [];
+        }
+
+        $country = strtoupper(trim((string) ($supporter->country ?? '')));
+
+        /*
+         * Order is deliberate: the two personal slots first when they can be
+         * filled, then the safe ones. `pick` is ALWAYS last and always present —
+         * it re-draws every hour, so it is the one card that rewards coming back
+         * tomorrow, which is the behaviour this whole row is trying to buy.
+         */
+        $personal = [];
+        if ($taste !== []) {
+            $personal[] = self::SLOT_FOR_YOU;
+        }
+        if ($country !== '') {
+            $personal[] = self::SLOT_NEARBY;
+        }
+
+        $slots = array_slice(
+            array_merge($personal, [self::SLOT_POPULAR, self::SLOT_EMERGING]),
+            0,
+            3,
+        );
+        $slots[] = self::SLOT_PICK;
+
+        $cards = [];
+
+        foreach ($slots as $slot) {
+            if ($pool === []) {
+                break;
+            }
+
+            $pick = match ($slot) {
+                self::SLOT_FOR_YOU => $this->pickSimilar($pool, $taste),
+                self::SLOT_NEARBY => $this->pickNearby($pool, $country),
+                self::SLOT_POPULAR => $this->pickPopular($pool),
+                self::SLOT_EMERGING => $this->pickEmerging($pool),
+                self::SLOT_PICK => $this->pickRotating($pool, $taste, $supporter->id, $bucket),
+                default => null,
+            };
+
+            if ($pick === null) {
+                continue;
+            }
+
+            unset($pool[$pick['id']]);
+
+            $cards[] = $this->card($pick, $slot);
+        }
+
+        return $cards;
+    }
+
+    /**
+     * NEARBY — the best creator whose account country matches the supporter's.
+     *
+     * ⚠️ RETURNS NULL RATHER THAN FALLING BACK, unlike `pickSimilar`. A card
+     * labelled "Near you" showing someone on another continent is worse than one
+     * card fewer, and the caller already drops an unfillable slot.
+     *
+     * ⚠️ Exposure-balanced, because this is a discovery slot in everything but
+     * name: without it the one most-complete creator in a small market would be
+     * the nearby card for every supporter in that market, permanently.
+     */
+    private function pickNearby(array $pool, string $country): ?array
+    {
+        if ($country === '') {
+            return null;
+        }
+
+        $local = array_filter($pool, fn ($c) => ($c['country'] ?? '') === $country);
+
+        if ($local === []) {
+            return null;
+        }
+
+        return $this->best($local, fn ($c) => $c['quality'] * $c['exposure_factor']);
+    }
+
+    /**
+     * Creator ids this supporter has actually bought from.
+     *
+     * ⚠️ SAME LEDGER RULE AS `UserProfileService::getGifterStats()` — income rows
+     * only, refunded/failed/cancelled/disputed excluded, and an income row's
+     * `user_id` IS the creator (there is no `creator_id` column). A different
+     * definition here would mean the count on the supporter card and the set
+     * excluded from this row disagree about who they support.
+     *
+     * 🚨 NO AMOUNT IS READ. Ids only, in line with the rest of this file.
+     *
+     * @return array<int, int>
+     */
+    private function backedCreatorIds(int $supporterId): array
+    {
+        return Cache::remember(
+            'discovery_supporter_backed_v1_'.$supporterId,
+            self::POOL_TTL,
+            fn () => FinancialTransaction::query()
+                ->where('type', 'income')
+                ->whereNotIn('status', ['refunded', 'failed', 'cancelled', 'disputed'])
+                ->where('supporter_id', $supporterId)
+                ->whereNotNull('user_id')
+                ->distinct()
+                ->limit(self::POOL_LIMIT)
+                ->pluck('user_id')
+                ->map(fn ($id) => (int) $id)
+                ->all(),
+        );
     }
 
     /**
@@ -432,6 +637,14 @@ class CreatorRecommendationService
                     'avatar_url' => $u->avatar_url,
                     'cover_url' => (int) $u->cover_approved === 1 ? ($u->cover_url ?: null) : null,
                     'line' => $this->line($u, $cats),
+                    /*
+                     * ⚠️ INTERNAL, like the signals below it — `card()` never
+                     * copies it. It drives the supporter row's NEARBY slot only.
+                     * Printing a creator's country on a card is a different
+                     * decision from using it to order one, and this is not that
+                     * decision.
+                     */
+                    'country' => strtoupper(trim((string) ($u->country ?? ''))),
                     'categories' => $cats,
                     'age_days' => $ageDays,
                     'live_items' => $live,
@@ -676,11 +889,15 @@ class CreatorRecommendationService
      */
     private function standing($u): float
     {
-        $score = 0.55;
-
-        if ((int) $u->identity_status === 1) {
-            $score += 0.3;
-        }
+        /*
+         * 🚨 THE IDENTITY TERM IS GONE (12 Sep 2026, client direction). Identity
+         * left onboarding on 10 Sep and is a PAYOUT gate now, so a creator who
+         * has never been asked for a passport was scored 0.3 below one who had —
+         * ranking almost the whole platform down for not doing a step nobody
+         * offers them. The base absorbs it so the scale keeps its old range and
+         * every other weight in this file stays comparable.
+         */
+        $score = 0.85;
 
         if ($u->content_posting_paused_at === null) {
             $score += 0.15;

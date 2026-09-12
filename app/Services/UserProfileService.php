@@ -81,10 +81,23 @@ class UserProfileService
                 // as "never picked" and silently blank the creator's own badges.
                 'pride_badges',
                 'identity_status',
-                // The badge tier is derived from these; an admin rejection of
-                // the identity check outranks Stripe's pass, and a suspended
-                // account carries no badge at all. See App\Support\VerifiedBadge.
+                // The badge tier is derived from these; a suspended account
+                // carries no badge at all. See App\Support\VerifiedBadge.
+                // ⚠️ The two identity columns are vestigial — the check was
+                // removed on 11 Sep 2026 and `VerifiedBadge` no longer reads
+                // them — but they stay in its COLUMNS list, so they stay here:
+                // the guard compares the two lists, not their usefulness.
                 'identity_admin_status',
+                /*
+                 * 🚨 THE SUPPORTER'S WHOLE BADGE, SINCE 12 Sep 2026. This
+                 * select is an ALLOWLIST, and an unselected column reads as
+                 * NULL rather than throwing — so leaving it out does not error,
+                 * it silently strips the grey tick from every supporter on the
+                 * profile page while every other surface still shows it. Caught
+                 * by `VerifiedBadgeTest`'s COLUMNS guard, which exists for
+                 * exactly this.
+                 */
+                'is_500_limit_exceeded',
                 'edit_bio_reason',
                 'profile_status_lock',
                 'is_subscribed',
@@ -452,6 +465,16 @@ class UserProfileService
                 'slot_limitation',
                 'quantity_allow',
                 'moderation_reason',
+                /*
+                 * 🚨 `edit_requested_reason` IS DELIBERATELY NOT HERE, AND IT WAS
+                 * ADDED TO THIS LIST BY MISTAKE ON 12 Sep 2026 BEFORE BEING TAKEN
+                 * BACK OUT. This is the PUBLIC branch — the owner branch above
+                 * takes no `select()` at all and already has every column — so
+                 * adding it here gained the creator nothing and shipped what a
+                 * reviewer privately asked of them to every visitor of their
+                 * profile. Same rule the suspension copy follows: a stranger is
+                 * never told what we said to a creator.
+                 */
                 'is_suspended',
                 'suspend_reason',
             ])
@@ -494,6 +517,16 @@ class UserProfileService
             'is_pinned',
             'approved',
             'created_at',
+            /*
+             * 🚨 THE POST CARD SAID "Needs a fix" AND NOT WHAT THE FIX WAS.
+             * `moderation_reason` was never selected, so a creator whose post a
+             * check pulled back was told only that something was wrong —
+             * `edit_requested_reason` is the Daily Review feed's own request and
+             * had no payload at all. A select list is an ALLOWLIST: an omitted
+             * column reads as NULL rather than throwing, so neither errored.
+             */
+            'moderation_reason',
+            'edit_requested_reason',
             // ⚠️ The publish-time scope filters on `scheduled_at`, and
             // `is_scheduled` is appended from it — a select list without the
             // column leaves every card claiming it is not scheduled.
@@ -527,6 +560,25 @@ class UserProfileService
 
         // We DO NOT cache this because the 'liked_exists' is specific to the viewer
         $posts = $query->latest()->limit($limit)->get();
+
+        /*
+         * 🚨 THE TWO REASONS ARE THE CREATOR'S ALONE, AND THE SELECT IS NOT
+         * BRANCHED BY VIEWER. An edit request leaves the post PUBLISHED, so
+         * without this a visitor reads what a reviewer privately asked its
+         * author to change, on a post that is live and on their screen. The same
+         * rule `CreatorAvailabilityMessageService` follows: a stranger is never
+         * told the specifics of a decision about somebody else's account.
+         *
+         * ⚠️ Stripped from the RESULT rather than from the select, because the
+         * owner and the visitor share one query — and a second select list is a
+         * second place to forget a column.
+         */
+        if (! $isOwner) {
+            $posts->each(function ($post) {
+                $post->moderation_reason = null;
+                $post->edit_requested_reason = null;
+            });
+        }
 
         return $this->stampWatermark($posts, $userId)->toArray();
     }

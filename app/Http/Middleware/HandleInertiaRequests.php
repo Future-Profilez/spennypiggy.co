@@ -16,7 +16,6 @@ use App\Services\Pricing\FeeModel;
 use App\Services\PromoBannerService;
 use App\Services\SubscriptionActivationService;
 use App\Support\AnalyticsEvent;
-use App\Support\GifterVerificationCharge;
 use App\Support\Incentives;
 use App\Support\MaintenanceMode;
 use App\Support\ProfileAutoApproval;
@@ -134,6 +133,20 @@ class HandleInertiaRequests extends Middleware
                 'moderation_reason' => $user->moderation_reason,
                 'moderation_asset' => $user->moderation_asset,
                 /*
+                 * 🚨 WHAT A REVIEWER ASKED THEM TO CHANGE, and it is NOT
+                 * `moderation_reason`. That column means the profile is held;
+                 * an edit request leaves everything live and published while
+                 * the creator fixes it, so the two must never be read as one.
+                 * Written by the admin's Daily Review feed, cleared when a
+                 * reviewer approves.
+                 *
+                 * ⚠️ Without this the instruction reached the creator only by
+                 * bell, push and e-mail — all missable, and the push provider
+                 * has been refusing every send since 8 Sep 2026.
+                 */
+                'edit_requested_reason' => $user->edit_requested_reason,
+                'edit_requested_at' => optional($user->edit_requested_at)->toIso8601String(),
+                /*
                  * 🚨 WHICH ASSETS ARE HOLDING THE PROFILE BACK, if any. Profiles approve
                  * themselves (App\Support\ProfileAutoApproval); an entry here is a photo
                  * the scan held, a bio or handle an admin turned down. Empty means
@@ -153,29 +166,14 @@ class HandleInertiaRequests extends Middleware
                 'cover_cdn_modifier' => $user->cover_cdn_modifier,
                 'twitter_token' => $user->twitter_token,
                 'gifter_card_verification' => $user->gifterCardVerification,
-                // ⚠️ Loaded ONLY for the gifter sitting at the £500 gate — the exact
-                // condition under which `ActivateCard` renders at all. The shared
-                // payload goes out with every Inertia navigation, so an ungated read
-                // would be a query per page view, for every user, to answer a question
-                // that only a handful of accounts are ever asked. Same rule as
-                // `has_ever_sold` and `needs_first_listing`.
-                //
-                // ⚠️ It MUST mirror `ActivateCard`'s own `needsVerification`, which is
-                // reached by a rejection as well as by the £500 milestone. Gating on
-                // the milestone alone left a rejected gifter looking at an empty form
-                // for an address they had already given us — and retyping it is the
-                // one thing that turns two independent records into one.
-                //
-                // Carries the price too, so the button quotes the number the card is
-                // actually charged — see `GifterVerificationCharge`.
-                'verification_gate' => ((int) $user->role === 0
-                    && (int) $user->profile_status_lock !== 2
-                    && ((int) $user->is_500_limit_exceeded === 1 || filled($user->profile_reject_reason)))
-                        ? [
-                            'address' => $user->gifterAddress?->toFormArray(),
-                            'charge' => GifterVerificationCharge::quote($request->cookie('currency', 'GBP')),
-                        ]
-                        : null,
+                /*
+                 * 🚨 `verification_gate` IS GONE (12 Sep 2026, client direction).
+                 * It fed the £500 card-verification form — the whole gate, its
+                 * middleware, its nine route guards and the admin screen that
+                 * decided it were removed the same day. A supporter is never
+                 * stopped by spend now; crossing £500 earns the grey badge and
+                 * nothing else (`App\Support\VerifiedBadge`).
+                 */
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
                 'terms_accepted_at' => $user->terms_accepted_at,

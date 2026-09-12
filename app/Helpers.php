@@ -1493,38 +1493,37 @@ class Helpers
                 $update = ['is_500_limit_exceeded' => 1];
 
                 /*
-                 * 🚨 NEVER demote a creator to `profile_status_lock = 1`.
+                 * 🚨 THE LOCK IS NO LONGER TOUCHED (12 Sep 2026, client
+                 * direction). Passing £500 used to put a gifter into the address
+                 * review queue at `profile_status_lock = 1` — and that queue,
+                 * its screen and the whole card check were deleted the same day,
+                 * so the demotion would have been permanent with nothing able to
+                 * clear it. It also risked the creator case this note was
+                 * originally written about: that flag delists every item a
+                 * creator sells and nothing on the website sets it back.
                  *
-                 * For a gifter that flag is how they enter the review queue and
-                 * it costs them nothing. For a creator it takes the verified
-                 * badge, removes them from Discover, search, trending and
-                 * top-earners — DELISTING EVERY ITEM THEY SELL — and blocks
-                 * Stripe onboarding, and nothing on the website ever sets it
-                 * back. Spending £500 as a buyer must not take a creator's shop
-                 * off the platform.
-                 *
-                 * They are still stopped at checkout by the return value below,
-                 * and the console shows their address check on their own panel.
+                 * Crossing £500 now earns the grey badge and nothing else — see
+                 * `App\Support\VerifiedBadge`.
                  */
-                if ((int) $user->role === 0) {
-                    $update['profile_status_lock'] = 1;
-                }
-
                 $user->update($update);
                 $user->refresh();
             }
 
             /*
-             * 🚨 Answer "are they blocked RIGHT NOW", not "did the flag flip on
-             * this request".
+             * 🚨 NOBODY IS EVER BLOCKED NOW (12 Sep 2026, client direction).
              *
-             * This used to `return true` inside the branch above and `false`
-             * everywhere else — so a buyer was bounced on the single purchase
-             * that crossed £500 and every purchase after it went straight
-             * through. On Shop, Paid Tasks, Piggy Pot and the Piggy Bank, which
-             * carry no middleware, that was the whole enforcement.
+             * This is the ONE place the answer is decided, and it is deliberately
+             * still a method rather than eight deletions across eight checkout
+             * controllers: each of them refuses in its own shape, and missing one
+             * would leave a single silent gate nobody could find. The callers are
+             * unchanged and every one of them now takes the "not blocked" branch.
+             *
+             * ⚠️ WHAT THIS METHOD STILL DOES, AND WHY IT WAS NOT DELETED: the
+             * lines above are what WRITE `is_500_limit_exceeded`, which is now
+             * the supporter badge's whole basis. Removing the method would stop
+             * anybody ever earning one.
              */
-            return $user->requiresCardVerification();
+            return false;
         } catch (\Exception $e) {
             Log::error('Error retrieving authenticated user: '.$e->getMessage());
 

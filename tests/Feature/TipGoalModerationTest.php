@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Http\Middleware\UserEmailVerify;
 use App\Models\TipGoal;
 use App\Models\User;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -74,13 +73,29 @@ class TipGoalModerationTest extends TestCase
      * **This assertion is expected to FAIL the day somebody fixes it, and that is
      * the point: delete it then.**
      */
-    public function test_the_save_is_reached_and_is_broken_for_an_unrelated_pre_existing_reason(): void
+    /**
+     * 🚨 THIS ASSERTED THE OPPOSITE UNTIL 12 Sep 2026, AND IT WAS RIGHT TO.
+     *
+     * It expected a `QueryException` naming `target`, with a note saying to
+     * delete it the day somebody fixed the save. That day is today. The fault
+     * was that the 2023 migration declares `target` NOT NULL while the column is
+     * commented out of `TipGoal::$fillable`, so `create()` dropped it and the
+     * insert failed under strict mode.
+     *
+     * ⚠️ WHY IT SURVIVED SO LONG: `target` is `double(8,2) NULL` on production
+     * and on the development copy — altered at some point without a migration —
+     * so `/add-goal` worked everywhere anybody looked. It only failed where the
+     * schema is built from migrations: CI, `migrate:fresh`, and any RESTORE. A
+     * disaster-recovery rebuild would have come back missing a feature
+     * production had.
+     */
+    public function test_a_clean_goal_is_actually_saved(): void
     {
-        $this->withoutExceptionHandling();
-        $this->expectException(QueryException::class);
-        $this->expectExceptionMessageMatches('/tip_goals\.target|target/');
+        $this->actingAs($this->creator())
+            ->post('/add-goal', $this->payload())
+            ->assertSessionHasNoErrors();
 
-        $this->actingAs($this->creator())->post('/add-goal', $this->payload());
+        $this->assertSame(1, TipGoal::count(), 'The save has to reach the database, not only pass validation.');
     }
 
     public function test_expense_wording_in_the_name_is_refused(): void

@@ -49,6 +49,13 @@ class WelcomeUser implements ShouldQueue
     public function handle()
     {
 
+        /*
+         * 🚨 `role` DECIDES WHICH WELCOME MAIL IS SENT, and until 12 Sep 2026 it
+         * was not passed — so every creator got the supporter's mail, which told
+         * them to go and support somebody. `App\Mail\Welcome` reads it; a
+         * missing value falls back to the supporter mail, which is the safer of
+         * the two to send to the wrong person.
+         */
         $emailData = [
             'to' => $this->user->email,
             'name' => $this->user->name,
@@ -56,6 +63,7 @@ class WelcomeUser implements ShouldQueue
             'phone' => $this->user->phone,
             'email' => $this->user->email,
             'uuid' => $this->user->uuid,
+            'role' => (int) $this->user->role,
         ];
 
         EmailService::welcome($emailData);

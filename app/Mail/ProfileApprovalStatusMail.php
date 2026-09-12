@@ -20,8 +20,20 @@ class ProfileApprovalStatusMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    /**
+     * 🚨 `$user` IS PROTECTED, AND THAT IS LOAD-BEARING (11 Sep 2026).
+     *
+     * `Mailable::buildViewData()` reflects over PUBLIC properties and merges them OVER
+     * the `Content(with: …)` array — so a public `$user` replaced the `$userModel` that
+     * `content()` resolves, and a caller passing an **int** handed the template an
+     * integer where it expects a User. Every `$user->name` in the view then rendered
+     * nothing, silently. The same documented collision that shipped three faults on this
+     * platform in August.
+     *
+     * ⚠️ Protected still serialises for the queue, so nothing about dispatching changes.
+     */
     public function __construct(
-        public User|int $user,
+        protected User|int $user,
         public bool $status = true,
     ) {}
 

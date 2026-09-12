@@ -35,7 +35,6 @@ use App\Services\Risk\ReservePolicy;
 use App\Support\Incentives;
 use App\Support\OpportunityPanelPayload;
 use App\Support\PayoutCycle;
-use App\Support\PayoutIdentityGatePayload;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -884,17 +883,10 @@ class CreatorFinancialController extends Controller
             ],
             'payout_history' => $payoutHistory,
             /*
-             * 🚨 IDENTITY IS A PAYOUT GATE (10 Sep 2026). Null unless this creator has
-             * money waiting AND their check is incomplete — see the payload class for
-             * why both conditions are load-bearing. The page renders on its presence.
+             * 🚨 `identity_gate` IS GONE (11 Sep 2026, client D5/Q20). There is no SP
+             * payout-stage identity gate, so there is nothing for this panel to say —
+             * a creator with money waiting is simply paid on the next run.
              */
-            'identity_gate' => PayoutIdentityGatePayload::for(
-                $user,
-                (float) ($upcomingPayout['total_net'] ?? 0),
-                (float) ($reserveBreakdown['total_held'] ?? 0),
-                (string) ($upcomingPayout['currency'] ?? $displayCurrency),
-                $nextPayoutAt->toDateTimeString(),
-            ),
             'fast_start_bonus' => $fastStartBonus,
             'founder_bonus' => $founderBonus,
             'growth_bonus_upcoming' => $this->growthBonusUpcoming($user),

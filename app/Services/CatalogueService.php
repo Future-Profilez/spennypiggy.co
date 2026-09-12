@@ -262,6 +262,14 @@ class CatalogueService
             // them back to the six screens this page replaces.
             'moderation_reason' => $item->moderation_reason ?: null,
             'moderation_asset' => $item->moderation_asset ?: null,
+            /*
+             * 🚨 A SEPARATE FACT FROM THE HOLD, AND IT MUST STAY SEPARATE. A held
+             * item is off sale and the creator has to fix it to sell at all; an
+             * edit request leaves it SELLING while they change something. Folding
+             * them into one field would have this page tell a creator their live
+             * listing is down.
+             */
+            'edit_requested_reason' => $item->edit_requested_reason ?: null,
             'reward_title' => $item->reward_title ?: null,
             'sales' => (int) $context['sales'],
             'funnel' => $context['funnel'],

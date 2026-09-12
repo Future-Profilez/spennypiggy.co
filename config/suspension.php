@@ -102,20 +102,29 @@ return [
          * sentence cannot be reworded and a config body is the same for
          * everybody. Same split as `suspension_note` vs the reason code.
          */
+        /*
+         * 🚨 THIS REASON HAS NO ROUTE, AND THAT IS THE POINT (11 Sep 2026).
+         * It used to carry `action` => the ID check page plus a `requires` on
+         * the POST that starts one — correct while Spenny Piggy ran its own
+         * identity flow. That flow is GONE (client Q20, "remove entirely"), so
+         * both names now resolve to no route at all and the banner would have
+         * told this creator to re-run a check that no longer exists, with a
+         * button behind it that 404s. `suspension:doctor` caught exactly that.
+         *
+         * ⚠️ THE CODE AND THE `limited` TONE ARE KEPT DELIBERATELY. Any account
+         * already carrying it was restricted before the removal, and dropping
+         * the entry would fall those rows back to the default copy — which is
+         * toned `suspended`, i.e. it would accuse somebody of misconduct over
+         * an ID check we have since stopped asking for. An unknown code falls
+         * back to the heavier word on purpose; that rule is right, and this is
+         * the case it must not be applied to.
+         *
+         * The way out is a person now, so the body says so and nothing else.
+         */
         'identity_rejected' => [
             'title' => 'Your account is limited',
-            'body' => 'We looked at your ID check and could not accept it, so your page is hidden and you cannot take payments. The note below says what we need. Once you have sorted it, run the check again and we will look straight away.',
+            'body' => 'Your page is hidden and you cannot take payments at the moment. We no longer run our own ID check, so there is nothing for you to re-submit — contact support and our team will get this cleared with you.',
             'tone' => 'limited',
-            'action' => ['label' => 'Run the check again', 'route' => 'stripe.identity.verification'],
-            /*
-             * 🚨 `action` IS A PAGE (a GET); starting the check is a POST from
-             * that page. Without this the banner tells the creator to run the
-             * check and the middleware refuses the button — the "banner behind
-             * a door nobody can open" fault, which this codebase has now shipped
-             * three times. `suspension:doctor` fails if it is missing from
-             * `allowed_write_routes`.
-             */
-            'requires' => ['stripe.identity.verify'],
         ],
 
         'payout_configuration' => [
@@ -184,14 +193,6 @@ return [
          */
         'mandatory.checkout',
         'mandatory.resume',
-        /*
-         * 🚨 RUNNING THE ID CHECK AGAIN IS THE WAY OUT OF `identity_rejected`.
-         * Same reasoning as the two above: the banner names this as the fix, so
-         * refusing it would trap the one creator who can clear their own
-         * restriction. It unlocks nothing on its own — Stripe still has to pass
-         * and an admin still has to sign off.
-         */
-        'stripe.identity.verify',
         'support.tickets.store',
         'support.tickets.message',
         'support.tickets.resolve',

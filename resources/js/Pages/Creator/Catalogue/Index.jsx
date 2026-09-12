@@ -237,7 +237,7 @@ export default function CatalogueIndex() {
                                 <HelpLink
                                     slug="why-is-my-listing-under-review"
                                     categorySlug="selling"
-                                    label="Why is a listing in review?"
+                                    label="Why is a listing not visible?"
                                 />
                                 <HelpLink
                                     slug="price-limits"

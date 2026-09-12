@@ -482,12 +482,24 @@ export default function TermsOfService(props) {
                         <div className="ml-6 mb-2 text-gray-700">(v)	tribute or discretionary payments;</div>
                         <div className="ml-6 mb-2 text-gray-700">(vi)	digital content sales;</div>
                         <div className="ml-6 mb-2 text-gray-700">(vii)	physical item-linked transactions.</div>
-                        <p className="mb-5 text-gray-700 leading-relaxed">6.14.2 You keep the base amount of what you earn as set by you, subject to:</p>
-                        <div className="ml-6 mb-2 text-gray-700">(i)	Platform fees;</div>
-                        <div className="ml-6 mb-2 text-gray-700">(ii)	payment processing fees;</div>
-                        <div className="ml-6 mb-2 text-gray-700">(iii)	reserves;</div>
-                        <div className="ml-6 mb-2 text-gray-700">(iv)	refunds, reversals, or chargebacks;</div>
-                        <div className="ml-6 mb-2 text-gray-700">(v)	taxes and external fees.</div>
+                        {/* 🚨 THE PLATFORM FEE AND PROCESSING LEFT THIS LIST ON 12 Sep 2026,
+                            AND THAT IS THE BIGGER HALF OF THE CORRECTION.
+
+                            This is the CREATOR's deduction list. Under the all-in model the
+                            creator receives 100% of their listed price — the fee and Stripe's
+                            cost are both paid by the SUPPORTER, on top. Leaving them here said
+                            the platform takes a cut of the creator's own price, which is the
+                            opposite of what every creator-facing surface promises and of what
+                            the code does (pinned by `AllInFeeModelTest`).
+
+                            What genuinely still comes off a creator's money is below: reserves
+                            (taken from NET), refunds and chargebacks, and their own taxes.
+
+                            ⚠️ Legal copy. Confirm with the client before changing it again. */}
+                        <p className="mb-5 text-gray-700 leading-relaxed">6.14.2 You receive the amount you list. The Platform fee and payment processing are paid by the Supporter in addition to your listed price, not deducted from it. What you receive remains subject to:</p>
+                        <div className="ml-6 mb-2 text-gray-700">(i)	reserves;</div>
+                        <div className="ml-6 mb-2 text-gray-700">(ii)	refunds, reversals, or chargebacks;</div>
+                        <div className="ml-6 mb-2 text-gray-700">(iii)	taxes and external fees.</div>
                         <p className="mb-5 text-gray-700 leading-relaxed">6.14.3 You acknowledge that displayed earnings are provisional and may be adjusted.</p>
 
                         <p className="mb-5 text-gray-700 leading-relaxed">6.15 Payment authorisation and information</p>

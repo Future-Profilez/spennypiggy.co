@@ -215,6 +215,34 @@ return [
             'emails' => [],
         ],
 
+        /*
+         * 🚨 A CRITICAL FLAG REACHED A SCREEN AND NOBODY'S INBOX (12 Sep 2026).
+         *
+         * `user_flags` carries four `critical` types — a payout schedule Stripe
+         * reverted, a payout destination change, a refund rate over threshold,
+         * and a connected account Stripe refuses — and the ONLY surface was
+         * `/user-flags`, which nobody opens daily. Measured that day: two
+         * creators had been unpayable since **26 August** because Stripe had
+         * revoked our access to their accounts, and the platform noticed every
+         * ten minutes and told no person at all.
+         *
+         * ⚠️ CRITICAL ONLY. The warning-level flags (a failed-login burst, an
+         * e-mail change, bulk downloads) are exactly the volume that turns an
+         * alert list into one nobody reads — they stay on the screen.
+         *
+         * ⚠️ Risk roles, matching `/user-flags`'s own `can:access-risk` gate: an
+         * alert about money going to the wrong place must not reach somebody who
+         * cannot open the row it names.
+         */
+        'user_flag_critical' => [
+            'label' => 'Critical account flag',
+            'description' => 'The platform flagged an account for something that stops money moving — a reverted payout schedule, a changed payout destination, a refund spike, or a Stripe connection it can no longer reach.',
+            'app' => 'website',
+            'critical' => true,
+            'roles' => [1, 2, 3],
+            'emails' => [],
+        ],
+
         'whale_retention' => [
             'label' => 'Top supporter retention',
             'description' => 'A high-value supporter has gone quiet and is worth contacting.',

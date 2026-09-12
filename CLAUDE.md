@@ -6065,6 +6065,67 @@ stopped existing. Same publish-on-save / scan-retracts trade the avatar took the
   bug. ⚠️ The first `test_a_task_is_created_live` **could not fail** — it built its own Task,
   set the flag itself and asserted the flag it had just set.
 
+## 🚨 "One listing form" IS `ItemFormShell` — five of six modules now (11 Sep 2026)
+
+Client Q3 asks us to *"finish the one listing form"*, and the decision ledger recorded it as
+**"cannot find it in the codebase"**. That was wrong, and the reason is worth keeping: it was
+searched for by NAME — "unified listing", "listing wizard", "AddListing" — and it is called
+**`Components/ItemFormShell.jsx`**. 🚨 **Grep for the SHAPE (a shared `steps` prop, a shared
+submit footer), not for the name you would have given it.**
+
+**`ItemFormShell` is the one definition of how a sellable item is created or edited**: the
+sheet, the named step chips, the per-step `validate`, the error panel, the Back control and
+the one primary action. A module supplies `steps` (`{key, title, hint?, validate?, render}`),
+`onSubmit`, `submitLabel` and `processing`, and nothing else.
+
+| Module | On the shell |
+|---|---|
+| Bills · Membership (+ edit) · Piggy Pot | ✅ already were |
+| **Wish** (`Pages/Auth/Wishlist.jsx`) | ✅ **migrated 11 Sep 2026** |
+| **Shop** (`Pages/shop/AddItem.jsx`) | ✅ **migrated 11 Sep 2026** |
+| **Paid task** (`Pages/Tasks/Create.jsx`) | ❌ **the one left — see below** |
+
+- 🚨 **THERE WERE THREE IMPLEMENTATIONS OF THE SAME THREE CONTROLS.** The wish form owned a
+  `step` counter, a progress bar and a Back/Next pair; the shop form owned a *"Step N of 3"*
+  chip, its own close button and its own Back/Next/Publish row; `ItemFormShell` owned a third.
+  One creator met all three depending on what they were selling, which is what "one listing
+  form" is actually about.
+- 🚨 **NOT A FIELD MOVED.** Each step's markup was lifted **byte for byte** into that step's
+  `render`, and the save handlers (`createWishList`, `addShopItem` / `updateItem`) are
+  untouched. **No controller, validation rule, price limit or Stripe path changed** — this is
+  chrome only, which is what made it safe to do in one pass. Verified by asserting each
+  extracted block still appears verbatim in the rewritten file, not by reading the diff.
+- 🚨 **`validate` RETURNS A STRING; IT DOES NOT RAISE A TOAST.** Both forms called
+  `errorAlert(...)` and returned, so the message outlived the step it was about and could be
+  read next to fields it did not describe. The shell prints the problem against the step that
+  refused and blocks the advance. Every rule kept its exact wording.
+- 🚨 **THE SHOP'S TERMS TICK IS A STEP-3 `validate`, NOT A DISABLED BUTTON.** It used to grey
+  Publish out with nothing on screen saying why — on the last step, where the creator has
+  finished and is waiting to be let go.
+- ⚠️ **The wish form's built-in trigger is gone and nothing lost it.** `Popup` drew a button
+  from a local `AddItem` card whenever `hidetrigger` was absent, and **both** live call sites
+  (the dashboard's direct form, `Wishlistbox`'s edit) pass `hidetrigger` — a dead affordance,
+  the `is_saved` class. `customtext`/`hidetrigger` went with it. **The shop form's trigger IS
+  live and was kept.**
+- 🚨 **A REMOVED STEP COUNTER LEAVES FREE VARIABLES BEHIND, AND `npm run build` CANNOT SEE
+  THEM.** `AddItem`'s `isDirty()` read `step > 1` as one of five dirty signals, 300 lines from
+  the code that was deleted; esbuild never resolves free variables, so it built clean and would
+  have been a `ReferenceError` on the first close. Found by a regex sweep for the removed names
+  after each edit — **do that sweep, the documented `InstallAppCard` trap.** Nothing was lost
+  by dropping it: step 1 cannot be passed without a name, a description and a price, and all
+  three are already in that function's snapshot.
+- ⚠️ **Six dead imports in `Wishlist.jsx` and one in `AddItem.jsx` were ALREADY dead** before
+  this and are deliberately left alone — unrelated churn on a money path.
+
+🚨 **PAID TASKS ARE THE ONE MODULE LEFT, AND IT IS NOT A MECHANICAL TRANSFORM.**
+`Pages/Tasks/Create.jsx` is the only add-item flow that is a **page** rather than a sheet
+(which is also why `pickModule` navigates away for it while every other module opens in
+place), and its form is a **flat ~400-line field list with no step boundaries in it** — where
+the wish and shop forms already carried `{step === N && (…)}` blocks that could be lifted
+whole. Putting it on the shell means DECIDING where its three steps divide, which is design
+work on a money path, not a rewrite of chrome. Left deliberately; do not slice it at guessed
+boundaries.
+
 ## 🚨 Adding a listing — one route in, and the chooser closes behind it (11 Sep 2026)
 
 Three reports in one sitting, all on the add-a-listing path, none of them visible in any log.
@@ -6098,6 +6159,510 @@ Three reports in one sitting, all on the add-a-listing path, none of them visibl
   the field, so the box was EMPTY while the payload held the address. The identical fault
   fixed for the bio on 3 Sep 2026; username moved with it.
 - Full write-up: `docs/simplification-sept-2026/11-LISTING-AUTOPUBLISH-AND-ADD-FLOW.md`.
+
+## 🚨 A SUPPORTER'S PROFILE WAS A DEAD END — NOTHING ON IT LINKED ANYWHERE (12 Sep 2026)
+
+Reported by the client: a gifter arrives on their own profile and there is nothing to hold
+them there. There was not. **Three structural holes, none of which errors:**
+
+| Fault | Where |
+|---|---|
+| `more_creators` was gated `role == 1` | `AuthenticatedSessionController` — `MoreCreators` rendered **nothing** on every supporter profile, and it is the only "where next" module on the page |
+| `ProfileRightRail` returns null for `role != 1` | the whole left column was the identity card and then empty space |
+| the Feed tab's empty state was `Nocontent text="No Posts to see"` | a dead end on the tab a brand-new supporter lands on, where the feed is empty **by definition** until they have unlocked something |
+
+So a fan with no purchases read a default cover, a level card saying "No unlocks yet", an
+empty About tab and an empty Feed, **with no link off the page at all**.
+
+- 🚨 **`CreatorRecommendationService::forSupporter($user, $personalised)` IS THE SUPPORTER
+  ROW, AND IT REUSES THE EXISTING POOL.** One eligibility rule (`DiscoveryEligibility`), one
+  15-minute platform pool, one `card()` whitelist. A second service would have been a second
+  copy of all three — the drift this codebase keeps paying for.
+- 🚨 **PERSONALISATION IS OWNER-ONLY, AND THE LABEL IS WHY.** The `for_you` slot is derived
+  from who this supporter buys from and renders as **"Matches what you back"** — so on a page
+  a stranger can read it publishes the taste profile
+  `UserProfileService::getGifterCreators()` refuses in its own docblock. A visitor gets the
+  generic slots only. ⚠️ `nearby` is NOT owner-gated: `users.country` is already on the
+  public profile payload.
+- 🚨 **A CREATOR THEY ALREADY BACK IS NEVER A CARD.** They leave the pool before a slot is
+  filled — the same ordering `select()` uses for the viewed creator — because "find someone
+  new" is the whole point, and a filter applied afterwards quietly puts them back on a small
+  pool.
+- ⚠️ **FEWER THAN FOUR IS THE NORMAL CASE HERE, not the edge one.** A brand-new supporter has
+  no taste signal and may have no country, so two slots are unavailable by construction. The
+  row is built from what can honestly be filled; **`pickNearby()` returns null rather than
+  falling back**, because "Near you" naming somebody on another continent is worse than one
+  card fewer. `pick` is always last and always present — it re-draws hourly, and it is the
+  one card that rewards coming back tomorrow.
+- ⚠️ **The creator-generated-visit gate does NOT apply.** That rule stops a creator's own
+  audience being monetised against them; a supporter sells nothing, so there is no audience
+  of theirs to protect.
+- **New selection order:** `for_you` (owner, if they back anybody) → `nearby` (if a country
+  is on file) → `popular` → `emerging`, capped at three, then `pick`.
+- ⚠️ **`DiscoveryEligibility::CARD_COLUMNS` gained `country`.** 🚨 **SELECTED, NEVER GATED ON**
+  — it is not a clause in `scope()` and must not become one, or the row empties for every
+  supporter in a small market.
+
+**Two surfaces, both new:**
+
+- **`Components/Gifter/SupporterShelf.jsx`** — About tab, under the level card, **owner-gated
+  at the call site**. Unlocks · Creators backed · Saved · Following, each linking into
+  `/my-purchases`. 🚨 **Counts only, no money** — `gifter_stats` carries none and a supporter
+  ranks by purchase count, never amount. ⚠️ Four cells so the 2×2 and 4×1 grids both fill:
+  the hairlines are the black parent showing through `gap-px` (the `StatStrip` device), and
+  an **odd** count would leave it showing as a solid black block.
+- **`Components/Gifter/ExploreNext.jsx`** — the rail, in place of the null `ProfileRightRail`,
+  `hidden md:block` (on a phone the aside renders ABOVE the tabs, so a nav block there pushes
+  the page's own content off the first screen). Discover · Under £10 · Leaderboard.
+  🚨 **`/discover/birthdays` WAS CONSIDERED AND LEFT OUT** — that page greys itself below
+  `collection_min_creators` and Discover's own tile for it is gated on a `birthdaysReady`
+  prop this page does not receive. **Never add a destination whose content can be empty
+  without the prop that says so**, on the page being fixed for dead ends.
+
+⚠️ **`MoreCreators` takes optional `heading` / `intro`.** "More creators to support" is
+addressed to somebody reading a creator's page; on a fan's own profile they are the one doing
+the supporting and may have supported nobody, so "more" names an empty set. Two words of copy
+— a second component would be a second card design waiting to drift.
+
+⚠️ **`savedItems.js` gained `savedCount()`**, counting the sets that module already holds, so
+the shelf's figure and the hearts on screen cannot disagree. It returns **0, never null**,
+before the first load resolves and the caller subscribes.
+
+⚠️ **The supporter's COUNTRY is deliberately not published.** It steers the `nearby` slot and
+appears on no card and in no identity line — showing a fan's country to strangers is a new
+disclosure, and a separate decision from using it to order a row.
+
+- Tests: `tests/Feature/DiscoveryRecommendationTest.php` (19, +9). ⚠️ Four were verified
+  FAILING against the replanted bug (`forSupporter` returning `[]`) and the privacy guard
+  separately against a leak (`$personalised` ignored) — it asserts an ABSENCE, so an empty
+  row passes it and it proves nothing unless verified that way round.
+
+### Three more on the same page, same day
+
+- 🚨 **THE WHOLE FIX WAS DESKTOP-ONLY UNTIL THIS.** `ExploreNext` sits in the aside, and the
+  aside is `hidden md:block` — on a phone it renders ABOVE the tabs, so a nav block there
+  pushes the page's own content off the first screen. The same component is therefore
+  rendered a second time BELOW the profile body at `md:hidden`, where it costs nothing above
+  the fold and reaches **every tab** rather than just About. ⚠️ Two mounts of a static,
+  hookless component; one is `display:none`. Do not "deduplicate" them into one instance with
+  a responsive wrapper — the two positions are the point.
+- **`RecentlyViewed` now closes the supporter profile**, above `MoreCreators`.
+  ⚠️ **WARMER GOES FIRST**: these are creators this browser has already opened, the row under
+  it is people they have never met — deepen before widening, the order the payment-success
+  page already uses. 🚨 **It never leaves the device** (localStorage only, no request, no row,
+  null under two entries), so it is the VIEWER's own continuity even on somebody else's page
+  and there is nothing to leak. ⚠️ **Supporter profiles only** — this route is also the
+  creator dashboard, and a creator's own page is not where to send them back to creators they
+  were browsing. ⚠️ Lazy through `lazyRetry`: it pulls in `FeaturedCarousel` and every listing
+  card with it.
+  - ⚠️ **`FeaturedCarousel` destructures `IsloggedIn` from page props and then hardcodes
+    `IsloggedIn={false}` on every card** — checked before mounting, because on a listing card
+    that prop means "the creator is viewing their OWN listing" and a truthy value swaps the
+    buy button for the owner's and shows the PRE-FEE price. The destructure is dead; the
+    profile route sends no such prop either way. **Check it again if that component is
+    edited.**
+- 🚨 **THE GIFTER TABS WERE READ FROM THE URL AND NEVER WRITTEN BACK.** `?tab=feed` worked as
+  a deep link and was unreachable by clicking: switching tab left the address bar on About, so
+  a refresh threw the reader back to About, Back skipped the entire page, and a supporter
+  could not send anybody their own feed. Synced with `history.replaceState` + `URLSearchParams`
+  — `PurchasesHub`'s own pattern. ⚠️ **`replaceState`, never push**: a tab is a view of one
+  page, and an entry per tab makes Back walk every tab the reader glanced at. ⚠️ **About
+  writes NO parameter** rather than `?tab=about`, so the clean profile URL stays canonical.
+  ⚠️ `GifterPurchasesTab` renders `PurchasesHub` with `embedded`, which skips that component's
+  own URL sync — so the two cannot fight over the same key.
+
+  ⚠️ `test_a_supporter_profile_gets_no_row` was **renamed, not deleted**: it still correctly
+  pins that `forProfile()` answers nothing for a fan, but its old name is now a lie about the
+  product.
+
+## 🚨 THERE IS ONE PANEL, AND NOTHING IN IT IS PINNED BUT THE CLOSE ICON (12 Sep 2026)
+
+Client direction, in two steps on the same day: first *"isko All Set wale modal jaisa design
+karo"*, then *"sticky mat rakho kuchh bhi, only close icon bas"*, then *"ab sab pop ka design
+aese hi kar do"* — and, asked explicitly about desktop, **full-screen at every width**.
+
+**Three primitives, one surface: `Components/Sheet.jsx` · `Components/Popup.jsx` ·
+`Components/Modal.jsx`.** All three now draw the language of the "You're all set" moment
+(`SetupCompleteCelebration`): cream `#FFF6EC` ground, ONE scroll (the `Dialog.Panel` itself),
+a `max-w-*` reading column, and a single **fixed close button, top-LEFT**. Nothing else is
+`fixed` or `sticky` anywhere in a panel.
+
+- 🚨 **`fixed`, NEVER `sticky`.** The panel IS the scroll container, so a sticky child
+  reserves a row in the flow — which is the header bar this replaced, wearing a different
+  word. The close control is on the **left** so a right-handed thumb cannot reach it by
+  accident while scrolling a form, and it is opaque so it stays legible over whatever passes
+  beneath.
+- 🚨 **`data-sheet-scroll` IS THE SCROLL HANDLE, AND `window.scrollTo` IS A NO-OP IN A
+  PANEL.** All three primitives carry it. `ItemFormShell` scrolls it to the top on a step
+  change — without that, advancing a step leaves the reader at the FOOT of the step they just
+  finished, with the new fields above them and nothing on screen saying the form moved.
+- 🚨 **ONE PRIMARY ACTION, AT THE END OF THE FLOW.** `ItemFormShell` used to draw its CTA
+  twice — pinned in the header bar and again under the fields — and on a stepped form the top
+  one is pressed before the step is read, so it produced validation errors rather than
+  listings. The header action is gone; `headerAction` is no longer a `Sheet` prop.
+- 🚨 **WHAT WAS DELETED FROM `Popup`, AND WHY NONE OF IT COMES BACK:** the pink band with
+  three "traffic light" dots (a drawing of a desktop WINDOW, on a product that ships as an
+  installable PWA where the panel is the screen — and edge-to-edge at 1440px a wall of accent
+  colour standing in for a heading), and the centred card from `md` up (one component with
+  two layouts is how a panel reads well on a phone and badly on a laptop with nobody finding
+  out until a screenshot).
+- 🚨 **`pinkmodal` IS DEFINED IN NO STYLESHEET IN THIS PROJECT AND NEVER HAS BEEN.** 27 call
+  sites pass it; it styles nothing (`index.css` only carries `.modal.mymodal`, and no panel
+  here has the `.modal` class either). **Do not "restore" a pink panel ground on the strength
+  of seeing that class.**
+- ⚠️ **Props kept and now INERT, deliberately** — accepted so this stayed three files rather
+  than forty-nine, and a caller still passing one is not a bug: `Popup`'s `hidecontrols`
+  (no band to hide), `Popup`'s `space` (the panel owns its padding), `Modal`'s `variant`.
+- ⚠️ **`size` / `maxWidth` CHANGED MEANING: they are a READING MEASURE, not a modal width.**
+  The panel is always the whole screen; this is how wide the column inside it may get. A
+  1400px-wide text input is unreadable and looks unfinished. ⚠️ Literal strings per size —
+  Tailwind's JIT emits nothing for a computed `max-w-${size}` and every panel would stretch
+  to full width, silently.
+- 🚨 **`Popup`'s `fullscreen` SURVIVES A CHANGE THAT MADE EVERY PANEL FULL-SCREEN, and it
+  means "THE CHILD OWNS THE LAYOUT".** Two callers (`feed/AddPost`, `SetupCompleteCelebration`)
+  build their own scrolling column and their own footer inside it; handing them a padded,
+  centred, separately-scrolling column breaks both. Everything else gets the standard measure.
+- ⚠️ **`Modal`'s column adds no horizontal padding above `sm`**: its children carry their own
+  (`p-6` / `p-8`) and several draw their own white card (`ConfirmDestructive` is
+  `bg-white rounded-box border-[3px]`), which is correct on this ground.
+- ⚠️ **`closeable={false}` still renders NO close icon** (`TermsUpdatePopup`) — that panel is
+  deliberately unskippable, and a close control there is a way past a consent the account has
+  to give. The top padding is applied either way, so an unskippable panel does not open at a
+  different height from every other one.
+- ⚠️ **`!rounded-none !border-0` on the `Popup` panel carry `!` and that is load-bearing.**
+  Callers pass their own frame through `modalclass`, and `index.css` redefines `.border-black`
+  as a full `border` shorthand AFTER the utilities layer — so an unflagged reset loses on
+  source order and a full-screen panel keeps a stray frame and rounded corners hard against
+  the screen edge.
+- ⚠️ **No `scale` on any panel transition now.** Scaling a full-screen surface reads as the
+  page zooming rather than as a sheet arriving. (Interaction-triggered scale is banned
+  app-wide anyway; this is the entrance.)
+- ⚠️ **`Components/ItemStatusBadge.jsx` IS DELIBERATELY NOT ON THIS LANGUAGE.** It is an
+  explainer attached to a chip, not a flow — centred, capped at `80dvh`, and at
+  `z-[1000003]` for a documented reason (the bottom bar and the drawer both painted over it).
+  A tooltip drawn as a full screen is a worse answer than an inconsistent one.
+- ⚠️ **`Components/SubscriptionNewsPopup.jsx` is a toast, not a panel** — no Dialog, no
+  backdrop. Left alone.
+- **Unchanged and still load-bearing:** `body.sheet-open` hides the app's fixed bottom bar
+  and locks page scroll while any panel is open (one answer to "who hides the nav" — never
+  raise a panel's z-index instead); `dismissable` is still OPT-IN on `Popup`, because six of
+  its callers are payment checkouts and two are OTP steps where a stray backdrop tap throws
+  away a part-entered payment; and `onHide` / `onClose` returning **false** still vetoes a
+  close, which is what the forms' dirty guards ride on.
+- Verified: `npm run build` (all six scanners, `check-bottom-bar` included) and `npx jest`
+  (15 suites, 225 tests) green.
+
+## 🚨 The welcome email splits by role, and every figure in it is config (12 Sep 2026)
+
+`App\Jobs\WelcomeUser` → `App\Mail\Welcome`, one mail on registration. Until now
+**every new creator was welcomed with the supporter's mail** — *"set up your wishlist page
+and start connecting with your fans"* over a button labelled *Create My Wishlist* — so the
+one message a creator reads on day one was about supporting somebody else. `Welcome::build()`
+branches on `role`: creator → `email.welcome-creator`, supporter → `email.welcome-fans`.
+
+- 🚨 **THE BUTTON WAS `href="{{ env('APP_URL') }}"`, WHICH IS NULL ONCE CONFIG IS CACHED** —
+  i.e. on every production deploy. The only control in the welcome email pointed at an empty
+  href and nothing errors. The mailable built its From address from `env()` too. **Never read
+  `env()` outside `config/`**; the URL is resolved in the mailable and passed as `$ctaUrl`.
+- 🚨 **NOT ONE FIGURE IS TYPED INTO THE TEMPLATE.** The supporter fee comes from
+  `FeeModel::describe('card')` (the same source the shared `fees` prop reads), the plan price
+  from `SubscriptionPlan`, the ladder from `config/membership_credits.php` and the referral
+  from `config/referral.php`. A literal renders perfectly and goes on rendering the old number
+  after the client changes it — the fault that left three creator forms advertising "19%".
+- ⚠️ **The ladder's three rungs are DERIVED from the one configured step** (`threshold_gbp` ×
+  1/2/6), because that config chose a linear step over a rung table precisely so the two could
+  not disagree. A rung past `max_months_per_creator` is **dropped, not clamped** — it would
+  otherwise promise months the engine will never award.
+- 🚨 **"£500 IN SALES", NEVER "£500 EARNED" OR "KEPT".** `QualifyingEarnings` is the listed
+  sale value including VAT, and its own docblock forbids copy calling it take-home. The panel
+  also states in as many words that a credit is a free month and **never a cash payout**.
+- 🚨 **TRANSACTIONAL** — `Mail::to()`, no unsubscribe link, so a marketing opt-out cannot
+  silence the mail explaining the account somebody just opened. The shared layout only appends
+  its footer pair when a mail supplies `unsubscribeUrl`, so leaving it unset is what keeps it
+  off.
+- **Design:** one bold element (the black milestone panel) on an otherwise quiet card; mint is
+  used ONLY inside it (1.4:1 on white), and the pink CTA takes **black** type per the house
+  rule. Verified in a browser at 320 and 390: 0 horizontal overflow, CTA 185×49.
+- ⚠️ `email.welcome-fans` is the SUPPORTER mail now and its copy was rewritten to match; it is
+  no longer a creator template.
+- Tests: `tests/Feature/WelcomeEmailTest.php` (8). ⚠️ Two were verified FAILING against their
+  own bugs first (the role branch ignored, a rung hardcoded) and the controls stayed green.
+
+## 🚨 An edit request now lands where the creator will find it (12 Sep 2026, BOTH apps)
+
+The admin Daily Review feed's **Request edit** told the creator by bell, push and e-mail and
+left NOTHING on any screen they return to. All three are missable — and the push provider has
+been refusing every send since 8 Sep over billing — so the instruction could reach nobody
+while a reviewer waited on somebody who had never heard.
+
+- **New columns `edit_requested_reason` + `edit_requested_at`** on nine tables (website
+  migration `2026_09_12_120000`, **shipping**; admin's `2026_09_12_130000` is a guarded
+  declaration for its own test database, empty `down()`, the `security_events` pattern).
+  🚨 **Without the admin declaration every guard on this feature passes for the WRONG
+  REASON** — the writer checks `Schema::hasColumn` and quietly does nothing.
+- 🚨 **NOT `moderation_reason`, AND THEY MUST NEVER BE MERGED.** That column means the item
+  is NOT on sale and every screen and query in both apps reads it that way; an edit request
+  leaves the listing SELLING while the creator fixes it. Writing the instruction into the
+  hold column would take live listings off sale as a side effect of asking a question.
+  Pinned by a source scan (this app's test DB has no `moderation_reason` at all, so a row
+  assertion there passes for the wrong reason — it did, on the first run).
+- 🚨 **NOR THE OLD `edited_reason`/`edited_status` PAIR.** That mechanism is driven by `logs`
+  rows and `app:edit-content-auto-delete` **DELETES the content 24 hours later** if the
+  creator has not answered — the opposite of this feature's own rule. It is also absent from
+  `tasks`, `piggy_pots` and `tip_goals`, three of the nine sources.
+- 🚨 **WRITTEN THROUGH THE QUERY BUILDER, NEVER `save()`.** `requestEdit()` snapshots
+  `updated_at` one line earlier to answer "has the creator edited it since?" — a model write
+  would answer "yes" the instant the request was made, for every request, for ever. It would
+  also re-date `users`, which orders the creator-review queue and keys the profile cache.
+- 🚨 **A PROFILE REQUEST IS WRITTEN ON THE CREATOR, NOT THE SOURCE ROW.** `profile_change`
+  carries a `profile_change_requests` id; writing there would put a bio instruction on a
+  record nothing renders.
+- **Approve, Remove and Escalate all clear it** — approving is what closes a request, and a
+  creator who did what was asked must stop being asked.
+- **Surfaces (website):** `CatalogueService` (all six modules, the creator's own listings
+  hub) · `UserProfileService`'s shop select · `ShopCard` · `wishlist/Wishlistbox` ·
+  `Components/Catalogue/ListingRow` · `auth.user.edit_requested_reason` for the profile.
+  ⚠️ **AMBER, never red** — red on this platform means a person said no, and this listing is
+  live. `ItemStatusBadge` already carried a `changes` tier; only the server side was missing.
+- Tests: `admin.spennypiggy.co/tests/Feature/ContentAuditTest.php` (49, +4).
+
+⚠️ **Two website fixtures PINNED the removed £500 gate and were REWRITTEN, not deleted** —
+`SpendMilestoneVerificationTest` (5) and `VerifiedBadgeTest` (11). The file name of the first
+is deliberately unchanged: two things it always guarded are still true and now matter MORE —
+the flag is still WRITTEN (it is the whole supporter badge, so a silent regression in the
+write would take every supporter badge off the platform), and a person's own spending must
+never demote their account.
+
+### ⚠️ Two process mistakes made while shipping it, both worth not repeating
+
+- 🚨 **`npx prettier --write` ON A WEBSITE FILE REFLOWS IT.** `spennypiggy.co` has **no
+  `.prettierrc`** (only the admin app does), so prettier applied its own defaults and turned
+  a 14-line addition into a **199-line diff** in `Wishlistbox.jsx`. The root file's "never
+  run prettier across a directory" rule is not enough — **on this repo do not run it at all.**
+- 🚨 **`git checkout --` TO UNDO THAT ALSO DISCARDED PRE-EXISTING UNCOMMITTED WORK.**
+  `ShopCard.jsx` and `Wishlistbox.jsx` each lost their 11 Sep `in_review` → `flagged` change.
+  That matters beyond the inconvenience: `ItemStatusBadge` no longer DEFINES `in_review`, and
+  **an unknown state renders no chip at all**, so every held listing would have gone silent.
+  Both restored. **Check `git status` before reverting a file in a tree with uncommitted work.**
+
+## 🚨 The £500 spend gate is gone; it is a BADGE now (12 Sep 2026, spennypiggy.co)
+
+Client direction. A supporter past £500 used to be refused every purchase until an admin
+compared the address they gave us against the one their bank returned — and the screen that
+took that decision was deleted the same day, so the gate had become a **permanent block with
+nobody able to clear it**. Measured at the time: 15 supporters over £500, all already cleared,
+so nobody was stuck — but the next one to cross would have been, for ever.
+
+- **Removed:** `CheckGifterCardVerification` middleware + its Kernel alias + its guard on
+  **nine** checkout routes · the inline blocks in `PiggyPotPaymentController` and
+  `StripeController` · `User::requiresCardVerification()` · the `verification_gate` shared
+  prop · the `profile_status_lock = 1` write when a supporter crosses £500.
+- 🚨 **`Helpers::checkGifterCardVerificationStatus()` WAS NOT DELETED — it returns `false`.**
+  Two reasons, both load-bearing: the lines above that return are what **write**
+  `is_500_limit_exceeded`, which is now the supporter badge's whole basis; and its **eight**
+  checkout callers each refuse in their own shape, so deleting them one by one risks leaving a
+  single silent gate nobody can find. One `return false` opens all eight at once.
+- 🚨 **NOTHING MAY READ `is_500_limit_exceeded` TO REFUSE A PURCHASE AGAIN.** It is
+  recognition now, not a control.
+- **`App\Support\VerifiedBadge` — the supporter tier is spend, the creator tier is still the
+  lock.** A non-creator gets the grey badge on `is_500_limit_exceeded = 1` and nothing else;
+  `profile_status_lock` is never set for them again, so leaving the badge on it would have
+  meant no supporter could ever carry one.
+  - 🚨 **`is_500_limit_exceeded` HAD TO BE ADDED TO `VerifiedBadge::COLUMNS` *AND* TO
+    `UserProfileService`'s ALLOWLIST SELECT, AND THE SECOND WAS MISSED FIRST TIME.** That
+    select is a column allowlist and an unselected column reads as **NULL rather than
+    throwing**, so the omission did not error — it silently stripped the grey tick from every
+    supporter **on the profile page only**, while every other surface still showed it. Caught
+    by `VerifiedBadgeTest`'s COLUMNS guard, which compares the two lists and exists for
+    exactly this; it named the file and the column in its failure message.
+  - ⚠️ The two `identity_*` entries in `COLUMNS` are **vestigial** — the check was removed on
+    11 Sep 2026 and `VerifiedBadge` no longer reads them, and its `IDENTITY_VERIFIED` /
+    `IDENTITY_ADMIN_REJECTED` constants are declared and unused. They stay in every select
+    because the guard compares the two LISTS, not their usefulness; removing them means
+    editing both sides together.
+  ⚠️ `resources/js/Components/VerifiedBadge.jsx`'s transitional fallback is **role-split** for
+  the same reason, and still only ever downgrades.
+
+## 🚨 Identity was still gating four things it no longer should (12 Sep 2026, spennypiggy.co)
+
+Identity became a PAYOUT gate on 10 Sep — a creator publishes, sells and is charged with no
+check at all — but `identity_status = 1` was still a condition in four places. Measured
+11 Sep: **304 of 324 live creators sat at 0**, so each of these excluded nearly the platform.
+
+1. 🚨 **The 28-day activity card** (`Dashboard.jsx`'s `canSeeActivityCard`) — reported live on
+   a fully connected creator whose card had simply vanished. ⚠️ **`stripe_details_submitted`
+   STAYS**: the card's headline is "YOUR PAYMENTS ARE PAUSED" and a creator before Connect has
+   no payments to pause.
+2. 🚨 **Discovery's "new creators" row** (`DiscoveryService::newVerifiedCreators`).
+3. **`CreatorActivityService`'s warning and inactive-creator lists** (×2) — a warning nobody
+   received.
+4. **`CreatorRecommendationService::standing()`** gave `+0.3` for a verified identity, ranking
+   almost every creator down for a step nobody offers them. Base `0.55 → 0.85` so the scale
+   keeps its range and every other weight in that file stays comparable.
+
+⚠️ **The `identity_status` entries in SELECT lists are untouched and must stay** —
+`VerifiedBadge::COLUMNS` reads them, and a partial select reads NULL rather than throwing.
+
+## 🚨 Four P1/P2 residues closed (12 Sep 2026)
+
+### 1 · The frozen Stripe estimate was dropped on every write 🔴 → fixed
+
+`Helpers::feeRateColumns()` emits `stripe_fee_rate` and `stripe_fixed_fee`, and **not one of
+the four payment models listed either in `$fillable`** — so Eloquent dropped both on every
+mass-assigned write. Measured: **0 of 225 rows populated.**
+
+`Helpers::storedFeeRates()` then read null and fell back to `LEGACY_CARD_STRIPE_RATE` (2.9%)
+while the configured card estimate has been **3.4% since 11 Aug 2026** — so every card sale
+since then was re-cost **0.5pp cheap**, understating Stripe's cost and overstating the
+platform's own margin on the screens it reads its margin from. Nothing errored.
+
+- 🚨 **SAFE TO MAKE FILLABLE ONLY BECAUSE THE RECOMPUTE RE-COSTS FROM THE ROW'S OWN FROZEN
+  RATES.** `finance:sync-transactions` calls `feeRateColumns()` in seven places — but it
+  builds its breakdown from `Helpers::storedFeeRates($payment)`, the SOURCE row's stored
+  values, so a historic row is written back with what it already had. **If a recompute is
+  ever changed to read config directly, this becomes the way history gets restated.** That
+  is the danger `OPEN-ITEMS.md` §0b warned about and it is why the warning was right.
+- ⚠️ **FORWARD ONLY, DELIBERATELY.** Rows charged between 11 Aug and 12 Sep keep the 2.9%
+  fallback. Measured on production: **4 rows**. Backfilling them would write recorded
+  economics from an inference — the one thing these columns exist to avoid — and making them
+  TRUE means reading Stripe's own balance transactions, which is a separate decision.
+- ⚠️ **The fallback stays and is still correct** for every pre-11-Aug row.
+- Tests: `tests/Feature/FrozenStripeRateTest.php` (3). 🚨 **A test that builds the array and
+  asserts its contents passes against this bug** — the array was always right; the fault was
+  between the array and the database. Verified 2-of-3 red with the entries removed again.
+
+### 2 · `POST /add-goal` could not create a tip goal on a freshly migrated database
+
+`2023_12_18_110310` declares `$table->double('target')` — NOT NULL, no default — while
+`target` is commented out of `TipGoal::$fillable` as a deprecated monetary field, so
+`create()` dropped it and the insert failed under strict mode.
+
+🚨 **IT WORKED IN PRODUCTION, WHICH IS WHY IT SURVIVED.** Measured 12 Sep 2026: `target` is
+`double(8,2) NULL` on production **and** on the development copy — altered at some point with
+no migration. The fault existed only where the schema is built from migrations: CI, a
+`migrate:fresh`, and **any restore**. A disaster-recovery rebuild would have come back missing
+a feature production had. **When a bug reproduces in tests and not in production, compare the
+live schema against the migrations before assuming the test is wrong.**
+
+Migration `2026_09_12_140000` makes it nullable. ⚠️ Nullable, not `0` — the column is
+deprecated and unread, and zero is a number somebody could have meant. ⚠️ Still not
+`$fillable`. ⚠️ `TipGoalModerationTest`'s deliberately-failing guard was flipped to assert the
+save, as its own note instructed.
+
+### 3 · The daily review feed could not see profiles that went live today
+
+`profile_new` dated a creator by `users.created_at`, so somebody who signed up three weeks ago
+and completes their photo and bio TODAY — publishing a profile no human has looked at —
+appeared under **no source** in today's feed.
+
+- New column **`users.profile_activated_at`** (website migration `2026_09_12_150000`; admin
+  declaration `2026_09_12_160000`), written by `ProfileAutoApproval::activateIfComplete()`
+  **in the same `DB::table` statement as the lock** — so it cannot disagree with the
+  activation it describes, and it does not stamp `updated_at`.
+- ⚠️ **COALESCE, never a swap.** The column is NULL for every creator who went live before it
+  existed; reading it alone would drop all of them out of the feed.
+- 🚨 **THE PROBE LIVES IN THE READER, NOT THE REGISTRY.** The first cut put
+  `Schema::hasColumn()` inside `ContentFeedSources` and broke `ContentAuditStateTest` — a
+  **unit** test with no application booted, which throws *"A facade root has not been set"*.
+  That registry is a pure array on purpose: it is the one check that runs where the admin
+  feature suite cannot. `created_preferred` is a column NAME; `ContentAuditService::createdSql()`
+  does the probe.
+- 🚨 **ONE DATE EXPRESSION FOR THE SELECT AND BOTH FILTERS.** They had a copy each while it
+  was only ever a column name; the moment one source needed an expression, two of the three
+  would have kept the old meaning and a row would be listed under one date and filtered on
+  another.
+- Tests: `admin.spennypiggy.co/tests/Feature/ContentAuditTest.php` (51, +2), verified red.
+
+### 4 · The legal pages described the old fee shape
+
+⚠️ **Legal copy — confirm with the client.** Three clauses named payment processing as a
+charge separate from the platform fee, which was true until 11 Sep and is not now.
+
+- `SupporterTerms` 3.1.1 and `CreatorSupporterContract` 6.1 — one Platform fee, processing
+  included.
+- 🚨 **`TermsOfService` 6.14.2 was the bigger half.** It is the CREATOR's deduction list and
+  it named **Platform fees AND processing** as things taken off their earnings. Under the
+  all-in model the creator receives **100% of their listed price** and both are paid by the
+  supporter on top — so that clause said the opposite of what the code does (pinned by
+  `AllInFeeModelTest`) and of what every creator-facing surface promises. It now lists what
+  genuinely still comes off a creator's money: reserves, refunds/chargebacks, and their taxes.
+
+### ⏳ Not done, and why — the paid-task form
+
+`Tasks/Create.jsx` is the one listing form still not on `ItemFormShell`, and it is
+**deliberately left**. The other six are SHEETS opened inside a page; this is a **routed
+Inertia page** (`task.create`) linked from five surfaces — the creator journey card, the setup
+celebration and the dashboard twice among them. Converting it is a product change with real
+regression surface (a URL creators and the onboarding flow link to), not the refactor the
+other six were. **A client decision, not a developer one.**
+
+## 🚨 The e-mail audit — what goes, what should not, what was missing (12 Sep 2026, BOTH apps)
+
+A full sweep of 163 mailables and every sender in both apps, after a month in which identity,
+gifter verification, manual pre-approval and the `/dispatch` console were all removed.
+
+### What was going out and should not have been
+
+- 🚨 **THE HALF-HOURLY ADMIN DIGEST WAS ASKING FOR A QUEUE THAT NO LONGER EXISTS.** Spenny
+  Piggy's identity check was deleted on 11 Sep; `identity_signoff` and `identity_reverified`
+  survived it and kept reading the leftover columns. Measured on production:
+  `identity_status = 1 AND identity_admin_status = 0` matches **15 creators**, so every digest
+  said *"IDs Awaiting Final Sign-off: 15"* and the sidebar carried the same permanent 15.
+  Both counts and both digest rows removed; the **screen and `identity_reviews` stay** —
+  decisions real people took remain reachable, only the instruction to act is gone.
+  ⚠️ A badge key the server stops returning renders a permanent ZERO rather than erroring, so
+  the keys had to go with the counts.
+- 🚨 **A DEVELOPER'S PERSONAL INBOX WAS RECEIVING PLATFORM DISPUTES.**
+  `TaskController`'s escalation branch was two hardcoded addresses behind an `APP_URL` match —
+  `prem@futureprofilez.com` off production, `support@spennypiggy.co` on it. Exactly the fault
+  `AlertRouter` was built to remove from the intro-video mail, and **the expensive half is the
+  else: any host whose URL was not one of those four literals escalated a supporter's dispute
+  to NOBODY AT ALL.** Now `AlertRouter::recipients('dispute_alerts')`, editable on
+  `/alert-routing` with no deploy, and it logs a warning when the channel is empty.
+- **Two alert channels can never fire**: `identity_reverified` (`IdentityReverifiedAlert` has
+  no caller) and `creator_intro_submitted` (`SendIntroMailAdmin` is never dispatched — the
+  19 Aug decision was "no admin mail" for intros). ⚠️ The digest **drops zero-count rows**, so
+  these are quiet rather than noisy; they are dead weight, not a live fault.
+
+### What should have been going and was not
+
+- 🚨 **A CRITICAL ACCOUNT FLAG REACHED A SCREEN AND NOBODY'S INBOX.** `user_flags` carries four
+  `critical` types — payout schedule reverted, payout destination changed, refund rate over
+  threshold, Stripe connection lost — and `/user-flags` was the only surface. **That is why two
+  creators were unpayable from 26 August and nobody knew.** New channel
+  **`user_flag_critical`** (mirrored in both apps) + `App\Mail\UserFlagRaised`, raised from
+  `UserFlagger::alertOnCritical()`.
+  - ⚠️ **ON CREATION ONLY.** A recurrence inside the dedupe window bumps `occurrences` and
+    returns before the alert — without that the ten-minute payout sweep would mail the same
+    thing 144 times a day.
+  - ⚠️ **CRITICAL ONLY.** The warning-level flags are the volume that turns an alert list into
+    one nobody reads, which would cost the critical ones their meaning.
+  - ⚠️ Never throws, and the flag is written before it runs — an alert failing must not lose
+    the record it was announcing.
+  - Tests: `UserFlagsTest` (16, +3), verified red.
+
+### Dead mailables — 11 on the website, 1 on the admin app
+
+`CheckError` · `PaymentRefunded` · `RiskOtpMail` · `ShopShippedMail` · `SiteSubscription` ·
+`TaskApprove` · `TaskReject` · `TaskDisputeResolvedMail` · `TaskProofSubmittedCreatorMail`,
+plus `SendAvatarRestrictionMail` / `SendCoverRestrictionMail` (reachable only from
+`CheckProfilePhotosAdult`, itself never dispatched), and admin's `ShopOrderRefundedMail`.
+
+🚨 **They are not inert.** `routes/debug-emails.php` globs `views/email/*.blade.php` and that
+page SENDS — every dead blade is a sendable template. That is why six dead identity templates
+were deleted rather than left.
+
+⚠️ **`ShopShippedMail` is a DUPLICATE, not a gap** — `ShopOrderStatusMail` already goes on
+every status change including shipped. ⚠️ **`TaskDisputeResolvedMail` IS a real gap**: a task
+dispute escalates to admins and **nothing closes it** — there is no resolve action anywhere,
+so neither party is ever told the outcome. Left alone; building the resolution is a product
+decision, not a mail one.
+
+### ⚠️ A grep for dead mailables must not be `new X(`
+
+Two were reported dead and are live: `new SendAvatarRestrictionMail` is written without
+parentheses. Match `new X\b|X::class`, and then check the CHAIN — a live sender called only
+from a dead job is still dead.
 
 ## Detailed topic index — load the skill, do not inline this content
 

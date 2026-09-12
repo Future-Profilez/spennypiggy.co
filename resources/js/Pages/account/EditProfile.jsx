@@ -1,10 +1,10 @@
 import { useRef, useState, useEffect } from "react";
 import userdefaultphoto from "../../../assets/siteicon.png";
+import { REAL_DETAILS_WARNING } from "@/constants/accountIntegrity";
 import coverimage from "../../../assets/img/wishlistbannerimg.png";
 import editicon from "../../../assets/img/editicon.png";
 import Popup from "@/Components/Popup";
 import { useForm, usePage } from "@inertiajs/react";
-import PendingChangesNotice from "@/Components/PendingChangesNotice";
 import { useAlerts } from "@/Components/Alerts";
 import UpdateAvatar from "./UpdateAvatar";
 import LoaderButton from "@/Components/LoaderButton";
@@ -760,16 +760,7 @@ export default function EditProfile({
                         {renderTabs()}
 
                         <form onSubmit={updateProfile} className="flex flex-col">
-                            {/* ⚠️ Read straight off the page props rather than
-                                taken as a prop: this form is embedded in five
-                                different parents, and threading it through each
-                                is five chances for one of them to forget. Absent
-                                on a page that does not send it, so it renders
-                                nothing rather than guessing. */}
-                            <PendingChangesNotice
-                                assets={pageProps?.pending_profile_changes}
-                                className="mt-6"
-                            />
+                            
                             {/* Merging the two tabs left the photos block running
                                 straight into "Display Name" with nothing between
                                 them, so the page read as one undifferentiated
@@ -783,6 +774,11 @@ export default function EditProfile({
  <h3 className="mb-4 mt-8 border-t border-black/10 pt-8 text-[12px] font-black uppercase tracking-[0.16em] text-black/60">
                                     Your details
                                 </h3>
+                                {/* One wording, shared with the signup step and the
+                                    socials editor (`constants/accountIntegrity.js`). */}
+                                <p className="mb-4 rounded-box-sm border-2 border-black bg-[#FDF6C3] px-4 py-3 text-sm font-bold text-black">
+                                    {REAL_DETAILS_WARNING}
+                                </p>
                                 <ul>
                                     <li className="mb-4">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -58,6 +58,12 @@ class VerifiedBadge
      * (Discovery, the leaderboard, the post feeds), so ADD THIS LIST to any new
      * one. `tests/Feature/VerifiedBadgeTest.php` asserts the live builders do.
      */
+    /**
+     * 🚨 EVERY COLUMN `for()` READS. A select that takes some of these and not
+     * the rest does not error — an unloaded attribute reads as NULL — so the
+     * badge silently downgrades or vanishes, which is the shape of fault that
+     * hid `SaveButton`'s dead `is_saved` prop for months.
+     */
     public const COLUMNS = [
         'role',
         'suspended_account',
@@ -65,6 +71,8 @@ class VerifiedBadge
         'identity_status',
         'identity_admin_status',
         'stripe_details_submitted',
+        // The supporter tier's whole basis since 12 Sep 2026.
+        'is_500_limit_exceeded',
     ];
 
     /**
@@ -92,59 +100,39 @@ class VerifiedBadge
             return self::NONE;
         }
 
-        if ((int) $get('profile_status_lock') !== self::PROFILE_APPROVED) {
-            return self::NONE;
+        /*
+         * 🚨 A GIFTER'S BADGE IS WHAT THEY HAVE SPENT, NOT AN APPROVAL
+         * (client direction, 12 Sep 2026). It used to be `profile_status_lock = 2`
+         * — the verdict of the £500 address review — and that whole check was
+         * removed the same day: there is no gifter verification, no card check
+         * and no spend gate left, so a lock that nothing ever sets again would
+         * have meant no supporter could ever carry a badge.
+         *
+         * `is_500_limit_exceeded` is written by `Helpers` when a supporter's
+         * lifetime spend passes £500. It is the ONE thing left that the badge
+         * can honestly stand for on a supporter: this person has actually
+         * backed creators, at scale. Recognition, never a gate — nothing reads
+         * it to refuse a purchase any more, and nothing may start to.
+         */
+        if ((int) $get('role') !== 1) {
+            return (int) $get('is_500_limit_exceeded') === 1 ? self::BASIC : self::NONE;
         }
 
-        if ((int) $get('role') !== 1) {
-            // A gifter's badge is the approval, and there is nothing above it —
-            // they have no identity check and no Connect account to finish.
-            return self::BASIC;
+        /*
+         * ⚠️ The lock still governs the CREATOR badge, and it has to: it is the
+         * one record that their profile is live rather than drafting or pulled
+         * back by a check.
+         */
+        if ((int) $get('profile_status_lock') !== self::PROFILE_APPROVED) {
+            return self::NONE;
         }
 
         return self::isPayable($get) ? self::CREATOR : self::BASIC;
     }
 
-    /**
-     * Is this creator in the one state where "get verified" is a true thing to say?
-     *
-     * 🚨 THE PROFILE MUST BE ADMIN-APPROVED FIRST. The promo deck originally asked for
-     * `tierFor() === NONE`, which is exactly backwards: NONE is what an UNAPPROVED or
-     * suspended account returns, so the card was shown only to people who cannot get the
-     * badge yet and hidden from everyone who can. Approval is the gate the identity check
-     * sits behind — pitching it earlier asks for a passport from someone whose profile
-     * photo has not been looked at.
-     *
-     * ⚠️ Also false once Stripe has passed the check (`identity_status` verified). Such a
-     * creator is only missing Connect onboarding, and telling them "one ID check and the
-     * tick is yours" would be describing a step they have already taken.
-     *
-     * ⚠️ Also false after an ADMIN REJECTION. A human said no; sending them back to run
-     * the same Stripe check again would not change that, and implying it would is worse
-     * than showing nothing.
-     *
-     * @param  User|array<string, mixed>|null  $user
-     */
-    public static function awaitingIdentityCheck($user): bool
-    {
-        if (self::tierFor($user) === self::NONE) {
-            return false;
-        }
-
-        $get = static fn (string $key) => is_array($user)
-            ? ($user[$key] ?? null)
-            : $user->{$key} ?? null;
-
-        if ((int) $get('role') !== 1) {
-            return false;
-        }
-
-        if ((int) $get('identity_admin_status') === self::IDENTITY_ADMIN_REJECTED) {
-            return false;
-        }
-
-        return (int) $get('identity_status') !== self::IDENTITY_VERIFIED;
-    }
+    /* 🚨 `awaitingIdentityCheck()` IS GONE (11 Sep 2026, client D5/Q20). It answered
+       "should we pitch the ID check to this creator" — and there is no ID check to
+       pitch. Its only caller was the `verified_badge` promo card, removed with it. */
 
     /**
      * Stripe has verified this creator AND their Connect onboarding is done.
@@ -160,16 +148,16 @@ class VerifiedBadge
      */
     private static function isPayable(callable $get): bool
     {
-        // An admin rejection of the identity check outranks Stripe's pass —
-        // somebody looked at it and said no.
-        if ((int) $get('identity_admin_status') === self::IDENTITY_ADMIN_REJECTED) {
-            return false;
-        }
-
-        if ((int) $get('identity_status') !== self::IDENTITY_VERIFIED) {
-            return false;
-        }
-
+        /*
+         * 🚨 THE IDENTITY CLAUSES ARE GONE (11 Sep 2026, client D5/Q20). Spenny Piggy
+         * runs no identity check, so "we have identified this person" is no longer
+         * something the platform can claim — and a badge that keeps claiming it after
+         * the check was removed would be the strongest untrue statement on the site.
+         *
+         * ⚠️ The higher tier now means what it can still honestly mean: this creator has
+         * completed Stripe Connect onboarding and can actually be paid. Stripe's own KYC
+         * sits behind that, which is the only identity assurance either of us has.
+         */
         return (int) $get('stripe_details_submitted') === 1;
     }
 
@@ -182,9 +170,29 @@ class VerifiedBadge
      */
     public static function labelFor(?string $tier): ?string
     {
+        /*
+         * 🚨 THE CREATOR LABEL SAID "identity confirmed" UNTIL 11 Sep 2026, AND BY
+         * THEN IT WAS FALSE. `isPayable()` above dropped its identity clauses the
+         * same day — Spenny Piggy runs no identity check at all now — so the badge
+         * was the platform telling every visitor it had confirmed who somebody is,
+         * on the strength of a check it had stopped performing. That method's own
+         * docblock calls this out as the strongest untrue statement the site could
+         * make; the label is the only place a visitor ever reads the claim, so it
+         * is the half that mattered.
+         *
+         * ⚠️ Stripe's own KYC does sit behind Connect onboarding, but it is STRIPE's
+         * assurance and not ours to describe as identity confirmation.
+         */
         return match ($tier) {
-            self::CREATOR => 'Verified creator — identity confirmed and payouts set up',
-            self::BASIC => 'Verified profile — automated checks passed',
+            self::CREATOR => 'Verified creator — payouts set up with Stripe',
+            /*
+             * ⚠️ ONE LABEL, TWO POPULATIONS. A supporter earns it by spending
+             * over £500; a creator holds it while their profile is live and
+             * Connect is not finished. Both are "checked, not yet the pink
+             * one", and splitting the wording would mean the tier no longer
+             * names one thing.
+             */
+            self::BASIC => 'Verified profile — checks passed',
             default => null,
         };
     }

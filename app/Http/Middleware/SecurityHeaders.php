@@ -268,7 +268,34 @@ class SecurityHeaders
              * un-nonced inline blocks still in app.blade.php are what report-only
              * mode is here to surface.
              */
-            "script-src 'self' 'nonce-{$nonce}' {$asset} {$stripe} {$intercom} {$google} {$googleAds} {$xAds} {$termly} https://challenges.cloudflare.com https://cdn.jsdelivr.net",
+            /*
+             * 🚨 `storage.googleapis.com` IS PATH-SCOPED, AND THAT IS THE WHOLE POINT.
+             *
+             * `resources/proxy/service-worker.js` loads the workbox runtime with
+             * `importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.0.0/workbox-sw.js')`,
+             * and a worker served from our own origin inherits this policy — so
+             * under enforcement that import fails, and a failed `importScripts`
+             * ABORTS THE WHOLE WORKER: no push, no offline page, no precache
+             * fallback for a stale hashed chunk. Reported 176 times on 12 Sep 2026.
+             *
+             * ⚠️ The BARE HOST would be a blanket grant to every public Google
+             * Cloud Storage bucket in existence — anybody can put a file on that
+             * host, which makes it the opposite of a script allowlist. A CSP
+             * source may carry a path prefix, so only the workbox directory is
+             * allowed. ⚠️ A path-scoped source is NOT matched across a redirect;
+             * that URL serves the file directly, and if the vendor ever starts
+             * redirecting it this breaks and the report says so.
+             *
+             * ⚠️ THE BETTER END STATE IS SELF-HOSTING IT — `workbox-build` is
+             * already a devDependency and `scripts/build-sw.js` already runs
+             * `injectManifest`, so the runtime could be bundled and covered by
+             * `'self'` with no third-party script source at all. Deliberately not
+             * done here: this worker has a history of shipping broken silently
+             * (the built file went to `public/`, which Vapor never serves, so for
+             * a period production ran no worker at all), and that refactor is not
+             * a drive-by on the back of a report-only finding.
+             */
+            "script-src 'self' 'nonce-{$nonce}' {$asset} {$stripe} {$intercom} {$google} {$googleAds} {$xAds} {$termly} https://challenges.cloudflare.com https://cdn.jsdelivr.net https://storage.googleapis.com/workbox-cdn/",
 
             // 'unsafe-inline' is required and not removable today — see the class
             // docblock.
@@ -287,7 +314,17 @@ class SecurityHeaders
 
             "media-src 'self' data: blob: {$asset} {$uploadcare} https://player.vimeo.com",
 
-            "connect-src 'self' {$asset} {$stripe} {$uploadcare} {$intercom} {$magicbell} {$sentry} {$google} {$googleAds} {$xAds} {$termly} https://ipapi.co https://api.ipify.org https://api64.ipify.org wss://*.intercom.io wss://*.magicbell.com wss://*.magicbell.io",
+            /*
+             * ⚠️ THE FONT HOSTS APPEAR HERE **AS WELL AS** IN `style-src`/`font-src`,
+             * AND THAT IS NOT A DUPLICATE. Those two cover the browser LOADING a
+             * stylesheet or a face; the service worker additionally `fetch`es the
+             * same URLs to put them in a cache, and a `fetch` is `connect-src`
+             * whatever the response turns out to be. Same for `cdn.jsdelivr.net`,
+             * which was already allowed as a script, a style and a font and was
+             * refused only when the worker tried to cache it. 86 reports on
+             * 12 Sep 2026 across the three hosts, all from `/service-worker.js`.
+             */
+            "connect-src 'self' {$asset} {$stripe} {$uploadcare} {$intercom} {$magicbell} {$sentry} {$google} {$googleAds} {$xAds} {$termly} https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net https://ipapi.co https://api.ipify.org https://api64.ipify.org wss://*.intercom.io wss://*.magicbell.com wss://*.magicbell.io",
 
             "frame-src 'self' {$stripe} {$uploadcare} {$intercom} {$googleAds} {$termly} https://challenges.cloudflare.com https://player.vimeo.com",
 

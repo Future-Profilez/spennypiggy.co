@@ -149,6 +149,11 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         // App\Support\StripeChargesFlag. Not $fillable: it is a fact Stripe
         // reported, not something a request may set.
         'charges_checked_at' => 'datetime',
+        /* When Stripe was last confirmed to know about this creator's bank capability.
+           ⚠️ NULL = never confirmed, NEVER "has no capability". Written only by
+           `stripe:request-bank-capabilities`, and `$fillable` in NEITHER app — a
+           posted field must not be able to mark a creator as checked. */
+        'bank_capability_checked_at' => 'datetime',
         'content_posting_paused_at' => 'datetime',
         // Suspension state. ⚠️ Deliberately NOT in $fillable — the reason and
         // its author are written by SuspensionService (and by the admin app's
@@ -886,50 +891,6 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function gifterCardVerification()
     {
         return $this->hasOne(GifterCardVerification::class, 'user_id');
-    }
-
-    /**
-     * Is this account still blocked by the £500 spend gate?
-     *
-     * 🚨 THE ONE DEFINITION. It was previously spread across a middleware on five
-     * routes and an inline call in eight controllers that answered a different
-     * question — `Helpers::checkGifterCardVerificationStatus()` returned true only
-     * on the single request that flipped the flag from 0 to 1, so the next
-     * purchase went straight through. Shop, Paid Tasks, Piggy Pot and the Piggy
-     * Bank had no middleware at all, which meant the gate stopped somebody once
-     * and then never again.
-     *
-     * ⚠️ The two roles finish differently, and that is deliberate:
-     *
-     *  - a GIFTER must pay the charge AND wait for an admin to compare the
-     *    address they gave us against the one their bank returned. That review is
-     *    what `profile_status_lock = 2` records for them.
-     *  - a CREATOR only has to pay the charge. Their account is already approved
-     *    as a creator, and `profile_status_lock` for them means "your profile was
-     *    reviewed" — a state they usually reached long before they ever spent
-     *    anything. Reading it as the address verdict would either wave every
-     *    approved creator through unchecked or block them on a decision nobody is
-     *    being asked to take.
-     */
-    public function requiresCardVerification(): bool
-    {
-        if (! $this->is_500_limit_exceeded) {
-            return false;
-        }
-
-        if (! in_array((int) $this->role, [0, 1], true)) {
-            return false;
-        }
-
-        $verified = $this->gifterCardVerification()
-            ->where('status', 'success')
-            ->exists();
-
-        if (! $verified) {
-            return true;
-        }
-
-        return (int) $this->role === 0 && (int) $this->profile_status_lock !== 2;
     }
 
     /**

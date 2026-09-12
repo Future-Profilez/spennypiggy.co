@@ -1,5 +1,6 @@
 import { useAlerts } from "@/Components/Alerts";
 import LoaderButton from "@/Components/LoaderButton";
+import { REAL_DETAILS_WARNING } from "@/constants/accountIntegrity";
 import Popup from "@/Components/Popup";
 import { router, usePage } from "@inertiajs/react";
 import axios from "axios";
@@ -416,7 +417,7 @@ export default function AddSocial({
                         <span className="text-xs font-semibold text-black/70">
                             {isPublic(platform.id)
                                 ? "Shown on your profile"
-                                : "Private — only you and our team"}
+                                : "Private — not shown on your page"}
                         </span>
                         <button
                             type="button"
@@ -530,10 +531,18 @@ export default function AddSocial({
                             >
                                 {formValidation.hasValidFields
                                     ? "We use these to check you are really you. Each one stays private on your page unless you switch it to Public below."
-                                    : "Add at least one so our team can verify you. Handles stay private on your page unless you choose to show them."}
+                                    : "Add at least one REAL account — it is how we confirm this page is yours. Handles stay private unless you choose to show them."}
                             </p>
                         </div>
                     </div>
+
+                    {/* 🚨 THE ONE CONSEQUENCE SENTENCE. Handles publish themselves now, so
+                        this is the only thing standing between a borrowed account and a
+                        live page — and it is the same words on every screen that asks for
+                        details (`constants/accountIntegrity.js`). */}
+                    <p className="mb-6 rounded-box-sm border-2 border-black bg-[#FDF6C3] px-4 py-3 text-sm font-bold text-black">
+                        {REAL_DETAILS_WARNING}
+                    </p>
 
                     <form onSubmit={createSocial} className="space-y-0">
                         {/* Primary Platforms */}

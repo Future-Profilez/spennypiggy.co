@@ -29,6 +29,8 @@ class Post extends Model
         'status',
         'approved',
         'approved_at',
+        'moderation_reason',
+        'moderation_asset',
         'can_delete_until',
         'slug',
         'is_pinned',

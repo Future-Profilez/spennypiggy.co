@@ -17,6 +17,8 @@ use App\Services\CreatorActivityService;
 use App\Services\ModerationService;
 use App\Services\PostMentionService;
 use App\Services\UserProfileService;
+use App\Support\ListingPublication;
+use App\Support\PostModeration;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -280,6 +282,16 @@ class PostsController extends Controller
             $post->forceFill(['created_at' => $scheduledAt])->saveQuietly();
         }
 
+        /* 🚨 LIVE ON SAVE, AND THE CHECKS RETRACT IT (11 Sep 2026, client §8:
+           "don't make admins approve every normal post"). Posts were held at
+           `approved = 0` and **nothing scanned them at all** — the hold existed
+           purely so a person would look, which is the queue this plan removes.
+           `PostModeration` is the automated half that had to exist before this
+           could publish; it screens the text synchronously and the pictures on
+           the queue, and either can pull the post straight back. */
+        ListingPublication::publish($post);
+        PostModeration::screen($post);
+
         // Resolve @handles into real creators. Nobody is told yet — mentions are
         // notified once the post is approved (see mentions:notify).
         app(PostMentionService::class)->sync($post);
@@ -296,8 +308,8 @@ class PostsController extends Controller
             'uuid' => $post->uuid,
             'scheduled_at' => $post->scheduled_at?->toIso8601String(),
             'msg' => $scheduledAt
-                ? 'Scheduled for '.$scheduledAt->format('j M \a\t g:ia').'. It publishes then, once it has been checked.'
-                : 'Post saved. It will appear to your audience once approved.',
+                ? 'Scheduled for '.$scheduledAt->format('j M \a\t g:ia').'. It publishes then.'
+                : 'Posted — your audience can see it now.',
         ]);
     }
 
@@ -355,6 +367,10 @@ class PostsController extends Controller
 
         $previousTitle = (string) $post->title;
         $previousSlug = (string) $post->slug;
+        // Captured BEFORE the edit is applied, so the scan can tell a replaced picture
+        // from an untouched one — a re-scan of an unchanged image re-produces the same
+        // verdict and would retract a post an admin had already cleared.
+        $previousMedia = array_merge([$post->image], (array) $post->media);
 
         $post->type = $request->type;
         $post->for_module = $request->for_module;
@@ -363,7 +379,11 @@ class PostsController extends Controller
         $post->image = $request->image ?: null;
         $post->media = $this->dedupeMedia($request->media);
         $post->ai_generated = $request->boolean('ai_generated');
-        $post->approved = 0;
+        /* 🚨 AN EDIT NO LONGER PULLS A LIVE POST DOWN. It dropped straight back to
+           `approved = 0`, which under the old model meant "wait for a person" and
+           now means "never visible again" — there is no queue left to release it.
+           `PostModeration` below re-screens the text on every edit and re-scans only
+           the pictures this save introduced, and either can retract it. */
 
         // Rescheduling, and cancelling a schedule.
         //
@@ -409,6 +429,14 @@ class PostsController extends Controller
         }
 
         $post->save();
+
+        /* An edit lifts a hold only where this save could have fixed it, and re-scans
+           only the pictures it introduced — see `ListingPublication::republish`. */
+        ListingPublication::republish(
+            $post,
+            PostModeration::newImages($post, $previousMedia) ? ['thumbnail'] : []
+        );
+        PostModeration::screen($post, $previousMedia);
 
         $logs = Logs::where('edited_post_id', $post->id)->where('status', 'pending')->first();
         if (! empty($logs)) {

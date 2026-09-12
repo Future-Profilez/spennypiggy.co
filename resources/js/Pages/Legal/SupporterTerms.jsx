@@ -52,7 +52,13 @@ export default function SupporterTerms(props) {
 
 <h2 id="sec-3-fees-pricing-and-recurring-billing" className="text-xl font-black text-gray-900 mt-14 mb-4 scroll-mt-24">3. Fees, Pricing and Recurring Billing</h2>
 <p className="mb-5 text-gray-700 leading-relaxed">3.1 Total Price</p>
-<p className="mb-5 text-gray-700 leading-relaxed">3.1.1 The total amount charged to you in connection with any transaction may include the Creator’s listed price, Platform fees, payment processing fees, and applicable taxes. The total amount payable will be displayed at checkout prior to completion of the transaction.</p>
+{/* 🚨 PROCESSING IS INSIDE THE PLATFORM FEE (12 Sep 2026). Until the all-in
+                model shipped on 11 Sep this listed processing as a separate charge, which
+                was true then and is not now — the supporter is quoted ONE percentage and
+                Stripe is paid out of it. Naming a charge we do not make, on the clause that
+                defines what the supporter owes, is the worst place on the site to be out of
+                date. ⚠️ Legal copy: confirm with the client before changing it again. */}
+<p className="mb-5 text-gray-700 leading-relaxed">3.1.1 The total amount charged to you in connection with any transaction may include the Creator’s listed price, a single Platform fee — which covers payment processing — and applicable taxes. The total amount payable will be displayed at checkout prior to completion of the transaction.</p>
 
 <p className="mb-5 text-gray-700 leading-relaxed">3.2 Subscriptions and Recurring Billing</p>
 <p className="mb-5 text-gray-700 leading-relaxed">3.2.1 Where you subscribe to a Creator, billing will recur automatically on the applicable billing cycle until you cancel your subscription. You are solely responsible for cancelling your subscription prior to renewal if you do not wish to be charged for a further billing period.</p>

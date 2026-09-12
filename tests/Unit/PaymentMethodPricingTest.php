@@ -39,16 +39,38 @@ class PaymentMethodPricingTest extends TestCase
         $this->assertSame('card', $breakdown['fee_profile']);
     }
 
-    public function test_bank_profile_is_cheaper_for_supporter_same_for_creator(): void
+    /**
+     * 🚨 THIS TEST USED TO ASSERT BANK WAS CHEAPER, AND THAT IS NOW THE BUG.
+     * It was `test_bank_profile_is_cheaper_for_supporter_same_for_creator` and
+     * required `saving > 0` — true under the legacy markup model, where bank ran
+     * at a lower rate. Client decision D2 (11 Sep 2026) set BOTH rails to the
+     * same all-in 12% and said in as many words not to build a "one rail is
+     * cheaper" proposition, so the old assertion pinned a commercial position
+     * the client had already withdrawn.
+     *
+     * ⚠️ What is asserted instead is the pair of things that are still true and
+     * still load-bearing: the creator receives their listed price on EITHER
+     * rail, and the supporter is quoted the SAME total on both. The second is
+     * what makes the rails interchangeable to a buyer — if they ever diverge,
+     * `PaymentMethodSelector`'s struck-through price and "Save £X" sticker have
+     * to come back, and the copy rule with them.
+     *
+     * ⚠️ `saving` is still COMPUTED and is deliberately still checked — at one
+     * rate it must be exactly 0. It is not drawn anywhere any more; a non-zero
+     * here means the rates have drifted apart and nothing on screen would say so.
+     */
+    public function test_both_rails_quote_the_same_total_and_pay_the_creator_in_full(): void
     {
         $prices = PaymentMethodPricingService::dualPrices(100, 'GBP');
 
         $this->assertNotNull($prices['bank']);
-        $this->assertLessThan(
-            $prices['card']['total_supporter_pays'],
-            $prices['bank']['total_supporter_pays']
+
+        $this->assertSame(
+            (float) $prices['card']['total_supporter_pays'],
+            (float) $prices['bank']['total_supporter_pays'],
+            'Card and bank must quote one price under the all-in model (D2).'
         );
-        $this->assertGreaterThan(0, $prices['saving']);
+        $this->assertSame(0.0, (float) $prices['saving']);
 
         // Creator receives the listed price on both paths.
         $this->assertSame(100.0, (float) $prices['card']['listed_price']);

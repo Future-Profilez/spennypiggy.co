@@ -144,11 +144,22 @@ export default function SupporterLevel({ isOwner }) {
                 </ul>
             )}
 
-            {/* An empty card is an invitation, but only the owner can act on it. */}
+            {/* An empty card is an invitation, but only the owner can act on it.
+
+                🚨 `/discover`, NOT `/creators`. This pointed at `/creators` — the
+                page whose eyebrow reads "For creators" and whose headline is
+                "Sell your content. Keep all of it." So the one CTA on a brand-new
+                supporter's own profile, labelled "Find creators to support", sent
+                them to a page recruiting them to become a creator. Nothing errors:
+                it is a real page, it renders, and the button simply does the
+                opposite of what it says.
+
+                ⚠️ Every `/creators*` path is a paid-ads landing page aimed at
+                CREATORS. The supporter-facing browse surface is `/discover`. */}
             {isOwner && !purchases && (
                 <div className="mt-4">
                     <Link
-                        href="/creators"
+                        href="/discover"
                         className="inline-flex items-center rounded-box-sm border-2 border-black bg-[#FF007F] px-5 py-2.5 text-xs font-black uppercase tracking-wider text-black transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
                     >
                         Find creators to support

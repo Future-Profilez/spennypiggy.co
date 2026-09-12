@@ -18,7 +18,6 @@ use App\Jobs\MonthlySubscribedJob;
 use App\Jobs\NotificationSave;
 use App\Jobs\PiggyPotContributionMailToUser;
 use App\Jobs\ProcessWishItemDeliverable;
-use App\Jobs\SendIdentityVerificationEmail;
 use App\Jobs\SendRenewMail;
 use App\Jobs\ShopBuyed;
 use App\Jobs\ShopBuyedUser;
@@ -85,10 +84,6 @@ use App\Services\UserProfileService;
 use App\StripeControl;
 use App\StripeControl as AppStripeControl;
 use App\Support\AlertRouter;
-use App\Support\CreatorHelpTicket;
-use App\Support\IdentityCheckState;
-use App\Support\IdentityFailureReason;
-use App\Support\IdentityReverifiedAlert;
 use App\Support\NotificationContext;
 use App\Support\PayoutDestinationAudit;
 use App\Support\StripeChargesFlag;
@@ -294,20 +289,12 @@ class StripeWebhookController extends Controller
                 // stored reason, and a profile that still read "Verify identity"
                 // as if they had never tried. Do not comment it out again.
                 //
-                // 🚨 `processing` is the ONLY event that says a document was actually
-                // SUBMITTED. `identity_status = 2` is written when the session is
-                // created, so without this event "opened the check and closed the tab"
-                // and "uploaded everything, Stripe is deciding" are the same value —
-                // and the abandoned creator is told to wait for an answer nobody is
-                // ever going to send. Do not drop it.
-                case 'identity.verification_session.processing':
-                case 'identity.verification_session.requires_input':
-                case 'identity.verification_session.canceled':
-                case 'identity.verification_session.verified':
-                    $this->processIdentityVerification($event);
-                    break;
-
-                    // --- Payment & Subscription Events ---
+                /* 🚨 IDENTITY EVENTS ARE NO LONGER HANDLED (11 Sep 2026, client
+                   D5/Q20). Spenny Piggy mints no Stripe Identity sessions, so none of
+                   these can arrive for a session we started. A legacy session's event
+                   falls through to the default branch and is logged, which is the right
+                   answer: there is nothing left on this platform for it to update. */
+                // --- Payment & Subscription Events ---
                 case 'checkout.session.completed':
                     // The supporter finished the flow — close the recovery row before
                     // fulfilment runs, so a reminder can never overtake a completed
@@ -482,37 +469,6 @@ class StripeWebhookController extends Controller
         }
 
         return response()->json(['status' => 'success']);
-    }
-
-    /**
-     * Process Identity Verification Events (extracted from handleWebhook)
-     */
-    private function processIdentityVerification($event)
-    {
-        $session = $event->data->object;
-        $type = $event->type;
-
-        switch ($type) {
-            case 'identity.verification_session.processing':
-                $this->handleProcessingEvent($session);
-                break;
-
-            case 'identity.verification_session.requires_input':
-                $this->handleRequiresInputEvent($session);
-                break;
-
-            case 'identity.verification_session.canceled':
-                $this->handleCanceledEvent($session);
-                break;
-
-            case 'identity.verification_session.verified':
-                $this->handleVerifiedEvent($session);
-                break;
-
-            default:
-                Log::warning('Unhandled identity event type', ['type' => $type]);
-                break;
-        }
     }
 
     /**
@@ -926,227 +882,6 @@ class StripeWebhookController extends Controller
         }
 
         return $user;
-    }
-
-    /**
-     * Mark a check as failed and tell the creator why, on every channel.
-     *
-     * The stored payload carries the creator-facing wording (see
-     * IdentityFailureReason), so the email and the profile page render the same
-     * explanation without either of them re-deriving it from a raw Stripe code.
-     */
-    private function failIdentityCheck(User $user, string $code, ?string $rawReason, bool $isFraudulent = false, string $sessionStatus = IdentityCheckState::REQUIRES_INPUT): void
-    {
-        $payload = IdentityFailureReason::payload(
-            $isFraudulent ? 'fraud_suspected' : $code,
-            $rawReason
-        );
-
-        $user->update([
-            'identity_status' => $isFraudulent ? 3 : 0, // 3 = Fraud, 0 = Failed
-            'identity_verification_error' => $payload,
-            'identity_verification_details' => null,
-            'identity_verified_at' => null,
-        ] + IdentityCheckState::attributes($sessionStatus));
-
-        SendIdentityVerificationEmail::dispatch($user, $isFraudulent ? 'fraud' : 'failed');
-
-        /*
-         * Tier 1 help ticket (config/creator_help.php): a fraud flag cannot be
-         * retried and a declined consent screen is an objection, not a failure —
-         * both get a conversation with a person opened FOR them. Never throws.
-         */
-        if ($isFraudulent) {
-            CreatorHelpTicket::openFor($user, 'fraud_suspected');
-        } elseif ($code === 'consent_declined') {
-            CreatorHelpTicket::openFor($user, 'consent_declined');
-        }
-
-        $explained = IdentityFailureReason::explain($payload);
-
-        Helpers::sendNotification(
-            'Identity verification failed ❌',
-            $explained['title'].' — open your profile to try again.',
-            $user->email
-        );
-
-        Log::info('Identity check failed', [
-            'user_id' => $user->id,
-            'code' => $explained['code'],
-            'fraud' => $isFraudulent,
-        ]);
-    }
-
-    /**
-     * Handle the 'processing' event — the creator has submitted their document.
-     *
-     * This is the one moment the platform learns the difference between a check
-     * that is genuinely with Stripe and a session that was opened and abandoned.
-     * It writes no outcome (`identity_status` stays 2, waiting on verified /
-     * requires_input) — only the fact that the ball is no longer with the creator.
-     */
-    private function handleProcessingEvent($session)
-    {
-        $user = $this->resolveIdentityUser($session);
-
-        if (! $user) {
-            Log::error('User not found for processing verification session', ['session_id' => $session->id]);
-
-            return;
-        }
-
-        // Never walk a finished check backwards: a late or replayed event for an
-        // already-verified creator must not put them back into "being processed".
-        if ((int) $user->identity_status === 1) {
-            return;
-        }
-
-        $user->update(IdentityCheckState::attributes(IdentityCheckState::PROCESSING));
-
-        Log::info('Identity documents submitted, awaiting Stripe decision', [
-            'user_id' => $user->id,
-            'session_id' => $session->id,
-        ]);
-    }
-
-    /**
-     * Handle the 'requires_input' event — Stripe's failure event.
-     */
-    private function handleRequiresInputEvent($session)
-    {
-        $user = $this->resolveIdentityUser($session);
-
-        if (! $user) {
-            Log::error('User not found for verification session requiring input', ['session_id' => $session->id]);
-
-            return;
-        }
-
-        $err = $session->last_error ?? null;
-
-        $this->failIdentityCheck(
-            $user,
-            (string) data_get($err, 'code', 'requires_input'),
-            data_get($err, 'reason'),
-            $this->checkForFraud($session)
-        );
-    }
-
-    /**
-     * Handle the 'canceled' event.
-     *
-     * A cancelled session verifies nothing, so the creator must be moved off the
-     * "under review" state — otherwise they sit waiting on a check that will
-     * never return a result.
-     */
-    private function handleCanceledEvent($session)
-    {
-        $user = $this->resolveIdentityUser($session);
-
-        if (! $user) {
-            Log::error('User not found for canceled verification session', ['session_id' => $session->id]);
-
-            return;
-        }
-
-        // Never overwrite a completed verification with a cancellation — a stale
-        // session for an already-verified creator would otherwise un-verify them.
-        if ((int) $user->identity_status === 1) {
-            Log::info('Ignoring canceled identity session for an already-verified creator', [
-                'user_id' => $user->id,
-                'session_id' => $session->id,
-            ]);
-
-            return;
-        }
-
-        $this->failIdentityCheck(
-            $user,
-            'session_canceled',
-            data_get($session, 'last_error.reason'),
-            false,
-            IdentityCheckState::CANCELED
-        );
-    }
-
-    /**
-     * Handle the verified event for identity verification sessions
-     */
-    private function handleVerifiedEvent($session)
-    {
-        $user = $this->resolveIdentityUser($session);
-
-        if ($user) {
-            $docType = data_get($session, 'verified_outputs.document.type') ?: data_get($session, 'last_verification_report.document.type');
-
-            if ($docType && strtolower($docType) !== 'passport') {
-                $this->failIdentityCheck(
-                    $user,
-                    'document_type_not_allowed',
-                    'Only passports are accepted for identity verification.'
-                );
-
-                return;
-            }
-
-            $isFraudulent = $this->checkForFraud($session);
-
-            if ($isFraudulent) {
-                $this->failIdentityCheck($user, 'fraud_suspected', null, true);
-
-                return;
-            }
-
-            // The one definition of "verified", shared with identity:reconcile and with
-            // createVerificationSession — three paths, one field set.
-            $user->update(IdentityCheckState::verifiedAttributes());
-
-            SendIdentityVerificationEmail::dispatch($user, 'success');
-
-            /*
-             * 🚨 A CREATOR WE REFUSED HAS COME BACK. They are suspended until a
-             * human signs the new check off, so they can sell nothing at all
-             * while they wait — the client asked to hear about that the moment
-             * it happens rather than on the next half-hourly digest, which
-             * still carries the row. Ordinary first-time verifications are NOT
-             * mailed: an alert that fires on everybody is one nobody reads.
-             */
-            IdentityReverifiedAlert::notify($user);
-
-            /*
-             * 🚨 REDACTION MOVED TO AFTER THE HUMAN SIGN-OFF (4 Sep 2026), and
-             * this is the one line that would have made that whole feature
-             * impossible.
-             *
-             * `verificationSessions->redact()` PERMANENTLY DESTROYS the document
-             * images at Stripe — it is not a soft delete and there is no undo. It
-             * ran here, the moment Stripe passed the check, so by the time a
-             * reviewer opened the creator's file there was nothing left to look
-             * at: the whole point of the sign-off is comparing the ID photo with
-             * the profile photo, and the ID photo was already gone. The screen
-             * would have drawn "no images" for every creator, for ever, with
-             * nothing wrong in any log.
-             *
-             * 🚨 NOTHING IS STORED HERE EITHER WAY — that was the client's rule
-             * ("photo apne ko db me save hi ni krni") and it is unchanged. The
-             * images stay at Stripe, are fetched live through a one-hour link at
-             * the moment a reviewer looks, and the ADMIN APP redacts the session
-             * as soon as a decision is taken. The window is one review, not for
-             * ever.
-             *
-             * ⚠️ Do NOT reinstate a redact call on this path. If the sign-off
-             * step is ever removed, redact from wherever the LAST read of those
-             * images happens — never before it.
-             */
-
-            Helpers::sendNotification(
-                'Identity verification successful ✅',
-                'Your identity has been verified successfully.',
-                $user->email
-            );
-        } else {
-            Log::error('User not found for verified verification session', ['session_id' => $session->id]);
-        }
     }
 
     /**

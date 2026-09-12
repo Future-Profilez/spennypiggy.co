@@ -51,7 +51,7 @@ class ContentUnderReview extends Mailable
         $named = $this->itemTitle !== '' ? " \"{$this->itemTitle}\"" : '';
 
         return new Envelope(
-            subject: "Your {$this->feature}{$named} is under review"
+            subject: "Your {$this->feature}{$named} needs a fix"
         );
     }
 

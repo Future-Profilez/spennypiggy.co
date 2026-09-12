@@ -6,6 +6,7 @@ use App\Helpers;
 use App\Models\User;
 use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\Pricing\FeeModel;
+use App\Services\Pricing\PricingResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -28,7 +29,12 @@ class AllInFeeModelTest extends TestCase
         config([
             'payments.model' => FeeModel::MODEL_ALL_IN,
             'payments.all_in.card' => 12,
-            'payments.all_in.bank' => 9,
+            /* 🚨 12, NOT 9. This fixture pinned bank at the pre-D2 rate long after
+               client decision D2 put BOTH rails on 12% — and because a fixture is
+               what the class's tests read, one of them went on "proving" bank was
+               cheaper, citing D2 for the opposite of what D2 says. A fixture that
+               predates a decision keeps every test in its class green against it. */
+            'payments.all_in.bank' => 12,
             'payments.fixed_fee.enabled' => false,
             'payments.fixed_fee.amount_gbp' => 0,
         ]);
@@ -103,14 +109,35 @@ class AllInFeeModelTest extends TestCase
      | Rails
      | ----------------------------------------------------------------- */
 
-    public function test_bank_is_cheaper_for_the_supporter_than_card(): void
+    /**
+     * 🚨 THIS TEST ASSERTED THE OPPOSITE OF THE DECISION IT CITED.
+     * It was `test_bank_is_cheaper_for_the_supporter_than_card` and its comment
+     * read "D2: a bank payment carries no card interchange, so it genuinely
+     * costs less". D2 says the reverse in as many words — put bank on 12% too,
+     * and do NOT build a "one rail is cheaper" proposition. It stayed green only
+     * because this class's own `setUp` still pinned bank at the old 9%.
+     *
+     * ⚠️ The supporter-facing half of the same decision is pinned separately in
+     * `PaymentMethodPricingTest` (one quoted total, `saving` exactly 0) and is
+     * why `PaymentMethodSelector` no longer draws a "Save £X" sticker or a
+     * struck-through card price. If these two ever disagree, the checkout and
+     * the charge are describing different commercial models.
+     */
+    public function test_neither_rail_is_sold_as_the_cheaper_one(): void
     {
-        // D2: a bank payment carries no card interchange, so it genuinely costs less —
-        // and a supporter needs a reason to choose it.
         $card = Helpers::calculateStripeDirectChargeFlow(100, 'GBP', 0, 'card');
         $bank = Helpers::calculateStripeDirectChargeFlow(100, 'GBP', 0, 'bank');
 
-        $this->assertLessThan($card['total_supporter_pays'], $bank['total_supporter_pays']);
+        $this->assertSame(
+            (float) $card['total_supporter_pays'],
+            (float) $bank['total_supporter_pays'],
+            'D2 puts both rails on one rate — a gap here is a cheaper-rail proposition '
+            .'the client withdrew, and the checkout would have to advertise it again.'
+        );
+
+        // The promise that does hold on both rails, and the reason the rate can move.
+        $this->assertSame(100.0, (float) $card['net_to_creator']);
+        $this->assertSame(100.0, (float) $bank['net_to_creator']);
     }
 
     /* -----------------------------------------------------------------
@@ -141,6 +168,40 @@ class AllInFeeModelTest extends TestCase
 
         $this->assertGreaterThanOrEqual(0, $r['platform_fee']);
         $this->assertGreaterThanOrEqual(Helpers::MIN_PRICE_GBP, $r['net_to_creator']);
+    }
+
+    public function test_the_hard_default_covers_the_minimum_too(): void
+    {
+        /*
+         * 🚨 THE TEST ABOVE READS THE SHIPPED CONFIG AND THEREFORE CANNOT SEE THIS.
+         * `PricingResolver::DEFAULTS` is the last link in the chain — published
+         * version, then config, then this — and it is what answers if config is
+         * broken, missing or half-cached. Bank sat at 9.0 there until 12 Sep 2026,
+         * months after client decision D2 put both rails on 12%: the shipped config
+         * was moved and the fallback was not, so a config fault would have priced
+         * bank BELOW its own break-even and taken the shortfall out of the creator.
+         *
+         * ⚠️ Asserted through the resolver's BEHAVIOUR with config blanked, not by
+         * reflecting on the constant — what matters is the number a charge would
+         * actually be priced at, whichever link produced it.
+         */
+        config(['payments.all_in' => null]);
+        PricingResolver::forget();
+
+        foreach (['card', 'bank'] as $rail) {
+            $rate = PricingResolver::rateFor($rail);
+
+            config(['payments.all_in' => [$rail => $rate]]);
+            $breakEven = FeeModel::minimumSellable($rail, 'GBP');
+
+            $this->assertLessThanOrEqual(
+                Helpers::MIN_PRICE_GBP,
+                $breakEven,
+                "PricingResolver's hard default for {$rail} ({$rate}%) does not cover the "
+                ."platform's £".Helpers::MIN_PRICE_GBP.' minimum listing — it breaks even at '
+                ."£{$breakEven}. A config fault would short the creator, silently."
+            );
+        }
     }
 
     public function test_the_configured_rate_covers_the_platforms_own_minimum_price(): void
@@ -288,9 +349,10 @@ class AllInFeeModelTest extends TestCase
         // margin, never out of what the creator listed.
         $this->assertGreaterThanOrEqual(100, $bespoke['net_to_creator']);
 
-        // ⚠️ A card-only deal must not silently reprice the bank rail.
+        // ⚠️ A card-only deal must not silently reprice the bank rail: that rail stays
+        //    on the STANDARD rate, which is 12% on both rails since D2.
         $bank = Helpers::calculateStripeDirectChargeFlow(100, 'GBP', 0, 'bank', $creator->id);
-        $this->assertSame(9.0, $bank['supporter_rate']);
+        $this->assertSame(12.0, $bank['supporter_rate']);
     }
 
     /* -----------------------------------------------------------------
@@ -367,6 +429,17 @@ class AllInFeeModelTest extends TestCase
         // — a key that does not exist — and so did the code, so it passed while production
         // never counted the live bank rail. A guard that sets the same wrong key as the code
         // certifies what it missed (fixed 11 Sep 2026).
+        /*
+         * 🚨 THIS TEST SETS ITS OWN RATES, AND IT HAS TO. Since D2 both rails are
+         * 12%, so against the class fixture both branches below answer 12.0 and the
+         * assertion could not fail whatever `lowestLiveRate()` did — a guard that
+         * cannot fail certifies what it missed. The RULE still needs pinning: the
+         * headline must never quote a rail that is switched off. So the rails are
+         * deliberately split here, and this is the one place in the class where they
+         * are allowed to differ.
+         */
+        config(['payments.all_in.card' => 12, 'payments.all_in.bank' => 9]);
+
         config(['payments.enabled' => false]);
         $this->assertSame(12.0, FeeModel::lowestLiveRate());
 

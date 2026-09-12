@@ -27,11 +27,20 @@ import { FaCrown } from 'react-icons/fa';
 const TIERS = {
   basic: {
     className: 'text-[#9AA0A6]',
+    /* ⚠️ MIRRORS `App\Support\VerifiedBadge::labelFor()` by hand — change
+       one, change the other, or the tooltip and the screen reader disagree.
+       One label, two populations: a supporter who has spent over £500, and a
+       creator whose profile is live but whose Connect is not finished. */
     label: 'Verified — profile checks passed',
   },
   creator: {
     className: 'text-[#FF007F]',
-    label: 'Verified creator — identity confirmed and payouts set up',
+    /* 🚨 NOT "identity confirmed" — Spenny Piggy stopped running an identity
+       check on 11 Sep 2026 (client D5/Q20), so this label claimed something the
+       platform no longer does. It MIRRORS `App\Support\VerifiedBadge::labelFor()`
+       by hand; change one, change the other, or the tooltip and the screen
+       reader disagree about what the same tick means. */
+    label: 'Verified creator — payouts set up with Stripe',
   },
 };
 
@@ -40,10 +49,16 @@ const SIZES = { xs: 12, sm: 14, md: 18, lg: 24, xl: 32 };
 /**
  * ⚠️ Transitional fallback, and it can only ever DOWNGRADE.
  *
- * A payload the server has not been updated for carries `profile_status_lock`
- * but no `verified_badge`. Rendering nothing there would silently remove a tick
- * those screens already showed, so an approved profile still gets the grey
- * badge — never the pink one, which needs facts the payload does not carry.
+ * A payload the server has not been updated for carries no `verified_badge`.
+ * Rendering nothing there would silently remove a tick those screens already
+ * showed, so a qualifying profile still gets the grey badge — never the pink
+ * one, which needs facts the payload does not carry.
+ *
+ * 🚨 THE FALLBACK IS ROLE-SPLIT SINCE 12 Sep 2026, because the two tiers stopped
+ * sharing a basis. A CREATOR's grey badge is still `profile_status_lock = 2`; a
+ * SUPPORTER's is `is_500_limit_exceeded`, and reading the lock for them would
+ * give a badge to nobody — the £500 address review that used to set it was
+ * deleted with the rest of the gifter verification.
  *
  * `undefined` means "this surface was never told"; an explicit `null` means the
  * server looked and said no badge, and is honoured as such.
@@ -51,6 +66,10 @@ const SIZES = { xs: 12, sm: 14, md: 18, lg: 24, xl: 32 };
 function tierOf(user, tier) {
   if (tier !== undefined) return tier;
   if (user?.verified_badge !== undefined) return user.verified_badge;
+
+  if (Number(user?.role) !== 1) {
+    return Number(user?.is_500_limit_exceeded) === 1 ? 'basic' : null;
+  }
 
   return Number(user?.profile_status_lock) === 2 ? 'basic' : null;
 }

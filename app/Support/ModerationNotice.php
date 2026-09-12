@@ -38,14 +38,17 @@ class ModerationNotice
         }
 
         $named = trim($itemTitle) !== '' ? " \"{$itemTitle}\"" : '';
-        $body = "Your {$feature}{$named} is under review and isn't visible to buyers yet."
+        /* 🚨 NOT "under review" (11 Sep 2026). Nothing is queued behind a person — a
+           check pulled this back and only the creator can move it, so the notice names
+           the fix rather than a wait. */
+        $body = "Your {$feature}{$named} isn't visible yet — a check flagged something on it."
             .($reason !== '' ? ' '.$reason : '');
 
         NotificationDispatcher::queue(
             $creator,
             self::TYPE,
             [
-                'title' => 'Content under review',
+                'title' => 'Your content needs a fix',
                 'body' => $body,
                 'module' => 'moderation',
                 'mailable' => ContentUnderReview::class,

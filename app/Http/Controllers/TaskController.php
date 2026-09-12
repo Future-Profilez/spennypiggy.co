@@ -40,6 +40,7 @@ use App\Services\Risk\RiskService;
 use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\AlertRouter;
 use App\Support\BlockedPaymentAlert;
 use App\Support\ContentDownloadMonitor;
 use App\Support\ListingPublication;
@@ -1448,16 +1449,33 @@ class TaskController extends Controller
                     Log::error('Failed to notify supporter about escalation: '.$e->getMessage());
                 }
 
-                // Notify Admin (via email)
+                /*
+                 * Notify whoever handles disputes — through the router, not a
+                 * literal.
+                 *
+                 * 🚨 THIS WAS TWO HARDCODED ADDRESSES BEHIND AN `APP_URL` MATCH,
+                 * ONE OF THEM A DEVELOPER'S PERSONAL INBOX. Exactly the fault
+                 * `AlertRouter` was built to remove from the intro-video mail:
+                 * changing who handles disputes was a code deploy, a real
+                 * person's address was receiving platform disputes, and — the
+                 * expensive half — **any host whose URL was not one of those
+                 * four literals sent to NOBODY AT ALL.** A preview environment
+                 * or a renamed dev domain escalated a supporter's dispute into
+                 * silence.
+                 *
+                 * ⚠️ `dispute_alerts` is the channel that already exists for
+                 * this, editable on /alert-routing without a deploy.
+                 */
                 try {
-                    $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
+                    $recipients = AlertRouter::recipients('dispute_alerts');
 
-                    if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
-                        Mail::to('prem@futureprofilez.com')->send(new TaskDisputeEscalatedMail($purchase, $task, null, 'admin'));
-                    } elseif ($appUrl == 'https://spennypiggy.co') {
-                        Mail::to('support@spennypiggy.co')->send(new TaskDisputeEscalatedMail($purchase, $task, null, 'admin'));
+                    if (! empty($recipients)) {
+                        Mail::to($recipients)->send(new TaskDisputeEscalatedMail($purchase, $task, null, 'admin'));
+                    } else {
+                        Log::warning('Task dispute escalated but the dispute_alerts channel has no recipients', [
+                            'purchase_id' => $purchase->id,
+                        ]);
                     }
-                    // Send to admin support email
                 } catch (\Exception $e) {
                     Log::error('Failed to notify admin about escalation: '.$e->getMessage());
                 }

@@ -6,7 +6,6 @@ use App\CurrencyExchange;
 use App\IpTracker;
 use App\Jobs\DeleteStripeProductJob;
 use App\Jobs\FetchSelfTwitterData;
-use App\Jobs\SendIdentityVerificationEmail;
 use App\Jobs\SendRenewMail;
 use App\Mail\Welcome;
 use App\Models\BillPayment;
@@ -257,33 +256,9 @@ class TestController extends Controller
         ]);
     }
 
-    public function sendFailedVerificationEmails()
-    {
-        try {
-            // Fetch users with non-null identity_verification_error
-            $users = User::whereNotNull('identity_verification_error')->get();
-
-            if ($users->isEmpty()) {
-                return response()->json(['status' => 'error', 'message' => 'No users found with identity verification errors.']);
-            }
-
-            // Dispatch email jobs for each user
-            foreach ($users as $user) {
-                dispatch(new SendIdentityVerificationEmail($user, 'failed'));
-            }
-
-            return response()->json(['status' => 'success', 'message' => 'Emails sent to users with identity verification errors.']);
-        } catch (Exception $e) {
-            // Log the error for debugging
-            Log::error('Error in sending identity verification emails', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ]);
-
-            return response()->json(['status' => 'error', 'message' => 'An error occurred while sending emails.']);
-        }
-    }
+    /* 🚨 `sendFailedVerificationEmails()` IS GONE (11 Sep 2026, client D5/Q20).
+       A scratch endpoint that re-sent "your ID check failed" mail for a check Spenny
+       Piggy no longer runs, using a mailable that no longer exists. */
 
     public function seedUserVerificationStatus()
     {

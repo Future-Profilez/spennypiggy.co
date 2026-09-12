@@ -70,7 +70,13 @@ class DiscoveryService
                 ->where('role', 1)
                 ->where('suspended_account', 0)
                 ->where('profile_status_lock', 2)
-                ->where('identity_status', 1)
+                /*
+                 * 🚨 THE IDENTITY CLAUSE IS GONE (12 Sep 2026, client direction).
+                 * Identity left onboarding on 10 Sep and is a PAYOUT gate now —
+                 * a creator publishes and sells with no check at all — so
+                 * `identity_status = 1` here hid every one of them from this row.
+                 * Measured 11 Sep 2026: 304 of 324 live creators sat at 0.
+                 */
                 ->where('created_at', '>=', $nowUtc->copy()->subDays(30))
                 ->orderByDesc('created_at') // Faster than inRandomOrder()
                 ->limit($limit)

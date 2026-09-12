@@ -378,10 +378,28 @@ export default function Post({ item, isProfileView = false }) {
                     is a status, not the content — it rides on the image as a chip
                     (with the full explanation on hover/long-press) and only falls
                     back to a block when the post has no image to sit on. */}
-                {/* Scheduled outranks "in review": both are true of a queued post,
+                {/* Scheduled outranks the flagged chip: both can be true of a queued post,
                     but the date is the fact the creator is looking for, and a
-                    lone "In review" chip on a post they deliberately queued reads
+                    lone "needs a fix" chip on a post they deliberately queued reads
                     as though the schedule was not saved. */}
+                {/* 🚨 A REVIEWER'S REQUEST ON A LIVE POST, AND IT IS NOT THE
+                    CHIP BELOW. The chip means "held, nobody can see this"; an
+                    edit request leaves the post PUBLISHED while the creator
+                    changes something, so it renders whatever `approved` says and
+                    is its own block rather than another branch of that ternary.
+                    Owner-only: it names what we asked of one person. */}
+                {IsloggedIn && item?.edit_requested_reason ? (
+                    <div className="mb-3 rounded-box-sm border-2 border-[#E8B400] bg-[#FFF6DF] px-3 py-2 text-xs font-bold text-[#8A6A00]">
+                        <span className="uppercase tracking-wide">Change requested · </span>
+                        <span className="whitespace-pre-line font-semibold text-black">
+                            {item.edit_requested_reason}
+                        </span>
+                        <span className="mt-1 block font-medium">
+                            It is still live. Update it and we will check it again.
+                        </span>
+                    </div>
+                ) : null}
+
                 {isScheduled && !hasImage ? (
                     <div className="mb-3 flex items-center gap-2 rounded-box-sm border !border-black bg-[#A2E4B8] px-3 py-2 text-xs font-bold text-black">
                         <span aria-hidden="true">🕒</span>
@@ -390,7 +408,13 @@ export default function Post({ item, isProfileView = false }) {
                 ) : isPendingApproval && !hasImage ? (
                     <div className="mb-3 flex items-center gap-2 rounded-box-sm border !border-yellow-500 bg-yellow-50 px-3 py-2 text-xs font-bold text-yellow-800">
                         <span aria-hidden="true">⏳</span>
-                        <span>In review — only you can see this for now.</span>
+                        {/* ⚠️ The scan's own words when it recorded any — "needs a
+                            fix" with no fix named sends the creator looking. */}
+                        <span>
+                            {item?.moderation_reason
+                                ? item.moderation_reason
+                                : "Needs a fix — only you can see this until it is sorted."}
+                        </span>
                     </div>
                 ) : null}
 
@@ -411,10 +435,10 @@ export default function Post({ item, isProfileView = false }) {
                             </span>
                         ) : isPendingApproval ? (
                             <span
-                                title="Only you can see this post for now — it usually goes live within 24 hours, and it counts towards your activity once approved."
+                                title="An automated check flagged something here, so only you can see it. Edit the post and it goes live again."
                                 className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-[12px] font-black uppercase tracking-wider text-white backdrop-blur-sm"
                             >
-                                ⏳ In review
+                                ⚠️ Needs a fix
                             </span>
                         ) : null}
 

@@ -5,270 +5,165 @@ import { useState, useEffect, useRef } from "react";
 import EditProfile from "../account/EditProfile";
 import Social from "../Auth/Social";
 import {
-    parseIdentityError,
-} from "@/utils/identityError";
-
-import {
     PRICE_FORMATTED,
     SUBSCRIPTION_COPY,
 } from "@/constants/creatorSubscription";
 // One status vocabulary for the whole checklist, so a step never says "Approved"
 // in one shape and "Verified" in another. Mint = done, amber = in review,
 // red = needs a fix, gray = not started / locked.
-const CHIP = {
-    done: "bg-mint text-black",
-    pending: "bg-amber-100 text-amber-800",
-    rejected: "bg-red-100 text-red-700",
-    todo: "bg-gray-100 text-black/60",
-};
-function StatusChip({ state, children }) {
-    return (
-        <span
-            className={`inline-block px-2.5 py-1 rounded-full text-[12px] font-bold uppercase tracking-wide whitespace-nowrap ${
-                CHIP[state] || CHIP.todo
-            }`}
-        >
-            {children}
-        </span>
-    );
-}
+/**
+ * How far through setup this creator is.
+ *
+ * 🚨 A BAR, NOT NUMBERED NODES. The rail this replaces drew five circles reading 1–5 with
+ * connector lines between them, which asserts an ORDER the product does not have: a handle,
+ * a photo and a bio can be done in any order, and the only real dependency — the card comes
+ * after payouts — is stated in words on that row. Numbering content that is not a sequence
+ * is the structure telling the creator something untrue.
+ *
+ * ⚠️ One measure, one number. The count is the accessible name; the bar is decoration of it.
+ */
+function SetupMeter({ done, total }) {
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-// A read-only map of the milestones so a creator always sees the whole journey
-// and where they are — the same numbered-node language as the Stripe connect
-// page. Completed segments fill mint (the piggy filling up).
-function MilestoneRail({ milestones, activeIndex }) {
     return (
-        <div
-            className="flex items-start mb-5 overflow-x-auto pb-1"
-            aria-label="Onboarding progress"
-        >
-            {milestones.map((m, i) => {
-                const done = m.state === "done";
-                const rejected = m.state === "rejected";
-                const pending = m.state === "pending";
-                const current = i === activeIndex;
-                const last = i === milestones.length - 1;
-                let node = "bg-white text-black/60 border-black";
-                let mark = i + 1;
-                if (done) {
-                    node = "bg-mint text-black border-black";
-                    mark = "✓";
-                } else if (rejected) {
-                    node = "bg-red-500 text-white border-black";
-                    mark = "!";
-                } else if (pending) {
-                    node = "bg-amber-400 text-black border-black";
-                } else if (current) {
-                    node =
-                        "bg-[#FF007F] text-white border-black ring-4 ring-pink-100";
-                }
-                return (
-                    <div key={m.key} className="flex items-start shrink-0">
-                        <div className="flex flex-col items-center w-12">
-                            <span
-                                className={`grid place-items-center w-9 h-9 rounded-full border-2 font-bold text-sm ${node}`}
-                            >
-                                {mark}
-                            </span>
-                            <span
-                                className={`mt-1.5 text-[12px] font-bold text-center leading-tight ${
-                                    current
-                                        ? "text-[#FF007F]"
-                                        : done
-                                          ? "text-gray-600"
-                                          : "text-black/60"
-                                }`}
-                            >
-                                {m.label}
-                            </span>
-                        </div>
-                        {!last && (
-                            <span
-                                aria-hidden
-                                className={`h-0.5 w-6 sm:w-10 mt-4 shrink-0 ${
-                                    done ? "bg-mint" : "bg-gray-200"
-                                }`}
-                            />
-                        )}
-                    </div>
-                );
-            })}
+        <div className="mt-3">
+            <div
+                aria-hidden="true"
+                className="h-2.5 w-full overflow-hidden rounded-box-xs border-2 border-black bg-white"
+            >
+                <div
+                    className="h-full bg-[#05EFB8] transition-[width] duration-500 motion-reduce:transition-none"
+                    style={{ width: `${pct}%` }}
+                />
+            </div>
+            <p className="mt-2 text-[13px] font-bold text-black/70">
+                {done} of {total} done
+            </p>
         </div>
     );
 }
 
-// A step that needs the creator's hands: full card, what we check, the editor,
-// and — when it came back rejected — the reason plus the same editor as the
-// "fix it now" path, so a rejection is never a dead end.
-function ActionCard({ step, selfCheck }) {
+/**
+ * The one thing to do next, at full weight.
+ *
+ * 🚨 EXACTLY ONE OF THESE RENDERS. The screen it replaces gave every outstanding step an
+ * identical bordered card, so the thing a creator should do now looked the same as the three
+ * they could leave — and on a fresh account that was four equal cards and no direction at
+ * all. Everything else is a one-line row.
+ */
+function NextAction({ step, selfCheck }) {
     const isRejected = step.state === "rejected";
-    // No offset on these cards. A checklist is a stack of near-identical rows, and
-    // giving every one the same heavy drop makes the list read as noise rather than as
-    // steps — the border already separates them. Rejection stays distinguished by colour,
-    // which is the only difference that matters here.
+
     return (
-        <div
-            className={`rounded-box border-[3px] p-4 mb-3 ${
-                isRejected
-                    ? "border-red-500 bg-red-50/40"
-                    : "border-black bg-white"
-            }`}
-        >
-            <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-gray-900 font-bold">
-                            {step.title}
-                        </h3>
-                        <span className="text-[12px] font-bold text-black/60">
-                            ~{step.mins} min
-                        </span>
-                        {isRejected && (
-                            <StatusChip state="rejected">
-                                Needs a fix
-                            </StatusChip>
-                        )}
-                    </div>
-                    <p className="text-gray-600 text-[14px] mt-0.5">
-                        {step.description}
-                    </p>
-                </div>
-            </div>
+        /* 🚨 `border-t-2 border-black` DREW A FULL BOX, NOT A RULE (fixed 12 Sep 2026).
+           `resources/css/index.css:90` redefines `.border-black` as the complete
+           `border: 2px solid` SHORTHAND, and it loads AFTER the utilities — so the
+           side utility is overwritten and all four edges paint. Reported as "creator
+           steps ka design sahi nhi aa raha": this block and the checklist below it
+           each drew their own 2px rectangle INSIDE the card's own 2px frame, which is
+           the "boxes inside boxes in the same colour" fault the house rules call out.
+           A single-side rule is set INLINE here, where the shorthand cannot reach it. */
+        <div className="mt-4 pt-4" style={{ borderTop: "2px solid #000" }}>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-black/50">
+                {isRejected ? "Needs a fix" : "Next"}
+            </p>
 
-            {isRejected && (
-                <div className="mt-3 bg-white border-2 border-red-500 rounded-box-sm p-3">
-                    <p className="text-[12px] font-bold uppercase tracking-widest text-red-600 mb-1">
-                        Why it came back
-                    </p>
-                    <p className="text-sm text-gray-800">
-                        {step.reason ||
-                            "A check pulled this back. Fix it and save — it is checked again straight away."}
-                    </p>
-                    {/* A rejection is the moment a creator objects — give them a
-                        person, not a mailto (config/creator_help.php, tier 2). */}
-                    <div className="mt-2">
-                        <GetHelpButton
-                            code="rejected_assets"
-                            label="Ask our team about this"
-                        />
-                    </div>
+            <h3 className="mt-1 font-gulfs text-[19px] font-light uppercase leading-tight text-black">
+                {step.title}
+            </h3>
 
-                    {step.note && (
-                        <p className="mt-2 text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-box-sm p-2">
-                            <span className="font-bold">
-                                Note from our team:{" "}
-                            </span>
-                            {step.note}
-                        </p>
-                    )}
+            <p className="mt-1.5 text-[14px] leading-[1.55] text-black/70">
+                {step.description}
+            </p>
 
-                    {/* The fix, not just the verdict — an ID check that comes
-                        back with only a code leaves the creator guessing. */}
-                    {step.fixSteps?.length > 0 && (
-                        <ol className="mt-2 space-y-1">
-                            {step.fixSteps.map((s, i) => (
-                                <li
-                                    key={i}
-                                    className="flex items-start gap-2 text-[13px] text-gray-700"
-                                >
-                                    <span className="font-bold text-red-500">
-                                        {i + 1}.
-                                    </span>
-                                    <span>{s}</span>
-                                </li>
-                            ))}
-                        </ol>
-                    )}
-                </div>
-            )}
+            {isRejected && step.reason ? (
+                <p className="mt-3 rounded-box-sm border-2 border-[#E8B400] bg-[#FFF6DF] p-3 text-[14px] leading-[1.5] text-black">
+                    {step.reason}
+                </p>
+            ) : null}
 
-            {/*
-                The advisor's note, before anyone decides. Amber, never red —
-                red on this card means a person said no, and this is the system
-                saying "this will slow you down". Blocking findings name the
-                consequence; attention findings just ask for a look.
-            */}
-            {selfCheck?.length > 0 && step.state !== "done" && (
-                <div className="mt-3 bg-[#FFF6D6] border-2 border-black rounded-box-sm p-3">
-                    <p className="text-[12px] font-bold uppercase tracking-widest text-black mb-1">
-                        {selfCheck.some((f) => f.severity === "blocking")
-                            ? "Fix this before you submit"
-                            : "Worth a look before review"}
-                    </p>
+            {/* The advisor's note — amber, never red. Red on this screen would mean a person
+                said no, and this is the system saying "this will slow you down". */}
+            {selfCheck?.length > 0 ? (
+                <ul className="mt-3 space-y-1">
                     {selfCheck.map((f, i) => (
-                        <p key={i} className="text-sm text-black/80 mt-1">
+                        <li
+                            key={i}
+                            className="text-[13px] leading-[1.5] text-black/70"
+                        >
                             {f.message}
-                        </p>
+                        </li>
                     ))}
-                </div>
-            )}
+                </ul>
+            ) : null}
 
-            {step.hint?.length > 0 && (
-                <div className="mt-3 bg-gray-50 border border-gray-200 rounded-box-sm p-3">
-                    <p className="text-[12px] font-bold uppercase tracking-widest text-black/60 mb-1.5">
-                        What we check
-                    </p>
-                    <ul className="space-y-1">
-                        {step.hint.map((h, i) => (
-                            <li
-                                key={i}
-                                className="flex items-start gap-2 text-[13px] text-gray-600"
-                            >
-                                <span className="text-black/60 mt-0.5">•</span>
-                                <span>{h}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
+            {step.hint?.length > 0 ? (
+                <ul className="mt-3 space-y-1">
+                    {step.hint.map((h, i) => (
+                        <li
+                            key={i}
+                            className="flex gap-2 text-[13px] leading-[1.5] text-black/60"
+                        >
+                            <span aria-hidden="true" className="text-black/30">
+                                ·
+                            </span>
+                            <span>{h}</span>
+                        </li>
+                    ))}
+                </ul>
+            ) : null}
 
-            {step.action && <div className="mt-3">{step.action}</div>}
+            <div className="mt-4">{step.action}</div>
+
+            {isRejected ? (
+                <div className="mt-2">
+                    <GetHelpButton
+                        code="rejected_assets"
+                        label="Get help with this"
+                    />
+                </div>
+            ) : null}
         </div>
     );
 }
 
-// Everything not asking for action collapses to one line, so the list stays
-// short as the creator progresses.
+/**
+ * One finished — or not-yet-available — step, on one line.
+ *
+ * ⚠️ A done step is a RECEIPT, not work. It earns a line, not a card: four completed cards
+ * above the one outstanding action is what buried the action on the old screen.
+ */
 function StepRow({ step }) {
-    const icon =
-        step.state === "done" ? "✓" : step.state === "pending" ? "◐" : "○";
-    const iconCls =
-        step.state === "done"
-            ? "bg-mint text-black"
-            : step.state === "pending"
-              ? "bg-amber-400 text-black"
-              : "bg-gray-100 text-black/60";
+    const done = step.state === "done";
+
     return (
-        <div className="flex items-center justify-between gap-3 border-2 border-gray-200 rounded-box-sm px-3 py-2.5 mb-2 bg-white">
-            <div className="flex items-center gap-2.5 min-w-0">
-                <span
-                    className={`grid place-items-center w-6 h-6 shrink-0 rounded-full text-[12px] font-bold ${iconCls}`}
-                >
-                    {icon}
+        <li className="flex items-start gap-3 py-2.5">
+            <span
+                aria-hidden="true"
+                className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 border-black text-[11px] font-black ${
+                    done ? "bg-[#A2E4B8] text-black" : "bg-white text-black/30"
+                }`}
+            >
+                {done ? "✓" : ""}
+            </span>
+
+            <span className="min-w-0 flex-1">
+                <span className="block text-[14px] font-bold text-black">
+                    {step.label}
                 </span>
-                <div className="min-w-0">
-                    <p className="text-sm font-bold text-gray-800 truncate">
-                        {step.title}
-                    </p>
-                    {step.note && (
-                        <p className="text-[12px] text-black/60 leading-snug">
-                            {step.note}
-                        </p>
-                    )}
-                </div>
-            </div>
-            {step.chip}
-        </div>
+                {/* 🚨 A LOCKED STEP SAYS WHY. "Locked" on its own reads as a fault the
+                    creator has to solve and cannot; naming the thing it waits for turns it
+                    into a fact about the order of work. */}
+                {step.note ? (
+                    <span className="mt-0.5 block text-[13px] leading-[1.45] text-black/55">
+                        {step.note}
+                    </span>
+                ) : null}
+            </span>
+        </li>
     );
 }
 
-function SectionHeading({ children }) {
-    return (
-        <p className="text-[12px] font-bold uppercase tracking-widest text-black/60 mt-5 mb-2">
-            {children}
-        </p>
-    );
-}
 
 export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const {
@@ -416,12 +311,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         };
     }, [onboardingComplete]);
 
-    // Resolved server-side (App\Support\IdentityFailureReason) so this page and
-    // the failure email say the same thing.
-    const identityError = parseIdentityError(
-        creatorUser?.identity_verification_error,
-    );
-
     const listItems = (items) =>
         items.length > 1
             ? `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`
@@ -489,15 +378,26 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
              */
             description:
                 "Add at least one social account you actually post on. It stays private on your page unless you switch it on.",
+            /*
+             * 🚨 THREE OF THESE FIVE LINES WERE UNTRUE AND WERE ON SCREEN (fixed 11 Sep
+             * 2026). `ProfileAutoApproval::judgeSocials()` checks exactly four things: a
+             * known platform, https, no link shortener, and that the handle is not already
+             * on another creator. It does NOT check account age, and it does NOT fetch the
+             * profile to see whether it is public — so "must be active and older than 6
+             * months" and "must be publicly visible so it can be checked" were rules the
+             * platform stated and never applied. A creator with a three-week-old account
+             * read them and did not add a handle they would in fact have been approved for.
+             *
+             * ⚠️ "Checked against your ID when you set up payouts" went with the identity
+             * check itself (client D5/Q20) — there is no ID check to be compared against.
+             *
+             * ⚠️ The privacy line is deliberately said TWICE, here and in the description:
+             * it is the commonest reason a creator refuses this step.
+             */
             hint: [
-                "At least one handle you actually post on",
-                "Account must be active and older than 6 months",
-                "Profile must be publicly visible so it can be checked",
-                // 🚨 Said twice on purpose, in the description AND here. It is the most
-                // common reason a creator refuses this step, and it is the one thing
-                // about it that is not obvious (client direction, 10 Sep 2026).
-                "🔒 Private by default — nothing is shown on your page unless you choose to",
-                "Checked against your ID when you set up payouts, not now",
+                "One account you actually post on",
+                "Private by default — nothing appears on your page unless you switch it on",
+                "Not already used by another creator",
             ],
             // Approved on save when the checks pass. "rejected" only ever means a
             // person said no; there is no "pending" — nobody is looking.
@@ -644,11 +544,14 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             ),
         },
         /*
-         * 🚨 THE `identity` STEP LEFT THIS RAIL ON 10 Sep 2026 (client direction).
-         * A creator builds, publishes and sells with no ID check; it is asked at the
-         * PAYOUT gate instead, where the money it holds is visible — see
-         * Components/PayoutIdentityGate.jsx and App\Support\PayoutEligibility.
-         */        {
+         * 🚨 THERE IS NO SPENNY PIGGY ID CHECK AT ALL (11 Sep 2026, client D5/Q20).
+         * The step left this rail on 10 Sep and moved to the payout gate; the written
+         * instruction the next day removed it outright — *"no SP ID upload, no manual
+         * face/ID comparison, and no SP payout-stage identity gate."* Stripe Connect
+         * runs its own KYC when payment capability requires it, and we follow whatever
+         * status Stripe returns.
+         */
+        {
             key: "trial",
             label: "Payment method",
             title: "Add your card",
@@ -677,30 +580,21 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
     ];
 
-    const activeMilestone = steps.findIndex(
-        (s) => s.state === "todo" && !s.locked,
-    );
     const doneCount = steps.filter((s) => s.state === "done").length;
-    const minsLeft = steps
-        .filter(
-            (s) => (s.state === "todo" || s.state === "rejected") && !s.locked,
-        )
-        .reduce((sum, s) => sum + s.mins, 0);
 
-    // Four MUTUALLY EXCLUSIVE tiers keyed off the four states, so a step lands
-    // in exactly one bucket:
-    //   done → completed · pending → waiting · rejected → needsYou (always, so
-    //   its reason is never hidden behind a bare "Locked" row) · todo → needsYou
-    //   when actionable, else upcoming.
-    // A pending step used to match both `waiting` and (locked) `upcoming` and
-    // rendered twice; keying on state fixes that.
-    const completed = steps.filter((s) => s.state === "done");
-    // ⚠️ No `waiting` list (11 Sep 2026): no step produces "pending" any more — nobody
-    // is looking. The "With our team · In review" section that read it was dead markup.
-    const needsYou = steps.filter(
-        (s) => s.state === "rejected" || (s.state === "todo" && !s.locked),
-    );
-    const upcoming = steps.filter((s) => s.state === "todo" && s.locked);
+    /*
+     * 🚨 ONE LIST, ORDERED — NOT FOUR BUCKETS (11 Sep 2026). The screen used to sort every
+     * step into completed / waiting / needsYou / upcoming and draw a section per bucket,
+     * which is four headings and four groups to read before finding the one thing to do.
+     * `needsYou` is now only used to pick the FIRST outstanding step; every other step
+     * keeps its place in the rail's own order.
+     *
+     * ⚠️ A rejected step sorts ahead of a merely unstarted one — it is the only kind that
+     * can be silently blocking a page the creator believes is finished.
+     */
+    const needsYou = steps
+        .filter((s) => s.state === "rejected" || (s.state === "todo" && !s.locked))
+        .sort((a, b) => (a.state === "rejected" ? -1 : 0) - (b.state === "rejected" ? -1 : 0));
 
     /*
      * 🚨 A finding must reach the creator even when its step is NOT rendered as
@@ -722,193 +616,116 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             )
             .flatMap(([, findings]) => findings),
     ];
-    const rejectedCount = needsYou.filter((s) => s.state === "rejected").length;
+
+    const isLive = profileStatusLock == 2;
+    const nextStep = needsYou[0] ?? null;
+    const restOfSteps = steps.filter((s) => s.key !== nextStep?.key);
 
     return (
-        <div className="mt-4 lg:mt-0 profileSteps bg-white border-[3px] border-black rounded-box mb-4 p-4 lg:!p-8">
-            <div className="flex gap-3 items-start justify-between mb-1">
-                <div>
-                    <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#FF007F]">
-                        Get set up to earn
+        <div className="mt-4 lg:mt-0 profileSteps bg-white border-[3px] border-black rounded-box mb-4 p-4 md:p-5">
+            {/*
+                🚨 THE PAGE'S STATE IS THE SUBJECT, NOT THE CHECKLIST (11 Sep 2026).
+                This opened with a tracked-out eyebrow ("GET SET UP TO EARN") over a
+                heading ("Set up your creator account") — two lines that named the module
+                and answered nothing. The one thing a creator comes here to find out is
+                whether their page is live, so that is the first sentence, as a fact.
+
+                ⚠️ The mint block appears ONLY when the answer is yes. A loud panel that
+                says "not live yet" would spend the screen's one bold moment on bad news.
+            */}
+            {isLive ? (
+                <div className="rounded-box-sm border-2 border-black bg-[#A2E4B8] p-4">
+                    <p className="font-gulfs text-[26px] font-light uppercase leading-none text-black">
+                        Your page is live
                     </p>
-                    <h2 className="text-[22px] uppercase font-bold leading-none">
-                        Set up your creator account
-                    </h2>
+                    <p className="mt-2 text-[14px] font-bold text-black/70">
+                        Supporters can find it and buy from it now.
+                    </p>
                 </div>
-                <button
-                    onClick={refreshSteps}
-                    disabled={isRefreshing}
-                    className="bg-pink-100 hover:bg-pink-200 text-[#FF007F] px-3 py-1.5 rounded-full text-sm font-bold border-2 border-black transition-all disabled:opacity-50 shrink-0"
-                >
-                    {isRefreshing ? "Refreshing…" : "Refresh"}
-                </button>
-            </div>
+            ) : (
+                <div>
+                    <p className="font-gulfs text-[24px] font-light uppercase leading-none text-black">
+                        Finish your page
+                    </p>
+                    <p className="mt-2 text-[14px] leading-[1.55] text-black/70">
+                        It goes live on its own the moment the last piece is in — there is
+                        nothing to submit and nobody to wait for.
+                    </p>
+                </div>
+            )}
+
+            <SetupMeter done={doneCount} total={steps.length} />
 
             {/*
-                🚨 A REJECTED PROFILE SAYS SO AT THE TOP, WITH THE REASON.
-                The reason used to live only inside the submit step, which sits
-                below several completed ones — so a creator whose profile had
-                been turned down saw a page full of green ticks and had to scroll
-                to find out nothing was live. It is the whole reason they are
-                here, so it goes first.
+                🚨 A HELD PROFILE SAYS SO FIRST, WITH THE REASON. It used to live inside
+                one step, below several ticked ones — so a creator whose page was held
+                read a column of green and had to scroll to find out nothing was live.
             */}
-            {profileRejectReason && profileStatusLock != 2 ? (
-                <div className="mb-4 rounded-box-sm border-2 border-black bg-[#FFE5EF] p-4">
-                    <p className="text-[13px] font-bold uppercase tracking-wide text-[#FF007F]">
-                        Your profile was not approved
+            {profileRejectReason && !isLive ? (
+                <div className="mt-4 rounded-box-sm border-2 border-[#E8B400] bg-[#FFF6DF] p-4">
+                    <p className="text-[14px] font-bold text-black">
+                        Your page is not visible yet
                     </p>
-                    <p className="mt-1 text-sm text-black">
+                    <p className="mt-1 text-[14px] leading-[1.5] text-black">
                         {profileRejectReason}
                     </p>
-                    <p className="mt-2 text-sm text-black/70">
-                        Fix the point above and save — your page goes live on its
-                        own once it clears. Nothing else needs redoing.
+                    <p className="mt-2 text-[13px] leading-[1.5] text-black/70">
+                        Fix that and save. The page publishes itself — nothing else needs
+                        redoing.
                     </p>
                 </div>
             ) : null}
 
-            {/*
-                🚨 An asset an automated check or an admin has PULLED. Amber, never
-                red: the profile is simply not live yet, and everything it names is
-                something the creator can fix and re-save. There is nothing to submit
-                again — saving re-judges it and the page goes live on its own.
-            */}
-            {profileHolds.length > 0 ? (
-                <div className="mb-4 rounded-box-sm border-2 border-black bg-[#FFF6D6] p-4">
-                    <p className="text-[13px] font-bold uppercase tracking-wide text-black">
-                        Your page is not live yet
-                    </p>
-                    <p className="mt-1 text-sm text-black/80">
-                        {profileHolds.length > 1
-                            ? "Two things on your profile need another look"
-                            : `Your ${HOLD_LABELS[profileHolds[0]] || "profile"} needs another look`}
-                        . Fix it below and save — your page goes live on its own once
-                        it clears.
-                    </p>
-                </div>
-            ) : null}
-
-            <p className="text-black/60 mb-4 text-sm">
-                {onboardingComplete
-                    ? "All set — supporters can now pay you for your content."
-                    : minsLeft > 0
-                      ? `${doneCount} of ${steps.length} done — about ${minsLeft} min of setup left.`
-                      : `${doneCount} of ${steps.length} done.`}
-            </p>
-
-            {/*
-                Findings whose step has no visible action card below — a pending
-                (submitted) step's collapsed row, or an asset with no step of its
-                own (the cover banner). Amber, and it names the fix — the creator
-                can edit and resubmit instead of waiting for the rejection.
-            */}
-            {topFindings.length > 0 && (
-                <div className="mb-4 rounded-box-sm border-2 border-black bg-[#FFF6D6] p-4">
-                    <p className="text-[13px] font-bold uppercase tracking-wide text-black">
-                        {topFindings.some((f) => f.severity === "blocking")
-                            ? "This will hold your page back"
-                            : "Worth a look before you go live"}
+            {/* Findings whose step has no action card of its own still have to reach the
+                creator, or the advice is written for a screen they never see. */}
+            {topFindings.length > 0 ? (
+                <div className="mt-4 rounded-box-sm border-2 border-[#E8B400] bg-[#FFF6DF] p-4">
+                    <p className="text-[14px] font-bold text-black">
+                        Worth a look before you publish
                     </p>
                     {topFindings.map((f, i) => (
-                        <p key={i} className="mt-1 text-sm text-black/80">
-                            <span className="font-bold">{f.label}: </span>
+                        <p
+                            key={i}
+                            className="mt-1 text-[14px] leading-[1.5] text-black/80"
+                        >
                             {f.message}
                         </p>
                     ))}
                 </div>
-            )}
+            ) : null}
 
-            <MilestoneRail milestones={steps} activeIndex={activeMilestone} />
+            {nextStep ? (
+                <NextAction
+                    step={nextStep}
+                    selfCheck={selfCheckByStep[nextStep.key]}
+                />
+            ) : null}
 
-            {onboardingComplete ? (
-                <div className="bg-mint/30 border-2 border-black rounded-box-sm p-4 flex items-center gap-3">
-                    <span className="text-2xl">🎉</span>
-                    <div>
-                        <p className="font-bold text-black">You’re all set!</p>
-                        <p className="text-gray-700 text-sm mt-0.5">
-                            Your creator account is fully verified. Start
-                            posting content and earning.
-                        </p>
-                    </div>
-                </div>
-            ) : (
-                <>
-                    {rejectedCount > 0 && (
-                        <div className="bg-red-50 border-2 border-red-500 rounded-box-sm p-3 mb-4 flex items-center gap-2">
-                            <span className="text-lg">⚠️</span>
-                            <p className="text-sm font-bold text-red-700">
-                                {rejectedCount} step
-                                {rejectedCount > 1 ? "s need" : " needs"} a
-                                quick fix — the reason is on the card
-                                {rejectedCount > 1 ? "s" : ""} below.
-                            </p>
-                        </div>
-                    )}
-
-                    {needsYou.length > 0 && (
-                        <>
-                            <SectionHeading>
-                                {needsYou.length > 1
-                                    ? `Do these next · ${needsYou.length}`
-                                    : "Do this next"}
-                            </SectionHeading>
-                            {needsYou.map((s) => (
-                                <ActionCard
-                                    key={s.key}
-                                    step={s}
-                                    selfCheck={selfCheckByStep[s.key]}
-                                />
-                            ))}
-                        </>
-                    )}
-
-                    {upcoming.length > 0 && (
-                        <>
-                            <SectionHeading>Coming up</SectionHeading>
-                            {upcoming.map((s) => (
-                                <StepRow
-                                    key={s.key}
-                                    step={{
-                                        ...s,
-                                        note: s.lockReason,
-                                        chip: (
-                                            <StatusChip state="todo">
-                                                Locked
-                                            </StatusChip>
-                                        ),
-                                    }}
-                                />
-                            ))}
-                        </>
-                    )}
-                </>
-            )}
-
-            {completed.length > 0 && (
-                <>
-                    <SectionHeading>Done · {completed.length}</SectionHeading>
-                    {completed.map((s) => (
+            {restOfSteps.length > 0 ? (
+                <ul
+                    className="mt-4 divide-y divide-black/10 pt-1"
+                    /* Same shorthand trap as `NextAction` above — inline, or this list
+                       is drawn as a second box inside the card. */
+                    style={{ borderTop: "2px solid #000" }}
+                >
+                    {restOfSteps.map((s) => (
                         <StepRow
                             key={s.key}
                             step={{
                                 ...s,
-                                note: null,
-                                chip: (
-                                    <StatusChip state="done">
-                                        {s.key === "trial"
-                                            ? "Connected"
-                                            : s.key === "stripe"
-                                              ? "Connected"
-                                              : s.approvedState === 1
-                                              ? "Approved"
-                                              : "Ready"}
-                                    </StatusChip>
-                                ),
+                                /* A locked step names what it waits for; a done one needs
+                                   no note at all — the tick is the whole message. */
+                                note:
+                                    s.state === "done"
+                                        ? null
+                                        : s.locked
+                                          ? s.lockReason
+                                          : s.description,
                             }}
                         />
                     ))}
-                </>
-            )}
+                </ul>
+            ) : null}
         </div>
     );
 }

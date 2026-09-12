@@ -5,19 +5,29 @@ import { X } from "lucide-react";
 /**
  * The creation surface for every sellable item.
  *
- * On a phone this is a true full-screen surface — full width and height, no
- * rounded top, no gap. The app ships as an installable PWA, and a small centred
- * card floating on a dimmed page is the single clearest tell that you are
- * looking at a website rather than an app. On a desktop it is a centred modal,
- * wide enough to show the form and a live preview side by side.
+ * 🚨 NOTHING IS PINNED BUT THE CLOSE CONTROL (client direction, 12 Sep 2026).
+ * This used to be a three-part frame — a header bar that owned the title, the
+ * step meter and a repeated primary action, a scrolling middle, and a footer —
+ * and on a phone that chrome ate ~190px before the first field. The whole panel
+ * is ONE scroll now, drawn like the "You're all set" moment: cream ground,
+ * eyebrow, display headline, then the work. The close button is the single
+ * fixed element, because it is the only control a person needs to reach at any
+ * point in a form they have not finished.
  *
- * Behaviour that the old Popup lacked and every form had to improvise:
- *  - the body cannot scroll behind the sheet;
- *  - the header and footer stay put while only the body scrolls, so the
- *    primary action is always reachable without scrolling to the end of a long
- *    form;
+ * What that buys, and what it costs: every pixel of height goes to the form,
+ * and the primary action is at the END of the flow rather than repeated at the
+ * top. That is the right trade for a stepped form — each step is short, and a
+ * CTA you can press before reading the step is a CTA that produces a validation
+ * error instead of a listing.
+ *
+ * Behaviour kept from the old sheet:
+ *  - the body cannot scroll behind it;
+ *  - the app's fixed bottom navigation is hidden while it is open (body.sheet-open);
  *  - iOS safe areas are respected on both edges;
- *  - `onHide` may return false to veto a close (unsaved-changes guard).
+ *  - `onClose` may return false to veto a close (unsaved-changes guard).
+ *
+ * @param {"2xl"|"4xl"} size  the reading measure. `4xl` is for a form that ships
+ *   a side preview; everything else is held to a single readable column.
  */
 export default function Sheet({
     open,
@@ -27,16 +37,16 @@ export default function Sheet({
     children,
     footer,
     header = null,
-    headerAction = null,
-    size = "xl",
+    size = "2xl",
     initialFocus,
 }) {
     const fallbackFocus = useRef(null);
 
-    // `size` is accepted and ignored: the sheet is full-page now, and the inner
-    // content is what constrains its own measure. Kept in the signature so the
-    // half-dozen call sites that still pass it do not have to change.
-    void size;
+    // ⚠️ `size` is a MEASURE, not a modal width — the panel is always the whole
+    // screen. It exists so the headline, the eyebrow and the form all sit on one
+    // left edge: a title held to 2xl above a form spread to 5xl reads as two
+    // unrelated blocks.
+    const measure = size === "4xl" ? "max-w-5xl" : "max-w-2xl";
 
     // An onClose that returns false vetoes the dismissal — forms use it to
     // confirm before discarding input.
@@ -50,10 +60,10 @@ export default function Sheet({
         const previous = document.body.style.overflow;
         document.body.style.overflow = "hidden";
         // A full-screen sheet owns the whole viewport, so the app's fixed
-        // bottom navigation must not sit on top of its footer — the CONTINUE
-        // button was landing behind the tab bar. Native apps hide the tab bar
-        // inside a full-screen sheet for the same reason. Driven by a body
-        // class (see resources/css/app.css) so no component needs a prop.
+        // bottom navigation must not sit on top of its last control. Native
+        // apps hide the tab bar inside a full-screen sheet for the same reason.
+        // Driven by a body class (see resources/css/app.css) so no component
+        // needs a prop.
         document.body.classList.add("sheet-open");
         return () => {
             document.body.style.overflow = previous;
@@ -82,12 +92,6 @@ export default function Sheet({
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" />
                 </Transition.Child>
 
-                {/* ⚠️ Full page at EVERY size, matching the post composer.
-                    Selling something is the creator's main job, and it was being
-                    done in a `max-w-3xl` card capped at 88dvh — a stepped form
-                    with a preview column, a validation notice and a footer CTA
-                    all competing for a box two-thirds the height of the screen,
-                    with its own scrollbar inside the page's. */}
                 {/* bottom-bar-safe: Sheet sets body.sheet-open while open */}
                 <div className="fixed inset-0 flex items-stretch justify-center">
                     <Transition.Child
@@ -99,62 +103,65 @@ export default function Sheet({
                         leaveFrom="opacity-100 translate-y-0 md:scale-100"
                         leaveTo="opacity-0 translate-y-full md:translate-y-0 md:scale-95"
                     >
+                        {/* ⚠️ `data-sheet-scroll` is the handle `ItemFormShell`
+                            scrolls to the top on a step change. The panel IS the
+                            scroll container, so `window.scrollTo` is a no-op
+                            here and the reader would be left at the foot of the
+                            step they just finished. */}
                         <Dialog.Panel
-                            className="flex h-dvh w-full flex-col overflow-hidden bg-[#F2EFE7]"
+                            data-sheet-scroll
+                            className="customScrollbar relative h-dvh w-full overflow-y-auto overscroll-contain bg-[#FFF6EC]"
                         >
-                            {/* Black bar, same as the composer: this panel owns
-                                the whole screen, and a pink header edge-to-edge
-                                at 1440px is a wall of accent colour rather than a
-                                heading. Colour stays on the step meter and the
-                                CTA, where it means something. */}
-                            <header className="relative shrink-0 bg-black px-4 pb-4 text-white sm:px-6" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
-                                <div className="mx-auto flex w-full max-w-6xl items-center gap-3">
-                                    <button
-                                        type="button"
-                                        ref={fallbackFocus}
-                                        onClick={requestClose}
-                                        aria-label="Close"
-                                        className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-white/25 text-white transition-colors hover:border-white hover:bg-white hover:text-black"
-                                    >
-                                        <X size={18} strokeWidth={3} />
-                                    </button>
-
-                                    <div className="min-w-0 flex-1">
-                                        <Dialog.Title className="truncate text-left font-GillSans text-lg uppercase leading-none tracking-wide sm:text-2xl">
-                                            {title}
-                                        </Dialog.Title>
-                                        {subtitle && (
-                                            <p className="mt-1 truncate text-left text-[12px] font-black uppercase tracking-[0.16em] text-white/60">
-                                                {subtitle}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {/* The primary action, kept at the top where
-                                        it is reachable without scrolling past the
-                                        whole form. The same action repeats at the
-                                        end of the flow; neither is pinned. */}
-                                    {headerAction}
-                                </div>
-                                {header && (
-                                    <div className="mx-auto mt-3 w-full max-w-6xl">{header}</div>
-                                )}
-                            </header>
-
-                            {/* ⚠️ The footer scrolls WITH the form; it is not
-                                pinned. A fixed bar here overlaid the last option
-                                in the list — the tier picker's final row was cut
-                                in half by it — and on a phone it also stacked on
-                                top of the app's own fixed bottom navigation. */}
-                            <div
-                                className="customScrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-6 md:py-8"
-                                style={{ paddingBottom: "max(7rem, env(safe-area-inset-bottom))" }}
+                            {/* 🚨 THE ONE FIXED ELEMENT. `fixed`, not `sticky`:
+                                the panel itself is the scroll container, and a
+                                sticky child of a scroller reserves a row in the
+                                flow — which is the header bar this replaced,
+                                wearing a different word. It sits on the LEFT so
+                                a right-handed thumb cannot reach it by accident
+                                while scrolling a long form, and it is opaque so
+                                it stays legible over whatever scrolls beneath. */}
+                            <button
+                                type="button"
+                                ref={fallbackFocus}
+                                onClick={requestClose}
+                                aria-label="Close"
+                                className="fixed left-4 z-20 grid h-11 w-11 place-items-center rounded-full border-2 border-black bg-white text-black transition-colors duration-200 hover:bg-black hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 motion-reduce:transition-none md:left-6"
+                                style={{ top: "max(1rem, env(safe-area-inset-top))" }}
                             >
-                                <div className="mx-auto w-full max-w-6xl">
-                                    {children}
+                                <X size={18} strokeWidth={3} />
+                            </button>
 
-                                    {footer && <div className="mt-6">{footer}</div>}
-                                </div>
+                            {/* ⚠️ The top padding CLEARS the close button rather
+                                than being a guess: 44px control + its own inset
+                                + breathing room. The bottom inset is ADDED to
+                                the padding, never max()'d against it — a device
+                                with a home indicator gets clearance on top of
+                                the space, not instead of it. */}
+                            <div
+                                className={`mx-auto flex w-full flex-col px-5 md:px-8 ${measure}`}
+                                style={{
+                                    paddingTop: "calc(env(safe-area-inset-top) + 5rem)",
+                                    paddingBottom: "calc(env(safe-area-inset-bottom) + 3rem)",
+                                }}
+                            >
+                                {/* The eyebrow slot — the step rail lives here,
+                                    above the headline, the way the setup-complete
+                                    panel carries its state pill. */}
+                                {header && <div className="mb-4">{header}</div>}
+
+                                <Dialog.Title className="font-gulfs text-[32px] uppercase leading-[1.05] text-black md:text-[46px]">
+                                    {title}
+                                </Dialog.Title>
+
+                                {subtitle && (
+                                    <p className="mt-3 text-base font-bold leading-[1.55] text-black/70 md:text-lg">
+                                        {subtitle}
+                                    </p>
+                                )}
+
+                                <div className="mt-7">{children}</div>
+
+                                {footer && <div className="mt-8">{footer}</div>}
                             </div>
                         </Dialog.Panel>
                     </Transition.Child>

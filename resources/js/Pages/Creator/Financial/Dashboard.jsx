@@ -33,7 +33,6 @@ import {
     Receipt,
     BadgeCheck,
 } from "lucide-react";
-import PayoutIdentityGate from "@/Components/PayoutIdentityGate";
 import {
     XAxis,
     YAxis,
@@ -150,7 +149,6 @@ export default function Dashboard({
     reserve_total_released = 0,
     reserve_total_held = 0,
     upcoming_payout = null,
-    identity_gate = null,
     reserve_reason,
     reserve_policy = null,
     payout_cycle = null,
@@ -1057,10 +1055,7 @@ export default function Dashboard({
                         them: a creator who scrolls past four figures before being
                         told why none of them have arrived reads the page as broken.
                     ----------------------------------------------------------- */}
-                    <PayoutIdentityGate
-                        gate={identity_gate}
-                        className="mb-6 md:mb-8"
-                    />
+                    
 
                     {/* -----------------------------------------------------------
                         Header — one line of purpose, then the actions.

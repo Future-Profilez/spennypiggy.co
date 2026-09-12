@@ -137,7 +137,7 @@ export default function PiggyPotWidget({
     const shouldCelebrate = !!featuredPot?.is_pinned && isComplete && !inPopup;
 
     const closedReason = isHeld
-        ? "This content is under review and will be available shortly."
+        ? "An automated check flagged something here, so only you can see it."
         : deadlinePassed
           ? "The creator's deadline for this content has passed."
           : isComplete

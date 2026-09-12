@@ -23,7 +23,6 @@ use App\Models\User;
 use App\Services\Ledger\LedgerRules;
 use App\StripeControl;
 use App\Support\PayoutCycle;
-use App\Support\PayoutEligibility;
 use App\Support\PayoutLock;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -645,26 +644,24 @@ class PayoutService
                 }
 
                 /*
-                 * 🚨 IDENTITY IS A PAYOUT GATE (10 Sep 2026), AND THIS IS THE ONLY
-                 * PLACE IT IS CHECKED ON THE RUN. It is deliberately NOT in
-                 * `calculatePayouts` — the creator's own finance page reads that to
-                 * show "£X is waiting, verify to receive it", and filtering there
-                 * computes £0 for exactly the creator the panel exists to prompt. So
-                 * do not remove this as a "duplicate": it is the last thing before a
-                 * real Stripe payout is issued, and there is no earlier gate.
+                 * 🚨 THE IDENTITY GATE THAT STOOD HERE IS GONE (11 Sep 2026).
                  *
-                 * ⚠️ Not an error. It is a state the creator can leave, and their
-                 * money is still theirs — it stays unpaid and rides the next run.
+                 * Client D5 and Q20, both CONFIRMED in writing: *"Remove the SP-specific
+                 * ID-document and human identity-sign-off process entirely. **Do not move
+                 * it to payout.**"* and *"There is no SP ID upload, no manual face/ID
+                 * comparison, and **no SP payout-stage identity gate**."* It had been in
+                 * place for one day — added 10 Sep on a verbal go-ahead that the written
+                 * instruction then reversed.
+                 *
+                 * 🚨 WHAT THIS MEANS, STATED PLAINLY: a creator Spenny Piggy has never
+                 * identified can now be paid. **Stripe Connect's own KYC is the only
+                 * control on that**, which is exactly the client's decision — they own
+                 * payment compliance and we do not duplicate it. The refund and fraud
+                 * exposure that moves with it is an accepted cost, not an oversight.
+                 *
+                 * ⚠️ Every OTHER gate below is untouched: no connected account, a paused
+                 * payout, a suspended creator and the reserve rules all still stop a run.
                  */
-                if (PayoutEligibility::blocksPayout($creator)) {
-                    $reason = 'Identity not verified — '.PayoutEligibility::reasonFor($creator);
-                    Log::warning("Payout: creator {$creatorId} {$reason} — skipping payout.");
-                    $data['failure_reason'] = $reason;
-                    $skippedPayouts[$creatorId] = $data;
-
-                    continue;
-                }
-
                 if (! $creator->account_id) {
                     $reason = 'No connected Stripe account';
                     Log::warning("Payout: creator {$creatorId} {$reason} — skipping payout.");

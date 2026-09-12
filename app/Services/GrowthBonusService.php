@@ -10,7 +10,6 @@ use App\Models\GrowthBonusProfile;
 use App\Models\GrowthBonusReward;
 use App\Models\User;
 use App\Support\GrowthBonusPanelPayload;
-use App\Support\PayoutEligibility;
 use App\Support\QualifyingEarnings;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -139,15 +138,9 @@ class GrowthBonusService
             return GrowthBonusReward::HOLD_CANNOT_RECEIVE;
         }
 
-        /*
-         * 🚨 Identity is a payout gate (10 Sep 2026) — see PayoutEligibility.
-         * ⚠️ Phase 1 release is MANUAL, so this is what stops an admin pressing
-         * "mark paid" on a creator who cannot legally be paid yet. The reward is
-         * HELD, never reversed — they keep it and receive it once verified.
-         */
-        if (PayoutEligibility::blocksPayout($creator)) {
-            return GrowthBonusReward::HOLD_CANNOT_RECEIVE;
-        }
+        /* 🚨 NO IDENTITY GATE (11 Sep 2026, client D5/Q20 — removed entirely, not moved
+           to payout). Stripe Connect's own KYC decides who may receive money. A reward
+           can still be HELD for the reasons above and below. */
 
         $profile = $reward->profile;
 
@@ -176,11 +169,9 @@ class GrowthBonusService
         return match ($reason) {
             GrowthBonusReward::HOLD_MILESTONE_NOT_COVERED => 'Your bonus is on hold because a refunded or disputed payment has taken your qualifying earnings back below this milestone. It will be sent as soon as new sales cover it again.',
             GrowthBonusReward::HOLD_ACCOUNT_SUSPENDED => 'Your bonus is on hold while your account is suspended.',
-            // ⚠️ Names BOTH causes. This code covers "identity not signed off" as well
-            // as "no payout account" (holdReasonFor), and telling an identity-blocked
-            // creator to finish a Stripe setup that is already complete sent them to
-            // fix the wrong thing (11 Sep 2026).
-            GrowthBonusReward::HOLD_CANNOT_RECEIVE => 'Your bonus is on hold because we cannot send money to your account yet — usually your identity check is waiting to be signed off, or your payouts are not connected. Your payout page says which. It goes out on the next payout day once that clears.',
+            // ⚠️ Identity is no longer one of the causes (11 Sep 2026, D5/Q20) — this
+            // code now only ever means the payout account itself is not ready.
+            GrowthBonusReward::HOLD_CANNOT_RECEIVE => 'Your bonus is on hold because we cannot send money to your account yet — your payouts are not fully connected. Your payout page says what is missing.',
             default => 'Your bonus is on hold. We check it again every week.',
         };
     }
