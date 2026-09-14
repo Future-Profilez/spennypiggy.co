@@ -245,9 +245,22 @@ export default function Index({
         <Guest auth={auth.user} user={auth.user}>
             <Head title="My Tasks" />
             <div className="px-3 py-8 md:py-18 min-h-dvh !bg-white">
-                <h2 className="text-3xl md:text-4xl font-fre uppercase mb-8 text-center text-[#FF007F]">
-                    Task Dashboard
-                </h2>
+                <div className="mx-auto mb-8 flex max-w-4xl items-center justify-between gap-4">
+                    <Link
+                        href={
+                            auth?.user?.username
+                                ? route("user.show", { username: auth.user.username })
+                                : route("dashboard")
+                        }
+                        className="inline-flex min-h-[44px] items-center rounded-box-sm border-2 border-black bg-white px-4 text-xs font-black uppercase tracking-[0.14em] text-black transition-colors hover:bg-black/[0.05]"
+                    >
+                        &larr; Back to profile
+                    </Link>
+                    <h2 className="text-center text-3xl font-fre uppercase text-[#FF007F] md:text-4xl">
+                        Task Dashboard
+                    </h2>
+                    <span aria-hidden="true" className="w-[142px]" />
+                </div>
                 <div className="max-w-4xl mx-auto space-y-8">
                     {orders && orders.length > 0 && (
                         <div className=" !border-3 border-black bg-white overflow-hidden rounded-box ">
