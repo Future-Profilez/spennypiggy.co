@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
 import GlobalUploader from '@/uploadcare/Uploader';
 import st from '../../../css/uploader.module.css';
@@ -378,9 +378,21 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                 <div className="containerbox m-auto">
                     <div className="py-8 md:py-16 max-w-[900px] m-auto">
                         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-6">
-                            <h2 className="font-GillSans uppercase text-3xl">
-                                Piggy Pots
-                            </h2>
+                            <div className="flex items-center gap-3">
+                                <Link
+                                    href={
+                                        auth?.user?.username
+                                            ? route("user.show", { username: auth.user.username })
+                                            : route("dashboard")
+                                    }
+                                    className="inline-flex min-h-[44px] items-center rounded-box-sm border-2 border-black bg-white px-4 text-xs font-black uppercase tracking-[0.14em] text-black transition-colors hover:bg-black/[0.05]"
+                                >
+                                    &larr; Profile
+                                </Link>
+                                <h2 className="font-GillSans uppercase text-3xl">
+                                    Piggy Pots
+                                </h2>
+                            </div>
                             <button
                                 type="button"
                                 onClick={openCreateModal}
