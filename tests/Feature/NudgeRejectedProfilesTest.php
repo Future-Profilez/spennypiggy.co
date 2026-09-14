@@ -8,6 +8,7 @@ use App\Models\EngagementNotification;
 use App\Models\User;
 use App\Support\MarketingConsent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -113,5 +114,50 @@ class NudgeRejectedProfilesTest extends TestCase
 
         $this->assertDoesNotMatchRegularExpression('/£\s?\d|\$\s?\d|per month earn|earn £/i', $code);
         $this->assertStringContainsString('{{ $rejectReason }}', $blade);
+    }
+
+    /**
+     * 🚨 `--ignore-age` EXISTS BECAUSE THE COLLAPSE SWEEP RE-DATED HISTORY.
+     *
+     * `profiles:collapse-rejections` wrote a `profile_rejections` row on 7 Sep
+     * 2026 for every rejection, including ones actually taken in May — and
+     * `rejectedAt()` reads that column. Measured on production 13 Sep 2026: all
+     * 44 rows dated 6–11 Sep, so the 60-day first-send gate answered "told no
+     * this morning" for every one of them and 39 of 39 were skipped. Creators
+     * rejected four months earlier would not have been contacted until November.
+     */
+    public function test_ignore_age_sends_a_first_reminder_on_a_fresh_looking_rejection(): void
+    {
+        Queue::fake();
+        $user = $this->creator();
+        User::query()->whereKey($user->id)->update(['updated_at' => now()->subDays(3)]);
+
+        $this->artisan('profiles:nudge-rejected')->assertSuccessful();
+        Queue::assertNothingPushed();
+
+        $this->artisan('profiles:nudge-rejected --ignore-age')->assertSuccessful();
+        Queue::assertPushed(SendEngagementNotification::class);
+    }
+
+    /**
+     * ⚠️ IT SKIPS THE AGE GATE AND NOTHING ELSE. An opt-out is a person's own
+     * decision and no instruction to re-contact a cohort overrides it — the
+     * flag exists because a sweep broke a DATE, not because the rules changed.
+     */
+    public function test_ignore_age_still_honours_a_suppressed_address(): void
+    {
+        Queue::fake();
+        $user = $this->creator();
+        User::query()->whereKey($user->id)->update(['updated_at' => now()->subDays(3)]);
+
+        DB::table('marketing_suppressions')->insert([
+            'email' => strtolower($user->email),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->artisan('profiles:nudge-rejected --ignore-age')->assertSuccessful();
+
+        Queue::assertNothingPushed();
     }
 }

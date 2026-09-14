@@ -137,7 +137,47 @@ final class SecureMedia
         $token = 'exp='.$expires.'~acl='.$acl;
         $hmac = hash_hmac('sha256', $token, $key);
 
-        return $url.(str_contains($url, '?') ? '&' : '?').'token='.$token.'~hmac='.$hmac;
+        $signed = $url.(str_contains($url, '?') ? '&' : '?').'token='.$token.'~hmac='.$hmac;
+
+        return self::onSecureHost($signed);
+    }
+
+    /**
+     * Move a signed URL onto the host that actually enforces the token.
+     *
+     * 🚨 UPLOADCARE ENFORCES ON A SEPARATE HOST, NOT BY REFUSING TOKENS ON THE
+     * PUBLIC ONE. Enabling "Secure delivery" creates `<project>.s.ucarecd.net`;
+     * `ucarecdn.com` stays PUBLIC and ignores any token appended to it. So the
+     * signature this class spent its whole existence computing was being applied
+     * to a host that discards it — a URL that looks protected and is exactly as
+     * open as the unsigned one. Verified on production 12 Sep 2026: signed 200,
+     * unsigned 200, with the account setting on.
+     *
+     * ⚠️ WITH NO HOST CONFIGURED IT RETURNS THE URL UNSIGNED, and says so once.
+     * Handing back a token on the public host is worse than handing back
+     * nothing: the second is visibly not protected, the first only looks it.
+     */
+    private static function onSecureHost(string $signed): string
+    {
+        $host = trim((string) config('media.secure.host', ''));
+
+        if ($host === '') {
+            self::warnOnce('Uploadcare secure delivery is enabled but MEDIA_SECURE_HOST is not set. A token on the public CDN host is ignored, so nothing was signed.');
+
+            // ⚠️ The ORIGINAL, not the tokenised one — see the note above.
+            return (string) preg_replace('/[?&]token=[^&]*/', '', $signed);
+        }
+
+        /*
+         * ⚠️ Host swap only. The path carries the uuid and the whole operation
+         * chain a buyer paid for, and the query carries the token — rebuilding
+         * either is how a crop or a format is silently dropped from a paid file.
+         */
+        return (string) preg_replace(
+            '#^https?://'.preg_quote(self::CDN_HOST, '#').'#i',
+            'https://'.$host,
+            $signed
+        );
     }
 
     /**

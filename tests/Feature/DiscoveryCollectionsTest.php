@@ -46,6 +46,15 @@ class DiscoveryCollectionsTest extends TestCase
             'avatar' => 'avatar.jpg',
             'avatar_approved' => 1,
             'name' => 'Test Creator',
+            /*
+             * ⚠️ A DISCOVERABLE CREATOR IS NOW A PAYABLE ONE. Every Discovery
+             * query is gated on `DiscoveryEligibility::payable()` — connected,
+             * onboarding finished, not charges-disabled — so a fixture without
+             * these columns is invisible to every surface under test and the
+             * whole class fails for a reason unrelated to what it asserts.
+             */
+            'account_id' => 'acct_test',
+            'stripe_details_submitted' => 1,
         ], $overrides));
     }
 

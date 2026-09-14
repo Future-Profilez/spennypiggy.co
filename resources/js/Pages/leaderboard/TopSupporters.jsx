@@ -27,9 +27,24 @@ export default function TopSupporters({grid = false}) {
     <div className="rank py-3 border-b flex items-center justify-between">
       <div className="flex items-center justify-between">
         <div className="wisher wisher-rank">
+          {/* 🚨 `verified_badge` IS THE SERVER'S ANSWER AND FIVE LEADERBOARD ROWS USED
+              TO THROW IT AWAY (13 Sep 2026). Avatar builds
+              `{ role, profile_status_lock, verified_badge }` for VerifiedBadge, whose
+              `tierOf` returns the server tier whenever it is DEFINED and only falls back
+              to the raw lock when a surface was never sent one. Passing the lock alone
+              left `verified_badge` undefined, so every row took the transitional
+              fallback — and the fallback could not answer either, because the server key
+              was null (LeaderBoardController read `profile_status_lockNone`, a column
+              that does not exist) and three of these sites coerced it to a BOOLEAN, where
+              `Number(true) === 2` is false. Three independent reasons for one symptom:
+              no verified tick anywhere on the leaderboard, with nothing in any log.
+
+              ⚠️ The note lives ABOVE the element on purpose — `{/* … */}` in ATTRIBUTE
+              position is a syntax error that fails the whole Vite build. */}
           <Avatar
             role={supporter.role}
-            profile_status_lock={supporter.profile_status_lock == 2 ? true : false}
+            verified_badge={supporter.verified_badge}
+            profile_status_lock={supporter.profile_status_lock}
             name={supporter.name}
             link={supporter.username || null}
             subhead={`@${supporter.username || "anonymous"}`}

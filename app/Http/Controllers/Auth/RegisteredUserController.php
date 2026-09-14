@@ -1190,8 +1190,29 @@ class RegisteredUserController extends Controller
             $userVerificationStatus->save();
         }
 
-        // pending profile
-        $user->update(['profile_status_lock' => 1, 'is_subscribed' => 1]);
+        /*
+         * 🚨 THIS LINE USED TO READ `$user->update(['profile_status_lock' => 1,
+         * 'is_subscribed' => 1])` AND BOTH HALVES WERE WRONG (13 Sep 2026).
+         *
+         * `gifterCardVerification` HAS NO ROLE GATE, so any signed-in account can open
+         * /gifter-card-verification and finish it — and this handler then ran for them:
+         *
+         *  - `profile_status_lock = 1` is a state that NO LONGER EXISTS. Migration
+         *    2026_09_11_100000 resolved every row to 0 or 2 and nothing may write 1
+         *    again. On a LIVE creator (lock 2) this was a demotion: badge gone, dropped
+         *    from Discover, search and trending, every listing delisted — the exact
+         *    fault `profile:restore-wrongly-demoted` was written to repair, re-created by
+         *    a £1 card check. Nothing on the site sets it back to 2.
+         *  - `is_subscribed = 1` is the CREATOR PLATFORM SUBSCRIPTION flag. Every other
+         *    writer is a Stripe subscription webhook or SubscriptionCheckoutService, and
+         *    `UserProfileService` reads it to decide whether a creator is paying. A card
+         *    verification is not a subscription, and marking one from here says an
+         *    account is on a plan it has never been billed for.
+         *
+         * ⚠️ Nothing is lost by removing it: the verification's OWN record is the
+         * `gifter_card_verifications` row and the `user_verification_statuses` row set
+         * above, both of which this method still writes.
+         */
 
         return redirect()->route('user.show', ['username' => $user->username])->with('success', 'Payment Card Verification Successfully Completed.');
     }

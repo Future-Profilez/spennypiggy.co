@@ -557,6 +557,7 @@ export default function AddItem(props) {
         {
             key: "details",
             title: "What you're selling",
+            hint: "Pick what kind of thing this is, then name it and price it.",
             validate: () => {
                 if (!shopItem.name || !shopItem.description || !shopItem.price) {
                     return "Please fill in all required fields (Name, Description, Price)";
@@ -587,7 +588,7 @@ export default function AddItem(props) {
                                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <div className="space-y-4">
                                         <h3 className="text-sm font-black uppercase tracking-widest text-black/60">
-                                            1. Select Product Type
+                                            Select product type
                                         </h3>
                                         <div className="flex gap-4">
                                             <button
@@ -627,7 +628,7 @@ export default function AddItem(props) {
 
                                     <div className="space-y-4">
                                         <h3 className="text-sm font-black uppercase tracking-widest text-black/60">
-                                            2. Visuals & Details
+                                            Visuals and details
                                         </h3>
 
                                         <div className="space-y-2">
@@ -807,6 +808,7 @@ export default function AddItem(props) {
         {
             key: "delivery",
             title: "What they get",
+            hint: "What the buyer receives, and how it reaches them.",
             validate: () => {
                 if (physical === "physical") {
                     /* A saved profile already carries the rates; demanding them
@@ -828,7 +830,7 @@ export default function AddItem(props) {
                                     {physical === "physical" ? (
                                         <div className="space-y-6">
                                             <h3 className="text-sm font-black uppercase tracking-widest text-black/60">
-                                                1. Shipping Configuration
+                                                Shipping
                                             </h3>
 
                                             {/* Above the rate boxes on purpose: picking
@@ -936,7 +938,7 @@ export default function AddItem(props) {
 
                                     <div className="space-y-4 pt-6">
                                         <h3 className="text-sm font-black uppercase tracking-widest text-black/60">
-                                            2. Categories
+                                            Categories
                                         </h3>
                                         <div className="flex flex-wrap gap-2">
                                             {categories?.map((c, i) => (
@@ -986,6 +988,7 @@ export default function AddItem(props) {
         {
             key: "settings",
             title: "Final settings",
+            hint: "Last details before this goes on sale.",
             validate: () =>
                 isChecked ? null : "Please agree to the terms before publishing.",
             render: () => (

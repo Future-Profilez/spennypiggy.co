@@ -165,7 +165,7 @@ class BirthdayDiscoveryService
      */
     public function featuredForWeek(Carbon $weekStart): array
     {
-        $key = 'discovery_birthdays_week_v1_'.$weekStart->format('o-W');
+        $key = 'discovery_birthdays_week_v2_'.$weekStart->format('o-W');
 
         return Cache::remember($key, self::WEEK_TTL, function () use ($weekStart) {
             $cards = array_values($this->creatorsWithBirthdayInWeek($weekStart));

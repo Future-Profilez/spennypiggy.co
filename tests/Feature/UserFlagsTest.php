@@ -307,4 +307,50 @@ class UserFlagsTest extends TestCase
 
         Mail::assertQueuedCount(1);
     }
+
+    /**
+     * 🚨 "#203" IS NOT A PERSON, AND THE FIRST VERSION OF THIS ALERT SAID ONLY
+     * THAT. Reported the day it shipped: an admin opening the mail could not
+     * tell who it was about, what had happened or what to do, so it read as a
+     * system error rather than as one account needing a look.
+     */
+    public function test_the_alert_names_the_creator_and_what_to_do(): void
+    {
+        Mail::fake();
+        config(['alerts.enabled' => true, 'alerts.fallback' => ['ops@example.test']]);
+
+        $creator = User::factory()->create(['role' => 1, 'username' => 'flagme']);
+
+        UserFlagger::raise($creator, 'payout_connection_lost', 'Stripe refuses this connected account.');
+
+        Mail::assertQueued(UserFlagRaised::class, function ($mail) {
+            $html = $mail->render();
+
+            return $mail->username === 'flagme'
+                && str_contains($mail->envelope()->subject, '@flagme')
+                && str_contains($html, 'flagme')
+                // ⚠️ Both read from config, so the mail and the admin screen
+                // cannot describe the same flag differently.
+                && $mail->meaning === (string) config('user_flags.types.payout_connection_lost.description')
+                && $mail->action === (string) config('user_flags.types.payout_connection_lost.action')
+                && str_contains($html, 'What to do');
+        });
+    }
+
+    /**
+     * ⚠️ Every critical type must carry the wording the alert renders. A type
+     * with no `action` sends an admin a flag and no instruction, which is the
+     * state this whole change was made to leave behind.
+     */
+    public function test_every_critical_flag_type_says_what_it_means_and_what_to_do(): void
+    {
+        foreach ((array) config('user_flags.types') as $key => $type) {
+            if (($type['severity'] ?? null) !== 'critical') {
+                continue;
+            }
+
+            $this->assertNotEmpty($type['description'] ?? '', $key.' has no description.');
+            $this->assertNotEmpty($type['action'] ?? '', $key.' does not say what to do about it.');
+        }
+    }
 }

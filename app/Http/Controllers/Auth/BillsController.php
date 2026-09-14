@@ -40,6 +40,7 @@ use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
 use App\Support\ListingPublication;
+use App\Support\ListingRollback;
 use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
 use App\Traits\RiskEnforcement;
@@ -272,12 +273,9 @@ class BillsController extends Controller
                 'bill_id' => $bill->id,  // Added for debugging
             ]);
         } catch (Exception $e) {
-
-            $bill->delete();
-
             return response()->json([
                 'status' => false,
-                'msg' => 'Stripe Error: '.$e->getMessage(),
+                'msg' => ListingRollback::stripeFailed($bill, $e, ['module' => 'bill']),
             ]);
         }
     }
@@ -505,11 +503,9 @@ class BillsController extends Controller
             // Clear user caches
             app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
         } catch (Exception $e) {
-            Log::error('Stripe Error during bill edit: '.$e->getMessage());
-
             return response()->json([
                 'status' => false,
-                'msg' => 'Stripe Error: '.$e->getMessage(),
+                'msg' => ListingRollback::stripeFailed($bill, $e, ['module' => 'bill'], rollback: false),
             ]);
         }
 

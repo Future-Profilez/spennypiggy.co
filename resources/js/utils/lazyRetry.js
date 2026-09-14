@@ -24,6 +24,29 @@ import { lazy } from "react";
 const RELOAD_KEY = "spenny_preload_reloaded_at";
 const RELOAD_COOLDOWN_MS = 60_000;
 
+/*
+ * 🚨 A STALE DEPLOY BREAKS EVERY CHUNK ON THE PAGE AT ONCE, NOT ONE.
+ *
+ * The sessionStorage cooldown answers "have we reloaded RECENTLY" — across page
+ * loads, which is what stops a reload loop. It cannot tell that apart from "a
+ * sibling chunk on THIS page started the reload a millisecond ago", and it
+ * answered false to every chunk after the first. Those siblings then threw: each
+ * filed its own Sentry issue, and the error boundary tore the page down while the
+ * reload was still in flight.
+ *
+ * Measured 13 Sep 2026 — ONE page load of /daisyjohnson, one trace id
+ * (8c91ad4e…), one second: `CoverIdentity` and `ShareProfile` both failed, and
+ * between them they had produced three separate long-lived issues
+ * (JAVASCRIPT-REACT-8X · -9R · -84, 22 events over a month).
+ *
+ * ⚠️ IN-MEMORY, AND THAT IS THE POINT. It lives exactly as long as the document,
+ * so it cannot suppress a genuine failure on the page AFTER the reload — the
+ * cross-page loop guard is still sessionStorage's job, and this changes nothing
+ * about it. ⚠️ It also works where storage does not (private mode, blocked site
+ * data), which is the one case `reloadOnce` deliberately refuses to reload in.
+ */
+let reloadInFlight = false;
+
 /**
  * Reload once to pick up a fresh asset manifest, at most once per cooldown.
  *
@@ -39,6 +62,12 @@ const RELOAD_COOLDOWN_MS = 60_000;
  * @returns {boolean} true when a reload has been started
  */
 export function reloadOnce() {
+    // A sibling chunk on this same page already started it. The right answer for
+    // this caller is identical to having started it ourselves: hang, do not throw.
+    if (reloadInFlight) {
+        return true;
+    }
+
     try {
         const last = Number(sessionStorage.getItem(RELOAD_KEY)) || 0;
 
@@ -93,6 +122,10 @@ export function reloadOnce() {
                 )
             );
     };
+
+    // ⚠️ Set BEFORE the cache clear, not after. That clear is asynchronous, and a
+    // sibling failing during it must hang too — which is most of the window.
+    reloadInFlight = true;
 
     clearStaleAppCaches().then(reload, reload);
 

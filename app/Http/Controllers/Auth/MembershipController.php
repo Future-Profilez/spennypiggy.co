@@ -42,6 +42,7 @@ use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
 use App\Support\ListingPublication;
+use App\Support\ListingRollback;
 use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
 use App\Traits\RiskEnforcement;
@@ -299,11 +300,9 @@ class MembershipController extends Controller
             // Clear user caches
             $this->userProfileService->clearUserCaches($user->username, $user->id);
         } catch (Exception $e) {
-            $mem->delete();
-
             return response()->json([
                 'status' => false,
-                'msg' => 'Stripe Error: '.$e->getMessage(),
+                'msg' => ListingRollback::stripeFailed($mem, $e, ['module' => 'membership']),
             ]);
         }
 
@@ -526,9 +525,9 @@ class MembershipController extends Controller
                 // Clear user caches
                 $this->userProfileService->clearUserCaches($user->username, $user->id);
             } catch (Exception $e) {
-                Log::info('Stripe Error: '.$e->getMessage());
+                $message = ListingRollback::stripeFailed($mem, $e, ['module' => 'membership'], rollback: false);
 
-                return redirect()->back()->with('error', 'Stripe Error: '.$e->getMessage());
+                return redirect()->back()->with('error', $message);
             }
 
             return redirect()->back()->with('success', 'Membership level is Updated.');

@@ -41,6 +41,7 @@ export default function VipSupporters() {
                             name={supporter.name}
                             src={supporter.avatar_url}
                             role={supporter.role}
+                            verified_badge={supporter.verified_badge}
                             profile_status_lock={supporter.profile_status_lock}
                             username={supporter.username}
                             link={supporter.username}
@@ -151,6 +152,7 @@ export default function VipSupporters() {
                                 name={supporter.name}
                                 src={supporter.avatar_url}
                                 role={supporter.role}
+                                verified_badge={supporter.verified_badge}
                                 profile_status_lock={supporter.profile_status_lock}
                                 username={supporter.username}
                                 link={supporter.username}

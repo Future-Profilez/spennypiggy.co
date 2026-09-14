@@ -62,6 +62,7 @@ use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\AnalyticsEvent;
 use App\Support\BlockedPaymentAlert;
+use App\Support\CreatorAge;
 use App\Support\NotificationContext;
 use App\Support\PayoutDestinationAudit;
 use App\Support\StripeChargesFlag;
@@ -1020,8 +1021,29 @@ class StripeController extends Controller
                     'error' => $e->getMessage(),
                 ]);
 
-                return redirect(route('stripe.index'))
-                    ->with('error', 'We could not set up your payment account just now. This is usually temporary — try again in a minute, and contact support if it keeps happening.');
+                /*
+                 * 🚨 "TRY AGAIN IN A MINUTE" IS FALSE FOR A PERMANENT REFUSAL, AND
+                 * IT IS WHAT THE CREATOR DOES NEXT.
+                 *
+                 * Measured 13 Sep 2026: three attempts in 28 seconds against a
+                 * date-of-birth Stripe will refuse every time. The sentence sent
+                 * the one person who could not succeed round a loop with no exit —
+                 * the same rule the 403 error page already follows.
+                 *
+                 * ⚠️ Stripe's own text is STILL never printed (see above); this
+                 * only picks which of OUR two sentences is true. Anything not
+                 * recognised keeps the transient wording, because a wrong "your
+                 * details are wrong" on what was really a blip is worse than a
+                 * retry that works.
+                 */
+                $permanent = str_contains($e->getMessage(), 'years of age');
+
+                return redirect(route('stripe.index'))->with(
+                    'error',
+                    $permanent
+                        ? 'Stripe would not accept the date of birth on your profile. Please check it in Account settings — the year is the usual culprit — and then try again.'
+                        : 'We could not set up your payment account just now. This is usually temporary — try again in a minute, and contact support if it keeps happening.'
+                );
             }
         }
 
@@ -1106,7 +1128,28 @@ class StripeController extends Controller
         // Stripe rejects a partial dob — day, month and year go together or not
         // at all. `date_of_birth` is an optional profile field, so most creators
         // will have none and this is skipped.
-        if (! empty($user->date_of_birth)) {
+        /*
+         * 🚨 A PREFILL MAY NEVER BE THE REASON A CREATOR CANNOT BE PAID.
+         *
+         * This hash is a convenience — it saves the creator retyping what they
+         * already told us. But it is sent on `accounts->create`, so a date Stripe
+         * refuses does not merely fail to prefill: it fails the whole account,
+         * and the creator is left with "we could not set up your payment account"
+         * and nothing to act on. Live 13 Sep 2026 (Sentry JAVASCRIPT-REACT-C6) —
+         * *"Must be at least 13 years of age to use Stripe"*, three attempts in
+         * 28 seconds, on a date THIS APP had accepted and stored.
+         *
+         * ⚠️ The floor here is STRIPE's (13), not ours (18), and deliberately so.
+         * Rows saved before the profile form gained a minimum age can sit between
+         * the two; Stripe accepts those, so they are still prefilled. Only a date
+         * that would be refused outright is dropped — the narrowest rule that
+         * cannot break onboarding. See App\Support\CreatorAge.
+         */
+        if (CreatorAge::stripeWouldRefuse($user->date_of_birth)) {
+            Log::warning('Skipping Stripe dob prefill — Stripe would refuse this date of birth', [
+                'user_id' => $user->id,
+            ]);
+        } elseif (! empty($user->date_of_birth)) {
             try {
                 $dob = Carbon::parse($user->date_of_birth);
                 $prefill['dob'] = [

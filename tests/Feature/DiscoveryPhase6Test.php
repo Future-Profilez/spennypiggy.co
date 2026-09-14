@@ -144,6 +144,14 @@ class DiscoveryPhase6Test extends TestCase
             'role' => 1,
             'suspended_account' => 0,
             'profile_status_lock' => 2,
+            /*
+             * ⚠️ A DISCOVERABLE CREATOR IS NOW A PAYABLE ONE (DiscoveryEligibility::payable):
+             * connected, onboarding finished, not charges-disabled. Without these two
+             * columns the fixture is invisible to every Discovery surface and the class
+             * fails for a reason unrelated to what it asserts.
+             */
+            'account_id' => 'acct_test',
+            'stripe_details_submitted' => 1,
             'avatar' => 'a.jpg',
             'avatar_approved' => 1,
             'name' => 'Context',
@@ -155,6 +163,14 @@ class DiscoveryPhase6Test extends TestCase
             'role' => 1,
             'suspended_account' => 0,
             'profile_status_lock' => 2,
+            /*
+             * ⚠️ A DISCOVERABLE CREATOR IS NOW A PAYABLE ONE (DiscoveryEligibility::payable):
+             * connected, onboarding finished, not charges-disabled. Without these two
+             * columns the fixture is invisible to every Discovery surface and the class
+             * fails for a reason unrelated to what it asserts.
+             */
+            'account_id' => 'acct_test',
+            'stripe_details_submitted' => 1,
             'avatar' => 'b.jpg',
             'avatar_approved' => 1,
             'name' => 'Findable',
@@ -198,6 +214,14 @@ class DiscoveryPhase6Test extends TestCase
             'role' => 1,
             'suspended_account' => 0,
             'profile_status_lock' => 2,
+            /*
+             * ⚠️ A DISCOVERABLE CREATOR IS NOW A PAYABLE ONE (DiscoveryEligibility::payable):
+             * connected, onboarding finished, not charges-disabled. Without these two
+             * columns the fixture is invisible to every Discovery surface and the class
+             * fails for a reason unrelated to what it asserts.
+             */
+            'account_id' => 'acct_test',
+            'stripe_details_submitted' => 1,
             'avatar' => 'a.jpg',
             'avatar_approved' => 1,
             'name' => 'Findable',

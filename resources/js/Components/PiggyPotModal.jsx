@@ -233,7 +233,7 @@ export default function PiggyPotModal({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label className={itemLabelClass}>
-                                Progress Goal* ({data.currency}) — optional
+                                Progress goal ({data.currency}) — optional
                             </label>
                             <input
                                 type="number"

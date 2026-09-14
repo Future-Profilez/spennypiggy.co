@@ -305,7 +305,23 @@ class LeaderBoardController extends Controller
                 'rank' => $rank,
                 'name' => $user->name ?? '',
                 'username' => $user->username ?? '',
-                'profile_status_lock' => $user->profile_status_lockNone,
+                /*
+                 * 🚨 THIS READ `$user->profile_status_lockNone` — A COLUMN THAT DOES NOT
+                 * EXIST — AT ELEVEN SITES IN THIS FILE (fixed 13 Sep 2026).
+                 *
+                 * `Model::preventAccessingMissingAttributes()` is off in both apps, so an
+                 * unknown attribute reads as NULL rather than throwing: every one of those
+                 * eleven payload keys was permanently null, on a public page, with nothing
+                 * wrong in any log. The likeliest cause is a find-and-replace that ran past
+                 * the end of the attribute name.
+                 *
+                 * ⚠️ `verified_badge` beside it is the AUTHORITATIVE answer and is what the
+                 * component reads first — which is why nothing looked broken from the server
+                 * side. The lock is carried only for `VerifiedBadge.jsx`'s transitional
+                 * fallback, for a surface that was never sent the tier. **Never re-derive a
+                 * tier from it**; that component's own docblock forbids it.
+                 */
+                'profile_status_lock' => $user->profile_status_lock,
                 'verified_badge' => VerifiedBadge::tierFor($user),
                 'is_founder' => $user->is_founder ?? false,
                 'role' => $user->role,
@@ -920,7 +936,7 @@ class LeaderBoardController extends Controller
                     'username' => $query->username ?? '',
                     'avatar' => $query->avatar_url,
                     'coverimg' => $query->cover_url,
-                    'profile_status_lock' => $query->profile_status_lockNone,
+                    'profile_status_lock' => $query->profile_status_lock,
                     'verified_badge' => VerifiedBadge::tierFor($query),
                     'is_founder' => $query->is_founder ?? false,
                     'role' => $query->role,
@@ -1689,7 +1705,7 @@ class LeaderBoardController extends Controller
                 'rank' => $rank,
                 'name' => $query->name ?? '',
                 'username' => $query->username ?? '',
-                'profile_status_lock' => $query->profile_status_lockNone,
+                'profile_status_lock' => $query->profile_status_lock,
                 'verified_badge' => VerifiedBadge::tierFor($query),
                 'is_founder' => $query->is_founder ?? false,
                 'role' => $query->role,
@@ -2740,7 +2756,7 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'profile_status_lock' => $user->profile_status_lock,
                         'verified_badge' => VerifiedBadge::tierFor($user),
                         'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
@@ -2788,7 +2804,7 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'profile_status_lock' => $user->profile_status_lock,
                         'verified_badge' => VerifiedBadge::tierFor($user),
                         'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
@@ -2836,7 +2852,7 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'profile_status_lock' => $user->profile_status_lock,
                         'verified_badge' => VerifiedBadge::tierFor($user),
                         'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
@@ -2884,7 +2900,7 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'profile_status_lock' => $user->profile_status_lock,
                         'verified_badge' => VerifiedBadge::tierFor($user),
                         'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
@@ -2932,7 +2948,7 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'profile_status_lock' => $user->profile_status_lock,
                         'verified_badge' => VerifiedBadge::tierFor($user),
                         'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
@@ -2980,7 +2996,7 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'profile_status_lock' => $user->profile_status_lock,
                         'verified_badge' => VerifiedBadge::tierFor($user),
                         'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
@@ -3314,7 +3330,7 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'profile_status_lock' => $user->profile_status_lock,
                         'verified_badge' => VerifiedBadge::tierFor($user),
                         'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
@@ -3345,7 +3361,7 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'profile_status_lock' => $user->profile_status_lock,
                         'verified_badge' => VerifiedBadge::tierFor($user),
                         'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,

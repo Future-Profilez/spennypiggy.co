@@ -61,11 +61,13 @@ return [
             'severity' => 'critical',
             'label' => 'Payout schedule left manual',
             'description' => 'Stripe was paying this creator automatically. Their whole available balance, held reserves included, can be swept to their bank before our own payout run sees it.',
+            'action' => 'Check the creator\'s Stripe account is still on a manual payout schedule. If Stripe keeps reverting it, their balance can be swept to their bank before our own payout run sees it.',
         ],
         'payout_destination_change' => [
             'severity' => 'critical',
             'label' => 'Payout destination changed',
             'description' => 'The Stripe account or bank account money is paid into was changed.',
+            'action' => 'Confirm the creator made this change themselves before the next payout run. A destination change nobody asked for is how money leaves the platform to the wrong account.',
         ],
         /*
          * 🚨 THIS CREATOR CANNOT BE PAID AT ALL, AND ONLY THEY CAN FIX IT.
@@ -82,11 +84,13 @@ return [
             'severity' => 'critical',
             'label' => 'Stripe connection lost',
             'description' => 'Stripe refuses this connected account to our key — the creator disconnected us, or Stripe closed the account. No payout to them can succeed until they reconnect.',
+            'action' => 'The creator has been emailed asking them to reconnect Stripe. Nothing else can be done from here — only they can restore it. If they do not respond, have support contact them.',
         ],
         'refund_volume' => [
             'severity' => 'critical',
             'label' => 'Unusual refund volume',
             'description' => 'Refunds on this account are above the risk engine threshold.',
+            'action' => 'Open the creator\'s payment history and decide whether this is a pattern or one bad week.',
         ],
         'account_email_change' => [
             'severity' => 'warning',

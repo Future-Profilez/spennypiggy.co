@@ -91,6 +91,26 @@ return [
 
         'enabled' => env('MEDIA_SECURE_ENABLED', false),
 
+        /*
+         * 🚨 UPLOADCARE ENFORCES ON A SEPARATE HOST, NOT BY REFUSING TOKENS ON
+         * THE PUBLIC ONE. Turning "Secure delivery" on in the dashboard creates a
+         * secure SUBDOMAIN (`<project>.s.ucarecd.net`) that requires a token;
+         * `ucarecdn.com` and `<project>.ucarecd.net` stay PUBLIC and ignore any
+         * token appended to them. So a signed `ucarecdn.com` URL is exactly as
+         * open as an unsigned one — which is why the flag alone buys nothing and
+         * `media:secure-check` reports unsigned 200 even with signing on.
+         *
+         * ⚠️ SET THIS TO THE SECURE SUBDOMAIN, HOST ONLY, NO SCHEME OR SLASH.
+         * Unset, `SecureMedia` signs nothing and says so once in the log rather
+         * than handing back a URL that looks protected and is not.
+         *
+         * 🚨 NEVER "DISABLE PUBLIC DOMAIN NAMES" IN THE DASHBOARD. Avatars,
+         * covers, item thumbnails and OG images are deliberately unsigned and are
+         * served from the public host; disabling it takes every one of them off
+         * the site. Only the paid deliverable moves.
+         */
+        'host' => env('MEDIA_SECURE_HOST'),
+
         // Page-lifetime links. 300s (the window the old dead signer used) was
         // rejected: it is short enough to expire mid-download of a large video
         // file, and a supporter whose 4GB download dies at 40% is a support
