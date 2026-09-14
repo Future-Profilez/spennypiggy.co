@@ -4698,6 +4698,90 @@ class StripeWebhookController extends Controller
     }
 
     /**
+     * Find the risk-ledger Payment row a PaymentIntent belongs to, by way of its
+     * checkout session, and stamp the intent id onto it.
+     *
+     * 🚨 WHY THIS EXISTS. The checkout controllers write their Payment row with
+     * `'stripe_payment_intent_id' => $sessionCreate->payment_intent ?? null` — and
+     * Stripe does not attach a PaymentIntent to a Checkout Session until the
+     * customer starts paying, so at that moment it is ALWAYS null. The row
+     * therefore carries a SESSION id and nothing else.
+     * `checkout.session.completed` stamps the intent on afterwards, but Stripe
+     * gives no ordering guarantee between that event and
+     * `payment_intent.succeeded` — and when the intent event wins, the lookup by
+     * intent id misses a row that is sitting right there.
+     *
+     * What the miss used to cost: `handlePaymentIntentSucceeded` fell through to
+     * an AMOUNT match, which can never succeed here (the checkout row stores the
+     * creator's LISTED price while this side computes gross-minus-fees), and then
+     * created a SECOND Payment row for the same intent. That duplicate carries no
+     * session id, so `PayoutService::getAllFinancialTransactionsForPayment()` can
+     * never reach a source model through it and values it at £0 — and it is never
+     * paid, so `payout_run_id` stays null for ever and it is counted as an unpaid
+     * payment by every run from then on. Measured on production 14 Sep 2026: six
+     * such rows against one creator, all of whose real money had already been paid.
+     *
+     * ⚠️ One Stripe call, and only on the path that was about to create a
+     * duplicate — a round trip is the cheaper half of that trade.
+     *
+     * ⚠️ Never throws. It runs inside a webhook; a lookup failure must leave the
+     * old behaviour in place rather than fail the event and make Stripe retry.
+     */
+    private function linkIntentToCheckoutPayment(string $paymentIntentId, ?string $connectedAccountId = null): ?Payment
+    {
+        try {
+            $client = $connectedAccountId
+                ? AppStripeControl::getClientForAccount($connectedAccountId)
+                : AppStripeControl::getClient();
+
+            $options = $connectedAccountId ? ['stripe_account' => $connectedAccountId] : [];
+
+            $sessions = $client->checkout->sessions->all(
+                ['payment_intent' => $paymentIntentId, 'limit' => 1],
+                $options
+            );
+
+            $sessionId = $sessions->data[0]->id ?? null;
+
+            if (! $sessionId) {
+                return null;
+            }
+
+            $payment = Payment::where('stripe_session_id', $sessionId)->first();
+
+            // The redirect handler may still be mid-write — the same 500ms the
+            // checkout.session.completed branch already waits, for the same reason.
+            if (! $payment) {
+                usleep(500000);
+                $payment = Payment::where('stripe_session_id', $sessionId)->first();
+            }
+
+            if (! $payment) {
+                return null;
+            }
+
+            if (! $payment->stripe_payment_intent_id) {
+                $payment->update(['stripe_payment_intent_id' => $paymentIntentId]);
+            }
+
+            Log::info('Risk Ledger: intent matched to its checkout session', [
+                'payment_intent' => $paymentIntentId,
+                'session_id' => $sessionId,
+                'payment_id' => $payment->id,
+            ]);
+
+            return $payment;
+        } catch (\Throwable $e) {
+            Log::warning('Risk Ledger: could not resolve the checkout session for an intent', [
+                'payment_intent' => $paymentIntentId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
      * Handle Payment Intent Succeeded
      * Syncs with Risk Engine Ledger and Updates Rollups
      */
@@ -4715,6 +4799,13 @@ class StripeWebhookController extends Controller
 
         // 1. Update Risk Ledger (payments table)
         $payment = Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+
+        // The checkout row carries a SESSION id and, until checkout.session.completed
+        // lands, no intent id — so look for it the way it is actually keyed before
+        // concluding that no row exists. See linkIntentToCheckoutPayment().
+        if (! $payment) {
+            $payment = $this->linkIntentToCheckoutPayment((string) $paymentIntentId, $connectedAccountId);
+        }
 
         if (! $payment) {
             // Attempt to auto-create missing Payment record for legacy/direct flows
