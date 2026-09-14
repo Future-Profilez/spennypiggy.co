@@ -15,6 +15,7 @@ import { TextField, TextAreaField, fieldClass } from "@/Components/Checkout/Form
 import toast from "react-hot-toast";
 import { creatorIdOf } from "@/utils/pricing";
 import { riskMessageBody, riskMessageTitle, GUEST_VALUE_THRESHOLD_GBP } from '@/constants/riskMessages';
+import { supporterFeeCaption } from "@/lib/fees";
 
 export default function UserCarts(props) {
     const {
@@ -24,6 +25,7 @@ export default function UserCarts(props) {
         transaction_fee_percentage,
         turnstileSiteKey,
     } = usePage().props;
+    const __pageProps = usePage().props;
     const turnstileRef = useRef(null);
     const deviceid = useMemo(() => DeviceID(), []);
     const { auth, removeFromCart, currency, onSummary, onToggle } = props;
@@ -1052,7 +1054,7 @@ export default function UserCarts(props) {
                                 </strong>
                             </div>
                             <div className="mt-1 text-right text-[12px] font-normal leading-tight text-black/60">
-                                *Includes platform and payment processing fees
+                                {supporterFeeCaption(__pageProps, { withRate: true })}
                             </div>
                         </div>
 

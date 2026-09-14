@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\UserFlagRaised;
 use App\Models\SecurityEvent;
 use App\Models\User;
 use App\Models\UserFlag;
@@ -9,6 +10,7 @@ use App\Support\BlockedPaymentAlert;
 use App\Support\SecurityEventLog;
 use App\Support\UserFlagger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 /**
@@ -243,6 +245,112 @@ class UserFlagsTest extends TestCase
                 // had done nothing.
                 $this->assertStringContainsString('buy from this creator', (string) $flag->reason);
             }
+        }
+    }
+
+    /**
+     * 🚨 A CRITICAL FLAG NOW REACHES AN INBOX, NOT ONLY A SCREEN.
+     *
+     * `/user-flags` was the only surface, and nobody opens it daily. Measured
+     * 12 Sep 2026: two creators had been unpayable since **26 August** because
+     * Stripe had revoked our access to their connected accounts — the platform
+     * noticed every ten minutes, raised a flag, and told no person at all.
+     */
+    public function test_a_critical_flag_alerts_somebody(): void
+    {
+        Mail::fake();
+        config(['alerts.enabled' => true, 'alerts.fallback' => ['ops@example.test']]);
+
+        UserFlagger::raise(
+            User::factory()->create(['role' => 1]),
+            'payout_connection_lost',
+            'Stripe refuses this connected account to our key.',
+        );
+
+        Mail::assertQueued(UserFlagRaised::class);
+    }
+
+    /**
+     * ⚠️ WARNING-LEVEL FLAGS STAY ON THE SCREEN. A failed-login burst, an e-mail
+     * change and bulk downloads are exactly the volume that turns an alert list
+     * into one nobody reads — which would cost the critical ones their meaning.
+     */
+    public function test_a_warning_flag_alerts_nobody(): void
+    {
+        Mail::fake();
+        config(['alerts.enabled' => true, 'alerts.fallback' => ['ops@example.test']]);
+
+        UserFlagger::raise(
+            User::factory()->create(['role' => 1]),
+            'account_email_change',
+            'The address on the account was changed.',
+        );
+
+        Mail::assertNotQueued(UserFlagRaised::class);
+    }
+
+    /**
+     * 🚨 ON CREATION ONLY. A recurrence inside the dedupe window bumps
+     * `occurrences` and returns before the alert — without that the ten-minute
+     * payout sweep would mail the same thing 144 times a day, which is how an
+     * alert channel stops being read.
+     */
+    public function test_a_repeat_inside_the_window_does_not_alert_again(): void
+    {
+        Mail::fake();
+        config(['alerts.enabled' => true, 'alerts.fallback' => ['ops@example.test']]);
+
+        $creator = User::factory()->create(['role' => 1]);
+
+        UserFlagger::raise($creator, 'payout_connection_lost', 'First.');
+        UserFlagger::raise($creator, 'payout_connection_lost', 'Again, ten minutes later.');
+
+        Mail::assertQueuedCount(1);
+    }
+
+    /**
+     * 🚨 "#203" IS NOT A PERSON, AND THE FIRST VERSION OF THIS ALERT SAID ONLY
+     * THAT. Reported the day it shipped: an admin opening the mail could not
+     * tell who it was about, what had happened or what to do, so it read as a
+     * system error rather than as one account needing a look.
+     */
+    public function test_the_alert_names_the_creator_and_what_to_do(): void
+    {
+        Mail::fake();
+        config(['alerts.enabled' => true, 'alerts.fallback' => ['ops@example.test']]);
+
+        $creator = User::factory()->create(['role' => 1, 'username' => 'flagme']);
+
+        UserFlagger::raise($creator, 'payout_connection_lost', 'Stripe refuses this connected account.');
+
+        Mail::assertQueued(UserFlagRaised::class, function ($mail) {
+            $html = $mail->render();
+
+            return $mail->username === 'flagme'
+                && str_contains($mail->envelope()->subject, '@flagme')
+                && str_contains($html, 'flagme')
+                // ⚠️ Both read from config, so the mail and the admin screen
+                // cannot describe the same flag differently.
+                && $mail->meaning === (string) config('user_flags.types.payout_connection_lost.description')
+                && $mail->action === (string) config('user_flags.types.payout_connection_lost.action')
+                && str_contains($html, 'What to do');
+        });
+    }
+
+    /**
+     * ⚠️ Every critical type must carry the wording the alert renders. A type
+     * with no `action` sends an admin a flag and no instruction, which is the
+     * state this whole change was made to leave behind.
+     */
+    public function test_every_critical_flag_type_says_what_it_means_and_what_to_do(): void
+    {
+        foreach ((array) config('user_flags.types') as $key => $type) {
+            if (($type['severity'] ?? null) !== 'critical') {
+                continue;
+            }
+
+            $this->assertNotEmpty($type['description'] ?? '', $key.' has no description.');
+            $this->assertNotEmpty($type['action'] ?? '', $key.' does not say what to do about it.');
         }
     }
 }

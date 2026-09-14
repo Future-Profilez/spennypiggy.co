@@ -4,7 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'mustCompletedStripeIdentity', 'mustHaveToVerify'])->group(function () {
+Route::middleware(['auth', 'mustHaveToVerify'])->group(function () {
     Route::get('/debug-wish-creation', function () {
         $user = Auth::user();
 

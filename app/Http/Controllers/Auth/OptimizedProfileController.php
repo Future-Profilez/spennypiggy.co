@@ -12,6 +12,7 @@ use App\SeoMeta;
 use App\Services\SeoTemplateService;
 use App\Services\Stripe\StripeAccountState;
 use App\Services\UserProfileService;
+use App\Support\Incentives;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -434,6 +435,25 @@ class OptimizedProfileController extends Controller
      */
     private function getFounderData($user): array
     {
+        /*
+         * 🚨 SECOND COPY OF THE SAME METHOD — see
+         * `AuthenticatedSessionController::getFounderData()`. Both feed the same
+         * `founderData` prop and the same `FounderProgressTracker`, so a gate on
+         * one of them leaves the tracker live on whichever route reads the
+         * other. Retired 11 Sep 2026: not eligible, no query.
+         */
+        if (! Incentives::founderEnabled()) {
+            return [
+                'first30DayEarnings' => 0.0,
+                'isEligible' => false,
+                'daysLeft' => 0,
+                'minEarnings' => (float) config('founder_bonus.qualification.min_first_30d_earnings', 2500),
+                'qualificationDays' => (int) config('founder_bonus.qualification.qualification_period_days', 30),
+                'windowStart' => null,
+                'windowEnd' => null,
+            ];
+        }
+
         $first30DayEarnings = 0;
         $isEligible = false;
         $daysLeft = 0;

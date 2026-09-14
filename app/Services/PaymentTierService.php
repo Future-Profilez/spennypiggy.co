@@ -62,7 +62,8 @@ class PaymentTierService
      * Returns:
      *  - tier: 1|2|3
      *  - bank_available: bool (currency has an enabled bank method)
-     *  - bank_recommended: bool (UI badge "Lower fees, higher limits")
+     *  - bank_recommended: bool (UI badge "Higher limits" — NOT a price claim: both
+     *    rails carry the same supporter fee since 11 Sep 2026, client D2)
      *  - card_allowed: bool
      *  - force_3ds: bool (create the card session with request_three_d_secure=any)
      *  - prompt_bank: bool (card refused softly — UI should point to bank)

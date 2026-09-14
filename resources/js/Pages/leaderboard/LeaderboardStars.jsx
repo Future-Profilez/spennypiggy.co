@@ -28,7 +28,8 @@ export default function LeaderboardStars() {
         <div className="wisher wisher-rank">
           <Avatar
             role={gift.role}
-            profile_status_lock={gift.profile_status_lock == 2 ? true : false}
+            verified_badge={gift.verified_badge}
+            profile_status_lock={gift.profile_status_lock}
             name={gift.name}
             link={gift.username || null}
             subhead={`@${gift.username || "anonymous"}`}

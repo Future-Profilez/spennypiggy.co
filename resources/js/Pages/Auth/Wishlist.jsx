@@ -2,7 +2,6 @@ import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
 import { useEffect, useRef, useState } from "react";
-import LoaderButton from "@/Components/LoaderButton";
 import { router, useForm, usePage } from "@inertiajs/react";
 import { MAX_PRICE_GBP, priceLimitError } from "@/lib/priceLimits";
 import { useAlerts } from "@/Components/Alerts";
@@ -10,15 +9,23 @@ import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
 import { Disclosure, Transition } from "@headlessui/react";
 import uploadedimg from "../../../assets/img/uploadedimg.png";
-import Popup from "@/Components/Popup";
+import ItemFormShell from "@/Components/ItemFormShell";
+import {
+    itemCheckboxClass,
+    itemErrorClass,
+    itemFieldClass,
+    itemFieldCompactClass,
+    itemLabelClass,
+} from "@/Components/ItemForm/ItemFormKit";
+import useDirtyGuard from "@/lib/useDirtyGuard";
 import { Pagination, Navigation } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
-import { FaRegHeart, FaChevronUp } from "react-icons/fa";
 import { RiCloseLine, RiCheckDoubleLine } from "react-icons/ri";
 import ContentFilePreview from "@/Components/ContentFilePreview";
+import { creatorFeeNote } from "@/lib/fees";
 import RewardEditor, {
     emptyReward,
     rewardFromItem,
@@ -39,6 +46,7 @@ const imageLinks = [
 
 export default function Wishlist(props) {
     const { global_currency, auth, wish_categories, all_user_categories, rates } = usePage().props;
+    const feeNote = creatorFeeNote(usePage().props);
     const {
         currency,
         item,
@@ -46,8 +54,6 @@ export default function Wishlist(props) {
         editpop,
         openPop,
         setuped,
-        customtext,
-        hidetrigger,
     } = props;
     const defaultCurrency =
         (auth && auth.user && auth.user.default_currency) || "GBP";
@@ -65,8 +71,13 @@ export default function Wishlist(props) {
     const [rewardImage, setRewardImage] = useState("");
     const [isAiImage, setIsAiImage] = useState();
 
+    /* 🚨 ONLY A LITERAL `true` OPENS IT — the pattern `AddBills` and `AddMembership`
+       already follow. A caller driving this flag CLEARS it back to null/false so the
+       next press opens the form again, and a bare `setClose(openPop)` therefore read
+       that clear as "close": the wish form opened and shut itself a tick later, with
+       nothing wrong in any log. Closing is `requestClose`'s job, never this effect's. */
     useEffect(() => {
-        setClose(openPop);
+        if (openPop === true) setClose(true);
     }, [openPop]);
 
     const uploaderRef = useRef();
@@ -157,63 +168,31 @@ export default function Wishlist(props) {
         ai_generated: isAiImage ? 1 : 0,
     });
 
+    // Esc and the backdrop close the sheet, so a three-step wish plus an
+    // Uploadcare upload must not evaporate on a mis-tap. Returning false from
+    // `onClose` vetoes the dismissal — `ItemFormShell` passes it straight to
+    // `Sheet`, which honours it exactly as `Popup`'s `onHide` did.
+    const confirmDiscard = useDirtyGuard(close !== false, data);
+
+    // The caller drives the panel through `openPop`, so record the close
+    // locally too — otherwise the next press repeats a value the effect has
+    // already seen and nothing reopens.
+    const requestClose = () => {
+        if (!confirmDiscard()) return false;
+        setClose(false);
+        return true;
+    };
+
     transform((payload) => {
         const { reward, ...rest } = payload;
         return { ...rest, ...rewardToPayload(reward) };
     });
 
-    const [step, setStep] = useState(1);
-    const totalSteps = 3;
-
-    const nextStep = () => {
-        if (step < totalSteps) {
-            // Validation for Step 1
-            if (step === 1) {
-                if (!data.wishname) {
-                    errorAlert("Please enter a wish name.");
-                    return;
-                }
-                // The £4.99–£500 rule is GBP-EQUIVALENT and was enforced only
-                // server-side, after all three steps. Bounds are converted into
-                // the creator's own currency — see `lib/priceLimits.js`.
-                const priceError = priceLimitError(
-                    data.price,
-                    defaultCurrency,
-                    rates,
-                    MAX_PRICE_GBP.wish,
-                );
-                if (priceError) {
-                    errorAlert(priceError);
-                    return;
-                }
-                if (!data.category && !editpop && checkboxes.length === 0) {
-                    errorAlert("Please choose a category.");
-                    return;
-                }
-            }
-            // Validation for Step 2
-            if (step === 2) {
-                // Thumbnail is optional, defaults to first image if not provided
-            }
-
-            setStep(step + 1);
-        }
-    };
-
-    const prevStep = () => {
-        if (step > 1) setStep(step - 1);
-    };
-
-    const renderProgressBar = () => {
-        return (
-            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
-                <div
-                    className="bg-pink-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
-                    style={{ width: `${(step / totalSteps) * 100}%` }}
-                ></div>
-            </div>
-        );
-    };
+    /* The step counter, its progress bar and the Back/Next pair that used to sit
+       here are gone: `ItemFormShell` owns all three, so every module's form is
+       paced the same way. Step 1's checks moved into that step's own `validate`
+       (see `steps` below) — they are the same three rules, returned as a string
+       instead of fired as a toast. */
 
     const onSlideChange = (swiper) => {
         setData("thumbnail", imageLinks[swiper && swiper.activeIndex]);
@@ -428,48 +407,57 @@ export default function Wishlist(props) {
         }
     };
 
-    const AddItem = () => {
-        return (
- <div className=" flex items-center p-3 rounded-box border-4 border-black 
-border-4 border-black ">
- <div className="p-1 !rounded-box bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
-                    <FaRegHeart color="var(--pink)" size="1.5rem" />
-                </div>
-                <div className="ps-3 text-start">
-                    <h2 className="text-md font-normal font-GillSans uppercase">
-                        {text ? text : "Add Wish Item"}
-                    </h2>
-                    <p className="text-sm font-poppins">
-                        Fans fund a specific item and unlock an exclusive file.
-                    </p>
-                </div>
-            </div>
-        );
-    };
+    /* 🚨 THE BUILT-IN TRIGGER IS GONE, AND NOTHING LOST IT. `Popup` rendered its
+       own button from a local `AddItem` card whenever `hidetrigger` was absent —
+       and BOTH live call sites (the dashboard's direct form and `Wishlistbox`'s
+       edit) pass `hidetrigger`, so that button had no caller. The sheet is
+       opened by the parent through `openPop`, which is the one route in that
+       `pickModule` already enforces. `customtext`/`hidetrigger` went with it. */
 
-    return (
-        <Popup
-            modalclass="pinkmodal full"
-            action={close}
-            space="4"
-            size="lg"
- classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-box mb-4 text-center"}`}
-            /* `hidetrigger` renders NO trigger button — the caller owns the
-               open state and drives it through `openPop`. Popup only skips its
-               button when `text` is literally undefined, so null/false will
-               still fall through to <AddItem /> here. */
-            text={hidetrigger ? undefined : customtext || <AddItem />}
-        >
- <div className="editprofileModal wishlistModal ">
-                <div className="editprofileModalInner ">
- <div className="wishinfo !p-0 lg:!p-4 ">
- <h2 className="mb-4 !text-start font-GillSans uppercase text-large mb-1 pr-5">
-                            {editpop ? " Edit Wish" : "Add A Wish"}
-                        </h2>
+    /*
+     * 🚨 THE THREE STEPS ARE THE SHELL'S NOW — this form no longer owns a step
+     * counter, a progress bar or a pair of navigation buttons. Every sellable
+     * module is asked for the same three things in the same order, in the same
+     * sheet, and `ItemFormShell` is where that is stated once. Bills,
+     * memberships and Piggy Pot were already on it; a wish drawing its own
+     * stepper beside them is how "one listing form" stops being one.
+     *
+     * ⚠️ NOT A WORD OF THE FIELDS CHANGED. What moved is the chrome around
+     * them — the markup inside each step, its validation and `createWishList`
+     * are the same code they were, so the save path and every server rule are
+     * untouched.
+     *
+     * ⚠️ `validate` RETURNS A STRING, it does not raise a toast. The shell
+     * prints the problem against the step it belongs to and refuses to advance;
+     * the old `errorAlert` fired a toast that outlived the field it was about.
+     */
+    const steps = [
+        {
+            key: "details",
+            title: "What you're selling",
+            hint: "Name the content a supporter unlocks, and set its price.",
+            validate: () => {
+                if (!data.wishname) return "Please enter a wish name.";
 
-                        <form onSubmit={createWishList} className="text-left">
-                            {/* Step 1: Basic Info & Category */}
-                            <div className={step === 1 ? "block" : "hidden"}>
+                /* The £4.99–£500 rule is GBP-EQUIVALENT and was enforced only
+                   server-side, after all three steps. Bounds are converted into
+                   the creator's own currency — see `lib/priceLimits.js`. */
+                const priceError = priceLimitError(
+                    data.price,
+                    defaultCurrency,
+                    rates,
+                    MAX_PRICE_GBP.wish,
+                );
+                if (priceError) return priceError;
+
+                if (!data.category && !editpop && checkboxes.length === 0) {
+                    return "Please choose a category.";
+                }
+
+                return null;
+            },
+            render: () => (
+                <>
                                     {item && item.is_suspended == 1 && (
  <div className="mb-4 bg-red-50 border-2 border-red-500 p-4 rounded-box-sm">
                                             <div className="flex">
@@ -489,19 +477,27 @@ border-4 border-black ">
                                             </div>
                                         </div>
                                     )}
- <p className="p-4 mb-4 text-normal text-yellow-800 rounded-box-sm border border-yellow-500 bg-yellow-50">
-                                    Describe the content the supporter receives
-                                    (e.g. "Exclusive photo set"). Do not list
-                                    personal items, gifts, expenses, or
-                                    brand/third-party service names — these will
-                                    be rejected and removed. Our AI blocks adult
-                                    content but any overly suggestive images
-                                    will also be rejected. Please reach out to
-                                    support for further clarification.
-                                </p>
+                                {/* ⚠️ A RULE THE CREATOR MUST READ IS NOT A WALL OF TEXT.
+                                    This was a 60-word paragraph in a full yellow panel at
+                                    body size — it filled the whole first screen of a
+                                    three-step form, so the first thing a creator met was a
+                                    list of ways to be rejected. Same rules, said in two
+                                    sentences, with the caution spent on a 6px spine rather
+                                    than on the whole block. `border-black` ALONE is the 2px
+                                    house frame; a width class beside it is discarded. */}
+                                <div className="mb-6 flex overflow-hidden rounded-box-sm border-2 border-black bg-white">
+                                    <span aria-hidden="true" className="w-1.5 shrink-0 bg-[#E6EA7B]" />
+                                    <p className="px-4 py-3 text-[13px] font-medium leading-[1.55] text-black">
+                                        <span className="font-black">Sell content, not things.</span>{" "}
+                                        Describe what the supporter receives — for example, an
+                                        exclusive photo set. Personal items, gifts, expenses and
+                                        brand names are removed, and images must stay
+                                        non-explicit.
+                                    </p>
+                                </div>
 
-                                <div className="mb-4">
-                                    <label className="mb-2 text-left block font-semibold text-gray-700">
+                                <div className="mb-6">
+                                    <label htmlFor="goal_label" className={itemLabelClass}>
                                         Goal{" "}
  <span className="text-black/60 font-normal">(optional)</span>
                                     </label>
@@ -512,7 +508,7 @@ border-4 border-black ">
                                         maxLength={60}
                                         placeholder="Eg. New camera fund"
                                         value={data.goal_label}
- className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-box px-4 py-3"
+ className={itemFieldClass}
                                         onChange={(e) =>
                                             setData("goal_label", e.target.value)
                                         }
@@ -524,14 +520,14 @@ border-4 border-black ">
                                         or expense (e.g. rent, phone bill).
                                     </p>
                                     {errors.goal_label && (
-                                        <p className="mt-1 text-xs text-red-500 text-left">
+                                        <p className={itemErrorClass}>
                                             {errors.goal_label}
                                         </p>
                                     )}
                                 </div>
 
-                                <div className="mb-4">
-                                    <label className="mb-2 text-left block font-semibold text-gray-700">
+                                <div className="mb-6">
+                                    <label htmlFor="wishname" className={itemLabelClass}>
                                         Content Title
                                     </label>
                                     <input
@@ -540,7 +536,7 @@ border-4 border-black ">
                                         type="text"
                                         placeholder="Eg. Exclusive photo set"
                                         value={data.wishname}
- className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-box px-4 py-3"
+ className={itemFieldClass}
                                         autoComplete="name"
                                         onChange={(e) =>
                                             setData("wishname", e.target.value)
@@ -548,14 +544,14 @@ border-4 border-black ">
                                         required
                                     />
                                     {errors.wishname && (
-                                        <p className="mt-1 text-xs text-red-500 text-left">
+                                        <p className={itemErrorClass}>
                                             {errors.wishname}
                                         </p>
                                     )}
                                 </div>
 
-                                <div className="mb-4">
-                                    <label className="mb-2 text-left block font-semibold text-gray-700">
+                                <div className="mb-6">
+                                    <label htmlFor="price" className={itemLabelClass}>
                                         Price ({defaultCurrency})
                                     </label>
                                     <div className="relative">
@@ -569,7 +565,7 @@ border-4 border-black ">
                                             placeholder="Eg. 50"
                                             value={data.price}
                                             step="0.01"
- className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-box pl-16 pr-4 py-3"
+ className={`${itemFieldClass} pl-16`}
                                             autoComplete="price"
                                             onChange={(e) =>
                                                 setData("price", e.target.value)
@@ -577,10 +573,10 @@ border-4 border-black ">
                                         />
                                     </div>
                                     {data.price > 0 && (
- <div className="mt-3 p-3 bg-gray-50 rounded-box border border-gray-100">
+ <div className="mt-3 rounded-box-sm border-2 border-black bg-white p-3">
                                             <div className="flex justify-between items-center mb-1">
-                                                <span className="text-sm text-gray-600">Fans pay:</span>
-                                                <span className="font-bold text-gray-900">
+                                                <span className="text-sm text-black/80">Fans pay:</span>
+                                                <span className="font-bold text-black">
                                                     {new Intl.NumberFormat('en-GB', {
                                                         style: 'currency',
                                                         currency: defaultCurrency
@@ -588,8 +584,8 @@ border-4 border-black ">
                                                 </span>
                                             </div>
                                             <div className="flex justify-between items-center">
-                                                <span className="text-sm text-gray-600">You receive:</span>
-                                                <span className="font-bold text-green-600">
+                                                <span className="text-sm text-black/80">You receive:</span>
+                                                <span className="font-bold text-black">
                                                     {new Intl.NumberFormat('en-GB', {
                                                         style: 'currency',
                                                         currency: defaultCurrency
@@ -597,7 +593,8 @@ border-4 border-black ">
                                                 </span>
                                             </div>
  <p className="mt-2 text-xs text-black/60 font-medium">Fans only see the total price to improve conversion</p>
- <p className="mt-1 text-xs text-black/60 font-medium">Our fee is 19%. Uplift will show higher due to stripe / conversions to ensure you always receive 100% or slightly more.</p>
+ {/* 🚨 Never a typed percentage — see resources/js/lib/fees.js. */}
+                                                    <p className="mt-1 text-xs text-black/60 font-medium">{feeNote}</p>
                                         </div>
                                     )}
                                     {defaultCurrency !== global_currency &&
@@ -613,10 +610,8 @@ border-4 border-black ">
                                         )}
                                 </div>
 
-                                <div className="mb-4">
-                                    <label className="mb-2 text-left block font-semibold text-gray-700">
-                                        Category
-                                    </label>
+                                <div className="mb-6">
+                                    <span className={itemLabelClass}>Category</span>
                                     <div className="flex flex-wrap gap-2 mb-3 max-h-40 overflow-y-auto custom-scrollbar ">
                                         {categories && categories.length ? (
                                             categories.map((c, i) => {
@@ -651,7 +646,7 @@ border-4 border-black ">
                                                             htmlFor={
                                                                 "categories" + i
                                                             }
- className="block cursor-pointer select-none rounded-box-sm border border-gray-300 px-4 py-2 text-sm font-medium transition-colors peer-checked:bg-[#FF007F] peer-checked:text-black peer-checked:border-[#FF007F] hover:bg-gray-50"
+ className="block cursor-pointer select-none rounded-box-sm border-2 border-black/20 px-4 py-2 text-sm font-bold transition-colors peer-checked:border-black peer-checked:bg-[#FF007F] peer-checked:text-black hover:bg-black/[0.04]"
                                                         >
                                                             {c.category}
                                                         </label>
@@ -671,30 +666,35 @@ border-4 border-black ">
                                             type="text"
                                             ref={inputRef}
                                             placeholder="New Category"
- className="flex-1 border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 !rounded-box-sm p-3 text-sm"
+ className={`${itemFieldCompactClass} flex-1`}
                                         />
                                         <button
                                             type="button"
- className="bg-gray-900 text-white p-3 px-6 !rounded-box-sm text-sm font-medium hover:bg-gray-800 transition-colors"
+ className="min-h-[48px] shrink-0 rounded-box-sm border-2 border-black bg-black px-6 text-sm font-black uppercase tracking-wider text-white transition-opacity duration-200 hover:opacity-80"
                                             onClick={AddCategory}
                                         >
                                             {adding ? "Adding..." : "Add"}
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* Step 2: Visuals */}
-                            <div className={step === 2 ? "block" : "hidden"}>
+                </>
+            ),
+        },
+        {
+            key: "visuals",
+            title: "Images",
+            hint: "Pick a cover, or upload your own.",
+            render: () => (
+                <>
                                 <div className="mb-6">
-                                    <label className="mb-4 text-left block font-semibold text-gray-700">
+                                    <label className={itemLabelClass}>
                                         Choose Image or Upload
                                     </label>
 
                                     {thumbnail ? (
                                         <div className="relative mb-4 group">
                                             <img
- className="w-full h-64 object-cover rounded-box border border-gray-200 "
+ className="w-full h-64 object-cover rounded-box border-2 border-black"
                                                 src={`https://ucarecdn.com/${thumbnail}/`}
                                                 alt="Wish Thumbnail"
                                             />
@@ -713,7 +713,7 @@ border-4 border-black ">
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
- <div className="bg-gray-50 p-4 rounded-box ">
+ <div className="bg-black/[0.03] p-4 rounded-box ">
  <h4 className="text-sm font-medium text-black/60 mb-3 text-center">
                                                     Select from Default
                                                 </h4>
@@ -784,10 +784,15 @@ border-4 border-black ">
                                         </div>
                                     )}
                                 </div>
-                            </div>
-
-                            {/* Step 3: Fulfillment & Settings */}
-                            <div className={step === 3 ? "block" : "hidden"}>
+                </>
+            ),
+        },
+        {
+            key: "reward",
+            title: "What they get",
+            hint: "The file, link or message delivered the moment they pay.",
+            render: () => (
+                <>
                                 <div className="mb-8">
                                     <RewardEditor
                                         value={data.reward}
@@ -798,7 +803,7 @@ border-4 border-black ">
                                 </div>
 
                                 <div className="hidden mb-6 border-t border-gray-100 pt-6">
-                                    <label className="mb-4 text-left block font-semibold text-gray-700">
+                                    <label className={itemLabelClass}>
                                         Wish Type
                                     </label>
                                     <div className="md:flex gap-4 mb-6">
@@ -807,8 +812,8 @@ border-4 border-black ">
                                             onClick={() => setSubs(0)}
  className={`w-full mb-2 flex-1 py-3 px-4 rounded-box border font-medium transition-all ${
                                                 data.subscription === 0
- ? "border-[#FF007F] bg-pink-50 text-pink-700 "
-                                                    : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+ ? "border-[#FF007F] bg-[#FF007F] text-black "
+                                                    : "border-gray-200 bg-white text-black/80 hover:bg-black/[0.03]"
                                             }`}
                                         >
                                             One-Time Purchase
@@ -818,8 +823,8 @@ border-4 border-black ">
                                             onClick={() => setSubs(1)}
  className={`w-full mb-2 flex-1 py-3 px-4 rounded-box border font-medium transition-all ${
                                                 data.subscription === 1
- ? "border-[#FF007F] bg-pink-50 text-pink-700 "
-                                                    : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+ ? "border-[#FF007F] bg-[#FF007F] text-black "
+                                                    : "border-gray-200 bg-white text-black/80 hover:bg-black/[0.03]"
                                             }`}
                                         >
                                             Subscription
@@ -827,15 +832,15 @@ border-4 border-black ">
                                     </div>
 
                                     {data.subscription === 0 ? (
- <div className="bg-gray-50 p-4 rounded-box-sm">
+ <div className="bg-black/[0.03] p-4 rounded-box-sm">
                                             <label className="flex items-center gap-3 cursor-pointer">
                                                 <input
                                                     type="checkbox"
                                                     checked={repeat}
                                                     onChange={rpValue}
-                                                    className="w-5 h-5 text-[#FF007F] rounded border-gray-300 focus:ring-pink-500"
+                                                    className={itemCheckboxClass}
                                                 />
-                                                <span className="text-gray-700 font-medium">
+                                                <span className="text-black/80 font-medium">
                                                     Allow Repeat Purchases
                                                 </span>
                                             </label>
@@ -845,8 +850,8 @@ border-4 border-black ">
                                             </p>
                                         </div>
                                     ) : (
- <div className="bg-gray-50 p-6 rounded-box-sm">
-                                            <label className="block text-sm font-medium text-gray-700 mb-3">
+ <div className="bg-black/[0.03] p-6 rounded-box-sm">
+                                            <label className={itemLabelClass}>
                                                 Billing Period
                                             </label>
                                             <div className="flex flex-wrap gap-3">
@@ -870,7 +875,7 @@ border-4 border-black ">
                                                             onChange={spValue}
                                                             className="peer hidden"
                                                         />
- <div className="px-4 py-2 rounded-box border border-gray-200 bg-white text-black/70 text-sm font-medium peer-checked:border-[#FF007F] peer-checked:bg-pink-50 peer-checked:text-pink-700 transition-all hover:bg-gray-50 uppercase">
+ <div className="px-4 py-2 rounded-box border border-gray-200 bg-white text-black/70 text-sm font-medium peer-checked:border-[#FF007F] peer-checked:bg-[#FF007F] peer-checked:text-black transition-all hover:bg-black/[0.03] uppercase">
                                                             {period}
                                                         </div>
                                                     </label>
@@ -879,51 +884,20 @@ border-4 border-black ">
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                </>
+            ),
+        },
+    ];
 
-                            {renderProgressBar()}
-
-                            {/* Navigation Buttons */}
-                            <div className="flex gap-3 mt-8 pt-4 border-t border-gray-100">
-                                {step > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={prevStep}
- className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-box hover:bg-gray-200 transition-colors"
-                                    >
-                                        Back
-                                    </button>
-                                )}
-
-                                {step < totalSteps ? (
-                                    <button
-                                        type="button"
-                                        onClick={nextStep}
- className="border-black flex-1 py-3 px-4 bg-[#FF007F] text-black font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-box hover:brightness-110 transition-colors"
-                                    >
-                                        Next
-                                    </button>
-                                ) : (
-                                    <LoaderButton
-                                        disabled={processing}
-                                        type="submit"
- className="border-black !mt-0 flex-1 py-3 !border-0 px-4 !bg-[#FF007F] text-black font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-box transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
-                                        spinnerclass="fill-black"
-                                    >
-                                        {processing
-                                            ? editpop
-                                                ? "Updating..."
-                                                : "Processing..."
-                                            : editpop
-                                              ? "Update Wish"
-                                              : "Add Wish"}
-                                    </LoaderButton>
-                                )}
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </Popup>
+    return (
+        <ItemFormShell
+            open={close === true}
+            onClose={requestClose}
+            title={editpop ? "Edit wish" : "Add a wish"}
+            steps={steps}
+            onSubmit={() => createWishList()}
+            submitLabel={editpop ? "Update wish" : "Add wish"}
+            processing={processing}
+        />
     );
 }

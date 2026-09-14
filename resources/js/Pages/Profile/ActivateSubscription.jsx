@@ -1,4 +1,5 @@
 import LoaderButton from '@/Components/LoaderButton';
+import MembershipCreditPanel from '@/Components/MembershipCreditPanel';
 import { subscriptionPlan } from '@/constants/creatorSubscription';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
 import { Head, router } from '@inertiajs/react';
@@ -145,6 +146,13 @@ export default function ActivateSubscription(props) {
                     <p className="mt-4 text-[15px] font-medium leading-relaxed text-black/75 md:text-base">
                         {heroDescription}
                     </p>
+
+                    {/* 🚨 "Earn your membership back" sits on the SUBSCRIPTION
+                        screen and nowhere else — the credit only ever exists as
+                        a discount on this bill, and a page of its own would be
+                        two surfaces for one message. Renders nothing for a
+                        gifter, for a visitor, and while the scheme is off. */}
+                    <MembershipCreditPanel data={props.membership_credits} />
 
                     {/* The only bordered surface on the page. */}
                     <div className="mt-8 rounded-box border-[3px] border-black bg-white ">

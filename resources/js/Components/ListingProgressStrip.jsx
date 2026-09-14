@@ -76,7 +76,10 @@ export default function ListingProgressStrip({ className = "" }) {
 
     const go = () => {
         try {
-            router.visit(route("dashboard", { add: "digital" }));
+            /* 🚨 `menu`, NOT `digital`. This button says "add a listing" and names no
+               module, so it is the one case the chooser exists for — sending `digital`
+               opened the shop form for a creator who had not chosen a module. */
+            router.visit(route("dashboard", { add: "menu" }));
         } catch {
             /* An unresolvable route leaves them where they are rather than erroring. */
         }

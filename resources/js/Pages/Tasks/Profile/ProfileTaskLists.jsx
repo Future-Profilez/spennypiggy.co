@@ -32,9 +32,18 @@ export default function ProfileTaskLists({
                                     variant="row"
                                     title="Add Task"
                                     subtitle="Create another task for your supporters."
+                                    /* 🚨 A TILE INSIDE ONE MODULE'S TAB NAMES THAT MODULE.
+                                       A bare `new Event` carries no `detail`, which
+                                       Dashboard reads as "the creator has not decided"
+                                       and answers with the seven-option chooser — so
+                                       "Add Task" opened a menu whose own Task row the
+                                       creator then had to press again. */
                                     onClick={() =>
                                         window.dispatchEvent(
-                                            new Event("toggleAddOptions"),
+                                            new CustomEvent(
+                                                "toggleAddOptions",
+                                                { detail: { intent: "task" } },
+                                            ),
                                         )
                                     }
                                 />

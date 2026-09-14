@@ -37,6 +37,15 @@ class DiscoverBrowseTest extends TestCase
             'role' => 1,
             'profile_status_lock' => 2,
             'suspended_account' => 0,
+            /*
+             * ⚠️ A DISCOVERABLE CREATOR IS NOW A PAYABLE ONE. Every Discovery
+             * query is gated on `DiscoveryEligibility::payable()` — connected,
+             * onboarding finished, not charges-disabled — so a fixture without
+             * these columns is invisible to every surface under test and the
+             * whole class fails for a reason unrelated to what it asserts.
+             */
+            'account_id' => 'acct_test',
+            'stripe_details_submitted' => 1,
         ], $attrs));
     }
 

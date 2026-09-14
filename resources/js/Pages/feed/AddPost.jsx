@@ -496,7 +496,7 @@ export default function AddPost({
         <div className="flex items-center">
  <div
  className={`p-1 rounded-box-sm border-2 border-black flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ${
- highlight ? "bg-white" : "bg-pink-100"
+ highlight ? "bg-white" : "bg-[#FF007F]/10"
  }`}
  >
                 <FaPenNib color="var(--pink)" size="1.5rem" />
@@ -511,7 +511,7 @@ export default function AddPost({
  <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
                     Post Something
                 </h2>
- <p className="text-sm font-bold text-gray-700">
+ <p className="text-sm font-bold text-black/80">
                     Share an update, photo or note
                 </p>
  {highlight && (
@@ -551,13 +551,13 @@ export default function AddPost({
                 <img
                     src={auth?.user?.avatar_url || "/assets/siteicon.png"}
                     alt=""
-                    className="author-img w-[46px] h-[46px] rounded-full border-[3px] border-black object-cover"
+                    className="author-img w-[46px] h-[46px] rounded-full border-2 border-black object-cover"
                 />
                 <div className="min-w-0">
                     <p className="font-black capitalize tracking-wider leading-tight truncate">
                         {auth?.user?.name || "You"}
                     </p>
-                    <p className="text-xs text-gray-600 font-bold">
+                    <p className="text-xs text-black/80 font-bold">
                         {scheduleOn && data.scheduled_at
                             ? new Date(data.scheduled_at).toLocaleString(undefined, {
                                   day: "numeric",
@@ -571,8 +571,8 @@ export default function AddPost({
             </div>
 
             {mediaList.length > 0 ? (
-                <div className="post-images relative w-full border-[3px] border-black rounded-box-sm overflow-hidden">
-                    <span className="bg-[#A2E4B8] border-[3px] border-black font-black absolute z-10 py-2 px-4 top-3 right-3 uppercase text-xs text-black rounded-box-sm">
+                <div className="post-images relative w-full border-2 border-black rounded-box-sm overflow-hidden">
+                    <span className="bg-[#A2E4B8] border-2 border-black font-black absolute z-10 py-2 px-4 top-3 right-3 uppercase text-xs text-black rounded-box-sm">
                         {AUDIENCE_BADGE[data.for_module]}
                     </span>
                     <PostMediaCarousel
@@ -583,7 +583,7 @@ export default function AddPost({
                     />
                 </div>
             ) : (
-                <span className="inline-block bg-[#A2E4B8] border-[3px] border-black font-black py-1.5 px-3 uppercase text-xs text-black rounded-box-sm">
+                <span className="inline-block bg-[#A2E4B8] border-2 border-black font-black py-1.5 px-3 uppercase text-xs text-black rounded-box-sm">
                     {AUDIENCE_BADGE[data.for_module]}
                 </span>
             )}
@@ -594,12 +594,12 @@ export default function AddPost({
                 </p>
             ) : null}
             {data.content.trim() ? (
-                <p className="text-gray-800 font-normal mt-2 text-sm md:text-base leading-relaxed whitespace-pre-line">
+                <p className="text-black/80 font-normal mt-2 text-sm md:text-base leading-relaxed whitespace-pre-line">
                     {formatPostContent(data.content.trim())}
                 </p>
             ) : null}
 
-            <p className="text-xs text-gray-500 mt-4">
+            <p className="text-xs text-black/60 mt-4">
                 Preview only — your post is checked before your audience sees it.
                 Tagged creators are notified once it goes live.
             </p>
@@ -608,6 +608,8 @@ export default function AddPost({
 
     return (
         <Popup
+            title={isEdit ? "Edit post" : "New post"}
+            dismissable
             modalclass=""
             space="6"
             size="xl"
@@ -739,7 +741,7 @@ export default function AddPost({
                 Phone only: on desktop it lives permanently in the right column,
                 where a toggle would only hide something there is room for. */}
             {showPreview ? (
-                <div className="post-wrap bg-[#fdfbf7] rounded-box p-4 border-[3px] border-black lg:hidden">
+                <div className="post-wrap bg-[#fdfbf7] rounded-box p-4 border-2 border-black lg:hidden">
                     {previewBody}
                 </div>
             ) : null}
@@ -756,7 +758,7 @@ export default function AddPost({
                     pokes through the sheet's radius and reads as a stray dark
  edge along the bottom. `` because several legacy
  stylesheets attach an offset to black-bordered boxes. */}
- <div className="overflow-hidden rounded-box border-[3px] border-black bg-white ">
+ <div className="overflow-hidden rounded-box border-2 border-black bg-white ">
                     {/* ⚠️ The headline is MANDATORY on the server (it is what the
                         post's URL, its feed card and every share preview are built
                         from) and this field announced none of that — it was a
@@ -769,7 +771,7 @@ export default function AddPost({
                         <label
                             htmlFor={titleFieldId}
                             className={`block text-[12px] font-black uppercase tracking-[0.16em] ${
-                                showTitleError ? "text-[#B3123F]" : "text-black/60"
+                                showTitleError ? "text-[#C81E5B]" : "text-black/60"
                             }`}
                         >
                             Headline <span className="text-[#FF007F]">*</span>
@@ -792,12 +794,12 @@ export default function AddPost({
                                a broken graphic rather than a field you type in.
                                Display type belongs in the page header, not in the
                                thing the creator is writing. */
- className="mt-1 w-full border-0 bg-transparent p-0 text-2xl font-bold leading-snug text-black placeholder:font-medium placeholder:text-black/60 focus:outline-none focus:ring-0 sm:text-[28px]"
+ className="mt-1 w-full rounded-box-sm border-0 bg-transparent p-0 text-2xl font-bold leading-snug text-black placeholder:font-medium placeholder:text-black/60 focus:outline-none focus:ring-4 focus:ring-[#FF007F]/25 focus:ring-offset-2 focus:ring-offset-white sm:text-[28px]"
                         />
                         <div className="mt-1 flex items-start justify-between gap-3">
                             <p
                                 id={`${titleFieldId}-hint`}
-                                className={`text-xs ${showTitleError ? "font-bold text-[#B3123F]" : "text-black/60"}`}
+                                className={`text-xs ${showTitleError ? "font-bold text-[#C81E5B]" : "text-black/60"}`}
                             >
                                 {showTitleError
                                     ? "Add a headline — a post cannot be published without one."
@@ -818,7 +820,7 @@ export default function AddPost({
                             name="content"
                             maxLength={CONTENT_MAX}
                             placeholder="Say something to the people who pay for this…"
- className="h-[200px] w-full resize-none border-0 bg-transparent p-0 text-[17px] leading-relaxed text-black placeholder:text-black/60 focus:outline-none focus:ring-0 lg:h-[280px]"
+ className="h-[200px] w-full resize-none rounded-box-sm border-0 bg-transparent p-0 text-[17px] leading-relaxed text-black placeholder:text-black/60 focus:outline-none focus:ring-4 focus:ring-[#FF007F]/25 focus:ring-offset-2 focus:ring-offset-white lg:h-[280px]"
                         />
                         <div className="mt-2 flex items-start justify-between gap-3 pb-3">
  <p className="text-xs text-black/60">
@@ -887,7 +889,7 @@ export default function AddPost({
                                         <button
                                             type="button"
                                             onClick={() => setMediaList((prev) => prev.filter((_, i) => i !== idx))}
- className="absolute top-1 right-1 bg-red-600 border border-black hover:bg-red-800 text-white rounded-full p-1 leading-none text-xs font-black min-w-[24px] min-h-[24px]"
+ className="absolute top-1 right-1 grid h-8 w-8 min-h-[32px] min-w-[32px] place-items-center rounded-full border-2 border-black bg-[#C81E5B] text-xs font-black leading-none text-white transition-colors hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-white/50"
                                             title="Remove media"
                                         >
                                             ✕
@@ -947,7 +949,7 @@ export default function AddPost({
                                 choices rather than a dropdown: there are four, the
                                 difference between them is who pays, and a select
                                 hides three of the four behind a click. */}
- <section className="rounded-box border-[3px] border-black bg-white p-4 ">
+ <section className="rounded-box border-2 border-black bg-white p-4 ">
  <h3 className="text-[12px] font-black uppercase tracking-[0.16em] text-black/60">
                                     Who sees this
                                 </h3>
@@ -1001,7 +1003,7 @@ export default function AddPost({
                             {/* Scheduling. Off by default — publishing now is what most
                                 posts do, and a date field sitting open invites a creator
                                 to fill it in without meaning to. */}
- <section className="rounded-box border-[3px] border-black bg-white p-4 ">
+ <section className="rounded-box border-2 border-black bg-white p-4 ">
                                 <label className="flex cursor-pointer items-center justify-between gap-3">
                                     <span className="min-w-0">
  <span className="block text-[12px] font-black uppercase tracking-[0.16em] text-black/60">
@@ -1044,7 +1046,7 @@ export default function AddPost({
                                                     scheduled_at: e.target.value,
                                                 })
                                             }
-                                            className="block w-full rounded-box-sm border-2 border-black px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-0"
+                                            className="block w-full min-h-[44px] rounded-box-sm border-2 border-black px-3 py-2.5 text-base font-semibold transition-colors focus:outline-none focus:border-black focus:ring-4 focus:ring-[#FF007F]/25 md:text-sm"
                                         />
  <p className="mt-2 text-xs text-black/60">
                                             Goes live at this time in your own timezone,
@@ -1055,7 +1057,7 @@ export default function AddPost({
                                 )}
                             </section>
 
- <section className="hidden overflow-hidden rounded-box border-[3px] border-black bg-white lg:block">
+ <section className="hidden overflow-hidden rounded-box border-2 border-black bg-white lg:block">
  <h3 className="border-b border-black/10 px-4 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-black/60">
                                     Preview
                                 </h3>
@@ -1075,7 +1077,7 @@ export default function AddPost({
                                 type="button"
                                 onClick={submitPost}
                                 disabled={loading || !canSubmit}
-                                className={`flex min-h-[52px] w-full items-center justify-center rounded-box-sm border-[3px] border-black text-sm font-black uppercase tracking-[0.14em] ${
+                                className={`flex min-h-[52px] w-full items-center justify-center rounded-box-sm border-2 border-black text-sm font-black uppercase tracking-[0.14em] ${
                                     loading || !canSubmit
  ? "cursor-not-allowed bg-gray-200 text-black/60"
  : "bg-[#FF007F] text-black"

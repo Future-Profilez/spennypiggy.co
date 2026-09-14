@@ -1,9 +1,10 @@
 import { Head } from "@inertiajs/react";
 import Guest from "@/Layouts/GuestLayout";
 import LegalLayout from "@/Layouts/LegalLayout";
+import ClosedProgrammeNotice from "@/Components/Legal/ClosedProgrammeNotice";
 
 export default function FastStartBonusTerms(props) {
-    const { auth, user } = props;
+    const { auth, user, closedOn = null } = props;
     return (
         <Guest auth={auth?.user} user={user}>
             <Head title="Fast Start Bonus Programme Terms" />
@@ -12,6 +13,14 @@ export default function FastStartBonusTerms(props) {
                     <h1 className="text-2xl md:text-4xl font-black text-[#FF007F] mb-10 uppercase tracking-tight">
                         FAST START BONUS PROGRAMME TERMS & CONDITIONS
                     </h1>
+                    {/* 🚨 ABOVE THE TERMS, NOT INSIDE THEM — the wording is
+                        never rewritten. Renders nothing while the scheme is
+                        live. */}
+                    <ClosedProgrammeNotice
+                        closedOn={closedOn}
+                        programme="The Fast Start Bonus"
+                    />
+
                     <div className="prose prose-pink max-w-none">
                         <p className="mb-5 text-gray-700 leading-relaxed italic">Last Updated: June 2026</p>
 

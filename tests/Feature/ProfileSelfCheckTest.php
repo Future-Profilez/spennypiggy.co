@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\SendEngagementNotification;
-use App\Models\EngagementNotification;
 use App\Models\MonthlyCharge;
 use App\Models\ProfileChangeRequest;
 use App\Models\SocialLinks;
@@ -261,59 +259,18 @@ class ProfileSelfCheckTest extends TestCase
         return $user->refresh();
     }
 
-    /**
-     * 🚨 THE TIMING IS THE FEATURE. The console has flagged these to reviewers
-     * all along; the creator heard about it days later as a rejection.
+    /*
+     * 🚨 THREE SUBMIT-TIME NUDGE TESTS STOOD HERE AND ARE GONE (11 Sep 2026).
+     *
+     * They asserted that pressing "Submit for review" told the creator, then and
+     * there, what was likely to hold up their review — so they could fix it that day
+     * rather than read it in a rejection a week later. There is no Submit and no
+     * review: the checks run as each asset is saved, and anything they refuse comes
+     * back as a FIELD ERROR on the form the creator is already looking at, which is
+     * sooner and more specific than the nudge ever was.
+     *
+     * `ProfileSelfCheck` itself is unchanged and still tested above — it is advice on
+     * the creator's own steps page for the things that are NOT refusals (a very short
+     * bio, a shortened link), and the console still reads it.
      */
-    public function test_submitting_with_a_finding_queues_a_bell_and_push_nudge(): void
-    {
-        Queue::fake();
-
-        $user = $this->submitReady();
-
-        $this->actingAs($user)->post(route('update.profile.lock.status'));
-
-        $this->assertSame(1, (int) $user->fresh()->profile_status_lock);
-
-        Queue::assertPushed(SendEngagementNotification::class, function ($job) {
-            $channels = (new \ReflectionProperty($job, 'channels'))->getValue($job);
-
-            // Bell and push only — a decision has its own email, and two
-            // messages about one submission read as two problems.
-            return $channels === ['bell', 'push'];
-        });
-    }
-
-    /** Keyed on WHAT IS WRONG: resubmitting unchanged says the same thing twice otherwise. */
-    public function test_resubmitting_the_same_problem_does_not_nudge_again(): void
-    {
-        Queue::fake();
-
-        $user = $this->submitReady();
-
-        $this->actingAs($user)->post(route('update.profile.lock.status'));
-        $this->actingAs($user)->post(route('update.profile.lock.status'));
-
-        Queue::assertPushed(SendEngagementNotification::class, 1);
-
-        $this->assertSame(
-            1,
-            EngagementNotification::where('user_id', $user->id)
-                ->where('type', 'profile_self_check')
-                ->count()
-        );
-    }
-
-    /** A clean profile is submitted in silence — nothing to fix, nothing to say. */
-    public function test_a_clean_profile_is_submitted_without_a_nudge(): void
-    {
-        Queue::fake();
-
-        $user = $this->submitReady(['bio' => 'Weekly behind-the-scenes photo sets and a members-only vlog.']);
-
-        $this->actingAs($user)->post(route('update.profile.lock.status'));
-
-        $this->assertSame(1, (int) $user->fresh()->profile_status_lock);
-        Queue::assertNothingPushed();
-    }
 }

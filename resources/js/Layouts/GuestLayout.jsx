@@ -42,7 +42,27 @@ export default function Guest({children, auth, className}) {
             reading cursor never moves — the link appears to work in Chrome and
             does nothing for the user it exists for. `-1` makes `<main>`
             programmatically focusable without adding it to the tab order. */}
-        <main id="main-content" tabIndex={-1} className="focus:outline-none">
+        {/* 🚨 THE BOTTOM BAR PAINTED OVER THE LAST 53px OF EVERY GUEST-LAYOUT
+            PAGE. `AuthenticatedLayout` reserves that space on its own `<main>`;
+            this one never did, and it renders the same `<BottomBar/>` below —
+            so on a phone the foot of the task form (its terms checkbox and
+            "Continue to Summary" button) sat behind the fixed pink bar. The
+            `check-bottom-bar` scanner cannot see this: nothing here is fixed or
+            sticky, it is ordinary content running under something that is.
+
+            ⚠️ Gated on `body:has(.retro-bottom-bar)` because `BottomBar`
+            returns null for a signed-out visitor — an unconditional pad would
+            leave a strip of dead space under every login and signup screen.
+            ⚠️ `md:`, never `sm:` — the bar is `md:hidden`, so it is still there
+            at 640–767px.
+            ⚠️ Measured from the bar's OWN tokens rather than a typed number:
+            its height and safe-area inset both vary, and a literal was 5px
+            short of the tallest case elsewhere in the app. */}
+        <main
+            id="main-content"
+            tabIndex={-1}
+            className="focus:outline-none [body:has(.retro-bottom-bar)_&]:pb-[calc(var(--sp-bottombar-h)+var(--sp-bottombar-inset)+1rem)] md:[body:has(.retro-bottom-bar)_&]:pb-0"
+        >
             <NetworkStatusBanner />
             <PullToRefresh />
             {children}

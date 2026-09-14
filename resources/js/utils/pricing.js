@@ -1,11 +1,27 @@
 /**
- * The ONE client-side copy of the supporter gross-up.
+ * The ONE client-side copy of what a supporter pays for a listed price.
  *
- * The creator always receives exactly the listed price; the platform and Stripe
- * fees are grossed up into what the supporter pays. This must stay identical to
- * Helpers::calculateStripeDirectChargeFlow() on the server — the server is
- * authoritative and charges the real amount, so any drift here shows the
- * supporter one price and takes another.
+ * The creator always receives exactly the listed price; the supporter pays a fee
+ * on top. This must stay identical to Helpers::calculateStripeDirectChargeFlow()
+ * on the server — the server is authoritative and charges the real amount, so any
+ * drift here shows the supporter one price and takes another.
+ *
+ * 🚨 THERE ARE TWO MODELS AND THIS FILE IMPLEMENTS BOTH, exactly as the server
+ * does. Under **all-in** (11 Sep 2026, client direction) the supporter pays the
+ * listed price plus ONE advertised percentage and Stripe comes out of that
+ * percentage. Under the **legacy markup** the platform rate, the compliance rate
+ * and Stripe's estimate were each grossed up ON TOP of one another, with a £1
+ * administration fee beside them — a £100 listing charged £130.55, where all-in
+ * charges £112.01.
+ *
+ * ⚠️ WHAT DID NOT CHANGE, and no copy may imply otherwise: the creator receives
+ * 100% of their listed price under both. What changed is the size of the
+ * supporter's fee and which side of it the processor sits on.
+ *
+ * 🚨 WHICH MODEL IS LIVE IS THE SERVER'S ANSWER, NEVER A LITERAL HERE. It arrives
+ * as the shared `fees` prop (App\Services\Pricing\FeeModel::describe), and a page
+ * rendered without it falls back to LEGACY — the model this app charged for its
+ * whole life before today, and the one every stored transaction was priced with.
  *
  * ⚠️ Before this file the formula was copy-pasted into EIGHT components, each
  * reading the two GLOBAL fee props. A global prop cannot express a per-creator
@@ -14,6 +30,7 @@
  * `feeRatesFor()` resolve it.
  */
 
+// fee-literal-ok: the legacy-model fallback, reached only when the server reports the legacy model. The live rate is the `fees` prop.
 const DEFAULT_PLATFORM_RATE = 17;
 const DEFAULT_COMPLIANCE_RATE = 2;
 
@@ -28,7 +45,12 @@ const DEFAULT_COMPLIANCE_RATE = 2;
  * on the button and the price on the statement would disagree, on every card
  * checkout on the platform. If the server value changes again, change it here in
  * the same commit.
+ *
+ * ⚠️ Under ALL-IN this no longer moves the supporter's total — the advertised
+ * rate is the whole difference and Stripe is paid from inside it. It is still
+ * read, because the breakdown reports what the processor took out of that fee.
  */
+// fee-literal-ok: the one client-side mirror of the server's Stripe estimate — see the docblock above.
 export const STRIPE_FEE_RATE = 0.034;
 export const STRIPE_FIXED_FEE = 0.3;
 
@@ -64,42 +86,126 @@ export function creatorIdOf(item) {
 }
 
 /**
- * The platform + compliance rates that apply to one creator.
+ * The `fees` prop, from either the page object or its props.
+ *
+ * ⚠️ Half this codebase destructures `usePage().props` and half keeps the page.
+ * A reader that only accepts one of them is a reader somebody calls wrongly, and
+ * the failure here is a silent fall back to the legacy model — a total ~16%
+ * higher than the one the checkout actually charges.
+ */
+function feeBag(pageOrProps) {
+    return pageOrProps?.props?.fees ?? pageOrProps?.fees ?? null;
+}
+
+/** Is the platform on the all-in supporter fee? The server's answer, never a literal. */
+export function isAllIn(pageOrProps = {}) {
+    return feeBag(pageOrProps)?.all_in === true;
+}
+
+/**
+ * The rates that apply to one creator, and which model they belong to.
+ *
+ * Spread the result straight into `supporterTotal()` — the model travels with
+ * the rates so a call site cannot pick the wrong formula.
+ *
+ * 🚨 UNDER ALL-IN A BESPOKE DEAL SETS THE SUPPORTER RATE. `custom_fee_rates` is
+ * built from `creator_fee_overrides.platform_rate`, which was written for the
+ * legacy model where it meant "the platform's cut". Under all-in the platform's
+ * cut IS the fee minus Stripe, so the same column is read as that creator's
+ * all-in rate — one number, one meaning, matching FeeModel::supporterRate().
  *
  * @param {number|string|null} creatorId  the listing owner — resolve it with
  *                                        creatorIdOf(), never `item.user.id`
- * @param {object} props                  usePage().props
+ * @param {object} props                  usePage().props (or the page)
  * @param {"card"|"bank"} method
  */
 export function feeRatesFor(creatorId, props = {}, method = "card") {
+    const bag = props?.props ?? props ?? {};
+
     const {
         platform_fee_percentage,
         transaction_fee_percentage,
         custom_fee_rates,
-    } = props;
-
-    const compliance = Number(transaction_fee_percentage ?? DEFAULT_COMPLIANCE_RATE);
-    const standard = Number(platform_fee_percentage ?? DEFAULT_PLATFORM_RATE);
+    } = bag;
 
     // A bespoke deal may cover one payment method and not the other, so an
     // absent entry falls back to standard rather than to the other method.
     const custom = creatorId != null ? custom_fee_rates?.[creatorId]?.[method] : undefined;
-    const platform = Number.isFinite(Number(custom)) ? Number(custom) : standard;
+    const bespoke = Number.isFinite(Number(custom)) ? Number(custom) : null;
 
-    return { platform, compliance, isCustom: platform !== standard };
+    const fees = feeBag(props);
+
+    if (fees?.all_in === true) {
+        // ⚠️ NO FALLBACK NUMBER. A missing rate must not become a plausible wrong
+        // total — `supporterTotal()` answers the listed price rather than invent
+        // one, the same bail-out the server takes when it cannot price a charge.
+        const standard = Number.isFinite(Number(fees?.rate)) ? Number(fees.rate) : null;
+        const supporterRate = bespoke !== null && bespoke > 0 ? bespoke : standard;
+
+        return {
+            allIn: true,
+            supporterRate,
+            isCustom: supporterRate !== null && standard !== null && supporterRate !== standard,
+            /*
+             * ⚠️ Kept so a legacy reader gets a number rather than NaN, but they
+             * describe nothing under all-in: there is no second compliance line,
+             * and the platform's own cut is whatever is left after Stripe.
+             */
+            platform: supporterRate ?? 0,
+            compliance: 0,
+        };
+    }
+
+    const compliance = Number(transaction_fee_percentage ?? DEFAULT_COMPLIANCE_RATE);
+    const standard = Number(platform_fee_percentage ?? DEFAULT_PLATFORM_RATE);
+    const platform = bespoke !== null ? bespoke : standard;
+
+    return {
+        allIn: false,
+        supporterRate: null,
+        platform,
+        compliance,
+        isCustom: platform !== standard,
+    };
 }
 
 /**
  * What the supporter pays for a listed price (VAT already included in `amount`).
  *
- * `adminFee` is the £1 platform fee converted into the charge currency — the
- * caller supplies it because the conversion needs the page's rate table.
+ * ALL-IN: `listed × (1 + rate)` plus the flat supporter fee, which is off at
+ * launch. There is no gross-up to solve — the rate IS the price difference.
  *
- * Returns the listed amount unchanged when the fees cannot be covered, mirroring
+ * LEGACY: platform + compliance + Stripe are grossed up together, with the £1
+ * administration fee inside the numerator. `adminFee` is that fee converted into
+ * the charge currency — the caller supplies it because the conversion needs the
+ * page's rate table. ⚠️ It is IGNORED under all-in; there is no £1 fee any more.
+ *
+ * Returns the listed amount unchanged when the fee cannot be priced, mirroring
  * the server's bail-out rather than inventing a price.
  */
-export function supporterTotal(amount, { platform, compliance, adminFee = 0, isZeroDecimal = false }) {
+export function supporterTotal(amount, {
+    platform,
+    compliance,
+    adminFee = 0,
+    isZeroDecimal = false,
+    allIn = false,
+    supporterRate = null,
+    fixedFee = 0,
+} = {}) {
     const listed = parseFloat(amount || 0) || 0;
+
+    // CEIL, matching the server — rounding down would leave the creator short.
+    const ceilTo = (value) => (isZeroDecimal ? Math.ceil(value) : Math.ceil(value * 100) / 100);
+
+    if (allIn) {
+        const rate = Number(supporterRate);
+
+        if (!Number.isFinite(rate) || rate < 0) {
+            return listed;
+        }
+
+        return ceilTo(listed * (1 + rate / 100) + (Number(fixedFee) || 0));
+    }
 
     const stripeFixed = isZeroDecimal ? 0 : STRIPE_FIXED_FEE;
     const totalDeductionRate = STRIPE_RATE + platform / 100 + compliance / 100;
@@ -108,8 +214,5 @@ export function supporterTotal(amount, { platform, compliance, adminFee = 0, isZ
         return listed;
     }
 
-    const total = (listed + stripeFixed + adminFee) / (1 - totalDeductionRate);
-
-    // CEIL, matching the server — rounding down would leave the creator short.
-    return isZeroDecimal ? Math.ceil(total) : Math.ceil(total * 100) / 100;
+    return ceilTo((listed + stripeFixed + adminFee) / (1 - totalDeductionRate));
 }

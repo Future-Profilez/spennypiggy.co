@@ -116,7 +116,7 @@
                                    style="display:inline-block;padding:14px 34px;font-family:'Outfit',Arial,sans-serif;
                                           font-weight:800;font-size:15px;color:#000000;text-decoration:none;
                                           border-radius:999px;-webkit-border-radius:999px;">
-                                    Fix it and submit again
+                                    Fix it and go live
                                 </a>
                             </td>
                         </tr>

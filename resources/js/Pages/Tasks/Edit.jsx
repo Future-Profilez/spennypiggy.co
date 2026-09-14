@@ -5,6 +5,7 @@ import InputError from "@/Components/InputError";
 import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
 import { Info, CheckCircle2, Clock, Zap, FileUp, ArrowLeft, AlertTriangle } from "lucide-react";
+import { creatorFeeNote } from "@/lib/fees";
 import RewardEditor, {
     rewardFromItem,
     rewardToPayload,
@@ -14,6 +15,7 @@ import RewardEditor, {
 export default function Edit({ auth, currencySymbol, task }) {
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const { global_currency } = usePage().props;
+    const feeNote = creatorFeeNote(usePage().props);
     const defaultCurrency = auth.user.default_currency || 'GBP';
     const [showSummary, setShowSummary] = useState(false);
 
@@ -308,7 +310,8 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                         </span>
                                                     </div>
                                                     <p className="mt-2 text-xs text-gray-500 font-medium">Fans only see the total price to improve conversion</p>
-                                                    <p className="mt-1 text-xs text-gray-500 font-medium">Our fee is 19%. Uplift will show higher due to stripe / conversions to ensure you always receive 100% or slightly more.</p>
+                                                    {/* 🚨 Never a typed percentage — see resources/js/lib/fees.js. */}
+                                                    <p className="mt-1 text-xs text-gray-500 font-medium">{feeNote}</p>
                                                 </div>
                                             )}
                                             <InputError message={errors.price} className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block" />

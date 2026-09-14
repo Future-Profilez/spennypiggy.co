@@ -64,10 +64,10 @@
                         <tr>
                             <td style="padding:16px 18px;font-family:'Outfit',Arial,sans-serif;font-size:14px;
                                        color:#4A4A4A;line-height:22px;">
-                                @if ($reviewingAssets)
-                                    Your profile photo and bio have gone to our review team, because a creator page is checked before it can sell. Nothing was deleted — they are still on your page exactly as you left them.
+                                @if ($hadAssets)
+                                    Your profile photo and bio were checked automatically against the creator rules — no one has to approve them, and nothing was deleted. They are still on your page exactly as you left them.
                                 @else
-                                    Add a profile photo and a short bio next. A creator page is checked before it can sell, so those two go to our review team once you save them.
+                                    Add a profile photo and a short bio next. Both are checked automatically the moment you save them, so there is nothing to wait for.
                                 @endif
                                 <br><br>
                                 Everything you have bought stays with this account — your purchases, your subscriptions and your saved items are exactly where they were.

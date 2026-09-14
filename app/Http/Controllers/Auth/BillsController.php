@@ -24,6 +24,7 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Models\UserPayment;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Rules\NoBlockedSymbols;
 use App\Rules\NoExpenseOrBrandName;
 use App\Services\AbandonedCheckoutService;
 use App\Services\CreatorAvailabilityMessageService;
@@ -38,6 +39,9 @@ use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\ListingPublication;
+use App\Support\ListingRollback;
+use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
@@ -109,7 +113,7 @@ class BillsController extends Controller
             Bills::class,
             $bill->id,
             $bill->thumbnail,
-            ['approved' => 0],
+            ListingPublication::heldAttributes($bill),
             'thumbnail'
         );
     }
@@ -124,8 +128,20 @@ class BillsController extends Controller
         ItemTextModeration::apply(
             $bill,
             ['reward_title', 'reward_body', 'reward_description', 'name'],
-            ['approved' => 0]
+            ListingPublication::heldAttributes($bill)
         );
+    }
+
+    /**
+     * SFW gate on the paid file — the welcome content a subscriber receives.
+     *
+     * ⚠️ The thumbnail scan above covers the shop front only. A bill whose picture
+     * was clean delivered its `content_file` unscanned, which is the same fault
+     * Shop's reward-file check was written for in July and this module never got.
+     */
+    private function moderateBillFile(?Bills $bill, ?string $previousFile = null): void
+    {
+        RewardFileScan::dispatch($bill, ListingPublication::heldAttributes($bill), $previousFile);
     }
 
     public function billSave(Request $request)
@@ -137,9 +153,9 @@ class BillsController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', new NoExpenseOrBrandName],
+            'name' => ['required', 'string', new NoExpenseOrBrandName, new NoBlockedSymbols],
             // Field A — optional aspirational goal label (display-only, never on a transactional surface).
-            'goal_label' => ['nullable', 'string', 'max:60', new NoExpenseOrBrandName],
+            'goal_label' => ['nullable', 'string', 'max:60', new NoExpenseOrBrandName, new NoBlockedSymbols],
             'price' => [
                 'required',
                 'numeric',
@@ -211,8 +227,12 @@ class BillsController extends Controller
 
         $bill->save();
 
+        // Live on save; the three scans below retract it if they find something.
+        ListingPublication::publish($bill);
+
         $this->moderateBill($bill);
         $this->moderateBillText($bill);
+        $this->moderateBillFile($bill);
 
         // Get currency metadata to handle zero-decimal currencies properly
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
@@ -249,16 +269,13 @@ class BillsController extends Controller
 
             return response()->json([
                 'status' => true,
-                'msg' => 'Bill added successfully, your upload will be approved shortly.',
+                'msg' => 'Added — it is live on your page now.',
                 'bill_id' => $bill->id,  // Added for debugging
             ]);
         } catch (Exception $e) {
-
-            $bill->delete();
-
             return response()->json([
                 'status' => false,
-                'msg' => 'Stripe Error: '.$e->getMessage(),
+                'msg' => ListingRollback::stripeFailed($bill, $e, ['module' => 'bill']),
             ]);
         }
     }
@@ -274,9 +291,9 @@ class BillsController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', new NoExpenseOrBrandName],
+            'name' => ['required', 'string', new NoExpenseOrBrandName, new NoBlockedSymbols],
             // Field A — optional aspirational goal label (display-only, never on a transactional surface).
-            'goal_label' => ['nullable', 'string', 'max:60', new NoExpenseOrBrandName],
+            'goal_label' => ['nullable', 'string', 'max:60', new NoExpenseOrBrandName, new NoBlockedSymbols],
             'price' => [
                 'required',
                 'numeric',
@@ -320,6 +337,7 @@ class BillsController extends Controller
         $old_price = $bill->price;
         $old_price_id = $bill->price_id;
         $previousThumbnail = (string) $bill->thumbnail;
+        $previousRewardFile = (string) RewardFileScan::currentFile($bill);
 
         $media = $request->thumbnail;
         $price = $request->price;
@@ -352,8 +370,16 @@ class BillsController extends Controller
             'period' => $request->period,
         ] + $this->rewardBundleColumns($request))->save();
 
+        /* An edit lifts a hold only where this save could have fixed it — see
+           `ListingPublication::republish`. Editing is never itself a way past a check. */
+        ListingPublication::republish($bill->refresh(), array_filter([
+            (string) $bill->thumbnail !== (string) $previousThumbnail ? 'thumbnail' : null,
+            (string) RewardFileScan::currentFile($bill) !== (string) $previousRewardFile ? 'reward_file' : null,
+        ]));
+
         $this->moderateBill($bill->refresh(), $previousThumbnail);
         $this->moderateBillText($bill);
+        $this->moderateBillFile($bill, $previousRewardFile);
 
         try {
             Log::info("starting from try request->period: $request->period");
@@ -405,10 +431,11 @@ class BillsController extends Controller
 
                 $stripeProduct = StripeControl::createProduct($productPayload, $user->account_id);
 
+                /* A recreated Stripe product is not a moderation signal — see
+                   `ListingPublication`. The scans still cover what changed. */
                 $bill->update([
                     'product_id' => $stripeProduct->id,
                     'price_id' => $stripeProduct->default_price,
-                    'approved' => 0,
                 ]);
 
                 Log::info("Recreated Stripe Product for bill {$bill->uuid}: ".$stripeProduct->id);
@@ -452,7 +479,6 @@ class BillsController extends Controller
                 $bill->update([
                     'price_id' => $newPrice->id,
                     'product_id' => $product->id,
-                    'approved' => 0,
                 ]);
             } else {
                 // Only name or metadata might have changed
@@ -477,11 +503,9 @@ class BillsController extends Controller
             // Clear user caches
             app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
         } catch (Exception $e) {
-            Log::error('Stripe Error during bill edit: '.$e->getMessage());
-
             return response()->json([
                 'status' => false,
-                'msg' => 'Stripe Error: '.$e->getMessage(),
+                'msg' => ListingRollback::stripeFailed($bill, $e, ['module' => 'bill'], rollback: false),
             ]);
         }
 

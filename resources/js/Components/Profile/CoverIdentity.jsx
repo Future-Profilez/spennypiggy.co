@@ -193,7 +193,7 @@ export default function CoverIdentity({ variant = "card", IsloggedIn }) {
                     auth?.user?.avatar_approved === 0 && (
                         <AvatarNotice
                             tone="pending"
-                            text="Profile avatar is waiting for approval. Currently only you can see this."
+                            text="A check held your profile photo back. Only you can see it."
                         />
                     )}
 

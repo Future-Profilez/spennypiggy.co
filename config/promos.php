@@ -139,19 +139,12 @@ return [
             'route' => 'activate-subscription',
         ],
 
-        'verified_badge' => [
-            'priority' => 7,
-            'layout' => 'badge',
-            'audience' => 'creator',
-            'ground' => 'violet',
-            'accent' => 'mint',
-            'art' => 'badge',
-            'eyebrow' => 'Verification',
-            'headline' => 'Get your verified badge',
-            'body' => 'Verified creators sell more. It takes one ID check.',
-            'cta' => 'Verify me',
-            'route' => 'stripe.identity.verification',
-        ],
+        /* 🚨 THE `verified_badge` CARD IS GONE (11 Sep 2026, client D5/Q20). It read
+           "Verified creators sell more. It takes one ID check." and pointed at
+           `stripe.identity.verification` — a check Spenny Piggy no longer runs and a
+           route that no longer exists. The BADGE still exists; nothing pitches an ID
+           check to earn it, because there is no longer one to do. */
+
 
         'refer_and_earn' => [
             'priority' => 6,

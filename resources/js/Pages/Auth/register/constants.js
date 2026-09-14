@@ -137,12 +137,19 @@ export const suggestUsernames = (name) => {
 };
 
 /**
- * 🚨 THE LENGTH HERE MUST MATCH `Password::min()` IN `AppServiceProvider`, AND IT
- * DID NOT — this said 8 while the server enforced 12, so a password that ticked
- * every rule on screen was refused with "The password field must be at least 12
- * characters", naming a rule the form never drew. Nothing links the two files;
- * move both or neither.
+ * 🚨 THIS NUMBER MUST MATCH `Password::min()` IN `AppServiceProvider`. It said 8
+ * while the server enforced 12, so a password that ticked every rule on screen
+ * was refused with "The password field must be at least 12 characters", naming a
+ * rule the form never drew. Nothing links the two files; move both or neither.
  *
+ * ⚠️ EXPORTED, and every client-side length test reads it. `Register.jsx` used to
+ * carry its own literal in `credentialsComplete`, so lowering the floor in one
+ * place left the Continue button gated on the old one — a form that accepts the
+ * password and refuses to advance, with nothing on screen to fix.
+ */
+export const PASSWORD_MIN_LENGTH = 8;
+
+/**
  * ⚠️ The four composition rules below are ADVICE, not gates — the server checks
  * length and the breach list only (NIST: composition rules push people towards
  * `Password1!`). They stay because they are what a strength meter is for.
@@ -150,8 +157,8 @@ export const suggestUsernames = (name) => {
 export const PASSWORD_RULES = [
     {
         key: "length",
-        label: "12 characters or more",
-        test: (v) => v.length >= 12,
+        label: `${PASSWORD_MIN_LENGTH} characters or more`,
+        test: (v) => v.length >= PASSWORD_MIN_LENGTH,
     },
     { key: "lower", label: "A lowercase letter", test: (v) => /[a-z]/.test(v) },
     {

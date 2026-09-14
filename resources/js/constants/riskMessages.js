@@ -37,7 +37,7 @@ export const RISK_MESSAGES = {
         body:
             "We're running some extra checks at the moment, so guest checkout is switched off for a bit.\n\n" +
             "Creating an account takes about a minute and means you can see everything you've bought in one place. " +
-            "There's a one-off £1 card verification when you sign up — here's why.",
+            "There's a one-off card verification when you sign up — here's why.",
         next_step: 'Create an account — it takes about a minute.',
     },
 
@@ -49,7 +49,9 @@ export const RISK_MESSAGES = {
             "For a payment this size we'll need you signed in. It means your purchase is tied to you — " +
             "you can find it again, and we can help if anything goes wrong.\n\n" +
             "Creating an account takes about a minute and means you can see everything you've bought in one place. " +
-            "There's a one-off £1 card verification when you sign up — here's why.",
+            // ⚠️ No figure: the real charge is grossed up (gifter/ActivateCard prints
+            // `charge.formatted`, ~£2.95), so "£1" here was wrong on both surfaces.
+            "There's a one-off card verification when you sign up — here's why.",
         next_step: 'Create an account — it takes about a minute.',
     },
 

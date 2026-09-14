@@ -1,5 +1,6 @@
 import { useAlerts } from "@/Components/Alerts";
 import LoaderButton from "@/Components/LoaderButton";
+import { REAL_DETAILS_WARNING } from "@/constants/accountIntegrity";
 import Popup from "@/Components/Popup";
 import { router, usePage } from "@inertiajs/react";
 import axios from "axios";
@@ -416,7 +417,7 @@ export default function AddSocial({
                         <span className="text-xs font-semibold text-black/70">
                             {isPublic(platform.id)
                                 ? "Shown on your profile"
-                                : "Private — only you and our review team"}
+                                : "Private — not shown on your page"}
                         </span>
                         <button
                             type="button"
@@ -464,6 +465,18 @@ export default function AddSocial({
                         <FaInfoCircle className="mr-2 text-blue-500" />
                         Social Media Links
                     </h2>
+
+                    {/* Feedback / Rejection reason banner */}
+                    {(sLinks?.reason || links?.reason || (auth?.user?.profile_reject_reason && /social|instagram|tiktok|twitter|handle/i.test(auth?.user?.profile_reject_reason))) && (
+                        <div className="mb-4 rounded-box-sm border-2 border-red-500 bg-red-50 p-4">
+                            <p className="text-xs font-bold uppercase tracking-wider text-red-700">
+                                Feedback on your social links
+                            </p>
+                            <p className="mt-1 text-sm text-red-900">
+                                {sLinks?.reason || links?.reason || auth?.user?.profile_reject_reason}
+                            </p>
+                        </div>
+                    )}
 
                     {/* Information Banner */}
                     <div
@@ -518,10 +531,18 @@ export default function AddSocial({
                             >
                                 {formValidation.hasValidFields
                                     ? "We use these to check you are really you. Each one stays private on your page unless you switch it to Public below."
-                                    : "Add at least one so our team can verify you. Handles stay private on your page unless you choose to show them."}
+                                    : "Add at least one REAL account — it is how we confirm this page is yours. Handles stay private unless you choose to show them."}
                             </p>
                         </div>
                     </div>
+
+                    {/* 🚨 THE ONE CONSEQUENCE SENTENCE. Handles publish themselves now, so
+                        this is the only thing standing between a borrowed account and a
+                        live page — and it is the same words on every screen that asks for
+                        details (`constants/accountIntegrity.js`). */}
+                    <p className="mb-6 rounded-box-sm border-2 border-black bg-[#FDF6C3] px-4 py-3 text-sm font-bold text-black">
+                        {REAL_DETAILS_WARNING}
+                    </p>
 
                     <form onSubmit={createSocial} className="space-y-0">
                         {/* Primary Platforms */}

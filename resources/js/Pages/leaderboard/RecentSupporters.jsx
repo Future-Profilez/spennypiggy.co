@@ -69,7 +69,8 @@ export default function RecentSupporters() {
         <div className="wisher wisher-rank">
           <Avatar
             role={supporter.role}
-            profile_status_lock={supporter.profile_status_lock == 2 ? true : false}
+            verified_badge={supporter.verified_badge}
+            profile_status_lock={supporter.profile_status_lock}
             name={supporter.name}
             link={supporter.username || null}
             subhead={`@${supporter.username || "anonymous"}`}

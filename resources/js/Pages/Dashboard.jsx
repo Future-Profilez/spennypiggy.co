@@ -1,11 +1,23 @@
 import { useState, useMemo, useEffect, Suspense, lazy, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Head, Link, usePage } from "@inertiajs/react";
+// A drawn icon for the add trigger; it was a bare "+" glyph nudged into place.
+import { CalendarDays, Home, Plus, Rocket } from "lucide-react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.png";
 const Wishlist = lazyRetry(() => import("./Auth/Wishlist"));
 const Wishlistbox = lazyRetry(() => import("@/wishlist/Wishlistbox"));
 import Userprofile from "@/wishlist/Userprofile";
 import ProfileRightRail from "@/Components/Profile/ProfileRightRail";
+import ExploreNext from "@/Components/Gifter/ExploreNext";
+/*
+ * ⚠️ Lazy, because `RecentlyViewed` pulls in `FeaturedCarousel` and through it
+ * every listing-card component — a chunk no creator profile has any use for.
+ * `lazyRetry`, never bare `React.lazy`: a chunk that resolves without a default
+ * export across a deploy is a white screen with no error to catch.
+ */
+const RecentlyViewed = lazyRetry(
+    () => import("@/Pages/discover/components/RecentlyViewed"),
+);
 const CoverIdentity = lazyRetry(
     () => import("@/Components/Profile/CoverIdentity"),
 );
@@ -109,8 +121,8 @@ const GrowthBonusTracker = lazyRetry(
     () => import("@/Components/GrowthBonusTracker"),
 );
 const FounderBadge = lazyRetry(() => import("@/Components/FounderBadge"));
-import PendingChangesNotice from "@/Components/PendingChangesNotice";
 import SuspendedBanner from "@/Components/SuspendedBanner";
+import EditRequestNotice from "@/Components/EditRequestNotice";
 import SetupCompleteCelebration from "@/Components/SetupCompleteCelebration";
 import ListingProgressStrip from "@/Components/ListingProgressStrip";
 import lazyRetry from "@/utils/lazyRetry";
@@ -145,6 +157,53 @@ const handleDelete = (id) => {
     }
 };
 
+/**
+ * One row of the "what do you want to sell" chooser.
+ *
+ * 🚨 IT IS A BUTTON THAT REPORTS A CHOICE — it never renders a form of its own.
+ * Each row used to BE the module's component (`<AddItem>`, `<AddBills>`, …), which
+ * meant the form opened inside the chooser's own portal: the sheet the creator had
+ * just asked for was drawn UNDERNEATH a full-screen menu, invisible but live, and
+ * the only sign of it was a validation message nobody could see the fields for.
+ *
+ * ⚠️ Module scope, not inside `Toggle` — that function is rebuilt on every render
+ * of `Dashboard`, so a component declared in it is a new TYPE each time and React
+ * remounts the whole row (the same trap the `stableToggleRef` docblock describes).
+ */
+function ChooserRow({ icon, title, subtitle, onClick, tone, badge }) {
+    const mint = tone === "mint";
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`w-full font-bold addop border-2 border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:transition-colors ${
+                mint
+                    ? "bg-[#D9F9EE] hover:bg-[#C2F3E1] after:text-[#00B98C] hover:after:text-[#05EFB8]"
+                    : "bg-white hover:bg-[#FFF0DF] after:text-[#FFB3D6] hover:after:text-[#FF007F]"
+            }`}
+        >
+            <div className="flex items-center">
+                <div className="p-1 rounded-box-sm border-2 border-black bg-[#FF007F]/10 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
+                    {icon}
+                </div>
+                <div className="pl-4 text-left">
+                    {badge ? (
+                        <span className="mb-1 inline-block rounded-box-xs border-2 border-black bg-[#05EFB8] px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-black">
+                            {badge}
+                        </span>
+                    ) : null}
+                    <h2 className="font-gulfs text-base md:text-xl font-light text-black uppercase tracking-normal md:tracking-wide leading-tight">
+                        {title}
+                    </h2>
+                    <p className="text-sm font-bold text-black/80">
+                        {subtitle}
+                    </p>
+                </div>
+            </div>
+        </button>
+    );
+}
+
 export default function Dashboard(props) {
     const { ziggy } = usePage().props;
     const w = useWidthCount();
@@ -168,7 +227,6 @@ export default function Dashboard(props) {
         founderData,
         monthly_charges,
         profile_overview,
-        pending_profile_changes,
         // Discovery Phase 2. An OBJECT of real month-to-date figures for the
         // owner of a creator profile; null on every other view. Null is "not
         // your dashboard", never "no data yet" — zeros are a real payload.
@@ -382,14 +440,27 @@ export default function Dashboard(props) {
     }, [tab]);
 
     // The activity card only exists once there is money to stop — Stripe
-    // connected AND identity verified. Same predicate gates the fetch and the
-    // render; two copies would drift and this one costs a request per page load
-    // for the largest cohort of creators (everyone still before Connect).
+    /*
+     * 🚨 THE IDENTITY CLAUSE IS GONE (12 Sep 2026, client direction). Identity
+     * left onboarding on 10 Sep and is a PAYOUT gate now — a creator sells,
+     * earns and is charged for their subscription with no check at all — so
+     * `identity_status == 1` here hid this card from every creator on the
+     * platform who had connected Stripe and not done a passport check they are
+     * no longer asked for at that point. Reported live on a fully connected
+     * creator whose card had simply vanished.
+     *
+     * ⚠️ Stripe connected STAYS, and it is not the same kind of clause. The
+     * card's headline is "YOUR PAYMENTS ARE PAUSED", and a creator who has not
+     * finished Connect has no payments to pause — that reads as a fault on
+     * their account at the exact moment they are being asked to trust us with
+     * their bank details. The journey card speaks to them before this point.
+     *
+     * Same predicate gates the fetch and the render; two copies would drift.
+     */
     const canSeeActivityCard =
         IsloggedIn &&
         auth?.user?.role === 1 &&
-        auth?.user?.stripe_details_submitted == 1 &&
-        auth?.user?.identity_status == 1;
+        auth?.user?.stripe_details_submitted == 1;
 
     // Fetch creator activity status
     const fetchActivityStatus = async () => {
@@ -424,12 +495,45 @@ export default function Dashboard(props) {
         }
     };
 
-    const [openCurrency, setOpenCurrency] = useState(null);
-    useEffect(() => {
-        if (global_currency == null) {
-            setOpenCurrency(true);
+    /* 🚨 READ AT FIRST RENDER, NEVER INSIDE THE EFFECT. The add flow STRIPS
+       `?add=` from the address bar as soon as it has consumed it, and a child's
+       effects run before its parent's — so by the time an effect here looked at
+       `window.location.search` the parameter was already gone and the currency
+       ask opened over the form anyway. `addIntent` below is captured the same
+       way, for the same reason. */
+    const [arrivedWithAddIntent] = useState(() => {
+        if (typeof window === "undefined") return false;
+        try {
+            return !!new URLSearchParams(window.location.search).get("add");
+        } catch {
+            return false;
         }
     });
+
+    const [openCurrency, setOpenCurrency] = useState(null);
+    /* 🚨 THIS EFFECT HAD NO DEPENDENCY ARRAY, so it re-ran on EVERY render of the
+       busiest page in the app and re-asserted the currency panel each time. It
+       was survivable while that panel was a small centred card; since every
+       panel became full-screen (12 Sep 2026) it is the whole viewport, and it
+       was found sitting UNDERNEATH every add-a-listing sheet — so closing the
+       form left the creator looking at a currency picker they never opened.
+       It asks once, when the cookie is genuinely absent. */
+    useEffect(() => {
+        if (global_currency != null) {
+            return;
+        }
+        /* 🚨 AND IT MUST NOT FIRE OVER AN ADD FLOW. A creator arriving with an
+           explicit `?add=` intent asked for ONE thing; the currency ask opened
+           anyway and, now that both are full-screen, they stacked — the form on
+           top, a currency picker nobody opened waiting underneath it. Measured
+           live: every add intent on this page rendered two panels. The ask is
+           not lost, it is simply deferred to a load where the creator has not
+           already said what they came for. */
+        if (arrivedWithAddIntent) {
+            return;
+        }
+        setOpenCurrency(true);
+    }, [arrivedWithAddIntent, global_currency]);
 
     const updateMovement = async (updated) => {
         const array = [];
@@ -515,20 +619,13 @@ export default function Dashboard(props) {
             return new URLSearchParams(window.location.search).get("add");
         });
         // `?add=menu` opens the chooser and NOTHING else — it is how a screen that is
-        // not this one (My Listings) sends a creator here to pick what to sell. The
-        // other values each open a specific form on top of the chooser, which is the
-        // wrong landing for "add something".
-        const [showAdd, setShowAdd] = useState(
-            () =>
-                addIntent === "menu" ||
-                addIntent === "wish" ||
-                addIntent === "shop" ||
-                addIntent === "digital" ||
-                addIntent === "physical",
-        );
-        const [wishOptions, setWishOptions] = useState(
-            () => addIntent === "wish",
-        );
+        // not this one (My Listings) sends a creator here to pick what to sell.
+        // 🚨 ONLY `?add=menu` OPENS THE CHOOSER. Every other value NAMES a module, and
+        // opening that module's form ON TOP OF the chooser is what put the shop sheet
+        // BEHIND a full-screen menu — the creator saw "TURN CONTENT INTO CASH" with an
+        // invisible form underneath it answering "Please fill in all required fields".
+        // A named intent goes to the same direct-form path a tab's own Add button uses.
+        const [showAdd, setShowAdd] = useState(() => addIntent === "menu");
 
         // `?add=post` opens the composer DIRECTLY, deliberately not via `showAdd`. The
         // AddPost inside the chooser would need the chooser open behind it, which is the
@@ -536,21 +633,90 @@ export default function Dashboard(props) {
         // and lands on a menu they never asked for.
         const [postOpen, setPostOpen] = useState(() => addIntent === "post");
 
+        /* 🚨 An empty state's CTA used to re-open the seven-option chooser: press
+           "Create Task" and you are shown a menu, where you pick "Create Task"
+           again. The creator had already stated their choice. `toggleAddOptions`
+           now carries an intent, and these two pieces of state open that module's
+           own form directly.
+
+           `directMounted` keeps the form mounted after it has been asked for once;
+           `directPulse` names whichever form should be open, and every request
+           clears it before setting it so the NEXT press is a real change (a value
+           that stayed set would never change, so nothing would re-fire). Same
+           pattern `Wishlistbox` already uses to drive the wish editor. */
+        const [directMounted, setDirectMounted] = useState({});
+        const [directPulse, setDirectPulse] = useState(null);
+        /* 🚨 THE PULSE IS CLEARED BEFORE IT IS SET, NEVER ON A TIMER. These forms are
+           lazy, so the chunk can resolve later than any timeout — and a child mounting
+           after the flag had been wiped read `openPop` as null and never opened, with
+           nothing wrong in any log. Holding the value means a form that mounts a second
+           later still sees `true`; clearing it first is what makes a SECOND press of the
+           same row a real change, so it reopens. */
+        const openDirectForm = (key) => {
+            setDirectMounted((mounted) => ({ ...mounted, [key]: true }));
+            setDirectPulse(null);
+            setTimeout(() => setDirectPulse(key), 0);
+        };
+
+        /* Every route into a module is this one function — the chooser's rows, a tab's
+           own Add button and the `?add=` intent — so a module can never be opened one way
+           on one surface and another way on the next. It CLOSES the chooser first: a form
+           rendered inside that portal sits under it. */
+        const pickModule = (intent) => {
+            if (!intent) {
+                setShowAdd(true);
+                return;
+            }
+            setShowAdd(false);
+            if (intent === "task") {
+                window.location.href = route("task.create");
+                return;
+            }
+            if (intent === "pot") {
+                openCreateModal();
+                return;
+            }
+            if (intent === "post") {
+                setPostOpen(true);
+                return;
+            }
+            // `shop` is the old name for the digital form; both land on the same sheet.
+            openDirectForm(intent === "shop" ? "digital" : intent);
+        };
+
+        /* 🚨 ONE lock, not two. There were two effects on `showAdd`: this one
+           saved and restored the previous overflow, and a second one further
+           down set it and then cleared it to `""` — so whichever ran last won
+           and the saved value was discarded. Esc lives here too: the chooser is
+           a hand-rolled portal rather than a Dialog, so nothing was closing it
+           from the keyboard. */
         useEffect(() => {
-            if (!showAdd) return;
-            const prev = document.body.style.overflow;
+            if (!showAdd) {
+                return undefined;
+            }
+            const previousBody = document.body.style.overflow;
+            const previousRoot = document.documentElement.style.overflow;
             document.body.style.overflow = "hidden";
+            document.documentElement.style.overflow = "hidden";
             // Same full-screen contract as Sheet: while this chooser covers the
             // phone, the fixed bottom nav must not float over its CANCEL button.
             document.body.classList.add("sheet-open");
+            const onKeyDown = (event) => {
+                if (event.key === "Escape") setShowAdd(false);
+            };
+            document.addEventListener("keydown", onKeyDown);
             return () => {
-                document.body.style.overflow = prev;
+                document.body.style.overflow = previousBody;
+                document.documentElement.style.overflow = previousRoot;
                 document.body.classList.remove("sheet-open");
+                document.removeEventListener("keydown", onKeyDown);
             };
         }, [showAdd]);
         useEffect(() => {
-            const handleToggleEvent = () => {
-                setShowAdd(true);
+            const handleToggleEvent = (event) => {
+                // No intent means "I have not decided" — that is what the
+                // chooser is for. An intent names one module, so open it.
+                pickModule(event?.detail?.intent || null);
             };
 
             const handleCloseEvent = () => {
@@ -560,11 +726,17 @@ export default function Dashboard(props) {
             window.addEventListener("toggleAddOptions", handleToggleEvent);
             window.addEventListener("closeAddOptions", handleCloseEvent);
 
-            if (addIntent === "task") {
-                window.location.href = route("task.create");
-            } else if (addIntent) {
+            // A named `?add=` intent opens that module's own form, the same way a tab's
+            // Add button does. `menu` already opened the chooser in state above, and
+            // `post` already opened the composer, so neither is routed twice here.
+            if (addIntent && addIntent !== "menu" && addIntent !== "post") {
+                pickModule(addIntent);
+            }
+
+            if (addIntent && addIntent !== "task") {
                 // Safe to strip now: every consumer took its value from `addIntent` during
-                // render, so nothing downstream still needs the query string.
+                // render, so nothing downstream still needs the query string. `task` is
+                // excluded because `pickModule` has already started a navigation away.
                 window.history.replaceState(
                     {},
                     document.title,
@@ -580,20 +752,7 @@ export default function Dashboard(props) {
                 window.removeEventListener("closeAddOptions", handleCloseEvent);
             };
         }, []);
-        useEffect(() => {
-            if (showAdd) {
-                document.body.style.overflow = "hidden";
-                document.documentElement.style.overflow = "hidden";
-            } else {
-                document.body.style.overflow = "";
-                document.documentElement.style.overflow = "";
-                setWishOptions(false);
-            }
-            return () => {
-                document.body.style.overflow = "";
-                document.documentElement.style.overflow = "";
-            };
-        }, [showAdd]);
+
 
         return (
             <>
@@ -607,26 +766,79 @@ export default function Dashboard(props) {
                         />
                     </Suspense>
                 )}
+
+                {/* The forms an empty state opens directly. Each is mounted only
+                    once it has been asked for, renders no trigger of its own, and
+                    is opened by the `directPulse` flag (see `openDirectForm`). The
+                    chooser above is for a creator who has NOT decided yet. */}
+                {directMounted.wish && (
+                    <Suspense fallback={null}>
+                        <Wishlist
+                            hidetrigger
+                            openPop={directPulse === "wish"}
+                            currency={global_currency}
+                            setuped={AuthUserStripeConnected == 1}
+                        />
+                    </Suspense>
+                )}
+                {directMounted.bill && (
+                    <Suspense fallback={null}>
+                        <AddBills hidetrigger openPop={directPulse === "bill"} />
+                    </Suspense>
+                )}
+                {directMounted.membership && (
+                    <Suspense fallback={null}>
+                        <AddMembership
+                            hidetrigger
+                            openPop={directPulse === "membership"}
+                        />
+                    </Suspense>
+                )}
+                {directMounted.digital && (
+                    <Suspense fallback={null}>
+                        <AddItem
+                            hideTrigger
+                            openPop={directPulse === "digital"}
+                            product_type="digital_products"
+                        />
+                    </Suspense>
+                )}
+                {directMounted.physical && (
+                    <Suspense fallback={null}>
+                        <AddItem
+                            hideTrigger
+                            openPop={directPulse === "physical"}
+                            product_type="physical"
+                        />
+                    </Suspense>
+                )}
                 {IsloggedIn ? (
                     <>
                         {/* Desktop only. On a phone the same action is the "+" in the
                             fixed bottom nav, which is reachable from every screen —
                             two buttons opening one chooser, one of them buried in a
                             horizontally-scrolling tab strip, is the worse of the two. */}
-                        <div
+                        {/* 🚨 This was a `<div onClick>` holding a bare "+": the
+                            single entry point to every earning surface on the
+                            product, unreachable by keyboard and announced as
+                            nothing. It is a real button with a real name now. */}
+                        <button
+                            type="button"
                             onClick={() => setShowAdd(true)}
-                            className="addoption-action hidden md:block cursor-pointer p-2 py-[8px] bg-[#FF007F] border-4 border-black !rounded-box-sm transition-[filter] duration-200 hover:brightness-110 active:brightness-95 z-50"
-                            // dangerouslySetInnerHTML={{ __html: addicon.replace('fill="#fff"', 'fill="#000"') }}
+                            aria-label="Add a listing"
+                            aria-haspopup="dialog"
+                            className="addoption-action hidden md:grid h-11 min-h-[44px] w-12 place-items-center bg-[#FF007F] border-2 border-black !rounded-box-sm transition-[filter] duration-200 hover:brightness-110 active:brightness-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/40 z-50"
                         >
-                            <b className="text-2xl md:text-3xl px-3 text-black !leading-[8px] top-[4px] relative">
-                                +
-                            </b>
-                        </div>
+                            <Plus size={26} strokeWidth={4} className="text-black" aria-hidden="true" />
+                        </button>
                         {showAdd
                             ? createPortal(
                                   <div
                                       onClick={() => setShowAdd(false)}
                                       data-lenis-prevent
+                                      role="dialog"
+                                      aria-modal="true"
+                                      aria-label="Add a listing"
                                       className="bg-[#00000088] backdrop-blur-sm fixed z-[9990] flex items-stretch justify-center top-0 left-0 w-full h-full overflow-y-auto overscroll-contain"
                                   >
                                       {/* ⚠️ Full page on every size, like the post
@@ -674,8 +886,12 @@ export default function Dashboard(props) {
                                                       ×
                                                   </button>
                                                   <div className="text-center mb-5 max-w-[480px] mx-auto">
-                                                      <div className="inline-block bg-gradient-to-r from-[#FF007F] to-[#FF8E25] border-[3px] border-black rounded-box-sm px-6 py-3 mb-3 -rotate-1">
-                                                          <h2 className="text-white font-anton tracking-wide uppercase text-2xl md:text-2xl !leading-none m-0">
+                                                      {/* 🚨 White on this gradient was 2.3:1 at the
+                                                          orange end, and orange is a second accent the
+                                                          system does not have. Flat brand pink, black
+                                                          type — the house rule for any pink fill. */}
+                                                      <div className="inline-block bg-[#FF007F] border-2 border-black rounded-box-sm px-6 py-3 mb-3 -rotate-1">
+                                                          <h2 className="text-black font-anton tracking-wide uppercase text-2xl md:text-2xl !leading-none m-0">
                                                               🐷 Turn Content
                                                               Into Cash 💰
                                                           </h2>
@@ -689,87 +905,33 @@ export default function Dashboard(props) {
 
                                                   {AuthUserStripeConnected !==
                                                   1 ? (
-                                                      <p className="!mb-2 text-center">
-                                                          Please complete your
-                                                          Stripe account setup
-                                                          to add your wishlist.
-                                                      </p>
+                                                      <div
+                                                          // Was: "complete your Stripe account setup
+                                                          // to add your wishlist" — the wrong noun
+                                                          // (every option below is disabled, not just
+                                                          // wishes) and no way to go and do it, at the
+                                                          // highest-intent moment in the product.
+                                                          // ⚠️ A {/* */} comment inside a ternary's
+                                                          // parenthesised branch is an object literal
+                                                          // and fails the build — see CLAUDE.md.
+                                                          className="mx-auto mb-4 w-full max-w-[480px] rounded-box-sm border-2 border-black bg-white p-4 text-center"
+                                                      >
+                                                          <p className="text-sm font-bold text-black">
+                                                              Connect your payout account before you
+                                                              can list anything for sale.
+                                                          </p>
+                                                          <Link
+                                                              href="/stripe"
+                                                              className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-box-sm border-2 border-black bg-[#FF007F] px-6 text-xs font-black uppercase tracking-[0.14em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
+                                                          >
+                                                              Set up payouts
+                                                          </Link>
+                                                      </div>
                                                   ) : (
                                                       ""
                                                   )}
                                                   <div className="mx-auto min-h-0 w-full max-w-4xl flex-1 overflow-y-auto pt-2 pb-24 md:overflow-visible md:pb-0">
-                                                      {wishOptions ? (
-                                                          <div>
-                                                              {/* ⚠️ Content-first: this was "Cash Gift". "Gift" is
-                                                                  banned vocabulary on every user-facing surface, and
-                                                                  "Cash Gift" describes a money transfer — the exact
-                                                                  framing a wish is reframed AWAY from. Matches the
-                                                                  chooser row that opens this. */}
-                                                              <Wishlist
-                                                                  text="Sell exclusive content"
-                                                                  currency={
-                                                                      global_currency
-                                                                  }
-                                                                  setuped={
-                                                                      AuthUserStripeConnected ==
-                                                                      1
-                                                                          ? true
-                                                                          : false
-                                                                  }
-                                                              />
-                                                              <div className="w-full font-bold disabled addop bg-white border-4 border-black rounded-box p-3 mb-4 text-center">
-                                                                  <div className="flex items-center">
-                                                                      <div className="p-1 rounded-box border-2 border-black bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
-                                                                          <CiShoppingCart
-                                                                              color="#000"
-                                                                              size="1.5rem"
-                                                                          />
-                                                                      </div>
-                                                                      <div className="pl-3 text-left">
-                                                                          {/* ⚠️ Content-first: this card said "Add
-                                                                              Surprise Gift" / "1000's of Gifts in the
-                                                                              Oink Gift Zone". "Gift" is banned
-                                                                              vocabulary on every user-facing surface,
-                                                                              the surface is branded "Oink Store" and
-                                                                              never "Gift Store", and a gift-box icon
-                                                                              carries the same meaning as the word. */}
-                                                                          <h2 className="font-gulfs font-light text-md font-black uppercase text-black">
-                                                                              Add
-                                                                              Oink
-                                                                              Store
-                                                                              item
-                                                                          </h2>
-                                                                          <p className="text-sm font-bold text-gray-700">
-                                                                              Lets
-                                                                              supporters
-                                                                              pick
-                                                                              from
-                                                                              1000’s
-                                                                              of
-                                                                              items
-                                                                              in
-                                                                              the
-                                                                              Oink
-                                                                              Store
-                                                                          </p>
-                                                                      </div>
-                                                                  </div>
-                                                              </div>
-
-                                                              <div className="flex justify-center">
-                                                                  <button
-                                                                      onClick={() =>
-                                                                          setWishOptions(
-                                                                              !wishOptions,
-                                                                          )
-                                                                      }
-                                                                      className="bg-gray-200 text-back rounded-box px-3 py-2"
-                                                                  >
-                                                                      Back
-                                                                  </button>
-                                                              </div>
-                                                          </div>
-                                                      ) : (
+                                                      {(
                                                           <>
                                                               <div
                                                                   className={`${AuthUserStripeConnected == 1 ? "block" : "disabled"}`}
@@ -779,27 +941,23 @@ export default function Dashboard(props) {
                                                                       menu to read. */}
                                                                   <div className="grid w-full grid-cols-1 gap-x-4 gap-y-1 md:grid-cols-2">
                                                                       <div
-                                                                          onClick={() =>
-                                                                              setWishOptions(
-                                                                                  true,
-                                                                              )
-                                                                          }
-                                                                          className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                          onClick={() => pickModule("wish")}
+                                                                          className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-2 border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                       >
                                                                           <div className="flex items-center">
-                                                                              <div className="p-1 rounded-box-sm border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
+                                                                              <div className="p-1 rounded-box-sm border-2 border-black bg-[#FF007F]/10 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
                                                                                   <FaRegHeart
                                                                                       color="#FF007F"
                                                                                       size="1.6rem"
                                                                                   />
                                                                               </div>
                                                                               <div className="pl-4 text-left">
-                                                                                  <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
+                                                                                  <h2 className="font-gulfs text-base md:text-xl font-light text-black uppercase tracking-normal md:tracking-wide leading-tight">
                                                                                       Sell
                                                                                       exclusive
                                                                                       content
                                                                                   </h2>
-                                                                                  <p className="text-sm font-bold text-gray-700">
+                                                                                  <p className="text-sm font-bold text-black/80">
                                                                                       Offer
                                                                                       a
                                                                                       one-off
@@ -817,22 +975,22 @@ export default function Dashboard(props) {
                                                                           ?.role ===
                                                                           1 && (
                                                                           <Link
-                                                                              className="w-full block font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                              className="w-full block font-bold addop bg-white hover:bg-[#FFF0DF] border-2 border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                               href="/task/create"
                                                                           >
                                                                               <div className="flex items-center">
-                                                                                  <div className="p-1 rounded-box-sm border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
+                                                                                  <div className="p-1 rounded-box-sm border-2 border-black bg-[#FF007F]/10 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
                                                                                       <BiTask
                                                                                           color="#FF007F"
                                                                                           size="1.6rem"
                                                                                       />
                                                                                   </div>
                                                                                   <div className="pl-4 text-left">
-                                                                                      <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
+                                                                                      <h2 className="font-gulfs text-base md:text-xl font-light text-black uppercase tracking-normal md:tracking-wide leading-tight">
                                                                                           Create
                                                                                           Task
                                                                                       </h2>
-                                                                                      <p className="text-sm font-bold text-gray-700">
+                                                                                      <p className="text-sm font-bold text-black/80">
                                                                                           Sell
                                                                                           a
                                                                                           personalised
@@ -856,20 +1014,20 @@ export default function Dashboard(props) {
                                                                                   );
                                                                                   openCreateModal();
                                                                               }}
-                                                                              className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                              className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-2 border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                           >
                                                                               <div className="flex items-center">
-                                                                                  <div className="p-1 rounded-box-sm border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
+                                                                                  <div className="p-1 rounded-box-sm border-2 border-black bg-[#FF007F]/10 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
                                                                                       <span className="text-2xl">
                                                                                           🐷
                                                                                       </span>
                                                                                   </div>
                                                                                   <div className="pl-4 text-left">
-                                                                                      <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
+                                                                                      <h2 className="font-gulfs text-base md:text-xl font-light text-black uppercase tracking-normal md:tracking-wide leading-tight">
                                                                                           Content
                                                                                           goal
                                                                                       </h2>
-                                                                                      <p className="text-sm font-bold text-gray-700">
+                                                                                      <p className="text-sm font-bold text-black/80">
                                                                                           Sell
                                                                                           content
                                                                                           toward
@@ -882,12 +1040,17 @@ export default function Dashboard(props) {
                                                                           </div>
                                                                       )}
 
-                                                                      <AddItem
-                                                                          classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
-                                                                          product_type="digital_products"
-                                                                          addIntent={
-                                                                              addIntent
-                                                                          }
+                                                                      {/* 🚨 THESE ROWS OPEN NOTHING THEMSELVES. Each one used to be the module's
+                                                                          own component rendering its own trigger, so pressing it opened that form
+                                                                          INSIDE this portal — and the chooser covers the screen, so the sheet the
+                                                                          creator had just asked for sat behind a menu, invisible, still validating.
+                                                                          They name a module and hand it to `pickModule`, which closes the chooser
+                                                                          and opens the form mounted above it. */}
+                                                                      <ChooserRow
+                                                                          icon={<CiShoppingCart color="#FF007F" size="1.6rem" />}
+                                                                          title="Sell something"
+                                                                          subtitle="Sell digital or physical items from your page."
+                                                                          onClick={() => pickModule("digital")}
                                                                       />
                                                                       {/* The one row here that is not a way to list something for
                                                                           sale. Every other option adds a product; this one is what
@@ -896,31 +1059,33 @@ export default function Dashboard(props) {
                                                                           subscriptions when they stop posting for members). Drawn
                                                                           identically to its neighbours, that was invisible — so it
                                                                           carries the mint accent the platform already uses for
-                                                                          "this is live / this is working", and keeps that accent on
-                                                                          hover instead of falling back to the shared cream. */}
-                                                                      <AddPost
-                                                                          highlight
-                                                                          classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-[#D9F9EE] hover:bg-[#C2F3E1] border-[3px] border-black transition-colors rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#00B98C] after:transition-colors hover:after:text-[#05EFB8]"
+                                                                          "this is live / this is working". */}
+                                                                      <ChooserRow
+                                                                          tone="mint"
+                                                                          badge="Keeps payments active"
+                                                                          icon={<Rocket size={22} strokeWidth={2.5} color="#00B98C" />}
+                                                                          title="Post something"
+                                                                          subtitle="Share an update, photo or note. Keep posting for members or your subscription payments pause."
+                                                                          onClick={() => pickModule("post")}
                                                                       />
-                                                                      {/* <AddGift
-                                                                            text="Add Gift"
-                                                                            classes="font-bold py-3 px-3 mb-2 text-center"
-                                                                            fetch_gifts={
-                                                                            fetch_gifts
-                                                                                                                                                }
-                                                                            addressAdded={
-                                                                            auth?.user
-                                                                            ?.is_creator_address_found
-                                                                    }
-                                                                /> */}
-                                                                      <AddMembership classes=" font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box !w-full relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
-                                                                      <AddBills classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
+                                                                      <ChooserRow
+                                                                          icon={<Home size={22} strokeWidth={2.5} color="#FF007F" />}
+                                                                          title="Membership"
+                                                                          subtitle="Give fans monthly access to your exclusive posts."
+                                                                          onClick={() => pickModule("membership")}
+                                                                      />
+                                                                      <ChooserRow
+                                                                          icon={<CalendarDays size={22} strokeWidth={2.5} color="#FF007F" />}
+                                                                          title="Recurring content"
+                                                                          subtitle="Sell content your supporters unlock every week or month."
+                                                                          onClick={() => pickModule("bill")}
+                                                                      />
                                                                   </div>
                                                               </div>
                                                           </>
                                                       )}
                                                   </div>
-                                                  {!wishOptions && (
+                                                  {(
                                                       <div
                                                           // bottom-bar-safe: inside Popup, which hides the bar while open
                                                           className="sticky bottom-0 bg-[#FFF6EC] pt-4 flex justify-center"
@@ -939,7 +1104,7 @@ export default function Dashboard(props) {
                                                                 w-full
                                                                 max-w-[220px]
                                                                 h-[56px]
-                                                                bg-[#E9E1D7]
+                                                                bg-white
                                                                 border-[3px]
                                                                 border-black
                                                                 rounded-box-sm
@@ -970,6 +1135,38 @@ export default function Dashboard(props) {
             </>
         );
     };
+
+    /**
+     * 🚨 `Toggle` IS DECLARED INSIDE `Dashboard`, SO IT IS A NEW FUNCTION ON
+     * EVERY RENDER — and `InstantTabSystem` renders it as `<Toggle />`. A
+     * different function at the same position is a different COMPONENT TYPE to
+     * React, so the entire chooser subtree is unmounted and remounted: `showAdd`,
+     * `postOpen`, `directPulse` and every `Popup`'s own `open` flag all go back
+     * to false.
+     *
+     * Reported as "the post composer closes while I am typing the headline".
+     * Focusing a field opens the phone keyboard, the keyboard fires `resize`,
+     * `useWidthCount` re-rendered Dashboard, and the sheet vanished mid-sentence.
+     * `useWidthCount` now ignores height-only resizes, but that only removes one
+     * trigger — ANY Dashboard re-render did this, so the identity is what has to
+     * be fixed.
+     *
+     * ⚠️ The proxy keeps ONE stable component type while still calling the
+     * latest closure, so `Toggle`'s state survives. Its hooks run as this
+     * component's hooks — which is exactly what preserves them — so `Toggle`'s
+     * hook order must stay unconditional.
+     * ⚠️ `useRef`, not `useMemo`: React is allowed to drop a `useMemo` cache, and
+     * one dropped entry here is one silent remount of the composer.
+     */
+    const toggleRef = useRef(Toggle);
+    toggleRef.current = Toggle;
+    const stableToggleRef = useRef(null);
+    if (!stableToggleRef.current) {
+        stableToggleRef.current = function ChooserToggle(toggleProps) {
+            return toggleRef.current(toggleProps);
+        };
+    }
+    const StableToggle = stableToggleRef.current;
 
     const [UserStripeConnected, setUserStripeConnected] = useState(
         user && user?.stripe_details_submitted == 1 ? 1 : 0,
@@ -1055,12 +1252,12 @@ export default function Dashboard(props) {
                 {IsloggedIn &&
                     user?.bio_approved == 0 &&
                     pendingNotice(
-                        "Your bio is waiting for admin approval. Currently only you can see this.",
+                        "A check held your bio back — only you can see it. Fix it and save to go live.",
                     )}
 
                 {creatorTags.length > 0 && (
                     <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                        <span className="text-[11px] font-black uppercase tracking-[0.16em] text-black/45">
+                        <span className="text-[11px] font-black uppercase tracking-[0.16em] text-black/60">
                             Makes
                         </span>
                         <CategoryTags value={user?.creator_category} />
@@ -1070,7 +1267,7 @@ export default function Dashboard(props) {
                 {IsloggedIn &&
                     slinks?.status === 0 &&
                     pendingNotice(
-                        "Your social media links are waiting for admin approval. Currently only you can see them.",
+                        "A check held your social links back — only you can see them. Fix and save to go live.",
                     )}
             </div>
     ) : null;
@@ -1176,6 +1373,17 @@ export default function Dashboard(props) {
                                 Moved here from AuthenticatedLayout (client direction, 5 Sep 2026). */}
                             {IsloggedIn && <SuspendedBanner className="mb-4" />}
 
+                            {/* 🚨 What a reviewer asked this creator to change about
+                                their profile. The prop shipped with the Daily Review
+                                feed and was drawn NOWHERE — so the request reached them
+                                by e-mail and bell only, and a missed e-mail meant a
+                                reviewer waiting on somebody who never heard.
+
+                                ⚠️ `IsloggedIn` is load-bearing: `/{username}` is also
+                                the public profile, and this names what we asked of one
+                                person. Same gate as SuspendedBanner above. */}
+                            {IsloggedIn && <EditRequestNotice className="mb-4" />}
+
                             {/* 🚨 THE OWNER GATE IS LOAD-BEARING, exactly as it is on the
                                 banner above. `auth.setup_celebration` describes the SIGNED-IN
                                 creator's own account, and this route is also the public
@@ -1218,7 +1426,7 @@ export default function Dashboard(props) {
                                             introProp?.approved == 1) && (
                                             <Suspense
                                                 fallback={
-                                                    <div className="h-40 animate-pulse rounded-box border-[3px] border-black bg-gray-100"></div>
+                                                    <div className="h-40 animate-pulse rounded-box border-2 border-black bg-gray-100"></div>
                                                 }
                                             >
                                                 <AddIntro
@@ -1228,6 +1436,28 @@ export default function Dashboard(props) {
                                                 />
                                             </Suspense>
                                         )}
+
+                                    {/* 🚨 THE RAIL BELOW RETURNS NULL FOR A
+                                        SUPPORTER (`ProfileRightRail` gates on
+                                        `role != 1`), so a fan's profile had an
+                                        empty left column and no route anywhere
+                                        — on a page whose Feed and Purchases
+                                        tabs are both empty until they have
+                                        bought something. This is that column's
+                                        supporter half.
+
+                                        ⚠️ `hidden md:block`, matching the rail
+                                        it stands in for: on a phone the aside
+                                        renders ABOVE the tabs, so a nav block
+                                        here would push the page's own content
+                                        off the first screen. The recommendation
+                                        row at the foot of the page carries the
+                                        same job on mobile. */}
+                                    {!isCreatorProfile && (
+                                        <div className="hidden md:block">
+                                            <ExploreNext />
+                                        </div>
+                                    )}
 
                                     <div className="hidden md:block">
                                         <ProfileRightRail
@@ -1305,28 +1535,28 @@ export default function Dashboard(props) {
                                                 </div>
                                             )}
 
-                                            {/* The setup checklist (socials · photo · bio · card · submit · payouts · ID)
-                                                sits HERE, on every tab, for the same reason the journey card above it
+                                            {/* The setup checklist (social · avatar · bio · payouts · card) sits
+                                                HERE, on every tab, for the same reason the journey card above it
                                                 does. It used to render inside the About tab only, so a creator who
                                                 landed on /{username}/shop or /wishes had no checklist at all — and the
                                                 journey card's "Add a social handle" CTA lands on this very screen.
-                                                Self-gates on the viewer being the creator and the ID check unfinished. */}
-                                            {IsloggedIn &&
-                                                auth?.user?.role == 1 &&
-                                                auth?.user?.identity_status != 1 && (
+
+                                                🚨 THE `identity_status != 1` GATE IS GONE (13 Sep 2026, client
+                                                D5/Q20), AND IT WAS HIDING THE CHECKLIST FROM THE CREATORS FURTHEST
+                                                ALONG. It meant "the ID check is unfinished" — but Spenny Piggy
+                                                removed the check on 11 Sep, so nobody is ever set to 1 again and the
+                                                ~20 creators who HAD been verified before that date were the only ones
+                                                excluded. They saw no social, photo, bio, Connect or card step at all,
+                                                on every tab, with nothing wrong in any log.
+
+                                                ⚠️ The component self-gates on each step's own state and renders
+                                                nothing once they are all done, so no second gate is needed here. */}
+                                            {IsloggedIn && auth?.user?.role == 1 && (
                                                     <div className="mb-3">
                                                         <CreatorVerification IsloggedIn={IsloggedIn} />
                                                     </div>
                                                 )}
 
-                                            {IsloggedIn && (
-                                                <PendingChangesNotice
-                                                    assets={
-                                                        pending_profile_changes
-                                                    }
-                                                    className="mb-3"
-                                                />
-                                            )}
 
                                             {IsloggedIn && (
                                                 <CreatorRiskBanner />
@@ -1345,7 +1575,7 @@ export default function Dashboard(props) {
                                                     >
                                                         <div className="inlinetab">
                                                             <InstantTabSystem
-                                                                Toggle={Toggle}
+                                                                Toggle={StableToggle}
                                                                 activeTab={
                                                                     page ||
                                                                     "about"
@@ -1435,7 +1665,19 @@ export default function Dashboard(props) {
                                                                                     NOT read off `discovery.analytics_live`, which
                                                                                     governs the mock numbers in marketing and stays
                                                                                     false until the client flips it. */}
-                                                                                {discoveryPanel && (
+                                                                                {/* 🚨 BOTH OF THESE WAIT FOR STRIPE CONNECT (client direction, 12 Sep 2026).
+                                                                                    They are MONEY panels — who discovered you, what you earned from
+                                                                                    them, who is buying and what they are worth. A creator who has not
+                                                                                    connected Stripe cannot be paid at all, so every figure in both reads
+                                                                                    £0 and 0 for as long as that is true, and reads as a dead product
+                                                                                    rather than as a step they have not taken yet. The one thing that
+                                                                                    screen should be pointing them at is Connect.
+
+                                                                                    ⚠️ `AuthUserStripeConnected`, not `UserStripeConnected` — the question
+                                                                                    is whether the SIGNED-IN creator can be paid. On this block the two
+                                                                                    are the same person (it is owner-only), but the viewer's own state is
+                                                                                    what the sentence means and is what survives a future re-mount. */}
+                                                                                {discoveryPanel && AuthUserStripeConnected == 1 && (
                                                                                     <DiscoveryStatsPanel
                                                                                         stats={discoveryPanel}
                                                                                         live={true}
@@ -1483,7 +1725,7 @@ export default function Dashboard(props) {
                                                                                     "the creator is viewing their OWN profile" — the same
                                                                                     gate as "My listings" directly below, which this card
                                                                                     deliberately matches so the two read as one pair. */}
-                                                                                {IsloggedIn && (
+                                                                                {IsloggedIn && AuthUserStripeConnected == 1 && (
                                                                                     <Link
                                                                                         href={route(
                                                                                             "financial.opportunities",
@@ -1511,7 +1753,7 @@ export default function Dashboard(props) {
                                                                                             <div className="text-[18px] font-black uppercase text-black md:text-[22px]">
                                                                                                 Revenue opportunities
                                                                                             </div>
-                                                                                            <div className="mt-0.5 text-[13px] font-semibold text-gray-600 md:text-[15px]">
+                                                                                            <div className="mt-0.5 text-[13px] font-semibold text-black/80 md:text-[15px]">
                                                                                                 Who is buying, what they are worth, and
                                                                                                 what to do next.
                                                                                             </div>
@@ -1571,7 +1813,7 @@ export default function Dashboard(props) {
                                                                                             <div className="text-[18px] md:text-[22px] font-black uppercase tracking-tigher text-black">
                                                                                                 My listings
                                                                                             </div>
-                                                                                            <div className="text-[13px] md:text-[15px] font-semibold text-gray-600 mt-0.5">
+                                                                                            <div className="text-[13px] md:text-[15px] font-semibold text-black/80 mt-0.5">
                                                                                                 Everything you sell
                                                                                                 in one place — and
                                                                                                 anything that is
@@ -1674,8 +1916,9 @@ export default function Dashboard(props) {
                                                                                     different tones. This card is the one that carries BOTH
                                                                                     payment rules, so it is the one that moved.
 
-                                                                                    ⚠️ Gated on Stripe connected AND identity verified
-                                                                                    (3 Aug 2026, client direction). It briefly ran for every
+                                                                                    ⚠️ Gated on Stripe connected (3 Aug 2026, client
+                                                                                    direction; the identity half was dropped 12 Sep 2026
+                                                                                    with the check itself). It briefly ran for every
                                                                                     creator on the reasoning that the component states its
                                                                                     own "finish verifying" case — but its headline is "YOUR
                                                                                     PAYMENTS ARE PAUSED", and a creator who has not finished
@@ -1880,7 +2123,7 @@ export default function Dashboard(props) {
                                                                                                 slinks?.reason ||
                                                                                                 user?.avatar_approved ==
                                                                                                     2) ? (
-                                                                                                <div className="bg-white border-1 border-black rounded-box mb-4 p-4">
+                                                                                                <div className="bg-white border-2 border-black rounded-box mb-4 p-4">
                                                                                                     <h2 className="text-red-600 font-bold text-xl">
                                                                                                         Action
                                                                                                         Required
@@ -1897,7 +2140,7 @@ export default function Dashboard(props) {
                                                                                                                     Edit
                                                                                                                     Request
                                                                                                                 </p>
-                                                                                                                <p className="text-red-500 text-sm">
+                                                                                                                <p className="text-sm font-bold text-[#C81E5B]">
                                                                                                                     Reason:
                                                                                                                     {
                                                                                                                         ""
@@ -1923,7 +2166,7 @@ export default function Dashboard(props) {
                                                                                                                     ""
                                                                                                                 }
                                                                                                             </p>
-                                                                                                            <p className="text-red-500 text-sm">
+                                                                                                            <p className="text-sm font-bold text-[#C81E5B]">
                                                                                                                 Reason
                                                                                                                 :
                                                                                                                 {
@@ -1950,7 +2193,7 @@ export default function Dashboard(props) {
                                                                                                                 Edit
                                                                                                                 Request
                                                                                                             </p>
-                                                                                                            <p className="text-red-500 text-sm">
+                                                                                                            <p className="text-sm font-bold text-[#C81E5B]">
                                                                                                                 Profile
                                                                                                                 avatar
                                                                                                                 has
@@ -1974,7 +2217,7 @@ export default function Dashboard(props) {
                                                                                                                 Edit
                                                                                                                 Request
                                                                                                             </p>
-                                                                                                            <p className="text-red-500 text-sm">
+                                                                                                            <p className="text-sm font-bold text-[#C81E5B]">
                                                                                                                 Reason:
                                                                                                                 {
                                                                                                                     slinks.reason
@@ -2008,7 +2251,7 @@ export default function Dashboard(props) {
                                                                                                 user?.username ? (
                                                                                                 <div className="mb-6 !mt-6 relative group">
                                                                                                     {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#FF007F] to-[#05EFB8] rounded-box blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
-                                                                                                    <div className="relative overflow-hidden p-5 md:p-6 rounded-box bg-[#fdfbf7] border-[3px] border-black min-h-[120px] md:min-h-[140px]">
+                                                                                                    <div className="relative overflow-hidden p-5 md:p-6 rounded-box bg-[#fdfbf7] border-2 border-black min-h-[120px] md:min-h-[140px]">
                                                                                                         <div className="items-stretch md:items-center justify-between gap-5 relative z-10">
                                                                                                             <div className="flex items-center gap-4 order-1 w-full md:w-auto justify-center md:justify-start">
                                                                                                                 <div className="relative">
@@ -2020,7 +2263,7 @@ export default function Dashboard(props) {
                                                                                                                             ""
                                                                                                                         }
                                                                                                                         alt="you"
-                                                                                                                        className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black"
+                                                                                                                        className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-2 border-black"
                                                                                                                     />
                                                                                                                 </div>
                                                                                                                 <div className="text-black text-xl font-black tracking-widest">
@@ -2033,12 +2276,12 @@ export default function Dashboard(props) {
                                                                                                                             ""
                                                                                                                         }
                                                                                                                         alt="creator"
-                                                                                                                        className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black"
+                                                                                                                        className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-2 border-black"
                                                                                                                     />
                                                                                                                 </div>
                                                                                                             </div>
                                                                                                             <div className="flex-1 order-2 text-center md:text-left mt-6">
-                                                                                                                <p className="text-[12px] font-black tracking-[0.25em] uppercase text-gray-700 mb-1">
+                                                                                                                <p className="text-[12px] font-black tracking-[0.25em] uppercase text-black/80 mb-1">
                                                                                                                     Support
                                                                                                                     Story
                                                                                                                 </p>
@@ -2054,7 +2297,7 @@ export default function Dashboard(props) {
                                                                                                                         "@" +
                                                                                                                             user?.username}
                                                                                                                 </p>
-                                                                                                                <p className="text-gray-700 font-bold text-sm md:text-sm mt-1">
+                                                                                                                <p className="text-black/80 font-bold text-sm md:text-sm mt-1">
                                                                                                                     Purchases,
                                                                                                                     thank‑yous
                                                                                                                     and
@@ -2069,7 +2312,7 @@ export default function Dashboard(props) {
                                                                                                             <div className="order-3 w-full md:w-auto md:shrink-0 mt-6">
                                                                                                                 <Link
                                                                                                                     href={`/support/${user?.username}/${auth?.user?.username}`}
-                                                                                                                    className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-box-sm text-sm uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
+                                                                                                                    className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-box-sm text-sm uppercase tracking-widest bg-yellow-300 border-2 border-black text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                                                                                                 >
                                                                                                                     View
                                                                                                                     Your
@@ -2214,8 +2457,8 @@ export default function Dashboard(props) {
                                                                                                             className={`${
                                                                                                                 selectedCategory ==
                                                                                                                 ""
-                                                                                                                    ? "bg-[#FF007F] text-black border-[3px] border-black translate-x-[-1px] translate-y-[-1px]"
-                                                                                                                    : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
+                                                                                                                    ? "bg-[#FF007F] text-black border-2 border-black translate-x-[-1px] translate-y-[-1px]"
+                                                                                                                    : "bg-[#1c1c24] text-white border-2 border-black hover:bg-gray-800"
                                                                                                             } px-4 py-1 rounded-box-sm font-black uppercase tracking-widest text-sm transition-all`}
                                                                                                         >
                                                                                                             All
@@ -2241,8 +2484,8 @@ export default function Dashboard(props) {
                                                                                                                         className={`${
                                                                                                                             selectedCategory ==
                                                                                                                             c.id
-                                                                                                                                ? "bg-[#FF007F] text-black border-[3px] border-black translate-x-[-1px] translate-y-[-1px]"
-                                                                                                                                : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
+                                                                                                                                ? "bg-[#FF007F] text-black border-2 border-black translate-x-[-1px] translate-y-[-1px]"
+                                                                                                                                : "bg-[#1c1c24] text-white border-2 border-black hover:bg-gray-800"
                                                                                                                         } px-4 py-1 rounded-box-sm font-black uppercase tracking-widest text-sm transition-all`}
                                                                                                                         key={`cats-${i}`}
                                                                                                                     >
@@ -2363,8 +2606,9 @@ export default function Dashboard(props) {
                                                                                                                     subtitle="Create a new wish for your supporters."
                                                                                                                     onClick={() =>
                                                                                                                         window.dispatchEvent(
-                                                                                                                            new Event(
+                                                                                                                            new CustomEvent(
                                                                                                                                 "toggleAddOptions",
+                                                                                                                                { detail: { intent: "wish" } },
                                                                                                                             ),
                                                                                                                         )
                                                                                                                     }
@@ -2437,7 +2681,7 @@ export default function Dashboard(props) {
                                                                                                 <div className="w-full">
                                                                                                     {IsloggedIn ? (
                                                                                                         <>
-                                                                                                            <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
+                                                                                                            <div className="w-full bg-white border-2 border-black rounded-box p-8 text-center mt-4">
                                                                                                                 {/* ⚠️ Content-first: a 🎁 emoji and "let your
                                                                                                                     fans buy them for you" framed this as a
                                                                                                                     gift, which is the framing a wish is
@@ -2448,7 +2692,7 @@ export default function Dashboard(props) {
                                                                                                                     wishes
                                                                                                                     yet
                                                                                                                 </h3>
-                                                                                                                <p className="text-gray-600 font-bold mb-6">
+                                                                                                                <p className="text-black/80 font-bold mb-6">
                                                                                                                     List
                                                                                                                     exclusive
                                                                                                                     content
@@ -2460,8 +2704,9 @@ export default function Dashboard(props) {
                                                                                                                 <button
                                                                                                                     onClick={() =>
                                                                                                                         window.dispatchEvent(
-                                                                                                                            new Event(
+                                                                                                                            new CustomEvent(
                                                                                                                                 "toggleAddOptions",
+                                                                                                                                { detail: { intent: "wish" } },
                                                                                                                             ),
                                                                                                                         )
                                                                                                                     }
@@ -2536,7 +2781,7 @@ export default function Dashboard(props) {
                                                                                             tasks.length ===
                                                                                                 0) && (
                                                                                             <>
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-2 border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         📋
                                                                                                     </div>
@@ -2545,7 +2790,7 @@ export default function Dashboard(props) {
                                                                                                         Active
                                                                                                         Tasks
                                                                                                     </h3>
-                                                                                                    <p className="text-gray-600 font-bold mb-6">
+                                                                                                    <p className="text-black/80 font-bold mb-6">
                                                                                                         Create
                                                                                                         tasks
                                                                                                         and
@@ -2561,8 +2806,9 @@ export default function Dashboard(props) {
                                                                                                     <button
                                                                                                         onClick={() =>
                                                                                                             window.dispatchEvent(
-                                                                                                                new Event(
+                                                                                                                new CustomEvent(
                                                                                                                     "toggleAddOptions",
+                                                                                                                    { detail: { intent: "task" } },
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
@@ -2612,7 +2858,7 @@ export default function Dashboard(props) {
                                                                                                 ?.length ===
                                                                                                 0) && (
                                                                                             <>
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-2 border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         ⭐
                                                                                                     </div>
@@ -2621,7 +2867,7 @@ export default function Dashboard(props) {
                                                                                                         Memberships
                                                                                                         Yet
                                                                                                     </h3>
-                                                                                                    <p className="text-gray-600 font-bold mb-6">
+                                                                                                    <p className="text-black/80 font-bold mb-6">
                                                                                                         Create
                                                                                                         membership
                                                                                                         tiers
@@ -2634,8 +2880,9 @@ export default function Dashboard(props) {
                                                                                                     <button
                                                                                                         onClick={() =>
                                                                                                             window.dispatchEvent(
-                                                                                                                new Event(
+                                                                                                                new CustomEvent(
                                                                                                                     "toggleAddOptions",
+                                                                                                                    { detail: { intent: "membership" } },
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
@@ -2679,7 +2926,7 @@ export default function Dashboard(props) {
                                                                                                 ?.length ===
                                                                                                 0) && (
                                                                                             <>
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-2 border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         🧾
                                                                                                     </div>
@@ -2688,7 +2935,7 @@ export default function Dashboard(props) {
                                                                                                         Active
                                                                                                         Bills
                                                                                                     </h3>
-                                                                                                    <p className="text-gray-600 font-bold mb-6">
+                                                                                                    <p className="text-black/80 font-bold mb-6">
                                                                                                         Offer
                                                                                                         a
                                                                                                         content
@@ -2702,8 +2949,9 @@ export default function Dashboard(props) {
                                                                                                     <button
                                                                                                         onClick={() =>
                                                                                                             window.dispatchEvent(
-                                                                                                                new Event(
+                                                                                                                new CustomEvent(
                                                                                                                     "toggleAddOptions",
+                                                                                                                    { detail: { intent: "bill" } },
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
@@ -2750,7 +2998,7 @@ export default function Dashboard(props) {
                                                                                                 .length ===
                                                                                                 0) && (
                                                                                             <>
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-2 border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         🛍️
                                                                                                     </div>
@@ -2760,7 +3008,7 @@ export default function Dashboard(props) {
                                                                                                         Items
                                                                                                         Yet
                                                                                                     </h3>
-                                                                                                    <p className="text-gray-600 font-bold mb-6">
+                                                                                                    <p className="text-black/80 font-bold mb-6">
                                                                                                         Create
                                                                                                         physical
                                                                                                         or
@@ -2775,8 +3023,9 @@ export default function Dashboard(props) {
                                                                                                     <button
                                                                                                         onClick={() =>
                                                                                                             window.dispatchEvent(
-                                                                                                                new Event(
+                                                                                                                new CustomEvent(
                                                                                                                     "toggleAddOptions",
+                                                                                                                    { detail: { intent: "digital" } },
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
@@ -2883,7 +3132,7 @@ export default function Dashboard(props) {
                                                                                     ) : (
                                                                                         <div className="w-full">
                                                                                             {IsloggedIn ? (
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-2 border-black rounded-box p-8 text-center mt-4">
                                                                                                     {/* ⚠️ Content-first: this read "🎁 / No Active
                                                                                                         Gifts / Create physical gifts for your fans to
                                                                                                         buy for you". "Gift" is banned vocabulary on
@@ -2895,7 +3144,7 @@ export default function Dashboard(props) {
                                                                                                         listed
                                                                                                         yet
                                                                                                     </h3>
-                                                                                                    <p className="text-gray-600 font-bold mb-6">
+                                                                                                    <p className="text-black/80 font-bold mb-6">
                                                                                                         List
                                                                                                         a
                                                                                                         physical
@@ -2908,8 +3157,9 @@ export default function Dashboard(props) {
                                                                                                     <button
                                                                                                         onClick={() =>
                                                                                                             window.dispatchEvent(
-                                                                                                                new Event(
+                                                                                                                new CustomEvent(
                                                                                                                     "toggleAddOptions",
+                                                                                                                    { detail: { intent: "physical" } },
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
@@ -2965,7 +3215,63 @@ export default function Dashboard(props) {
 
                             ⚠️ Returns null on an empty list, so there is no heading with
                             nothing under it and no gap on a fan profile. */}
-                        <MoreCreators creators={moreCreators} />
+                        {/* 🚨 THE RAIL IS `hidden md:block`, SO A PHONE HAD NONE OF IT.
+                            On a phone the aside renders ABOVE the tabs, so the rail
+                            cannot live there without pushing the page's own content
+                            off the first screen — and most of this audience is on a
+                            phone. The same block is rendered BELOW the body instead,
+                            where it costs nothing above the fold and reaches every
+                            tab rather than just About. */}
+                        {!isCreatorProfile && (
+                            <div className="mt-6 md:hidden">
+                                <ExploreNext />
+                            </div>
+                        )}
+
+                        {/* ⚠️ WARMER THAN THE ROW BELOW IT, SO IT GOES FIRST. These are
+                            creators this browser has already opened; the row under it is
+                            people they have never met. Deepening beats widening — the
+                            same order the payment-success page uses.
+
+                            🚨 IT NEVER LEAVES THE DEVICE. `RecentlyViewed` reads
+                            localStorage and nothing else: no request, no row, nothing
+                            stored server-side, and it renders under 2 entries as null.
+                            So it is the viewer's OWN continuity even on somebody else's
+                            page, and there is nothing here to leak.
+
+                            ⚠️ Supporter profiles only. This route is also the creator
+                            dashboard, and a creator's own page is not the place to send
+                            them back to creators they were browsing. */}
+                        {!isCreatorProfile && (
+                            <Suspense fallback={null}>
+                                <RecentlyViewed
+                                    excludeUsernames={[user?.username].filter(
+                                        Boolean,
+                                    )}
+                                />
+                            </Suspense>
+                        )}
+
+                        {/* ⚠️ THE COPY CHANGES ON A SUPPORTER'S PAGE, THE ROW DOES NOT.
+                            "More creators to support" is addressed to somebody
+                            reading a creator's page, and on a fan's own profile
+                            it is wrong twice over — they are the one doing the
+                            supporting, and they may not have supported anybody
+                            yet, so "more" names a set that is empty. The cards,
+                            the grid and the attribution are identical. */}
+                        <MoreCreators
+                            creators={moreCreators}
+                            heading={
+                                isCreatorProfile
+                                    ? undefined
+                                    : "Creators worth a look"
+                            }
+                            intro={
+                                isCreatorProfile
+                                    ? undefined
+                                    : "A few people selling things you can unlock today."
+                            }
+                        />
                     </div>
                 </div>
 

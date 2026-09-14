@@ -35,6 +35,7 @@ use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Rules\NoBlockedSymbols;
 use App\Rules\NoExpenseOrBrandName;
 use App\Rules\ValidSubscriptionPeriod;
 use App\Services\CreatorActivityService;
@@ -46,6 +47,10 @@ use App\Services\RewardService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\DiscoveryEligibility;
+use App\Support\ListingPublication;
+use App\Support\ListingRollback;
+use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
 use App\Support\VerifiedBadge;
 use Carbon\Carbon;
@@ -104,7 +109,7 @@ class WishitemController extends Controller
             WishItem::class,
             $wish->id,
             $wish->thumbnail,
-            ['is_approved' => 0],
+            ListingPublication::heldAttributes($wish),
             'thumbnail'
         );
     }
@@ -119,8 +124,21 @@ class WishitemController extends Controller
         ItemTextModeration::apply(
             $wish,
             ['reward_title', 'reward_body', 'reward_description', 'wishname'],
-            ['is_approved' => 0]
+            ListingPublication::heldAttributes($wish)
         );
+    }
+
+    /**
+     * SFW gate on the paid file — the thing the supporter actually receives.
+     *
+     * ⚠️ The thumbnail scan above covers the shop front only. A wish whose picture
+     * was clean shipped its `content_file` to the buyer without any scan at all,
+     * which is the fault Shop's own reward-file check was written for in July and
+     * that this module never got.
+     */
+    private function moderateWishFile(?WishItem $wish, ?string $previousFile = null): void
+    {
+        RewardFileScan::dispatch($wish, ListingPublication::heldAttributes($wish), $previousFile);
     }
 
     public function saveWishItem(Request $request): RedirectResponse
@@ -132,6 +150,7 @@ class WishitemController extends Controller
                 'min:4',
                 'max:255',
                 new NoExpenseOrBrandName,
+                new NoBlockedSymbols,
             ],
             // Field A — optional aspirational goal label (display-only, never on a transactional surface).
             'goal_label' => [
@@ -139,6 +158,7 @@ class WishitemController extends Controller
                 'string',
                 'max:60',
                 new NoExpenseOrBrandName,
+                new NoBlockedSymbols,
             ],
             'price' => [
                 'required',
@@ -257,8 +277,12 @@ class WishitemController extends Controller
                 $wish->save();
             }
 
+            // Live on save; the three scans below retract it if they find something.
+            ListingPublication::publish($wish);
+
             $this->moderateWish($wish);
             $this->moderateWishText($wish);
+            $this->moderateWishFile($wish);
 
             // Clear user caches
             $this->userProfileService->clearUserCaches($user->username, $user->id);
@@ -289,6 +313,7 @@ class WishitemController extends Controller
                 'min:4',
                 'max:255',
                 new NoExpenseOrBrandName,
+                new NoBlockedSymbols,
             ],
             // Field A — optional aspirational goal label (display-only, never on a transactional surface).
             'goal_label' => [
@@ -296,6 +321,7 @@ class WishitemController extends Controller
                 'string',
                 'max:60',
                 new NoExpenseOrBrandName,
+                new NoBlockedSymbols,
             ],
             'price' => [
                 'required',
@@ -478,19 +504,23 @@ class WishitemController extends Controller
                     AutoTweetWishAdd::dispatch($wish);
                 }
             } catch (Exception $e) {
-                $wish->delete();
+                $message = ListingRollback::stripeFailed($wish, $e, ['module' => 'wish']);
 
-                return redirect(route('user.show', ['username' => Auth::user()->username, 'page' => 'wishes']))->with('error', 'Stripe Error: '.$e->getMessage());
+                return redirect(route('user.show', ['username' => Auth::user()->username, 'page' => 'wishes']))->with('error', $message);
             }
         }
 
+        // Live on save; the three scans below retract it if they find something.
+        ListingPublication::publish($wish);
+
         $this->moderateWish($wish);
         $this->moderateWishText($wish);
+        $this->moderateWishFile($wish);
 
         // Clear activity cache to ensure real-time updates
         app(CreatorActivityService::class)->clearActivityCache(Auth::user());
 
-        return redirect(route('user.show', ['username' => Auth::user()->username, 'page' => 'wishes']))->with('success', 'Wish Item has been added, your upload will be approved shortly.');
+        return redirect(route('user.show', ['username' => Auth::user()->username, 'page' => 'wishes']))->with('success', 'Wish added — it is live on your page now.');
     }
 
     public function updateWishItem(Request $request, $uuid = null)
@@ -504,8 +534,8 @@ class WishitemController extends Controller
         // validated but not required — a price-only edit must not be forced to
         // re-declare the reward.
         $request->validate([
-            'wishname' => ['sometimes', 'string', 'min:4', 'max:255', new NoExpenseOrBrandName],
-            'goal_label' => ['nullable', 'string', 'max:60', new NoExpenseOrBrandName],
+            'wishname' => ['sometimes', 'string', 'min:4', 'max:255', new NoExpenseOrBrandName, new NoBlockedSymbols],
+            'goal_label' => ['nullable', 'string', 'max:60', new NoExpenseOrBrandName, new NoBlockedSymbols],
         ] + RewardService::validationRules(required: false));
 
         if ($linkError = RewardService::submittedLinkError($request->all())) {
@@ -605,9 +635,19 @@ class WishitemController extends Controller
             ]);
 
             $previousThumbnail = (string) $wish->thumbnail;
+            $previousRewardFile = (string) RewardFileScan::currentFile($wish);
             $wish->refresh();
+
+            /* An edit lifts a hold only where this save could have fixed it — see
+               `ListingPublication::republish`. */
+            ListingPublication::republish($wish, array_filter([
+                (string) $wish->thumbnail !== $previousThumbnail ? 'thumbnail' : null,
+                (string) RewardFileScan::currentFile($wish) !== $previousRewardFile ? 'reward_file' : null,
+            ]));
+
             $this->moderateWish($wish, $previousThumbnail);
             $this->moderateWishText($wish);
+            $this->moderateWishFile($wish, $previousRewardFile);
 
             if (! empty($request->category)) {
                 WishCategory::where('wish_item_id', $wish->id)->delete();
@@ -733,8 +773,11 @@ class WishitemController extends Controller
                         }
                     }
 
-                    $wish->is_approved = 0;
-                    $wish->save();
+                    /* 🚨 A PRICE CHANGE IS NOT A MODERATION SIGNAL. This dropped the
+                       wish back to unapproved whenever its Stripe price was recreated,
+                       which under the new rule means "off sale for ever" — the queue
+                       that used to release it is gone. The scans still cover anything
+                       the creator actually changed. */
 
                     $logs = Logs::where('edited_wish_id', $wish->id)->where('status', 'pending')->first();
                     if (! empty($logs)) {
@@ -742,8 +785,11 @@ class WishitemController extends Controller
                         $logs->save();
                     }
                 } catch (Exception $e) {
-                    // $wish->delete();
-                    return redirect(route('user.show', ['username' => Auth::user()->username, 'page' => 'wishes']))->with('error', 'Stripe Error: '.$e->getMessage());
+                    // Do NOT delete on an EDIT — the wish already exists and its
+                    // purchases point at it. Report it and leave it alone.
+                    $message = ListingRollback::stripeFailed($wish, $e, ['module' => 'wish'], rollback: false);
+
+                    return redirect(route('user.show', ['username' => Auth::user()->username, 'page' => 'wishes']))->with('error', $message);
                 }
             }
 
@@ -898,8 +944,8 @@ class WishitemController extends Controller
             }])
             ->whereHas('user', function ($q) use ($tag) {
                 $q->whereNull('deleted_at')
-                    ->where('stripe_details_submitted', 1)
                     ->where('suspended_account', 0);
+                DiscoveryEligibility::payable($q);
                 if ($tag) {
                     $q->whereJsonContains('creator_category', $tag);
                 }
@@ -970,6 +1016,7 @@ class WishitemController extends Controller
                         ->where('role', 1)
                         ->whereNotNull('username')
                         ->where('username', '!=', '');
+                    DiscoveryEligibility::payable($q);
                     if ($gender != 'all') {
                         $q->where('gender', $gender);
                     }
@@ -985,6 +1032,7 @@ class WishitemController extends Controller
                     ->where('suspended_account', 0)
                     ->where('role', 1)
                     ->where('username', '!=', '');
+                DiscoveryEligibility::payable($q);
                 if ($gender != 'all') {
                     $q->where('gender', $gender);
                 }
@@ -1051,6 +1099,8 @@ class WishitemController extends Controller
                 $query->where('is_approved', 1);
             })
             ->where('suspended_account', 0)
+            ->where('role', 1)
+            ->tap(fn ($q) => DiscoveryEligibility::payable($q))
             ->pluck('creator_category')
             ->map(function ($item) {
                 return json_decode($item, true);
@@ -3385,6 +3435,27 @@ class WishitemController extends Controller
      *
      * @return mixed
      */
+    /**
+     * Piggy Bank / Tip Jar goal.
+     *
+     * 🚨 THE ONLY SELLABLE SURFACE WITH NO AUTOMATED CHECK AT ALL (fixed 11 Sep 2026).
+     * Its `name` and `description` are public on the creator's profile and reach a
+     * payment-facing screen, and this endpoint took both as free text — no naming
+     * rule, no blocked-word list, nothing. Every other module had at least one.
+     *
+     * 🚨 REFUSED AT SAVE, NOT HELD, AND THAT IS DELIBERATE. Every other module holds
+     * a bad listing at `approved = 0` for the admin Content Review queue — but that
+     * queue is driven by `Admin\ContentModerationController::MODULES`, which has no
+     * tip-goal row, and `tip_goals` has no approval column for it to clear. A hold
+     * here would be a listing nobody on earth could release: worse than no check.
+     * So the creator is told at the moment they press Save, which they can act on,
+     * and no unstaffed queue is created. Same decision, same reasoning, as
+     * `NoContactDetails`.
+     *
+     * ⚠️ A tip goal carries NO image and no file — `RewardService` gives the `tip`
+     * module no legacy media column at all — so there is nothing here for
+     * `CheckMediaModeration` to scan. Text is the whole surface.
+     */
     public function addTipGoal(Request $request)
     {
         $request->validate(
@@ -3392,6 +3463,16 @@ class WishitemController extends Controller
                 'name' => [
                     'required',
                     'string',
+                    'max:255',
+                    new NoExpenseOrBrandName,
+                    new NoBlockedSymbols,
+                ],
+                'description' => [
+                    'nullable',
+                    'string',
+                    'max:1000',
+                    new NoExpenseOrBrandName,
+                    new NoBlockedSymbols,
                 ],
                 'target' => [
                     'required',
@@ -3406,6 +3487,20 @@ class WishitemController extends Controller
                 ],
             ]
         );
+
+        /*
+         * The blocked-word list every other module runs through
+         * `ItemTextModeration`. It lands as a field error rather than a hold for the
+         * reason in the docblock above; `withErrors` keeps it beside the field the
+         * creator has to change, which a flashed banner does not.
+         */
+        foreach (['name' => $request->name, 'description' => $request->description] as $field => $value) {
+            $blocked = Helpers::checkBlockText((string) $value);
+
+            if ($blocked !== false) {
+                return back()->withErrors([$field => Helpers::blockedContentMessage($blocked)])->withInput();
+            }
+        }
 
         $user = User::where('id', Auth::id())->first();
 

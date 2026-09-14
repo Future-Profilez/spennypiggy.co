@@ -34,7 +34,9 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
                            line-height:22px;padding:0 0 24px 0;text-align:center;">
-                    Great news! One of your referrals has successfully crossed <strong style="color:#8C52FF;">£1,000 GMV</strong>.
+                    {{-- 🚨 The threshold is the ROW's, stamped at creation — a legacy referral is
+                         judged at £1,000, a new one at £2,000. Never a literal, never today's config. --}}
+                    Great news! One of your referrals has crossed <strong style="color:#8C52FF;">£{{ number_format((float) ($referral->qualifying_threshold ?? config('referral.qualifying_gmv', 2000)), 0) }}</strong> in settled earnings.
                 </td>
             </tr>
 

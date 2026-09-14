@@ -13,9 +13,21 @@
  * ⚠️ Every one of these is a QUALIFYING threshold, not a promise of earnings.
  * The copy below says so, and the pages must keep saying so — "no assured
  * earnings" is on the Founder page for a reason.
+ *
+ * 🚨 THREE OF THESE SCHEMES WERE RETIRED ON 11 Sep 2026 — FOUNDER, FAST_START
+ * and GROWTH (simplification programme §6). THE CONSTANTS ARE KEPT, NOT
+ * DELETED: the schemes are switched off, not removed, and their figures are
+ * still needed by the admin screens' historic records and by the pages the
+ * moment any of them is switched back on.
+ *
+ * 🚨 THIS FILE IS ALWAYS IMPORTABLE, WHICH IS EXACTLY THE TRAP. A surface that
+ * decides WHETHER to draw a scheme by importing from here advertises a retired
+ * one and links at a route that 404s. Decide with `useIncentives()`
+ * (`@/lib/incentives`), which reads the server's own flags; use these only for
+ * the numbers, once you have decided.
  */
 
-/** config/founder_bonus.php */
+/** config/founder_bonus.php — 🚨 RETIRED 11 Sep 2026. Gate on `useIncentives().founderBonus`. */
 export const FOUNDER = {
     /** limits.max_founder_seats */
     seats: 150,
@@ -42,6 +54,7 @@ export const FOUNDER = {
  * page can ask the server. This mirror exists for the marketing surfaces that
  * render without one, and must be kept in step with `config/growth_bonus.php`.
  */
+/* 🚨 RETIRED 11 Sep 2026. Gate on `useIncentives().growthBonus`. */
 export const GROWTH = {
     /** limits.max_seats */
     seats: 150,
@@ -59,27 +72,53 @@ export const GROWTH = {
     expiryMonths: 12,
 };
 
-/** config/fast_start_bonus.php — bonus.flat_rate */
+/**
+ * config/fast_start_bonus.php — bonus.flat_rate.
+ *
+ * 🚨 RETIRED 11 Sep 2026. Gate on `useIncentives().fastStart`.
+ * ⚠️ The rate is 5% of NET, which is what the published terms say and what
+ * `ProcessFastStartBonusPayouts` pays. Any surface saying otherwise is wrong.
+ */
 export const FAST_START = {
     rate: 0.05,
     windowDays: 30,
 };
 
-/** config/referral.php — reward_amount / currency */
+/**
+ * config/referral.php — reward_amount / qualifying_gmv.
+ *
+ * ✅ LIVE, with NEW NUMBERS from 11 Sep 2026: £2,000 → £50 (was £1,000 → £50).
+ *
+ * 🚨 THE THRESHOLD MOVED AND EXISTING REFERRALS DID NOT. Every
+ * `creator_referrals` row carries its own `qualifying_threshold`, stamped when
+ * it was created, so somebody part-way to the old £1,000 is still judged at
+ * £1,000. This constant is the figure a NEW referral is stamped with, and it is
+ * what the marketing pages advertise.
+ *
+ * ⚠️ Prefer `useIncentives().referral` where a hook is available — it is served
+ * from `config/referral.php` itself and cannot drift.
+ */
 export const REFERRAL = {
     amount: 50,
     currency: 'GBP',
-    /**
-     * The referred creator's lifetime GMV at which the reward is released.
-     *
-     * ⚠️ THIS ONE HAS NO CONFIG KEY. `config/referral.php` carries only
-     * `reward_amount` and `currency`; the threshold is a literal `1000` in FOUR
-     * PHP places — `PromoBannerService::REFERRAL_QUALIFYING_GMV`,
-     * `Helpers.php:337`, `Helpers.php:357` and `CreatorReferral.php:79`. It is
-     * mirrored here so the marketing pages stop retyping it as well; if it ever
-     * moves, it has to move in five places until someone gives it a config key.
-     */
-    qualifyingGmv: 1000,
+    /** The referred creator's qualifying settled earnings at which £50 is released. */
+    qualifyingGmv: 2000,
+};
+
+/**
+ * config/membership_credits.php — "Earn your membership back".
+ *
+ * ✅ NEW 11 Sep 2026. Every £500 of qualifying settled earnings buys one free
+ * month of the creator platform subscription. £1,000 = 2 months, £3,000 = 6.
+ *
+ * 🚨 IT IS A SUBSCRIPTION CREDIT AND NEVER CASH, and no surface may imply
+ * otherwise — "a free month", never "£8.99 back".
+ *
+ * ⚠️ Prefer `useIncentives().membershipCredit` where a hook is available.
+ */
+export const MEMBERSHIP_CREDIT = {
+    threshold: 500,
+    months: 1,
 };
 
 export const CURRENCY_SYMBOL = '£';

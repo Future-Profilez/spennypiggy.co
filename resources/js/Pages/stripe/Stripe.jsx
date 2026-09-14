@@ -246,7 +246,7 @@ export default function Stripe(props) {
     const checkTerms = () => {
         if (!finalStepsUnlocked) {
             errorAlert(
-                "Complete admin profile approval before connecting Stripe.",
+                "Your page needs to be live before you connect Stripe.",
             );
             return false;
         }
@@ -346,11 +346,15 @@ export default function Stripe(props) {
                     {!finalStepsUnlocked && (
                         <div className="mb-6 bg-yellow-50 border-2 border-black rounded-box-sm p-4">
                             <p className="font-bold font-CeraGR text-black">
-                                Profile approval needed first
+                                Your page is not live yet
                             </p>
- <p className="text-sm text-black/80 font-CeraGR mt-0.5">
-                                Finish your profile and submit it for admin
-                                approval to unlock payment setup.
+                            {/* ⚠️ Nobody approves anything (11 Sep 2026): the page goes live
+                                on its own once photo, bio and handle pass the checks. The
+                                lock on `profile_status_lock == 2` is right; the old copy was not. */}
+                            <p className="text-sm text-black/80 font-CeraGR mt-0.5">
+                                Finish your profile — a photo, a bio and a social
+                                handle. It goes live on its own once the checks pass,
+                                and payment setup unlocks with it.
                             </p>
                         </div>
                     )}

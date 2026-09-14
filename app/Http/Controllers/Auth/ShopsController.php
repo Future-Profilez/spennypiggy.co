@@ -26,6 +26,7 @@ use App\Models\UserPayment;
 use App\Models\UserShopCategories;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Rules\NoBlockedSymbols;
 use App\Rules\NoExpenseOrBrandName;
 use App\Services\AbandonedCheckoutService;
 use App\Services\CheckoutMethodResolver;
@@ -44,7 +45,10 @@ use App\Services\StockWaitlistService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\ListingPublication;
+use App\Support\ListingRollback;
 use App\Support\NotificationContext;
+use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
@@ -132,7 +136,7 @@ class ShopsController extends Controller
         ItemTextModeration::apply(
             $shop,
             ['reward_title', 'reward_body', 'reward_description', 'name', 'description'],
-            ['approved' => 0]
+            ListingPublication::heldAttributes($shop)
         );
     }
 
@@ -183,24 +187,17 @@ class ShopsController extends Controller
         return ! empty($request->reward_file) ? $existing : null;
     }
 
+    /**
+     * The paid file, not the shop front.
+     *
+     * ⚠️ The rules moved to `App\Support\RewardFileScan` on 11 Sep 2026 so the other
+     * five sellable modules could get the same gate — they had all been scanning
+     * their thumbnail and shipping the reward file unscanned. Behaviour here is
+     * unchanged; this is the same check, called from one place.
+     */
     private function moderateRewardFile(Shop $shop): void
     {
-        if (empty($shop->reward_file) || Str::startsWith($shop->reward_file, ['http://', 'https://'])) {
-            return;
-        }
-
-        $type = strtolower((string) $shop->reward_file_type);
-        if ($type !== '' && ! Str::contains($type, ['image', 'video'])) {
-            return;
-        }
-
-        CheckMediaModeration::dispatch(
-            Shop::class,
-            $shop->id,
-            $shop->reward_file,
-            ['approved' => 0],
-            'reward_file'
-        );
+        RewardFileScan::dispatch($shop, ListingPublication::heldAttributes($shop));
     }
 
     /**
@@ -254,6 +251,7 @@ class ShopsController extends Controller
                     'required',
                     'string',
                     new NoExpenseOrBrandName,
+                    new NoBlockedSymbols,
                 ],
                 'description' => [
                     'required',
@@ -421,13 +419,18 @@ class ShopsController extends Controller
 
         $shop->refresh();
 
+        /* Live on save. ⚠️ The >£2,500 enhanced review below runs AFTER this and
+           still holds — that is a Stripe compliance rule, not the review queue the
+           simplification plan removes. */
+        ListingPublication::publish($shop);
+
         // SFW gate: scan the product image; hold (un-approve) if it fails moderation.
         if (! empty($shop->image)) {
             CheckMediaModeration::dispatch(
                 Shop::class,
                 $shop->id,
                 $shop->image,
-                ['approved' => 0],
+                ListingPublication::heldAttributes($shop),
                 'product_image'
             );
         }
@@ -506,16 +509,26 @@ class ShopsController extends Controller
 
             return response()->json([
                 'status' => true,
-                'msg' => 'Shop Item has been added, your upload will be approved shortly.',
+                'msg' => 'Shop item added — it is live on your page now.',
             ]);
         } catch (Exception $e) {
-            $shop->delete();
+            /*
+             * ⚠️ The row, its shipping zones, its categories and its `listing_created`
+             * activity were all written BEFORE this call — the Stripe payload needs
+             * the saved row's uuid and image url. Rolling the shop row back on its
+             * own left those children orphaned, so they go with it.
+             */
+            ShopShippingInfo::where('shop_id', $shop->id)->delete();
+            ShopCategory::where('shop_id', $shop->id)->delete();
 
             return response()->json([
                 'status' => false,
-                'msg' => 'Stripe Error: '.$e->getMessage(),
+                'msg' => ListingRollback::stripeFailed($shop, $e, [
+                    'module' => 'shop',
+                    'type' => $request->type,
+                    'currency' => $user->default_currency ?? 'gbp',
+                ]),
             ]);
-            // return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
         }
     }
 
@@ -541,7 +554,7 @@ class ShopsController extends Controller
         // the £4.99–£10,000 rule and left a £0 item on sale).
         $request->validate([
             'type' => ['required', 'string'],
-            'name' => ['required', 'string', new NoExpenseOrBrandName],
+            'name' => ['required', 'string', new NoExpenseOrBrandName, new NoBlockedSymbols],
             'description' => ['required'],
             'price' => ['required', 'numeric'],
             'slot_limitation' => ['nullable', 'integer', 'min:0'],
@@ -649,15 +662,22 @@ class ShopsController extends Controller
             // would notice. Never throws; the scheduled sweep covers it regardless.
             app(StockWaitlistService::class)->checkRestock($shop->id);
 
+            /* An edit lifts a hold only where this save could have fixed it — see
+               `ListingPublication::republish`. */
+            ListingPublication::republish($shop, array_filter([
+                (string) $shop->image !== (string) $oldImage ? 'product_image' : null,
+                (string) $shop->reward_file !== (string) $oldRewardFile ? 'reward_file' : null,
+            ]));
+
             // An edit could swap in new media, so re-run the SFW gate — previously
             // only creation was scanned, making edit a way around moderation.
             if (! empty($request->image) && $request->image !== $oldImage) {
-                CheckMediaModeration::dispatch(Shop::class, $shop->id, $shop->image, ['approved' => 0], 'product_image');
+                CheckMediaModeration::dispatch(Shop::class, $shop->id, $shop->image, ListingPublication::heldAttributes($shop), 'product_image');
             }
             if ($shop->reward_file && $shop->reward_file !== $oldRewardFile) {
                 $this->moderateRewardFile($shop);
-                $this->moderateShopText($shop);
             }
+            $this->moderateShopText($shop);
 
             if (! empty($request->category)) {
                 ShopCategory::where('shop_id', $shop->id)->delete();
@@ -760,8 +780,9 @@ class ShopsController extends Controller
                             }
                         }
                     }
+                    /* A recreated Stripe product is not a moderation signal — see
+                       `ListingPublication`. */
                     $shop->stripe_product_id = $stripe_client->id;
-                    $shop->approved = 0;
                     $shop->save();
                 }
 
@@ -783,7 +804,7 @@ class ShopsController extends Controller
 
                 return response()->json([
                     'status' => true,
-                    'msg' => 'Shop Item has been updated, your upload will be approved shortly.',
+                    'msg' => 'Shop item updated.',
                 ]);
                 // return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Shop Item has been added, your upload will be approved shortly.");
 
@@ -792,9 +813,8 @@ class ShopsController extends Controller
                 // update — that would destroy the creator's shop item (and orphan its orders).
                 return response()->json([
                     'status' => false,
-                    'msg' => 'Stripe Error: '.$e->getMessage(),
+                    'msg' => ListingRollback::stripeFailed($shop, $e, ['module' => 'shop'], rollback: false),
                 ]);
-                // return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
             }
         }
     }

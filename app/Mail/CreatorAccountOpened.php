@@ -14,9 +14,9 @@ use Illuminate\Queue\SerializesModels;
  * "Your account is a creator account now" — sent once, when a gifter converts.
  *
  * 🚨 TRANSACTIONAL, AND IT CARRIES NO UNSUBSCRIBE. It states what has just
- * changed about the person's own account, including that their photo and bio
- * have gone back for review — the one fact they need and cannot see from an
- * inbox. `EmailService::sendMarketingEmail` is not used and must not be: a
+ * changed about the person's own account, including what happened to their
+ * photo and bio — the one fact they need and cannot see from an inbox.
+ * `EmailService::sendMarketingEmail` is not used and must not be: a
  * marketing opt-out may not silence a notice about the state of an account (the
  * same rule `GrowthBonusMilestoneReached` follows for money).
  *
@@ -38,7 +38,7 @@ class CreatorAccountOpened extends Mailable
     public function __construct(
         protected int $userId,
         protected string $creatorName,
-        protected bool $reviewingAssets = false,
+        protected bool $hadAssets = false,
     ) {}
 
     public function envelope(): Envelope
@@ -66,7 +66,7 @@ class CreatorAccountOpened extends Mailable
                 // Whether they actually had a photo or bio on file, so the mail does
                 // not tell somebody their picture is under review when they never
                 // uploaded one.
-                'reviewingAssets' => $this->reviewingAssets,
+                'hadAssets' => $this->hadAssets,
                 'ctaUrl' => $user && $user->username
                     ? rtrim(config('app.url'), '/').'/'.$user->username
                     : rtrim(config('app.url'), '/'),

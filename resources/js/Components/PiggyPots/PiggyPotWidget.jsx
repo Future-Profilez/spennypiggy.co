@@ -19,6 +19,7 @@ import confetti from "canvas-confetti";
 import { riskMessageBody } from '@/constants/riskMessages';
 import StepUpModal from '@/Components/Risk/StepUpModal';
 import { MAX_PRICE_GBP, fromGbp, priceLimits } from "@/lib/priceLimits";
+import { supporterFeeCaption } from "@/lib/fees";
 
 // £4.99–£500 in GBP. The pot is priced in its OWN currency, so both bounds are
 // converted before they are shown or enforced — see `lib/priceLimits.js`.
@@ -48,6 +49,7 @@ export default function PiggyPotWidget({
     const [stepUpContext, setStepUpContext] = useState(null);
 
     const { auth, turnstileSiteKey, rates } = usePage().props;
+    const __pageProps = usePage().props;
     const { errorAlert } = useAlerts();
     const turnstileRef = useRef(null);
     const [verified, setVerified] = useState(false);
@@ -135,7 +137,7 @@ export default function PiggyPotWidget({
     const shouldCelebrate = !!featuredPot?.is_pinned && isComplete && !inPopup;
 
     const closedReason = isHeld
-        ? "This content is under review and will be available shortly."
+        ? "An automated check flagged something here, so only you can see it."
         : deadlinePassed
           ? "The creator's deadline for this content has passed."
           : isComplete
@@ -819,9 +821,12 @@ export default function PiggyPotWidget({
                                                 : "Calculating…"}
                                         </span>
                                     </div>
- <p className="text-[12px] font-bold text-black/60 mt-2">
-                                        Includes payment processing and platform
-                                        fees.
+ {/* 🚨 ONE FEE, AND THE RATE COMES FROM THE SERVER — see
+                                        resources/js/lib/fees.js. This read "payment processing
+                                        and platform fees", two charges the platform stopped
+                                        making on 11 Sep 2026. */}
+                                    <p className="text-[12px] font-bold text-black/60 mt-2">
+                                        {supporterFeeCaption(__pageProps, { withRate: true })}.
                                     </p>
                                 </div>
 

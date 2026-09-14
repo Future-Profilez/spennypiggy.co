@@ -8,7 +8,6 @@ use App\Models\Deliverable;
 use App\Models\FinancialTransaction;
 use App\Models\ShopPayment;
 use App\Models\StripePaymentDetail;
-use App\Models\TaskPurchase;
 use App\Models\User;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
@@ -24,6 +23,7 @@ class PayByBankAsyncFailureTest extends TestCase
     use RefreshDatabase;
 
     private User $creator;
+
     private User $buyer;
 
     protected function setUp(): void

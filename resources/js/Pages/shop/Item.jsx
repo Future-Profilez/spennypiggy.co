@@ -11,6 +11,7 @@ import { Percent } from "lucide-react";
 import WaitlistButton from "@/Components/WaitlistButton";
 import ShareButton from "@/Components/ShareButton";
 import axios from "axios";
+import { supporterFeeCaption } from "@/lib/fees";
 
 export default function ShopDetailItem(props) {
     const { vat_percent, auth, user, shop, card_capabilities } = props;
@@ -32,6 +33,7 @@ export default function ShopDetailItem(props) {
         }
     }, []);
 
+    const __pageProps = usePage().props;
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
 
     const isOwner = Number(auth?.user?.id) === Number(shop?.user_id);
@@ -388,7 +390,7 @@ export default function ShopDetailItem(props) {
                                                     <Percent size={16} /> Member discount applied
                                                 </span>
                                                 <span className="text-[13px] text-black/60 font-normal mt-1 leading-[1.45]">
-                                                    *Includes platform and payment processing fees{shop?.type === 'physical' ? (parseFloat(shippingPrice) > 0 ? " and shipping" : ". Free shipping") : ""}. You will be charged in {itemCurrency}.
+                                                    {supporterFeeCaption(__pageProps)}{shop?.type === 'physical' ? (parseFloat(shippingPrice) > 0 ? " and shipping" : ". Free shipping") : ""}. You will be charged in {itemCurrency}.
                                                 </span>
                                             </div>
                                         )
@@ -405,7 +407,7 @@ export default function ShopDetailItem(props) {
                                                     {formatMultiPrice(calculateTotalSupporterPays(baseRegularPriceToGrossUp,itemCurrency,0,creatorIdOf(shop)).total_supporter_pays,itemCurrency)}
                                                 </span>
                                                 <span className="text-[13px] text-black/60 font-normal mt-1 leading-[1.45]">
-                                                    *Includes platform and payment processing fees{shop?.type === 'physical' ? (parseFloat(shippingPrice) > 0 ? " and shipping" : ". Free shipping") : ""}. You will be charged in {itemCurrency}.
+                                                    {supporterFeeCaption(__pageProps)}{shop?.type === 'physical' ? (parseFloat(shippingPrice) > 0 ? " and shipping" : ". Free shipping") : ""}. You will be charged in {itemCurrency}.
                                                 </span>
                                             </div>
                                         )

@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ScanIntroPoster;
 use App\Models\User;
 use App\Models\UserIntro;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 /**
@@ -36,36 +38,76 @@ class GifterIntroAutoApprovalTest extends TestCase
         $this->assertSame(0, UserIntro::where('user_id', $gifter->id)->count());
     }
 
-    public function test_a_creator_intro_is_saved_pending(): void
+    /**
+     * 🚨 REWRITTEN, NOT DELETED — IT PINNED THE OPPOSITE RULE. This asserted
+     * `approved = 0`: an intro waited for a person. Intros auto-publish now
+     * (12 Sep 2026) — the row is created at `approved = 1` and `ScanIntroPoster`
+     * retracts it if the poster frame fails. Same publish-then-check trade the
+     * profile photo and every listing took the same week.
+     *
+     * ⚠️ The original reasoning survives in the re-upload test below: the
+     * question "can a creator swap an approved video for anything" is still
+     * live, and the answer is now the scan rather than a queue.
+     */
+    public function test_a_creator_intro_publishes_on_save_and_is_queued_for_the_scan(): void
     {
+        Queue::fake();
+
         $creator = User::factory()->create(['role' => 1]);
 
         $this->actingAs($creator)
             ->postJson('/intro/save', ['media' => ['uuid' => 'intro-uuid']])
             ->assertOk();
 
-        $this->assertSame(0, (int) UserIntro::where('user_id', $creator->id)->value('approved'));
+        $this->assertSame(1, (int) UserIntro::where('user_id', $creator->id)->value('approved'));
+
+        /*
+         * 🚨 THE SCAN IS THE WHOLE OF THE GATE NOW. Without it this is not
+         * publish-then-check, it is publish — so the dispatch is asserted, not
+         * merely the flag. ⚠️ Needs `queue:work` in production; without a worker
+         * nothing ever retracts.
+         */
+        Queue::assertPushed(ScanIntroPoster::class);
     }
 
     /**
-     * 🚨 A creator swapping their video goes BACK to pending — the rule that
-     * closed "10 of 12 approved intros had been changed after approval".
+     * 🚨 THE FAULT THIS GUARDS IS UNCHANGED; ONLY THE REMEDY MOVED. Measured
+     * 17 Aug 2026: **10 of 12 approved intros had been changed after approval** —
+     * a creator could swap a cleared video for anything and it stayed cleared.
+     * The answer used to be "back to pending"; since intros auto-publish
+     * (12 Sep 2026) it is "re-scanned", so what has to be pinned is that the
+     * swap is JUDGED AGAIN rather than inheriting the old verdict.
+     *
+     * ⚠️ `moderation_reason` is cleared with it — a reason left over from the
+     * previous video is a sentence about a file that is no longer there, which
+     * is the exact fault `CheckMediaModeration` caused on avatars (31 Aug 2026).
      */
-    public function test_a_creator_re_upload_goes_back_to_pending(): void
+    public function test_a_creator_re_upload_is_judged_again_rather_than_inheriting_the_verdict(): void
     {
+        Queue::fake();
+
         $creator = User::factory()->create(['role' => 1]);
 
         $this->actingAs($creator)
             ->postJson('/intro/save', ['media' => ['uuid' => 'first']])
             ->assertOk();
 
-        UserIntro::where('user_id', $creator->id)->update(['approved' => 1]);
+        // The scan retracted the first video — the state a swap must not inherit.
+        UserIntro::where('user_id', $creator->id)->update([
+            'approved' => 0,
+            'moderation_reason' => 'Something in this video needs another look.',
+        ]);
 
         $this->actingAs($creator)
             ->postJson('/intro/save', ['media' => ['uuid' => 'second']])
             ->assertOk();
 
-        $this->assertSame(0, (int) UserIntro::where('user_id', $creator->id)->value('approved'));
+        $row = UserIntro::where('user_id', $creator->id)->first();
+
+        $this->assertSame(1, (int) $row->approved, 'A replacement video must publish on its own merits.');
+        $this->assertNull($row->moderation_reason, 'The previous video\'s reason must not describe the new one.');
+
+        Queue::assertPushed(ScanIntroPoster::class);
     }
 
     public function test_the_backlog_command_approves_only_pending_gifter_rows(): void

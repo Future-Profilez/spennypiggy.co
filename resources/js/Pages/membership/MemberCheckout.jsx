@@ -22,7 +22,7 @@ export default function SubCheckout(props) {
     const __pageProps = usePage().props;
     const turnstileRef = useRef(null);
     const { user, auth, membership, vat_amount, isSocilAdded, card_capabilities, creator_currency, display_currency } = props;
-    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency, supporterFixedFee } = PriceFormat();
     const [username, setUserName] = useState(
         (auth && auth.user && auth.user.username) || ""
     );
@@ -67,6 +67,7 @@ export default function SubCheckout(props) {
         const totalSupporterPays = supporterTotal(priceWithVat, {
             ...__rates,
             adminFee: adminFeeInCurrency(curr),
+            fixedFee: supporterFixedFee(curr),
             isZeroDecimal,
         });
 

@@ -1,9 +1,10 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
 import AdPage from './components/AdPage';
 import FeeBlock from './components/FeeBlock';
 import RiskBlock from './components/RiskBlock';
 import WhyTheFee from './components/WhyTheFee';
+import { feeIsAllIn, feeRateLabel } from '@/lib/fees';
 import {
     ACCENT,
     Eyebrow,
@@ -44,6 +45,12 @@ export default function Wishlist({
     fees,
     threeTierLine,
 }) {
+    /* ⚠️ The rate comes from the shared `fees` prop (`FeeModel`), never typed.
+       `fees` above is the COMPARISON payload — a different, richer shape for
+       the fee table — and the two must not be confused. */
+    const page = usePage();
+    const allIn = feeIsAllIn(page);
+    const rate = feeRateLabel(page);
     const accent = ACCENT.safe;
     const title = 'Creator wishlist that pays you 100% — Spenny Piggy';
     const promise = `${SUBSCRIPTION_COPY.promise} · ${PRICE_FORMATTED} + VAT / month after · cancel anytime`;
@@ -81,7 +88,11 @@ export default function Wishlist({
                             accent={accent}
                             figure="100%"
                             label="Of your listed price"
-                            note="No revenue cut. Supporters cover the platform fee at checkout."
+                            note={
+                                allIn
+                                    ? `No revenue cut. Supporters pay ${rate} all-in, processing included.`
+                                    : 'No revenue cut. Supporters cover the platform fee at checkout.'
+                            }
                         />
                         <StatCell
                             className="bg-[#0B0B0C]"
@@ -209,7 +220,9 @@ export default function Wishlist({
                      * ── What it costs the supporter ──────────────────────
                      * Shown in FULL here: this is where the wishlist searcher
                      * compares us with what they use now, so the three rails and
-                     * the £1 are the argument rather than a footnote.
+                     * their all-in rates are the argument rather than a
+                     * footnote. (⚠️ This used to say "and the £1" — the
+                     * administration fee was retired on 11 Sep 2026.)
                      */}
                     <div className="mt-16 md:mt-24">
                         <FeeBlock

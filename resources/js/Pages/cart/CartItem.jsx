@@ -1,13 +1,16 @@
 import { useState } from "react";
+import { usePage } from "@inertiajs/react";
 import cartproductimg from '../../../assets/img/cartproductimg.png';
 import PriceFormat from "@/includes/PriceFormat";
 import { useAlerts } from "@/Components/Alerts";
 import axios from "axios";
 import RewardSummary from "@/Components/Reward/RewardSummary";
 import { riskMessageBody } from '@/constants/riskMessages';
+import { supporterFeeCaption } from "@/lib/fees";
 
 export default function CartItem({data, removeCart, quantityUpdate, currency, isLoggedIn, totalPrice}) {
 
+    const __pageProps = usePage().props;
     const { formatMultiPrice } = PriceFormat();
     const [quantity, setQuantity] = useState(data && data.quantity || 1);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
@@ -76,7 +79,7 @@ export default function CartItem({data, removeCart, quantityUpdate, currency, is
                                 ) : null}
                             </span>
                             <span className="text-[12px] text-gray-500 font-normal mt-1 leading-tight">
-                                *Includes platform and payment processing fees{data?.type === 'physical' ? " and shipping" : ""}
+                                {supporterFeeCaption(__pageProps)}{data?.type === 'physical' ? " and shipping" : ""}
                             </span>
                         </div>
                     </div>

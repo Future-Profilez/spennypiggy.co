@@ -34,7 +34,13 @@ function MembershipsLists(props) {
                 <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 !gap-2 sm:!gap-3 md:!gap-5'>
                     {memoizedMemberships}
                     {IsloggedIn && (
-                        <AddMoreTile title="Add Membership" subtitle="Create another tier for your supporters." onClick={() => window.dispatchEvent(new Event("toggleAddOptions"))} minHeightClass="min-h-[300px]" />
+                        <AddMoreTile title="Add Membership" subtitle="Create another tier for your supporters." onClick={() =>
+                            window.dispatchEvent(
+                                new CustomEvent("toggleAddOptions", {
+                                    detail: { intent: "membership" },
+                                }),
+                            )
+                        } minHeightClass="min-h-[300px]" />
                     )}
                 </div>
             }

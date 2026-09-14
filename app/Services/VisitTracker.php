@@ -104,6 +104,27 @@ class VisitTracker
         'ad_wishlist',
         'ad_compare',
         'ad_vs',
+
+        /*
+         * 🚨 THE ONLY STAGE OF THE ACTIVATION FUNNEL (§20) THAT IS NOT DERIVABLE
+         * FROM DATA ALREADY ON DISK. Every other stage — signup, verification,
+         * profile, socials, each listing type, payout setup, earnings — is a
+         * column or a row somebody already writes. "Signup started" is the one
+         * moment nothing records, because the person has no account yet and
+         * abandoning the form leaves nothing behind.
+         *
+         * It is a counter here rather than a row anywhere because the visitor is
+         * anonymous: the guarantee at the top of this class (no personal data,
+         * nothing to erase) is what lets it run with no consent banner, and a
+         * per-person "started signing up" record would forfeit that for a number
+         * we only ever read in aggregate.
+         *
+         * ⚠️ This bucket is ALL roles. The form chooses creator vs supporter
+         * inside itself (one `register` route), so this stage cannot be split by
+         * role and the admin screen says so rather than implying it is
+         * creator-only.
+         */
+        'signup',
     ];
 
     /**
@@ -119,8 +140,50 @@ class VisitTracker
      * only exact way to tell a profile from an app page. */
     public const PROFILE_ROUTE = 'user.show';
 
+    /** The registration form. One route for both roles — see the `signup` page type. */
+    public const SIGNUP_ROUTE = 'register';
+
+    /** The page type the registration form counts into. */
+    public const SIGNUP_PAGE_TYPE = 'signup';
+
     /** Cookie that marks a visitor as already counted today. */
     public const VISITOR_COOKIE = 'sp_v';
+
+    /**
+     * Cookie that marks a visitor as already counted on the SIGNUP FORM today.
+     *
+     * 🚨 `VISITOR_COOKIE` IS SET ON A VISITOR'S FIRST PAGE OF THE DAY, WHATEVER
+     * THAT PAGE IS — so for every page type after the first, `unique_visitors`
+     * is structurally zero. Live proof on the day this was written:
+     * `ad_link_in_bio` carried 4 visits and 0 uniques, because nobody's first
+     * page of the day is an ad landing page they navigated to.
+     *
+     * That does not matter for `landing` (usually the first page someone sees)
+     * and it is fatal for `signup`, which is almost never the first page. A
+     * funnel stage that reads zero forever is worse than no stage, so the signup
+     * form gets its own once-a-day marker and its uniques mean what they say.
+     *
+     * ⚠️ ADDITIVE ONLY. `VISITOR_COOKIE` is still set and read exactly as
+     * before, so every existing counter reports the same number it did
+     * yesterday — a funnel whose history moves when you extend it cannot be
+     * used to judge a change.
+     */
+    public const SIGNUP_COOKIE = 'sp_vr';
+
+    /**
+     * Which once-a-day marker decides whether this view counts as a UNIQUE
+     * visitor for the given page type.
+     *
+     * Public because the decision has to be made in the middleware (only it can
+     * read and queue cookies) while the page-type vocabulary lives here. Two
+     * copies of that mapping is two answers to one question.
+     */
+    public static function uniqueCookieFor(string $pageType): string
+    {
+        return $pageType === self::SIGNUP_PAGE_TYPE
+            ? self::SIGNUP_COOKIE
+            : self::VISITOR_COOKIE;
+    }
 
     /** Cookie holding the FIRST source a visitor arrived from. */
     public const ATTRIBUTION_COOKIE = 'sp_src';
@@ -383,11 +446,23 @@ class VisitTracker
                 return self::AD_LANDING_ROUTES[$routeName];
             }
 
+            if ($routeName === self::SIGNUP_ROUTE) {
+                return self::SIGNUP_PAGE_TYPE;
+            }
+
             return $routeName === self::PROFILE_ROUTE ? 'creator_profile' : 'other';
         }
 
         // No matched route (called outside the request lifecycle, e.g. a test):
         // fall back to shape, single segment = probably a username.
+        //
+        // ⚠️ `register` is a single segment, so without this it falls through to
+        // `creator_profile` and the signup counter is silently short by however
+        // many views arrive without a matched route.
+        if ($path === self::SIGNUP_ROUTE) {
+            return self::SIGNUP_PAGE_TYPE;
+        }
+
         return str_contains($path, '/') ? 'other' : 'creator_profile';
     }
 

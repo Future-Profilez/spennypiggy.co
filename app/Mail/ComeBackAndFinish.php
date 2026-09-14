@@ -4,7 +4,7 @@ namespace App\Mail;
 
 use App\Http\Controllers\EmailPreferenceController;
 use App\Models\User;
-use App\Support\ReviewSubmission;
+use App\Support\ProfileAssets;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
@@ -75,7 +75,7 @@ class ComeBackAndFinish extends Mailable
                 'creatorName' => $this->creatorName,
                 'rejectReason' => trim($this->rejectReason),
                 'missing' => $this->missing,
-                'missingSentence' => ReviewSubmission::readableList($this->missing),
+                'missingSentence' => ProfileAssets::readableList($this->missing),
                 'actionUrl' => url('/'.($user->username ?? '')),
                 'unsubscribeUrl' => $user
                     ? EmailPreferenceController::generateUnsubscribeToken($user, 'creator_updates_enabled')

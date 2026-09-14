@@ -1988,9 +1988,33 @@ function Empty({ title, sub, Icon, cta }) {
             {/* An empty state that only says "nothing here" is a dead end — every one
                 of them now offers the next step. */}
             {cta && (
-                <a href="/creators"
- className="mt-6 inline-flex items-center gap-2 min-h-[44px] px-6 rounded-box-sm text-sm font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5 "
-                    style={{ background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)` }}>
+                /*
+                 * 🚨 `/discover`, NOT `/creators`. This is the CTA on every empty
+                 * state in a SUPPORTER's own purchase hub, and it pointed at the
+                 * page whose eyebrow reads "For creators" and whose headline is
+                 * "Sell your content. Keep all of it." A button labelled "Find
+                 * creators" landed the reader on creator recruitment. Every
+                 * `/creators*` path is a paid landing page for creator
+                 * acquisition; `/discover` is the supporter's browse surface.
+                 *
+                 * 🚨 THE GRADIENT HAD NO LEGIBLE INK AND WAS DROPPED. Measured:
+                 * white on `#FF007F` is 3.78:1 and white on `#7C3AED` is 5.70 —
+                 * black is 5.56 and 3.69. So white fails AA at the pink end and
+                 * black fails at the violet end, and there is no ink colour that
+                 * works across the fill. Solid brand pink with BLACK type (5.56)
+                 * is the house accent button, the same one every other primary
+                 * action on this platform uses.
+                 *
+                 * ⚠️ `hover:-translate-y-0.5` was the BANNED bare lift — the house
+                 * rule allows a translate only when it is paired with a hard
+                 * offset-shadow change, and there are no shadows left in this app
+                 * to move into. Press is `hover:brightness-110` /
+                 * `active:brightness-95`.
+                 */
+                <a
+                    href="/discover"
+                    className="mt-6 inline-flex min-h-[44px] items-center gap-2 rounded-box-sm border-2 border-black bg-[#FF007F] px-6 text-sm font-bold text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 motion-reduce:transition-none"
+                >
                     <Compass size={15} strokeWidth={2.2} /> Find creators
                 </a>
             )}

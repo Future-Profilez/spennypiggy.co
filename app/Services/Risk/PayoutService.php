@@ -136,6 +136,24 @@ class PayoutService
             ->select('payments.creator_id')
             ->join('users', 'users.uuid', '=', 'payments.creator_id')
             ->whereNull('users.payout_paused_at')
+            /*
+             * 🚨 THERE IS DELIBERATELY NO IDENTITY FILTER HERE, unlike the paused
+             * check above it (10 Sep 2026).
+             *
+             * A paused creator is not shown a figure, because an admin has stopped
+             * their money and the amount is not the point. An identity-blocked creator
+             * IS shown one — the payout page says "£X is waiting for you, verify your
+             * identity to receive it", and that number has to come from somewhere.
+             * This is where it comes from: the creator's own dashboard calls this
+             * scoped to their uuid.
+             *
+             * Filtering them out here would compute £0 for exactly the creator the
+             * whole feature exists to prompt, and the page would ask them to verify
+             * for nothing.
+             *
+             * The gate is in `executePayouts()`, which is the only place that issues a
+             * real transfer. See `App\Support\PayoutEligibility`.
+             */
             ->when($creatorUuids !== null, fn ($q) => $q->whereIn('payments.creator_id', $creatorUuids))
             ->where(function ($q) {
                 $q->where(function ($q2) {
@@ -625,6 +643,25 @@ class PayoutService
                     continue;
                 }
 
+                /*
+                 * 🚨 THE IDENTITY GATE THAT STOOD HERE IS GONE (11 Sep 2026).
+                 *
+                 * Client D5 and Q20, both CONFIRMED in writing: *"Remove the SP-specific
+                 * ID-document and human identity-sign-off process entirely. **Do not move
+                 * it to payout.**"* and *"There is no SP ID upload, no manual face/ID
+                 * comparison, and **no SP payout-stage identity gate**."* It had been in
+                 * place for one day — added 10 Sep on a verbal go-ahead that the written
+                 * instruction then reversed.
+                 *
+                 * 🚨 WHAT THIS MEANS, STATED PLAINLY: a creator Spenny Piggy has never
+                 * identified can now be paid. **Stripe Connect's own KYC is the only
+                 * control on that**, which is exactly the client's decision — they own
+                 * payment compliance and we do not duplicate it. The refund and fraud
+                 * exposure that moves with it is an accepted cost, not an oversight.
+                 *
+                 * ⚠️ Every OTHER gate below is untouched: no connected account, a paused
+                 * payout, a suspended creator and the reserve rules all still stop a run.
+                 */
                 if (! $creator->account_id) {
                     $reason = 'No connected Stripe account';
                     Log::warning("Payout: creator {$creatorId} {$reason} — skipping payout.");

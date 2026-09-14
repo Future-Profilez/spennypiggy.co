@@ -14,9 +14,10 @@ return [
      * How many listings the creator is asked for before their page is worth sharing.
      *
      * 🚨 THIS IS ENCOURAGEMENT, NOT A GATE. Nothing on the platform refuses a sale below
-     * this number — one listing and a verified identity is the real threshold, and it is
-     * enforced by `EnsureIdentityVerifiedForListings` and the eleven checkout gates, not
-     * here. A creator sitting on two listings can be bought from today. Wiring this figure
+     * this number — one listing on a live page is the real threshold, enforced by the
+     * eleven checkout gates, not here. (Identity gates the PAYOUT, never listing —
+     * `EnsureIdentityVerifiedForListings` was deleted 10 Sep 2026.) A creator sitting on
+     * two listings can be bought from today. Wiring this figure
      * into a refusal would turn a piece of coaching into a payment block, which is a
      * different feature and a much larger decision.
      */

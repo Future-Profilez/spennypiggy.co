@@ -8,6 +8,7 @@ use App\Mail\FounderCongratulations;
 use App\Models\CreatorReferral;
 use App\Models\FounderBonus;
 use App\Models\User;
+use App\Support\Incentives;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -36,6 +37,28 @@ class CheckFounderQualifications implements ShouldQueue
      */
     public function handle(): void
     {
+        /*
+         * 🚨 NO-OP WHILE THE SCHEME IS RETIRED (11 Sep 2026), AND THE COMMAND IS
+         * DELIBERATELY NOT DELETED. This is the ONLY thing that creates a
+         * founder: it sets `users.is_founder`, consumes one of the 150 seats,
+         * writes a `founder_bonuses` row with a real `bonus_amount`, stamps
+         * `founder_missed_at` and sends the congratulation e-mail. Every one of
+         * those is a new liability or a message about a scheme that no longer
+         * exists.
+         *
+         * ⚠️ It returns rather than throwing — a no-op is not the same as a
+         * crash, and a scheduled run that errors takes the rest of the tick's
+         * commands with it.
+         *
+         * ⚠️ `ProcessFounderPayouts` is NOT gated this way. It pays bonuses
+         * that already exist and keeps running until the last one is out.
+         */
+        if (! Incentives::founderEnabled()) {
+            Log::info('Founder Bonus is retired (founder_bonus.enabled = false) — no new qualifications.');
+
+            return;
+        }
+
         // One run at a time. Seat availability is read once below and enforced
         // with a local counter, so two overlapping runs (a retry landing on top
         // of the scheduled tick) would each see the same free seats and could

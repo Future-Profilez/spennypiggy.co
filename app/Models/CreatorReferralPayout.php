@@ -9,16 +9,21 @@ class CreatorReferralPayout extends Model
 {
     use HasFactory;
 
+    /*
+     * 🚨 THREE COLUMNS THIS MODEL NAMED DO NOT EXIST (fixed 11 Sep 2026, pre-existing
+     * since Jan 2026): `approval_status` was dropped (`2026_01_03_112519`), `stripe_payout_id`
+     * became `stripe_transfer_id`, `creator_referral_id` was dropped (`2026_01_03_062603`).
+     * `isPending()`/`isApproved()`/`isRejected()` read `approval_status` and therefore
+     * ALWAYS answered false. The admin app's copy had the right names all along.
+     */
     protected $fillable = [
-        'creator_referral_id',
         'creator_id',
         'amount',
         'requested_at',
-        'approval_status',
         'approved_by_admin_id',
         'approved_at',
         'rejection_reason',
-        'stripe_payout_id',
+        'stripe_transfer_id',
         'paid_at',
         'status',
     ];
@@ -33,11 +38,6 @@ class CreatorReferralPayout extends Model
     /* =========================
      | Relationships
      ========================= */
-
-    public function referral()
-    {
-        return $this->belongsTo(CreatorReferral::class, 'creator_referral_id');
-    }
 
     // Creator receiving the payout (referrer)
     public function creator()
@@ -57,17 +57,17 @@ class CreatorReferralPayout extends Model
 
     public function isPending(): bool
     {
-        return $this->approval_status === 'PENDING';
+        return strtolower((string) $this->status) === 'pending';
     }
 
     public function isApproved(): bool
     {
-        return $this->approval_status === 'APPROVED';
+        return strtolower((string) $this->status) === 'approved';
     }
 
     public function isRejected(): bool
     {
-        return $this->approval_status === 'REJECTED';
+        return strtolower((string) $this->status) === 'rejected';
     }
 
     public function isPaid(): bool

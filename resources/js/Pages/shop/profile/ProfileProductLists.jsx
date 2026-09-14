@@ -41,7 +41,17 @@ export default function ProfileProductLists({ IsloggedIn, suppressEmptyState = f
                         <AddMoreTile
                             title="Add Item"
                             subtitle="Create another product for your shop."
-                            onClick={() => window.dispatchEvent(new Event("toggleAddOptions"))}
+                            /* Names this module, so the shop form opens straight away
+                               rather than the seven-option chooser. `digital` is the
+                               shop form's own default type; it carries the physical
+                               switch inside it. */
+                            onClick={() =>
+                                window.dispatchEvent(
+                                    new CustomEvent("toggleAddOptions", {
+                                        detail: { intent: "digital" },
+                                    }),
+                                )
+                            }
                             minHeightClass="min-h-[300px]"
                         />
                     )}

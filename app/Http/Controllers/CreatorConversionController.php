@@ -141,7 +141,7 @@ class CreatorConversionController extends Controller
         /*
          * Mirrors the creator half of `RegisteredUserController::store`. The handle is
          * required because a creator already cannot go live without an approved one —
-         * `ReviewSubmission::missing()` refuses the submit — so asking later only
+         * the profile could not go live without them — so asking later only
          * moves the wall.
          */
         $validated = $request->validate([

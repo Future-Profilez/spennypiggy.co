@@ -113,15 +113,22 @@ export default function PiggyPotsGrid({
                             pot?.status === "completed" ||
                             remaining <= 0 ||
                             progressPercent >= 100;
+                        /* 🚨 NEVER PRINT THE RAW COLUMN. `moderation_hold` was rendered
+                           verbatim on the creator's own card — a database value as a
+                           status chip, in the one state that needs the clearest words.
+                           The held case now reads the same as every other module's
+                           badge ("Needs a fix"); `ItemStatusBadge` carries the detail. */
                         const statusLabel = isComplete
                             ? "completed"
-                            : pot?.status || "active";
+                            : pot?.status === "moderation_hold"
+                              ? "needs a fix"
+                              : pot?.status || "active";
                         const statusBadgeClass = isComplete
                             ? "bg-[#A2E4B8] text-black"
                             : statusLabel === "active"
                               ? "bg-[#A2E4B8] text-black"
-                              : statusLabel === "moderation_hold"
-                                ? "bg-red-200 text-black"
+                              : statusLabel === "needs a fix"
+                                ? "bg-[#FFF6DF] text-black"
                                 : "bg-gray-200 text-gray-800";
 
                         return (
@@ -168,7 +175,7 @@ export default function PiggyPotsGrid({
                                 {pot?.status === "moderation_hold" && (
                                     <div className="mt-1.5 flex">
                                         <ItemStatusBadge
-                                            state="in_review"
+                                            state="flagged"
                                             reason={pot?.moderation_reason}
                                             itemName={pot?.title}
                                             block={false}
@@ -224,9 +231,14 @@ export default function PiggyPotsGrid({
                         <AddMoreTile
                             title="Add Piggy Pot"
                             subtitle="Create a new goal for your supporters."
+                            /* Names this module, so the pot form opens straight away.
+                               A bare `new Event` carries no `detail`, which Dashboard
+                               reads as "not decided yet" and answers with the chooser. */
                             onClick={() =>
                                 window.dispatchEvent(
-                                    new Event("toggleAddOptions"),
+                                    new CustomEvent("toggleAddOptions", {
+                                        detail: { intent: "pot" },
+                                    }),
                                 )
                             }
                             minHeightClass="min-h-[260px]"
@@ -248,7 +260,11 @@ export default function PiggyPotsGrid({
                     </p>
                     <button
                         onClick={() =>
-                            window.dispatchEvent(new Event("toggleAddOptions"))
+                            window.dispatchEvent(
+                                new CustomEvent("toggleAddOptions", {
+                                    detail: { intent: "pot" },
+                                }),
+                            )
                         }
                         className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                     >

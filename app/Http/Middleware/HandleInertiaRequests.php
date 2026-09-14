@@ -12,12 +12,13 @@ use App\Models\UserVerificationStatus;
 use App\Services\CreatorJourneyService;
 use App\Services\IntercomService;
 use App\Services\Pricing\CreatorFeeResolver;
+use App\Services\Pricing\FeeModel;
 use App\Services\PromoBannerService;
 use App\Services\SubscriptionActivationService;
 use App\Support\AnalyticsEvent;
-use App\Support\GifterVerificationCharge;
+use App\Support\Incentives;
 use App\Support\MaintenanceMode;
-use App\Support\ReviewSubmission;
+use App\Support\ProfileAutoApproval;
 use App\Support\SubscriptionPlan;
 use App\Support\SuspendedAccount;
 use App\Support\VerifiedBadge;
@@ -72,15 +73,22 @@ class HandleInertiaRequests extends Middleware
                 'cover_url' => $user->cover_url,
                 'cover_approved' => $user->cover_approved,
                 'is_founder' => $user->is_founder,
-                'identity_status' => $user->identity_status,
-                // 🚨 Without this the front end cannot tell a check Stripe is deciding
-                // from a session the creator opened and abandoned — `identity_status`
-                // is 2 for both. See App\Support\IdentityCheckState.
-                'identity_session_status' => $user->identity_session_status,
-                'identity_verified_at' => $user->identity_verified_at,
-                'identity_admin_status' => $user->identity_admin_status,
-                'identity_admin_notes' => $user->identity_admin_notes,
-                'identity_admin_reviewed_at' => $user->identity_admin_reviewed_at,
+                /*
+                 * 🚨 SIX IDENTITY FIELDS LEFT THIS PAYLOAD (13 Sep 2026, client D5/Q20).
+                 * `identity_status` · `identity_session_status` · `identity_verified_at` ·
+                 * `identity_admin_status` · `identity_admin_notes` ·
+                 * `identity_admin_reviewed_at` were serialised into the `data-page`
+                 * attribute of EVERY page, for every signed-in user, and `resources/js`
+                 * read NONE of them — the Spenny Piggy identity check was removed on
+                 * 11 Sep and its screens went with it. Two of those columns
+                 * (`identity_admin_notes`, `identity_admin_reviewed_at`) are an ADMIN's
+                 * own review record about that person, shipped to their browser on every
+                 * navigation.
+                 *
+                 * ⚠️ The columns still exist and are still read in PHP by
+                 * `VerifiedBadge::COLUMNS` (vestigially) and by the archive screens in
+                 * the admin app. What is gone is publishing them to the browser.
+                 */
                 'profile_status_lock' => $user->profile_status_lock,
                 'verified_badge' => VerifiedBadge::tierFor($user),
                 'default_currency' => $user->default_currency,
@@ -127,18 +135,34 @@ class HandleInertiaRequests extends Middleware
                 'social_url' => $user->social_url,
                 'auto_tweet' => $user->auto_tweet,
                 'profile_reject_reason' => $user->profile_reject_reason,
+                // The scan's creator-facing reason and which asset it judged — the
+                // steps page renders the held asset's own reason beside it.
+                'moderation_reason' => $user->moderation_reason,
+                'moderation_asset' => $user->moderation_asset,
                 /*
-                 * 🚨 "SUBMITTED" AND "WITH THE REVIEW TEAM" ARE DIFFERENT FACTS.
+                 * 🚨 WHAT A REVIEWER ASKED THEM TO CHANGE, and it is NOT
+                 * `moderation_reason`. That column means the profile is held;
+                 * an edit request leaves everything live and published while
+                 * the creator fixes it, so the two must never be read as one.
+                 * Written by the admin's Daily Review feed, cleared when a
+                 * reviewer approves.
                  *
-                 * `profile_status_lock = 1` says the creator pressed Submit. It does
-                 * NOT say an admin can see them: the queue also requires a photo, bio,
-                 * handle and card, so a submission missing one of those sits in no
-                 * queue at all. Reading the bare lock is what told 22 creators "our
-                 * team is checking it now — there is nothing else to do" while nobody
-                 * could ever look at them. Null unless there is something to say; see
-                 * App\Support\ReviewSubmission.
+                 * ⚠️ Without this the instruction reached the creator only by
+                 * bell, push and e-mail — all missable, and the push provider
+                 * has been refusing every send since 8 Sep 2026.
                  */
-                'review_submission' => ReviewSubmission::payload($user),
+                'edit_requested_reason' => $user->edit_requested_reason,
+                'edit_requested_at' => optional($user->edit_requested_at)->toIso8601String(),
+                /*
+                 * 🚨 WHICH ASSETS ARE HOLDING THE PROFILE BACK, if any. Profiles approve
+                 * themselves (App\Support\ProfileAutoApproval); an entry here is a photo
+                 * the scan held, a bio or handle an admin turned down. Empty means
+                 * nothing stands between the creator and live — the page renders on
+                 * the LIST, never on the lock.
+                 */
+                'profile_holds' => (int) ($user->role ?? 0) === 1
+                    ? ProfileAutoApproval::holding($user)
+                    : [],
                 'is_subscription_cancelled' => $user->is_subscription_cancelled,
                 'upcoming_payment_date' => $user->upcoming_payment_date,
                 'subscription_end' => $user->subscription_end,
@@ -149,35 +173,19 @@ class HandleInertiaRequests extends Middleware
                 'cover_cdn_modifier' => $user->cover_cdn_modifier,
                 'twitter_token' => $user->twitter_token,
                 'gifter_card_verification' => $user->gifterCardVerification,
-                // ⚠️ Loaded ONLY for the gifter sitting at the £500 gate — the exact
-                // condition under which `ActivateCard` renders at all. The shared
-                // payload goes out with every Inertia navigation, so an ungated read
-                // would be a query per page view, for every user, to answer a question
-                // that only a handful of accounts are ever asked. Same rule as
-                // `has_ever_sold` and `needs_first_listing`.
-                //
-                // ⚠️ It MUST mirror `ActivateCard`'s own `needsVerification`, which is
-                // reached by a rejection as well as by the £500 milestone. Gating on
-                // the milestone alone left a rejected gifter looking at an empty form
-                // for an address they had already given us — and retyping it is the
-                // one thing that turns two independent records into one.
-                //
-                // Carries the price too, so the button quotes the number the card is
-                // actually charged — see `GifterVerificationCharge`.
-                'verification_gate' => ((int) $user->role === 0
-                    && (int) $user->profile_status_lock !== 2
-                    && ((int) $user->is_500_limit_exceeded === 1 || filled($user->profile_reject_reason)))
-                        ? [
-                            'address' => $user->gifterAddress?->toFormArray(),
-                            'charge' => GifterVerificationCharge::quote($request->cookie('currency', 'GBP')),
-                        ]
-                        : null,
+                /*
+                 * 🚨 `verification_gate` IS GONE (12 Sep 2026, client direction).
+                 * It fed the £500 card-verification form — the whole gate, its
+                 * middleware, its nine route guards and the admin screen that
+                 * decided it were removed the same day. A supporter is never
+                 * stopped by spend now; crossing £500 earns the grey badge and
+                 * nothing else (`App\Support\VerifiedBadge`).
+                 */
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
                 'terms_accepted_at' => $user->terms_accepted_at,
                 'gender' => $user->gender,
                 'ip_address' => $user->ip_address,
-                'identity_verification_error' => $user->identity_verification_error,
                 'grace_period_started_at' => $user->grace_period_started_at,
                 'grace_period_ends_at' => $user->grace_period_ends_at,
                 'is_in_grace_period' => $user->is_in_grace_period,
@@ -273,11 +281,11 @@ class HandleInertiaRequests extends Middleware
                 'opposite_user' => $followedUser,
                 'verification_status' => $userBioStatus,
                 'is_emulated' => $request->session()->get('emulated_by_admin', false),
-                'admin_identity' => $user ? [
-                    'status' => $user->identity_admin_status,
-                    'reviewed_at' => $user->identity_admin_reviewed_at,
-                    'notes' => $user->identity_admin_notes,
-                ] : null,
+                /*
+                 * 🚨 `admin_identity` IS GONE (13 Sep 2026) — it published an admin's
+                 * identity verdict and their free-text note about this person on every
+                 * page, and `resources/js` never read it. See the note on `$leanUser`.
+                 */
                 'subscriber_only_posts_count' => $subscriber_only_posts_count,
                 'member_only_posts_count' => $member_only_posts_count,
                 // The single "what do I do next" answer, rendered by every creator-facing
@@ -292,6 +300,22 @@ class HandleInertiaRequests extends Middleware
                     ? app(CreatorJourneyService::class)->nextStep($user)
                     : null,
             ],
+            /*
+             * 🚨 WHICH CREATOR INCENTIVE SCHEMES EXIST — one flag per scheme,
+             * read by every JSX surface that advertises one (11 Sep 2026,
+             * simplification programme §6).
+             *
+             * Most scheme surfaces are already gated by their own server prop.
+             * The footer, the header and the /creators marketing pages are not:
+             * they render from JSX with no scheme prop of their own, and
+             * `constants/creatorBonuses.js` is always importable — which is
+             * exactly how a card comes to advertise a route that 404s. Read
+             * `incentives.*` in JSX, NEVER a constant.
+             *
+             * ⚠️ Booleans and figures only. This goes out with every Inertia
+             * navigation and must cost no query.
+             */
+            'incentives' => Incentives::payload(),
             'follow_status' => $follow_status,
             'cart_count' => $cart_count,
             /*
@@ -342,6 +366,19 @@ class HandleInertiaRequests extends Middleware
             'analytics' => fn () => AnalyticsEvent::pull(),
             'symbols' => Cache::remember('currency_symbols', 86400, fn () => Currency::symbols()),
             'rates' => Cache::remember('currency_rates', 86400, fn () => Currency::rates()),
+            /*
+             * 🚨 THE ADVERTISED SUPPORTER FEE, SHARED SO NO PAGE EVER TYPES IT.
+             *
+             * Three creator-facing forms said "Our fee is 19%" — true under the legacy
+             * markup and wrong the day the platform moved to an all-in rate. A number
+             * typed into JSX cannot follow a config change, and the client's §3 asks
+             * for pricing that moves without development work.
+             *
+             * ⚠️ NOT cached: the rate is a config read, and caching it would put a
+             * stale fee in front of creators for up to a day after a change — which is
+             * the exact failure this prop exists to prevent.
+             */
+            'fees' => fn () => FeeModel::describe('card'),
             'currencies' => Cache::remember('all_currencies_iso', 86400, fn () => Currency::select('ISO', 'ISOdigits', 'symbol')->get()->keyBy('ISO')),
             'global_currency' => Cookie::get('currency'),
             'platform_fee_percentage' => config('app.platform_fee_percentage', 17),

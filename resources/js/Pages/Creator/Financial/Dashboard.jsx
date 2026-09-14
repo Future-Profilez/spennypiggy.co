@@ -1046,6 +1046,18 @@ export default function Dashboard({
             <div className="bg-gray-50 min-h-dvh pb-28 md:pb-12">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
                     {/* -----------------------------------------------------------
+                        🚨 IDENTITY GATE — FIRST THING ON THE PAGE.
+
+                        Null unless money is waiting AND the check is incomplete,
+                        so for most creators nothing renders here at all. When it
+                        does, it is the only thing standing between them and their
+                        money, and it goes above the balances rather than below
+                        them: a creator who scrolls past four figures before being
+                        told why none of them have arrived reads the page as broken.
+                    ----------------------------------------------------------- */}
+                    
+
+                    {/* -----------------------------------------------------------
                         Header — one line of purpose, then the actions.
                     ----------------------------------------------------------- */}
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">

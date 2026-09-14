@@ -1,7 +1,8 @@
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
 import RewardHint from "@/Pages/discover/components/RewardHint";
-import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
+import { supporterFeeCaption } from "@/lib/fees";
+import { feeRatesFor, creatorIdOf, supporterTotal } from "@/utils/pricing";
 import ScheduledBadge from "@/Components/ScheduledBadge";
 import SaveButton from "@/Components/SaveButton";
 import GetHelpButton from "@/Components/Help/GetHelpButton";
@@ -10,7 +11,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
     const { auth, platform_fee_percentage, transaction_fee_percentage } =
         usePage().props;
     const __pageProps = usePage().props;
-    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency, supporterFixedFee } = PriceFormat();
     const url = `/task/${task.uuid}`;
     const approvalStatus = Number(task?.is_approved);
     const isRejected = approvalStatus === 2;
@@ -20,7 +21,10 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
         task?.moderation_reason ||
         task?.reason ||
         task?.is_approved_reason ||
-        "Item is currently under review. Please check again after 30 minutes.";
+        /* 🚨 NOT "under review, check back later" (11 Sep 2026). Nobody is queued to
+           look at this — a check flagged it and only the creator can move it. The old
+           sentence sent them away to wait for something that is not coming. */
+        "An automated check flagged something here, so only you can see it. Edit it and it goes live again straight away.";
 
     const isZeroDecimalCurrency = (curr) => {
         const zeroDecimalCurrencies = [
@@ -49,28 +53,20 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
         const vat = parseFloat(vatAmount || 0);
         const isZeroDecimal = isZeroDecimalCurrency(curr);
         const priceWithVat = listedPrice + vat;
-        const stripeFeeRate = STRIPE_FEE_RATE;
-        const stripeFixedFee = isZeroDecimal ? 0 : STRIPE_FIXED_FEE;
-        // Per-creator: a creator on a bespoke platform rate must be QUOTED
-        // what checkout will CHARGE them. The global props cannot express that.
+        // 🚨 THE FORMULA LIVES IN ONE PLACE (`utils/pricing`), NEVER HERE. This
+        // surface carried its own copy of the legacy gross-up, so when the
+        // platform moved to an all-in supporter fee on 11 Sep 2026 it went on
+        // quoting the old, higher total while checkout charged the new one —
+        // with nothing wrong in any log. `feeRatesFor` carries the live model
+        // alongside the rates, so a call site cannot pick the wrong arithmetic.
         const __rates = feeRatesFor(creatorIdOf(task) ?? profileUser?.id, __pageProps);
-        const platformFeeRate = __rates.platform / 100;
-        const complianceFeeRate = __rates.compliance / 100;
-        const adminFee = adminFeeInCurrency(curr);
-        const totalDeductionRate =
-            stripeFeeRate + platformFeeRate + complianceFeeRate;
 
-        if (totalDeductionRate >= 1) return priceWithVat;
-
-        const totalSupporterPays =
-            (priceWithVat + stripeFixedFee + adminFee) /
-            (1 - totalDeductionRate);
-
-        if (!isZeroDecimal) {
-            return Math.ceil(totalSupporterPays * 100) / 100;
-        }
-
-        return Math.ceil(totalSupporterPays);
+        return supporterTotal(priceWithVat, {
+            ...__rates,
+            adminFee: adminFeeInCurrency(curr),
+            fixedFee: supporterFixedFee(curr),
+            isZeroDecimal,
+        });
     };
 
     const isCreator = auth?.user?.id === (profileUser?.id || task.creator_id);
@@ -138,7 +134,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                 )}
                 {isPending && task?.is_suspended != 1 && (
                     <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-black border-2 border-black bg-yellow-300 text-black">
-                        Pending Approval
+                        Needs a fix
                     </span>
                 )}
                 {task?.status && String(task.status).trim() !== "" && (
@@ -193,7 +189,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                         </p>
                         {!isCreator && (
                             <span className="mt-1 block text-[12px] font-bold leading-tight text-gray-500">
-                                Includes platform & processing fees
+                                {supporterFeeCaption(__pageProps)}
                             </span>
                         )}
                     </div>
@@ -225,7 +221,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                 ) : isPending ? (
                     <div className="!pt-3">
                         <p className="block text-yellow-700 font-bold text-sm">
-                            Under Review: {reviewMessage}
+                            Not visible yet: {reviewMessage}
                         </p>
                         {/* `IsloggedIn` here means the OWNER is viewing (documented). */}
                         {IsloggedIn && task?.moderation_reason ? (

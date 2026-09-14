@@ -8,6 +8,7 @@ import ActivateCard from "./ActivateCard";
 import { Ban, Unlock, CircleUserRound, Rss, ShoppingBag } from "lucide-react";
 import SupporterLevel from "@/Components/Gifter/SupporterLevel";
 import CreatorsBacked from "@/Components/Gifter/CreatorsBacked";
+import SupporterShelf from "@/Components/Gifter/SupporterShelf";
 import Modal from "@/Components/Modal";
 import { useAlerts } from "@/Components/Alerts";
 
@@ -33,6 +34,49 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
             }
         }
     }, []);
+
+    /*
+     * 🚨 THE TAB WAS READ FROM THE URL AND NEVER WRITTEN BACK, so `?tab=feed`
+     * worked as a deep link and was unreachable by clicking: switching tab left
+     * the address bar on About, so a refresh threw the reader back, Back skipped
+     * the whole page, and a supporter could not send anybody their own feed.
+     *
+     * ⚠️ `replaceState`, not `push` — matching `PurchasesHub`'s own sync. A tab is
+     * a view of one page, and pushing an entry per tab makes Back walk through
+     * every tab the reader glanced at before it leaves the profile.
+     *
+     * ⚠️ About writes NO parameter rather than `?tab=about`: it is the default, so
+     * a clean profile URL stays the canonical one and nothing shareable carries a
+     * redundant query.
+     *
+     * ⚠️ The owner-only Purchases tab is in `categories` only for the owner, so an
+     * index that no longer resolves (a stale `?tab=purchases` on a visitor's
+     * view) simply writes nothing.
+     */
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const tab = categories[selectedIndex];
+        if (!tab) return;
+
+        const p = new URLSearchParams(window.location.search);
+
+        if (tab === "about") {
+            p.delete("tab");
+        } else {
+            p.set("tab", tab);
+        }
+
+        const qs = p.toString();
+
+        window.history.replaceState(
+            {},
+            "",
+            qs
+                ? `${window.location.pathname}?${qs}`
+                : window.location.pathname,
+        );
+    }, [selectedIndex]);
 
     // Four review states rendered four near-identical blocks. One shape.
     const Notice = ({ tone, title, children }) => (
@@ -70,8 +114,8 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
             notices.push({
                 key: "bio-review",
                 tone: "warn",
-                title: "Bio under review",
-                body: "Your bio is waiting for admin approval. It stays hidden from visitors until then.",
+                title: "Bio held back",
+                body: "A check held your bio back. It stays hidden from visitors until you fix and save it.",
             });
         if (IsloggedIn && user?.bio_approved === 2 && user?.edit_bio_reason)
             notices.push({
@@ -84,8 +128,8 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
             notices.push({
                 key: "links-review",
                 tone: "warn",
-                title: "Social links under review",
-                body: "Your updated links are waiting for admin approval.",
+                title: "Social links held back",
+                body: "A check held your updated links back. Fix and save them to go live.",
             });
         if (IsloggedIn && sLinks?.status === 2 && sLinks?.reason)
             notices.push({
@@ -113,6 +157,14 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                 {/* What this person has actually done — the reason to look at
                     a supporter profile at all. */}
                 <SupporterLevel isOwner={isOwner} />
+
+                {/* 🚨 OWNER ONLY, AND THE GATE IS HERE RATHER THAN INSIDE THE
+                    COMPONENT. Every figure on it is a fact about one person's own
+                    buying, and this route is also the public profile — the same
+                    reason `getGifterCreators()` is owner-gated in the service.
+                    A supporter with nothing yet still gets it: the shelf's empty
+                    copy is what tells them what it will fill with. */}
+                {isOwner && <SupporterShelf />}
 
                 {/* Owner-only; the component self-hides on a visitor's payload. */}
                 <CreatorsBacked />

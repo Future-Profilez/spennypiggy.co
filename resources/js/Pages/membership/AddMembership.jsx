@@ -16,10 +16,16 @@ import RewardEditor, {
 } from "@/Components/Reward/RewardEditor";
 import RewardPreview from "@/Components/Reward/RewardPreview";
 import { MAX_PRICE_GBP, formatPrice, priceLimitError, priceLimits } from "@/lib/priceLimits";
+import { itemFieldClass, itemLabelClass } from "@/Components/ItemForm/ItemFormKit";
+import useDirtyGuard from "@/lib/useDirtyGuard";
+import { creatorFeeNote } from "@/lib/fees";
 
-const FIELD =
- "w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-bold placeholder:font-medium placeholder:text-neutral-400 focus:outline-none focus:ring-0 ";
-const FIELD_LABEL = "mb-2 block text-left text-[12px] font-black uppercase tracking-[0.14em]";
+// The field and label recipes are shared with every other add-item form.
+// Two local copies of this constant had already drifted apart
+// (`font-medium` here, `font-bold` in the membership form) and both
+// had `focus:ring-0` with nothing put back.
+const FIELD = itemFieldClass;
+const FIELD_LABEL = itemLabelClass;
 
 const TIERS = [
     { value: "bronze", title: "Bronze Level", icon: "🥉", bg: "bg-[#FFE4B5]", blurb: "A great starting point for your casual fans." },
@@ -29,8 +35,9 @@ const TIERS = [
     { value: "lifetime", title: "Lifetime", icon: "👑", bg: "bg-[#FBCFE8]", blurb: "One-time payment for endless access." },
 ];
 
-export default function AddMembership({ item, text, classes }) {
+export default function AddMembership({ item, text, classes, hidetrigger, openPop }) {
     const { auth, global_currency, rates } = usePage().props;
+    const feeNote = creatorFeeNote(usePage().props);
     const memberOnlyPostsCount = auth?.member_only_posts_count || 0;
     const { successAlert, errorAlert } = useAlerts();
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
@@ -40,6 +47,16 @@ export default function AddMembership({ item, text, classes }) {
     const priceBounds = priceLimits(defaultCurrency, rates, MAX_PRICE_GBP.membership);
 
     const [open, setOpen] = useState(false);
+
+    /* `openPop` lets a caller open this sheet without rendering the trigger
+       (see `hidetrigger`) — the pattern `AddBills` already uses. Only a literal
+       true opens it; the caller clears the flag back to null so the NEXT press
+       opens it again. This is what lets an empty state's "Add membership"
+       button open THIS form instead of the seven-option chooser. */
+    useEffect(() => {
+        if (openPop === true) setOpen(true);
+    }, [openPop]);
+
     const [loading, setLoading] = useState(false);
     const [thumb, setThumb] = useState(null);
     const [isEditable, setIsEditable] = useState(false);
@@ -50,6 +67,8 @@ export default function AddMembership({ item, text, classes }) {
         month_price: item?.price || "",
         reward: item ? rewardFromItem(item) : emptyReward(),
     }));
+
+    const confirmDiscard = useDirtyGuard(open, data);
 
     const setData = useCallback(
         (key, value) => setDataState((current) => ({ ...current, [key]: value })),
@@ -151,7 +170,7 @@ export default function AddMembership({ item, text, classes }) {
                                     >
                                         {tier.title}
                                     </span>
-                                    <span className="text-sm font-medium text-neutral-600">
+                                    <span className="text-sm font-medium text-black/80">
                                         {tier.blurb}
                                     </span>
                                 </span>
@@ -208,16 +227,16 @@ export default function AddMembership({ item, text, classes }) {
                             onChange={(event) => setData("month_price", event.target.value)}
                         />
 
-                        <p className="mt-2 text-left text-xs font-medium text-neutral-500">
+                        <p className="mt-2 text-left text-xs font-medium text-black/60">
                             Between {formatPrice(priceBounds.min, defaultCurrency)} and{" "}
                             {formatPrice(priceBounds.max, defaultCurrency)}
                             {isLifetime ? "" : " per month"}.
                         </p>
 
                         {data.month_price > 0 && (
- <div className="mt-4 rounded-box-sm border-[3px] border-black bg-[#BAE6FD] p-4 ">
+ <div className="mt-4 rounded-box-sm border-2 border-black bg-[#BAE6FD] p-4 ">
                                 <div className="mb-1 flex items-center justify-between">
-                                    <span className="text-sm font-semibold text-neutral-700">
+                                    <span className="text-sm font-semibold text-black/80">
                                         Supporters pay
                                     </span>
                                     <span className="font-black">
@@ -235,7 +254,7 @@ export default function AddMembership({ item, text, classes }) {
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-semibold text-neutral-700">
+                                    <span className="text-sm font-semibold text-black/80">
                                         You receive
                                     </span>
                                     <span className="font-black text-green-700">
@@ -245,15 +264,15 @@ export default function AddMembership({ item, text, classes }) {
                                         }).format(data.month_price)}
                                     </span>
                                 </div>
-                                <p className="mt-3 text-left text-xs font-medium text-neutral-600">
-                                    All fees are inside the supporter price, so you always receive your
-                                    listed amount.
+                                {/* 🚨 Never a typed percentage — see resources/js/lib/fees.js. */}
+                                <p className="mt-3 text-left text-xs font-medium text-black/80">
+                                    {feeNote}
                                 </p>
                             </div>
                         )}
 
                         {defaultCurrency !== global_currency && data.month_price > 0 && (
-                            <p className="mt-2 text-left text-sm font-medium text-neutral-500">
+                            <p className="mt-2 text-left text-sm font-medium text-black/60">
                                 ≈ {formatMultiPrice(data.month_price, defaultCurrency)} (
                                 {global_currency})
                             </p>
@@ -262,7 +281,7 @@ export default function AddMembership({ item, text, classes }) {
 
                     <div>
                         <span className={FIELD_LABEL}>
-                            Thumbnail <span className="text-neutral-400">(optional)</span>
+                            Thumbnail <span className="text-black/60">(optional)</span>
                         </span>
                         <div className={isEditable ? "hidden" : "editable"}>
                             <GlobalUploader
@@ -289,7 +308,7 @@ export default function AddMembership({ item, text, classes }) {
                     </div>
 
                     {!item && memberOnlyPostsCount === 0 && (
-                        <p className="rounded-box-sm border-[3px] border-black bg-[#FFE0EC] p-4 text-left text-sm font-bold">
+                        <p className="rounded-box-sm border-2 border-black bg-[#FFE0EC] p-4 text-left text-sm font-bold">
                             You haven't added any member-only posts yet. Create at least one before
                             selling a membership.
                         </p>
@@ -303,20 +322,28 @@ export default function AddMembership({ item, text, classes }) {
 
     return (
         <>
-            <button
-                type="button"
-                onClick={() => setOpen(true)}
-                className={
-                    classes ||
-                    "addop w-full font-bold bg-white rounded-box p-3 mb-2 text-center"
-                }
-            >
-                {text || <AddItemTrigger />}
-            </button>
+            {!hidetrigger && (
+                <button
+                    type="button"
+                    onClick={() => setOpen(true)}
+                    className={
+                        classes ||
+                        "addop w-full font-bold bg-white rounded-box p-3 mb-2 text-center"
+                    }
+                >
+                    {text || <AddItemTrigger />}
+                </button>
+            )}
 
             <ItemFormShell
                 open={open}
-                onClose={() => setOpen(false)}
+                onClose={() => {
+                    // Returning false keeps the sheet open — a tier picked and a
+                    // price typed must survive a mis-tap on the backdrop.
+                    if (!confirmDiscard()) return false;
+                    setOpen(false);
+                    return true;
+                }}
                 title={item ? "Update membership" : "Add membership"}
                 steps={steps}
                 onSubmit={canSubmit ? submit : undefined}
@@ -336,7 +363,7 @@ export default function AddMembership({ item, text, classes }) {
 function AddItemTrigger() {
     return (
         <span className="flex w-full items-center">
- <span className="flex h-[44px] min-h-[44px] w-[44px] min-w-[44px] items-center justify-center rounded-box-sm border-2 border-black bg-pink-100 p-1 md:h-[52px] md:min-h-[52px] md:w-[52px] md:min-w-[52px]">
+ <span className="flex h-[44px] min-h-[44px] w-[44px] min-w-[44px] items-center justify-center rounded-box-sm border-2 border-black bg-[#FF007F]/10 p-1 md:h-[52px] md:min-h-[52px] md:w-[52px] md:min-w-[52px]">
                 <FaHouseChimneyUser color="var(--pink)" size="1.5rem" />
             </span>
             <span className="pl-3 text-left">

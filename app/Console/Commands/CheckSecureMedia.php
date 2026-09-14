@@ -67,23 +67,50 @@ class CheckSecureMedia extends Command
         $signedStatus = $this->probe($signed);
         $plainStatus = $this->probe($plain);
 
+        /*
+         * 🚨 THE REAL TEST IS THE SECURE HOST WITHOUT A TOKEN, NOT THE PUBLIC
+         * HOST WITHOUT ONE.
+         *
+         * Uploadcare enforces on a separate subdomain; `ucarecdn.com` stays
+         * PUBLIC and is where every avatar, cover, thumbnail and OG image is
+         * served from, unsigned, deliberately and for ever. So this command's
+         * original success condition — unsigned `ucarecdn.com` answering 403 —
+         * describes a platform with no public images, and could only ever be met
+         * by breaking the site. It would have reported "not enabled" for ever.
+         */
+        $secureNoToken = (string) preg_replace('/[?&]token=[^&]*/', '', $signed);
+        $secureNoTokenStatus = $secureNoToken !== $signed ? $this->probe($secureNoToken) : null;
+
         $this->line('');
         $this->table(['Request', 'Status'], [
-            ['signed', $signedStatus ?? 'request failed'],
-            ['unsigned', $plainStatus ?? 'request failed'],
+            ['signed (secure host)', $signedStatus ?? 'request failed'],
+            ['UNSIGNED on the secure host', $secureNoTokenStatus ?? 'not applicable'],
+            ['unsigned (public host — must stay 200)', $plainStatus ?? 'request failed'],
         ]);
 
-        // The two halves are independent and each has its own failure mode, so
-        // they are reported separately rather than as one verdict.
-        if ($signedStatus === 200 && $plainStatus === 403) {
-            $this->info('READY. Secure delivery is on and the key is correct — MEDIA_SECURE_ENABLED=true is safe.');
+        if ($plainStatus === 403) {
+            $this->error('The PUBLIC host is refusing. "Disable public domain names" has been pressed in the dashboard.');
+            $this->line('  🚨 Every avatar, cover, thumbnail and OG image on the platform is served from there, unsigned. Turn the public domain back on.');
+
+            return self::FAILURE;
+        }
+
+        if ($signedStatus === 200 && $secureNoTokenStatus === 403) {
+            $this->info('READY. The secure host enforces the token and the key is correct — MEDIA_SECURE_ENABLED=true is safe.');
 
             return self::SUCCESS;
         }
 
-        if ($signedStatus === 200 && $plainStatus === 200) {
-            $this->warn('Secure delivery is NOT enabled on the Uploadcare account yet — an unsigned URL still answers 200.');
-            $this->line('  Turning the flag on now is harmless (the token is ignored) but buys nothing: the permanent links stay reachable.');
+        if ($signedStatus === 200 && $secureNoTokenStatus === 200) {
+            $this->warn('The secure host is NOT enforcing — it answered an unsigned request with 200.');
+            $this->line('  Uploadcare project → Delivery → "Enable secure subdomain" must be on, and MEDIA_SECURE_HOST must name that subdomain.');
+
+            return self::FAILURE;
+        }
+
+        if ($secureNoTokenStatus === null) {
+            $this->warn('MEDIA_SECURE_HOST is not set, so nothing was signed and there is nothing to enforce.');
+            $this->line('  Set it to the secure subdomain from Uploadcare → Delivery (host only, no scheme), then run this again.');
 
             return self::FAILURE;
         }

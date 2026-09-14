@@ -52,6 +52,7 @@ export default function GrowthTrends({ hideHeading = false }) {
                         name={creator.name}
                         src={creator.avatar_url}
                         role={creator.role}
+                        verified_badge={creator.verified_badge}
                         profile_status_lock={creator.profile_status_lock}
                         username={creator.username}
                         link={creator.username}

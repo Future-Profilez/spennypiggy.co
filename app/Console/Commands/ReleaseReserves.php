@@ -123,6 +123,11 @@ class ReleaseReserves extends Command
                 continue;
             }
 
+            /* 🚨 NO IDENTITY GATE (11 Sep 2026, client D5/Q20 — removed entirely, not
+               moved to payout). A reserve release IS a real Stripe payout, so it carried
+               the same gate the weekly run did for one day; both are gone. A reserve is
+               still held for a suspended creator and for a paused payout. */
+
             if ((int) ($creator->suspended_account ?? 0) === 1) {
                 Log::info("reserve:release — creator {$creator->uuid} is suspended; leaving ".$fts->count().' reserve(s) held.');
 

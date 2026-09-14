@@ -138,7 +138,7 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
                             subtitle={
                                 verifiedLevel === "creator"
                                     ? "Identity confirmed and payouts set up"
-                                    : "Reviewed and approved by our team"
+                                    : "Profile checks passed"
                             }
                         />
                     )}

@@ -8,6 +8,7 @@ use App\Models\Currency;
 use App\Models\FounderBonus;
 use App\Models\PayoutRecord;
 use App\StripeControl;
+use App\Support\Incentives;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -37,6 +38,20 @@ class ProcessFounderPayouts implements ShouldQueue
      */
     public function handle(): void
     {
+        /*
+         * 🚨 THIS READS THE PAYER SWITCH, NEVER `founderEnabled()` (11 Sep
+         * 2026). The scheme is retired and this job is STILL RUNNING, on
+         * purpose: a creator who qualified before it closed met the published
+         * condition and is owed the money. `payouts_enabled` is turned off only
+         * once no bonus is left pending or approved — see
+         * `config/founder_bonus.php`.
+         */
+        if (! Incentives::founderPayoutsEnabled()) {
+            Log::info('Founder Bonus payouts are switched off (founder_bonus.payouts_enabled = false).');
+
+            return;
+        }
+
         Log::info('Starting founder payout processing for month: '.now()->format('Y-m'));
 
         // Process pending payouts for qualified founders
@@ -81,6 +96,10 @@ class ProcessFounderPayouts implements ShouldQueue
         if (! empty($bonus->creator?->payout_paused_at)) {
             return;
         }
+        /* 🚨 NO IDENTITY GATE (11 Sep 2026, client D5/Q20: "Remove the SP-specific
+           ID-document and human identity-sign-off process entirely. Do not move it to
+           payout."). Stripe Connect's own KYC decides whether an account may receive
+           money; Spenny Piggy does not run a second check on top of it. */
         if (! empty($bonus->payout_record_uuid) || ! empty($bonus->stripe_payout_id)) {
             return;
         }

@@ -14,12 +14,13 @@ import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceip
 import { fieldClass } from "@/Components/Checkout/FormKit";
 import { feeRatesFor, supporterTotal, creatorIdOf } from "@/utils/pricing";
 import { riskMessageBody, redirectToLoginWithMessage, GUEST_VALUE_THRESHOLD_GBP } from '@/constants/riskMessages';
+import { supporterFeeCaption } from "@/lib/fees";
 
 export default function SubCheckout(props) {
     const { flash, global_currency, rates, platform_fee_percentage, transaction_fee_percentage, turnstileSiteKey } = usePage().props;
     const __pageProps = usePage().props;
     const {auth, user, wish, reccure, vat_amount  } = props;
-    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency, supporterFixedFee } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
     const { successAlert, errorAlert, warningAlert, infoAlert } = useAlerts();
@@ -78,6 +79,7 @@ export default function SubCheckout(props) {
         const totalSupporterPays = supporterTotal(priceWithVat, {
             ...__rates,
             adminFee: adminFeeInCurrency(curr),
+            fixedFee: supporterFixedFee(curr),
             isZeroDecimal,
         });
 
@@ -464,7 +466,7 @@ export default function SubCheckout(props) {
                                 </span>
                             </div>
                             <span className="text-[12px] mb-4 text-black/60 font-normal mt-1 leading-tight block">
-                                *Includes platform and payment processing fees. You will be charged in {wish?.currency}.
+                                {supporterFeeCaption(__pageProps, { withRate: true })}. You will be charged in {wish?.currency}.
                             </span>
                         </div>
 

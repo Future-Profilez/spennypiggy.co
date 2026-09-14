@@ -1,6 +1,7 @@
 import { Head } from "@inertiajs/react";
 import Guest from "@/Layouts/GuestLayout";
 import LegalLayout from "@/Layouts/LegalLayout";
+import ClosedProgrammeNotice from '@/Components/Legal/ClosedProgrammeNotice';
 
 /**
  * Creator Growth Bonus — Programme Terms.
@@ -58,7 +59,7 @@ import LegalLayout from "@/Layouts/LegalLayout";
  * rather than the terms.
  */
 export default function GrowthBonusTerms(props) {
-    const { auth, user } = props;
+    const { auth, user, closedOn = null } = props;
 
     return (
         <Guest auth={auth?.user} user={user}>
@@ -71,6 +72,16 @@ export default function GrowthBonusTerms(props) {
                     <p className="mb-10 text-lg font-bold text-gray-900">
                         Programme Terms
                     </p>
+
+                    {/* 🚨 ABOVE THE TERMS, NOT INSIDE THEM. The wording below
+                        is what a creator agreed to and is never rewritten; the
+                        notice is a separate statement that the programme has
+                        since closed. Renders nothing while the scheme is
+                        live. */}
+                    <ClosedProgrammeNotice
+                        closedOn={closedOn}
+                        programme="The Creator Growth Bonus"
+                    />
 
                     <div className="prose prose-pink max-w-none">
                         <p className="mb-5 italic leading-relaxed text-gray-700">

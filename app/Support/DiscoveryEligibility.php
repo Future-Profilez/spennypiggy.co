@@ -56,6 +56,22 @@ class DiscoveryEligibility
         'bio', 'bio_approved', 'profile_status_lock',
         'identity_status', 'identity_admin_status', 'suspended_account',
         'content_posting_paused_at',
+        /*
+         * ⚠️ SELECTED SO A CARD CAN SAY WHY IT IS HERE, AND GATED ON IN
+         * payable(). A Discovery card is an invitation to buy, so the columns
+         * that decide whether buying is possible belong in the same whitelist
+         * as the ones that draw the face.
+         */
+        'account_id', 'stripe_details_submitted', 'charges_enabled', 'charges_checked_at',
+        /*
+         * ⚠️ SELECTED, NEVER GATED ON. `country` is read by the supporter
+         * recommendation row (CreatorRecommendationService::pickNearby) to put
+         * one creator from the supporter's own country in front of them. It is
+         * not a clause in scope() and must not become one — a creator is
+         * eligible for discovery wherever they are, and filtering the pool by
+         * country would empty the row for every supporter in a small market.
+         */
+        'country',
     ];
 
     /**
@@ -65,6 +81,9 @@ class DiscoveryEligibility
      * collection that wants creators who joined this month adds that itself,
      * and cannot accidentally drop one of these.
      */
+    /** @var array<string, bool> */
+    private static array $columnCache = [];
+
     public static function scope(Builder $query): Builder
     {
         $query
@@ -78,13 +97,116 @@ class DiscoveryEligibility
             ->whereNotNull('name')
             ->where('name', '!=', '');
 
-        if (Schema::hasColumn('users', 'exclude_from_discovery')) {
+        if (self::hasColumn('exclude_from_discovery')) {
             $query->where(function ($q) {
                 $q->where('exclude_from_discovery', 0)
                     ->orWhereNull('exclude_from_discovery');
             });
         }
 
+        return self::payable($query);
+    }
+
+    /**
+     * CAN THIS CREATOR ACTUALLY BE BOUGHT FROM? — the one definition, and the
+     * only Discovery clause that is about money rather than presentation.
+     *
+     * 🚨 A DISCOVERY SURFACE IS A PROMISE THAT THE UNLOCK BUTTON WORKS. Every
+     * card on Discover carries a price and a button; a creator who has not
+     * finished Stripe Connect, or whose account Stripe has since disabled, is
+     * refused by `hasCardPaymentsCapability()` at the checkout — so promoting
+     * them spends a supporter's click on a dead end, records a
+     * `blocked_payment_attempts` row against a creator who did nothing wrong,
+     * and teaches the supporter that the buttons on this site do not work.
+     *
+     * The three clauses, and why each is the one it is:
+     *
+     *   · `account_id LIKE 'acct%'` — a Stripe CONNECTED account exists.
+     *     ⚠️ The pattern is `acct%`, not `acct_%`: `_` is a single-character
+     *     WILDCARD in LIKE, so the underscore in the second form matches any
+     *     character and says less than it looks like it says.
+     *     ⚠️ The prefix is load-bearing, not decoration: this column has been
+     *     found holding a Stripe CUSTOMER id (`cus_…`), which is why
+     *     `StripeControl::ensureManualPayoutSchedule()` screens on the same
+     *     prefix. A bare `whereNotNull` would pass that row.
+     *
+     *   · `stripe_details_submitted = 1` — onboarding was FINISHED. An account
+     *     created and abandoned half way through carries an `acct_` id and can
+     *     take nothing.
+     *
+     *   · NOT explicitly charges-disabled — `charges_enabled = 0` is honoured
+     *     only when `charges_checked_at` says somebody actually asked Stripe.
+     *
+     * 🚨 A NULL `charges_checked_at` PASSES, DELIBERATELY, AND THAT IS THE
+     * WEAKEST PART OF THIS RULE. `charges_enabled` defaults to 0 and was
+     * written by nothing for years, so 0 means BOTH "Stripe says no" and
+     * "nobody ever asked" — and `stripe:sync-charges-enabled` shipped with a
+     * skip that stepped over exactly the rows Stripe reports as false, leaving
+     * them unstamped. Reading an unstamped 0 as a refusal would therefore hide
+     * healthy creators on the strength of a column nobody had filled in, which
+     * is the costlier direction to be wrong in: a dead Unlock button is one bad
+     * click, an unjustly hidden creator earns nothing and is never told why.
+     *
+     * ⚠️ ONCE `stripe:sync-charges-enabled` HAS RUN ON PRODUCTION (post-fix),
+     * the column is authoritative and this should tighten to a plain
+     * `charges_enabled = 1`. Until then, do not.
+     *
+     * ⚠️ THE PLATFORM SUBSCRIPTION IS NOT A CLAUSE HERE. `validateCreatorSubscription`
+     * also refuses a creator whose own subscription lapsed, and it reads live
+     * `monthly_charges` periods through an accessor — not expressible in this
+     * query, and a SQL approximation that disagreed with the checkout would be
+     * a second answer to the same question. Discovery is deliberately the
+     * looser of the two.
+     *
+     * ⚠️ BOTH COLUMNS ARE READ THROUGH `Schema::hasColumn`. `charges_checked_at`
+     * arrived 4 Sep 2026 and the apps share one database; a missing column must
+     * degrade to "cannot judge", never throw on a public page.
+     */
+    public static function payable(Builder $query): Builder
+    {
+        $query
+            ->where('account_id', 'like', 'acct%')
+            ->where('stripe_details_submitted', 1);
+
+        if (self::hasColumn('charges_enabled') && self::hasColumn('charges_checked_at')) {
+            $query->where(function ($q) {
+                $q->whereNull('charges_checked_at')
+                    ->orWhere('charges_enabled', 1);
+            });
+        }
+
         return $query;
+    }
+
+    /**
+     * 🚨 `Schema::hasColumn` IS NOT A CHEAP CALL, AND THIS CLASS IS ASKED ~25
+     * TIMES A REQUEST.
+     *
+     * On MySQL it reads `information_schema` for the WHOLE table to answer
+     * whether one column exists, and `payable()` is applied at twenty sites in
+     * `DiscoveryService` plus every collection, the recommendation row and the
+     * birthday campaign — so a single cold `/discover` render, which builds
+     * creators plus all six listing modules, paid for dozens of those probes to
+     * answer three questions whose answers cannot change during a request.
+     *
+     * ⚠️ NOT MEMOISED UNDER `testing`, DELIBERATELY. A static outlives one test
+     * and the suite mixes classes that migrate with classes that do not, so the
+     * first class to ask would pin the answer for every class after it — one
+     * test's database state silently deciding whether another test's clause runs
+     * at all. Same rule, and the same reasoning, as
+     * `BulkEmailAudience::suppressionTableExists()`.
+     *
+     * ⚠️ It is a PROCESS memo, so a long-running worker keeps its answer until
+     * it restarts. That is safe here only because these columns have shipped and
+     * a Vapor deploy gives a fresh container; restart queue workers after a
+     * migration that adds one.
+     */
+    private static function hasColumn(string $column): bool
+    {
+        if (app()->environment('testing')) {
+            return Schema::hasColumn('users', $column);
+        }
+
+        return self::$columnCache[$column] ??= Schema::hasColumn('users', $column);
     }
 }

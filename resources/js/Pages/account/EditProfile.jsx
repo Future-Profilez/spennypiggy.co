@@ -1,10 +1,10 @@
 import { useRef, useState, useEffect } from "react";
 import userdefaultphoto from "../../../assets/siteicon.png";
+import { REAL_DETAILS_WARNING } from "@/constants/accountIntegrity";
 import coverimage from "../../../assets/img/wishlistbannerimg.png";
 import editicon from "../../../assets/img/editicon.png";
 import Popup from "@/Components/Popup";
 import { useForm, usePage } from "@inertiajs/react";
-import PendingChangesNotice from "@/Components/PendingChangesNotice";
 import { useAlerts } from "@/Components/Alerts";
 import UpdateAvatar from "./UpdateAvatar";
 import LoaderButton from "@/Components/LoaderButton";
@@ -692,6 +692,13 @@ export default function EditProfile({
                                 to keep.
                             </p>
                         )}
+                        {((profileUser?.moderation_asset === "avatar" && profileUser?.moderation_reason) ||
+                            (profileUser?.profile_reject_reason && /photo|avatar/i.test(profileUser?.profile_reject_reason))) && (
+                            <div className="mb-3 rounded-box-sm border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+                                <span className="font-bold">Photo Feedback:</span>{" "}
+                                {profileUser?.moderation_reason || profileUser?.profile_reject_reason}
+                            </div>
+                        )}
                         <UpdateAvatar
                             type="avatar"
                             getImageUID={getImageUID}
@@ -753,16 +760,7 @@ export default function EditProfile({
                         {renderTabs()}
 
                         <form onSubmit={updateProfile} className="flex flex-col">
-                            {/* ⚠️ Read straight off the page props rather than
-                                taken as a prop: this form is embedded in five
-                                different parents, and threading it through each
-                                is five chances for one of them to forget. Absent
-                                on a page that does not send it, so it renders
-                                nothing rather than guessing. */}
-                            <PendingChangesNotice
-                                assets={pageProps?.pending_profile_changes}
-                                className="mt-6"
-                            />
+                            
                             {/* Merging the two tabs left the photos block running
                                 straight into "Display Name" with nothing between
                                 them, so the page read as one undifferentiated
@@ -776,6 +774,11 @@ export default function EditProfile({
  <h3 className="mb-4 mt-8 border-t border-black/10 pt-8 text-[12px] font-black uppercase tracking-[0.16em] text-black/60">
                                     Your details
                                 </h3>
+                                {/* One wording, shared with the signup step and the
+                                    socials editor (`constants/accountIntegrity.js`). */}
+                                <p className="mb-4 rounded-box-sm border-2 border-black bg-[#FDF6C3] px-4 py-3 text-sm font-bold text-black">
+                                    {REAL_DETAILS_WARNING}
+                                </p>
                                 <ul>
                                     <li className="mb-4">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -785,7 +788,7 @@ export default function EditProfile({
                                             onBlur={IsProfileChannged}
                                             type="text"
                                             name="name"
-                                            defaultValue={user?.name || ""}
+                                            defaultValue={profileUser?.name || ""}
                                             onChange={(e) =>
                                                 setData("name", e.target.value)
                                             }
@@ -801,7 +804,7 @@ export default function EditProfile({
                                             {user?.bio &&
                                                 user?.bio_approved === 0 && (
                                                     <span className="text-xs font-semibold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full border border-yellow-200">
-                                                        Pending Approval
+                                                        Held by a check
                                                     </span>
                                                 )}
                                             {user?.bio &&
@@ -810,22 +813,27 @@ export default function EditProfile({
                                                         Approved
                                                     </span>
                                                 )}
-                                            {user?.bio &&
-                                                user?.bio_approved === 2 && (
+                                            {(profileUser?.bio || user?.bio) &&
+                                                (profileUser?.bio_approved === 2 || user?.bio_approved === 2) && (
                                                     <span className="text-xs font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded-full border border-red-200">
                                                         Rejected
                                                     </span>
                                                 )}
                                         </div>
-                                        {user?.bio_approved === 2 &&
-                                            user?.edit_bio_reason && (
- <div className="mb-2 text-sm text-red-600 bg-red-50 p-3 rounded-box-sm border border-red-200">
-                                                    <span className="font-bold">
-                                                        Rejection Reason:
-                                                    </span>{" "}
-                                                    {user.edit_bio_reason}
-                                                </div>
-                                            )}
+                                        {(profileUser?.edit_bio_reason ||
+                                            user?.edit_bio_reason ||
+                                            (profileUser?.moderation_asset === "bio" ? profileUser?.moderation_reason : null) ||
+                                            (profileUser?.profile_reject_reason && /bio/i.test(profileUser?.profile_reject_reason) ? profileUser?.profile_reject_reason : null)) && (
+                                            <div className="mb-2 text-sm text-red-600 bg-red-50 p-3 rounded-box-sm border border-red-200">
+                                                <span className="font-bold">
+                                                    Feedback from review:
+                                                </span>{" "}
+                                                {profileUser?.edit_bio_reason ||
+                                                    user?.edit_bio_reason ||
+                                                    profileUser?.moderation_reason ||
+                                                    profileUser?.profile_reject_reason}
+                                            </div>
+                                        )}
                                         {/*
                                             🚨 `profileUser`, never the bare `user` prop. The form
                                             POSTS `profileUser.bio`, and three of the four mount
@@ -851,7 +859,11 @@ export default function EditProfile({
                                         </label>
                                         <input
                                             onBlur={IsProfileChannged}
-                                            defaultValue={user?.username || ""}
+                                            /* Same source as the form data, for the same
+                                               reason as the email field below. */
+                                            defaultValue={
+                                                profileUser?.username || ""
+                                            }
                                             onChange={(e) =>
                                                 setData(
                                                     "username",
@@ -875,7 +887,17 @@ export default function EditProfile({
                                             onBlur={IsProfileChannged}
                                             type="email"
                                             name="email"
-                                            defaultValue={user?.email || ""}
+                                            /* 🚨 `profileUser`, NOT `user` — the same fault
+                                               the bio carried until 3 Sep 2026. Three of
+                                               this component's four mount points pass a
+                                               `user` object that need not carry the field,
+                                               so the box rendered EMPTY while the form data
+                                               (seeded from `profileUser.email` above) still
+                                               held the address. Nothing was lost on save; the
+                                               creator simply read a blank field as "no email
+                                               on file". One source for what is shown and what
+                                               is sent. */
+                                            defaultValue={profileUser?.email || ""}
                                             onChange={(e) =>
                                                 setData("email", e.target.value)
                                             }
@@ -1260,7 +1282,7 @@ export default function EditProfile({
                                     )}
 
                                     <li className="mb-4">
-                                        <ManagePasskey email={user?.email} />
+                                        <ManagePasskey email={profileUser?.email} />
                                     </li>
 
                                     <li className="mb-4">

@@ -318,7 +318,12 @@ class CreatorActivityService
         return User::where('role', 1)
             ->where('is_subscribed', 1)
             ->where('profile_status_lock', 2)
-            ->where('identity_status', 1)
+            /*
+             * 🚨 NO IDENTITY CLAUSE (12 Sep 2026, client direction). It is a
+             * PAYOUT gate now, not an onboarding step, so requiring it here
+             * excluded almost every live creator from the cohort this list is
+             * supposed to warn — a warning nobody receives.
+             */
             ->where('stripe_details_submitted', 1)
             ->get()
             ->filter(function ($creator) {
@@ -342,7 +347,12 @@ class CreatorActivityService
         return User::where('role', 1)
             ->where('is_subscribed', 1)
             ->where('profile_status_lock', 2)
-            ->where('identity_status', 1)
+            /*
+             * 🚨 NO IDENTITY CLAUSE (12 Sep 2026, client direction). It is a
+             * PAYOUT gate now, not an onboarding step, so requiring it here
+             * excluded almost every live creator from the cohort this list is
+             * supposed to warn — a warning nobody receives.
+             */
             ->where('stripe_details_submitted', 1)
             ->get()
             ->filter(function ($creator) {

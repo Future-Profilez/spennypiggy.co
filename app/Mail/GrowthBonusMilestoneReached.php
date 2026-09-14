@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\User;
+use App\Support\Incentives;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
@@ -72,6 +73,18 @@ class GrowthBonusMilestoneReached extends Mailable
                 'milestoneGmv' => $this->milestoneGmv,
                 'rewardAmount' => $this->rewardAmount,
                 'earnedTotal' => $this->earnedTotal,
+                /*
+                 * 🚨 THE LADDER IS ONLY ADVERTISED WHILE IT IS OPEN (11 Sep 2026).
+                 * This mail outlives the scheme by design — the payer keeps running so
+                 * anyone who met the published condition is still paid (see
+                 * App\Support\Incentives). But a creator honoured after closure cannot
+                 * climb another rung, so "Next up: £X unlocks another £Y" promises
+                 * something that can never happen. The template's `@else` is no good
+                 * here either: it says they have earned the FULL ladder, which is a
+                 * different and equally untrue statement. `schemeClosed` is the third
+                 * case, and it is read from the switch rather than from the data.
+                 */
+                'schemeClosed' => ! Incentives::growthBonusEnabled(),
                 'nextMilestone' => $this->nextMilestone,
                 'nextReward' => $this->nextReward,
                 'maxTotal' => array_sum(array_column((array) config('growth_bonus.ladder', []), 'amount')),

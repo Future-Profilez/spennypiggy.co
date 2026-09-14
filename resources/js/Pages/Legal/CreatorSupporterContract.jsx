@@ -50,7 +50,8 @@ export default function CreatorSupporterContract(props) {
                         <div className="ml-6 mb-2 text-gray-700">(vi)	“Content” – all material, interactions, services, and goods provided by Creators through the Platform.</div>
 
                         <h2 id="sec-6-pricing-and-payment" className="text-xl font-black text-gray-900 mt-14 mb-4 scroll-mt-24">6.  Pricing and Payment</h2>
-                        <p className="mb-5 text-gray-700 leading-relaxed">6.1  By entering into a transaction, the Supporter agrees to pay the total amount displayed at checkout, which may include the Creator’s listed price, Platform fees, payment processing fees, and applicable taxes.</p>
+                        {/* 🚨 One fee, processing included — see SupporterTerms 3.1.1. */}
+                        <p className="mb-5 text-gray-700 leading-relaxed">6.1  By entering into a transaction, the Supporter agrees to pay the total amount displayed at checkout, which may include the Creator’s listed price, a single Platform fee — which covers payment processing — and applicable taxes.</p>
                         <p className="mb-5 text-gray-700 leading-relaxed">6.2  The Creator sets the base price for their offerings and receives their listed amount, subject to applicable reserve deductions, refunds, reversals, chargeback deductions, and any other deductions applied in accordance with the Payments, Payouts & Reserves Policy.</p>
                         <p className="mb-5 text-gray-700 leading-relaxed">6.3  Spenny Piggy reserves the right to deduct fees, apply reserves, and delay or adjust payouts in accordance with the Payments, Payouts & Reserves Policy.</p>
 

@@ -7,6 +7,7 @@ import { creatorIdOf } from "@/utils/pricing";
 import ItemStatusBadge from "@/Components/ItemStatusBadge";
 import discoveryLink from "@/lib/discoveryLink";
 import SaveButton from "@/Components/SaveButton";
+import { supporterFeeCaption } from "@/lib/fees";
 
 export default function ShopCard({
     item,
@@ -18,6 +19,7 @@ export default function ShopCard({
     discoverySource,
 }) {
     const { auth, user } = usePage().props;
+    const __pageProps = usePage().props;
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
 
     const slug = (inputString = "") => {
@@ -79,9 +81,17 @@ export default function ShopCard({
         },
         IsloggedIn &&
             Number(item?.approved) === 0 && {
-                // A reason means an admin looked and refused; none means nobody
-                // has reached it yet. Different things for the creator to do.
-                state: item?.moderation_reason ? "changes" : "in_review",
+                /*
+                 * A reason means an admin looked and refused; none means nobody
+                 * has reached it yet. Different things for the creator to do.
+                 *
+                 * 🚨 `flagged`, NOT `in_review`. That state left
+                 * `ItemStatusBadge` on 11 Sep 2026 — listings publish
+                 * themselves and a check retracts one, so nothing waits behind
+                 * a person. A state the component does not define renders NO
+                 * CHIP AT ALL, so a held listing said nothing.
+                 */
+                state: item?.moderation_reason ? "changes" : "flagged",
                 reason: item?.moderation_reason || null,
             },
         isOwner &&
@@ -89,6 +99,21 @@ export default function ShopCard({
             item?.edited_reason && {
                 state: "changes",
                 reason: item.edited_reason,
+            },
+        /*
+         * 🚨 THE DAILY REVIEW FEED'S OWN REQUEST, AND IT IS NOT `edited_reason`.
+         * That older pair is driven by `logs` rows and `app:edit-content-auto-delete`
+         * DELETES the listing 24 hours later if nothing changes — the opposite of
+         * this feature's rule, which is that the item keeps selling and nothing is
+         * ever deleted. Two mechanisms, two columns, and they must not be merged.
+         *
+         * ⚠️ Owner-only: it is an instruction to the person who published it, and a
+         * visitor has no business reading what a reviewer asked of somebody else.
+         */
+        isOwner &&
+            item?.edit_requested_reason && {
+                state: "changes",
+                reason: item.edit_requested_reason,
             },
     ].filter(Boolean);
 
@@ -238,7 +263,7 @@ export default function ShopCard({
                                     {isPhysical && shippingPrice === 0 && " · free shipping"}
                                 </span>
                                 <span className="mt-0.5 hidden text-[12px] font-normal text-gray-500 sm:inline">
-                                    *Includes platform and payment processing fees
+                                    {supporterFeeCaption(__pageProps)}
                                     {isPhysical && shippingPrice > 0 && " and shipping"}
                                     {isPhysical && shippingPrice === 0 && ". Free shipping"}
                                 </span>

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\CheckMediaModeration;
 use App\Mail\CreatorAccountOpened;
 use App\Models\CreatorReferral;
 use App\Models\ReferralCode;
@@ -113,21 +114,36 @@ class GifterToCreatorConversionTest extends TestCase
         $this->assertNotNull($user->terms_accepted_at);
     }
 
-    public function test_the_never_reviewed_photo_and_bio_go_back_for_review(): void
+    /**
+     * 🚨 REWRITTEN 11 Sep 2026. A fan's photo and bio were approved under the FAN
+     * rules — nobody looked at them — so conversion resets the flags and re-judges
+     * them under the creator rules. What changed is that the re-judging is done by the
+     * machine, in the same request, instead of by an admin days later: a clean bio is
+     * approved on the spot and the photo is sent for its scan.
+     */
+    public function test_the_never_reviewed_photo_and_bio_are_re_judged_not_queued(): void
     {
+        Queue::fake();
         $user = $this->gifter();
 
         $this->actingAs($user)->post('/become-creator', $this->payload());
 
         $user->refresh();
 
+        // The fan's bio is clean, so it clears immediately. Nobody is waiting on it.
+        $this->assertSame(1, (int) $user->bio_approved);
+
+        // The photo cannot be judged synchronously — it needs the scan — so it stays
+        // at 0 until the verdict lands, and the scan must actually be dispatched.
         $this->assertSame(0, (int) $user->avatar_approved);
-        $this->assertSame(0, (int) $user->bio_approved);
+        Queue::assertPushed(CheckMediaModeration::class);
+
+        // Not live yet: the photo is outstanding.
         $this->assertSame(0, (int) $user->profile_status_lock);
 
         // The FILES are kept. Clearing them would throw away work the person
         // already did and leave them staring at an empty profile as the reward
-        // for converting — the review is what was missing, not the content.
+        // for converting — the judging is what was missing, not the content.
         $this->assertNotEmpty($user->avatar);
         $this->assertNotEmpty($user->bio);
     }
@@ -161,8 +177,10 @@ class GifterToCreatorConversionTest extends TestCase
         // Normalised (bare, lower-cased) exactly as signup stores it, so a
         // duplicate is visible and the value can be turned back into a link.
         $this->assertSame('jane.makes', $row->instagram);
-        // 0 = awaiting review, identical to a Creator Studio submission.
-        $this->assertSame(0, (int) $row->status);
+        // 🚨 APPROVED (11 Sep 2026). The handle is judged by the machine during the
+        // conversion — known platform, https, no shortener, not already on another
+        // creator — and a clean one clears immediately. It used to land at 0 and wait.
+        $this->assertSame(SocialLinks::STATUS_APPROVED, (int) $row->status);
         $this->assertSame('conversion', $row->source);
     }
 
@@ -183,7 +201,7 @@ class GifterToCreatorConversionTest extends TestCase
         // review". The editor is not creator-gated, so a gifter can already hold
         // one.
         $this->assertSame(1, SocialLinks::where('user_id', $user->id)->count());
-        $this->assertSame(0, (int) SocialLinks::where('user_id', $user->id)->first()->status);
+        $this->assertSame(SocialLinks::STATUS_APPROVED, (int) SocialLinks::where('user_id', $user->id)->first()->status);
     }
 
     public function test_the_verification_row_is_updated_never_duplicated(): void
@@ -483,19 +501,29 @@ class GifterToCreatorConversionTest extends TestCase
     }
 
     /**
-     * The card on the gifter's own profile is gated on BOTH the owner and the
-     * role. `/{username}` is the public profile as well, so without the owner
-     * gate every visitor to a fan's page is invited to convert an account that is
-     * not theirs.
+     * The offer is gated on the ROLE, and it lives on Account Settings.
+     *
+     * ⚠️ It used to sit on `/{username}`, which is the PUBLIC profile as well as the
+     * creator's dashboard, so it needed an owner gate too — without one every visitor
+     * to a fan's page was invited to convert an account that was not theirs. It has
+     * since moved to Account Settings, which is only ever the signed-in user's own
+     * page, so the role gate is the whole of it. This test moved with the card.
      */
-    public function test_the_profile_card_is_owner_and_role_gated(): void
+    public function test_the_conversion_offer_is_role_gated(): void
     {
-        $source = (string) file_get_contents(resource_path('js/Pages/Dashboard.jsx'));
+        $source = (string) file_get_contents(resource_path('js/Pages/accountsetting/Accountsetting.jsx'));
 
         $this->assertStringContainsString(
-            'IsloggedIn && !isCreatorProfile && (',
+            '{!isCreator && (',
             $source,
-            'The Become-a-creator card lost its owner or role gate.'
+            'The Become-a-creator card lost its role gate — a creator would be offered it.'
         );
+
+        // 🚨 A LINK TO THE PAGE, NEVER AT THE WRITE. A GET that flips a role needs
+        // nothing to click it — the 7 Sep 2026 fault. ⚠️ The route NAME appears in the
+        // docblock explaining exactly that, so the assertion is on the rendered
+        // `href`, which is the thing a prefetcher would follow.
+        $this->assertStringContainsString('href="/become-creator"', $source);
+        $this->assertStringNotContainsString('method="post"', $source);
     }
 }

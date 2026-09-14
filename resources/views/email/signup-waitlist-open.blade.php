@@ -63,8 +63,8 @@
                                     ⏱ A few minutes to set up
                                 </div>
                                 <div style="font-family:'Outfit',Arial,sans-serif;font-size:12px;color:#666666;line-height:18px;padding-bottom:12px;">
-                                    Pick a username, add a photo and a short bio, and our team reviews your
-                                    profile before it goes live.
+                                    Pick a username, add a photo and a short bio. The checks run
+                                    automatically, so your page opens straight away.
                                 </div>
 
                                 <div style="font-family:'Outfit',Arial,sans-serif;font-weight:700;font-size:14px;color:#1A1A1A;padding-bottom:4px;">

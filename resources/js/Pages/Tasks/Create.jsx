@@ -1,4 +1,4 @@
-import { useForm, Head, usePage } from "@inertiajs/react";
+import { useForm, Head, Link, usePage } from "@inertiajs/react";
 import Guest from "@/Layouts/GuestLayout";
 import GlobalUploader from "@/uploadcare/Uploader";
 import InputError from "@/Components/InputError";
@@ -11,6 +11,7 @@ import {
     Zap,
     FileUp,
     AlertTriangle,
+    ArrowLeft,
 } from "lucide-react";
 import RewardEditor, {
     emptyReward,
@@ -19,14 +20,24 @@ import RewardEditor, {
     validateReward,
 } from "@/Components/Reward/RewardEditor";
 import { MAX_PRICE_GBP, formatPrice, priceLimitError, priceLimits } from "@/lib/priceLimits";
+import { creatorFeeNote } from "@/lib/fees";
+import {
+    itemErrorClass,
+    itemFieldClass,
+    itemLabelClass,
+} from "@/Components/ItemForm/ItemFormKit";
 
 export default function Create({ auth, currencySymbol }) {
     const { global_currency, rates } = usePage().props;
+    const feeNote = creatorFeeNote(usePage().props);
     const task = usePage().props?.task ?? null;
     const isEdit = Boolean(task);
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const defaultCurrency = auth.user.default_currency || "GBP";
     const [showSummary, setShowSummary] = useState(false);
+    // The reward and price rules used to be reported with `alert()`; this is
+    // where they land now, announced and next to the form.
+    const [formError, setFormError] = useState(null);
 
     // Calculate GBP conversion from current currency using existing rates
     const convertToGBP = (amount) => {
@@ -119,9 +130,17 @@ export default function Create({ auth, currencySymbol }) {
         e.preventDefault();
         if (processing) return;
         if (!showSummary) {
+            // 🚨 These two used to be `alert()`. A browser dialog is the one
+            // error message that cannot be styled, cannot be read beside the
+            // field it is about, and on iOS steals focus out of the form — so a
+            // mistyped price read as the site breaking rather than as a rule.
             const rewardProblem = validateReward(data.reward);
             if (rewardProblem) {
-                alert(rewardProblem);
+                setFormError(rewardProblem);
+                // The message renders at the top of the form; on a phone the
+                // submit button is far below it, so without this the press
+                // looks like it did nothing at all.
+                window.scrollTo({ top: 0, behavior: "smooth" });
                 return;
             }
             const priceProblem = priceLimitError(
@@ -131,9 +150,11 @@ export default function Create({ auth, currencySymbol }) {
                 MAX_PRICE_GBP.task,
             );
             if (priceProblem) {
-                alert(priceProblem);
+                setFormError(priceProblem);
+                window.scrollTo({ top: 0, behavior: "smooth" });
                 return;
             }
+            setFormError(null);
             setShowSummary(true);
             window.scrollTo({ top: 0, behavior: "smooth" });
             return;
@@ -159,8 +180,25 @@ export default function Create({ auth, currencySymbol }) {
             <div className="loginPage bg-white px-4 py-8 md:py-18 min-h-dvh font-public-sans">
                 <div className="w-full">
                     <div className="mx-auto max-w-[900px]">
+                        {/* 🚨 INSTALLED AS A PWA THERE IS NO BROWSER CHROME, so
+                            this page — the only add-item flow that is a page
+                            rather than a sheet — had no way out at all: no X, no
+                            back button, and on iOS standalone only an edge swipe
+                            that many people do not know. Every other add flow
+                            closes with a control in its header, so this one gets
+                            the same. It leads to the creator's own profile,
+                            which is where the flow was entered from. */}
+                        <div className="mb-4 flex md:hidden">
+                            <Link
+                                href={auth?.user?.username ? `/${auth.user.username}` : "/"}
+                                className="inline-flex min-h-[44px] items-center gap-2 rounded-box-sm border-2 border-black bg-white px-4 text-xs font-black uppercase tracking-[0.14em] text-black transition-colors hover:bg-[#F4F4F5]"
+                            >
+                                <ArrowLeft size={16} strokeWidth={3} aria-hidden="true" />
+                                Back
+                            </Link>
+                        </div>
                         <div className="text-center mb-8">
-                            <h2 className="font-fre text-3xl md:text-4xl uppercase tracking-wider ">
+                            <h2 className="font-GillSans text-3xl md:text-4xl uppercase tracking-wide ">
                                 {isEdit ? "Edit Task" : "Create New Task"}
                             </h2>
                             {task && task.is_suspended == 1 && (
@@ -192,7 +230,7 @@ export default function Create({ auth, currencySymbol }) {
                                     </div>
                                 </div>
                             )}
-                            <div className="mt-4 p-4 bg-yellow-50 border-2 border-black rounded-box-sm ">
+                            <div className="mt-4 p-4 bg-[#F2EFE7] border-2 border-black rounded-box-sm ">
                                 <p className="text-black font-bold text-lg tracking-wide">
                                     Paid Tasks are for things you’re happy to
                                     do. You define the task, price, and
@@ -211,7 +249,7 @@ export default function Create({ auth, currencySymbol }) {
 
                                 <div className="space-y-4 mb-8">
                                     <div className="flex justify-between border-b-2 border-gray-100 pb-3">
-                                        <span className="font-bold text-gray-500 uppercase text-sm">
+                                        <span className="font-bold text-black/60 uppercase text-sm">
                                             Title
                                         </span>
                                         <span className="font-black text-right max-w-[60%]">
@@ -219,7 +257,7 @@ export default function Create({ auth, currencySymbol }) {
                                         </span>
                                     </div>
                                     <div className="flex justify-between border-b-2 border-gray-100 pb-3">
-                                        <span className="font-bold text-gray-500 uppercase text-sm">
+                                        <span className="font-bold text-black/60 uppercase text-sm">
                                             Category
                                         </span>
                                         <span className="font-black">
@@ -227,7 +265,7 @@ export default function Create({ auth, currencySymbol }) {
                                         </span>
                                     </div>
                                     <div className="flex justify-between border-b-2 border-gray-100 pb-3">
-                                        <span className="font-bold text-gray-500 uppercase text-sm">
+                                        <span className="font-bold text-black/60 uppercase text-sm">
                                             Price
                                         </span>
                                         <span className="font-black text-green-600">
@@ -236,7 +274,7 @@ export default function Create({ auth, currencySymbol }) {
                                         </span>
                                     </div>
                                     <div className="flex justify-between border-b-2 border-gray-100 pb-3">
-                                        <span className="font-bold text-gray-500 uppercase text-sm">
+                                        <span className="font-bold text-black/60 uppercase text-sm">
                                             Delivery
                                         </span>
                                         <span className="font-black uppercase">
@@ -247,7 +285,7 @@ export default function Create({ auth, currencySymbol }) {
                                     </div>
                                     {data.type === "timed" && (
                                         <div className="flex justify-between border-b-2 border-gray-100 pb-3">
-                                            <span className="font-bold text-gray-500 uppercase text-sm">
+                                            <span className="font-bold text-black/60 uppercase text-sm">
                                                 Timeframe
                                             </span>
                                             <span className="font-black">
@@ -262,7 +300,7 @@ export default function Create({ auth, currencySymbol }) {
                                     )}
                                 </div>
 
-                                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-box-sm mb-8">
+                                <div className="p-4 bg-white border-2 border-black rounded-box-sm mb-8">
                                     <div className="flex gap-3">
                                         <Info className="text-blue-600 shrink-0" />
                                         <p className="text-sm font-bold text-blue-900">
@@ -302,15 +340,23 @@ export default function Create({ auth, currencySymbol }) {
                                        gutter; vertical rhythm stays. */
                                     className="py-6 md:p-10 space-y-8 bg-white"
                                 >
+                                    {formError && (
+                                        <p
+                                            role="alert"
+                                            className="rounded-box-sm border-2 border-black bg-[#FFE0EC] px-4 py-3 text-left text-sm font-bold text-black"
+                                        >
+                                            {formError}
+                                        </p>
+                                    )}
                                     {/* Title */}
                                     <div className="mb-0">
-                                        <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">
+                                        <label className={itemLabelClass}>
                                             Task Title*
                                         </label>
                                         <input
                                             type="text"
                                             maxLength={100}
-                                            className="w-full border-2 border-black rounded-box-sm p-[18px] text-md focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-yellow-50 placeholder-black/60 font-bold"
+                                            className={`${itemFieldClass} font-bold`}
                                             value={data.title}
                                             onChange={(e) =>
                                                 setData("title", e.target.value)
@@ -318,29 +364,29 @@ export default function Create({ auth, currencySymbol }) {
                                             placeholder="Keep the title clear and specific."
                                         />
                                         <div className="flex justify-between mt-2">
-                                            <p className="text-xs font-bold text-gray-500">
+                                            <p className="text-xs font-bold text-black/60">
                                                 This is what supporters will see
                                                 before purchasing.
                                             </p>
                                             <p
-                                                className={`text-xs font-bold ${data.title.length >= 100 ? "text-red-500" : "text-black/60"}`}
+                                                className={`text-xs font-bold ${data.title.length >= 100 ? "text-[#C81E5B]" : "text-black/60"}`}
                                             >
                                                 {data.title.length}/100
                                             </p>
                                         </div>
                                         <InputError
                                             message={errors.title}
-                                            className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block"
+                                            className={itemErrorClass}
                                         />
                                     </div>
 
                                     {/* Description */}
                                     <div className="mb-0">
-                                        <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">
+                                        <label className={itemLabelClass}>
                                             Task Description*
                                         </label>
                                         <textarea
-                                            className="w-full border-2 border-black rounded-box-sm p-4 text-lg font-medium focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all min-h-[120px] bg-blue-50 placeholder-black/60"
+                                            className={`${itemFieldClass} min-h-[120px] resize-y leading-[1.55]`}
                                             rows="4"
                                             value={data.description}
                                             onChange={(e) =>
@@ -353,7 +399,7 @@ export default function Create({ auth, currencySymbol }) {
                                         ></textarea>
                                         <InputError
                                             message={errors.description}
-                                            className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block"
+                                            className={itemErrorClass}
                                         />
                                     </div>
 
@@ -398,7 +444,7 @@ export default function Create({ auth, currencySymbol }) {
                                                     max={priceBounds.max}
                                                     step={priceBounds.step}
                                                     /* Changed: pl-10 to pl-8 */
-                                                    className="relative z-0 w-full border-2 border-black rounded-box-sm p-[18px] pl-13 text-normal font-black focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
+                                                    className={`${itemFieldClass} relative z-0 pl-14 font-black`}
                                                     value={data.price}
                                                     onChange={(e) =>
                                                         setData(
@@ -412,7 +458,7 @@ export default function Create({ auth, currencySymbol }) {
                                             {/* GBP Conversion Display */}
                                             {data.price &&
                                                 defaultCurrency !== "GBP" && (
-                                                    <div className="mt-3 p-3 bg-blue-50 rounded-[15px] border-2 border-blue-200">
+                                                    <div className="mt-3 p-3 bg-[#F2EFE7] rounded-box-sm border-2 border-black/15">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-sm font-bold text-blue-700 uppercase">
                                                                 Equivalent in
@@ -432,7 +478,7 @@ export default function Create({ auth, currencySymbol }) {
                                             {data.price > 0 && (
                                                 <div className="mt-4 p-4 bg-gray-50 rounded-box-sm border-2 border-black ">
                                                     <div className="flex justify-between items-center mb-2">
-                                                        <span className="text-sm font-bold text-gray-700 uppercase">
+                                                        <span className="text-sm font-bold text-black/80 uppercase">
                                                             Fans pay:
                                                         </span>
                                                         <span className="font-black text-xl text-black">
@@ -456,7 +502,7 @@ export default function Create({ auth, currencySymbol }) {
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between items-center">
-                                                        <span className="text-sm font-bold text-gray-700 uppercase">
+                                                        <span className="text-sm font-bold text-black/80 uppercase">
                                                             You receive:
                                                         </span>
                                                         <span className="font-black text-xl text-green-600">
@@ -472,35 +518,31 @@ export default function Create({ auth, currencySymbol }) {
                                                             )}
                                                         </span>
                                                     </div>
-                                                    <p className="mt-2 text-xs text-gray-500 font-medium">
+                                                    <p className="mt-2 text-xs text-black/60 font-medium">
                                                         Fans only see the total
                                                         price to improve
                                                         conversion
                                                     </p>
-                                                    <p className="mt-1 text-xs text-gray-500 font-medium">
-                                                        Our fee is 19%. Uplift
-                                                        will show higher due to
-                                                        stripe / conversions to
-                                                        ensure you always
-                                                        receive 100% or slightly
-                                                        more.
+                                                    {/* 🚨 Never a typed percentage — see resources/js/lib/fees.js. */}
+                                                    <p className="mt-1 text-xs text-black/60 font-medium">
+                                                        {feeNote}
                                                     </p>
                                                 </div>
                                             )}
 
                                             <InputError
                                                 message={errors.price}
-                                                className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block"
+                                                className={itemErrorClass}
                                             />
                                         </div>
 
                                         {/* Category */}
                                         <div className="mb-0">
-                                            <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">
+                                            <label className={itemLabelClass}>
                                                 Category
                                             </label>
                                             <select
-                                                className="w-full border-2 border-black rounded-box-sm p-[18px] text-md focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-purple-50 font-bold appearance-none cursor-pointer"
+                                                className={`${itemFieldClass} cursor-pointer appearance-none font-bold`}
                                                 value={data.category}
                                                 onChange={(e) =>
                                                     setData(
@@ -520,14 +562,14 @@ export default function Create({ auth, currencySymbol }) {
                                             </select>
                                             <InputError
                                                 message={errors.category}
-                                                className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block"
+                                                className={itemErrorClass}
                                             />
                                         </div>
                                     </div>
 
                                     {/* Type Selection */}
                                     <div className="">
-                                        <label className="block font-black text-sm mb-4 uppercase tracking-wide text-gray-500">
+                                        <label className={itemLabelClass}>
                                             Delivery Method
                                         </label>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -553,7 +595,7 @@ export default function Create({ auth, currencySymbol }) {
                                                 }
                                                 className={`p-6 rounded-box border-2 border-black text-left transition-all ${
                                                     data.type === "timed"
-                                                        ? "bg-blue-500 text-white translate-x-[-2px] translate-y-[-2px]"
+                                                        ? "bg-[#FF007F] text-black"
                                                         : "bg-white hover:bg-gray-50"
                                                 }`}
                                             >
@@ -562,7 +604,7 @@ export default function Create({ auth, currencySymbol }) {
                                                     Manual
                                                 </div>
                                                 <div
-                                                    className={`text-sm font-bold ${data.type === "timed" ? "text-blue-100" : "text-gray-500"}`}
+                                                    className={`text-sm font-bold ${data.type === "timed" ? "text-black" : "text-black/60"}`}
                                                 >
                                                     Best for custom shoutouts or
                                                     tasks. Funds are held until
@@ -586,7 +628,7 @@ export default function Create({ auth, currencySymbol }) {
                                                     Delivery
                                                 </div>
                                                 <div
-                                                    className={`text-sm font-bold ${data.type === "instant" ? "text-pink-100" : "text-gray-500"}`}
+                                                    className={`text-sm font-bold ${data.type === "instant" ? "text-black" : "text-black/60"}`}
                                                 >
                                                     Content is delivered
                                                     immediately. Best for
@@ -599,7 +641,7 @@ export default function Create({ auth, currencySymbol }) {
                                     {/* SLA (Only for Timed) */}
                                     {data.type === "timed" && (
                                         <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                                            <label className="block font-black text-sm mb-4 uppercase tracking-wide text-gray-500">
+                                            <label className={itemLabelClass}>
                                                 Delivery Timeframe
                                             </label>
                                             <div className="flex flex-wrap gap-3">
@@ -616,8 +658,8 @@ export default function Create({ auth, currencySymbol }) {
                                                         className={`px-6 py-3 rounded-full border-2 border-black font-black transition-all ${
                                                             data.sla_hours ==
                                                             tf.value
-                                                                ? "bg-blue-500 text-white -translate-y-1"
-                                                                : "bg-white hover:bg-blue-50"
+                                                                ? "bg-[#FF007F] text-black"
+                                                                : "bg-white hover:bg-[#F4F4F5]"
                                                         }`}
                                                     >
                                                         {tf.label}
@@ -644,7 +686,7 @@ export default function Create({ auth, currencySymbol }) {
                                     )}
 
                                     {/* What the buyer receives — one editor for every module. */}
-                                    <div className="rounded-box border-[3px] border-black bg-pink-50 p-6 ">
+                                    <div className="rounded-box border-2 border-black bg-[#FFE0EC] p-6 ">
                                         <p className="mb-4 flex items-center gap-2 text-lg font-black uppercase text-pink-900">
                                             <FileUp className="text-[#FF007F]" />{" "}
                                             What the buyer receives
@@ -673,14 +715,14 @@ export default function Create({ auth, currencySymbol }) {
                                     </div>
 
                                     {/* Terms */}
-                                    <div className="p-6 bg-red-50 border-2 border-black rounded-box !mt-12 ">
+                                    <div className="p-6 bg-[#FFE0EC] border-2 border-black rounded-box !mt-12 ">
                                         <div className="flex items-start">
                                             <div className="flex items-center h-6">
                                                 <input
                                                     id="terms-checkbox"
                                                     type="checkbox"
                                                     required
-                                                    className="h-6 w-6 text-[#FF007F] border-2 border-black rounded focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                                                    className="h-6 w-6 cursor-pointer rounded-box-xs border-2 border-black text-[#FF007F] accent-[#FF007F] focus:outline-none focus:ring-4 focus:ring-[#FF007F]/25"
                                                 />
                                             </div>
                                             <div className="ml-4">
@@ -707,7 +749,7 @@ export default function Create({ auth, currencySymbol }) {
                                     <button
                                         type="submit"
                                         disabled={processing}
-                                        className="border-2 border-black w-full bg-black text-white px-8 py-5 rounded-box-sm font-black text-xl uppercase hover:translate-x-[4px] hover:translate-y-[4px] transition-all disabled:opacity-50"
+                                        className="border-2 border-black w-full min-h-[52px] bg-[#FF007F] text-black px-8 py-5 rounded-box-sm font-black text-xl uppercase tracking-wide transition-[filter] duration-200 hover:brightness-110 active:brightness-95 disabled:opacity-50"
                                     >
                                         {processing
                                             ? "Creating..."

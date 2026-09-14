@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\ProfileChangeRequest;
 use App\Models\SocialLinks;
 use App\Models\User;
+use App\Rules\NoContactDetails;
 use Illuminate\Support\Arr;
 
 /**
@@ -37,7 +38,7 @@ use Illuminate\Support\Arr;
  */
 final class ProfileSelfCheck
 {
-    /** Submitting this will hold the review up — it breaks a rule we enforce. */
+    /** Saving this holds the page back — it breaks a rule the checks enforce. */
     public const BLOCKING = 'blocking';
 
     /** A reviewer will probably ask about it. Worth a look, not a refusal. */
@@ -52,17 +53,16 @@ final class ProfileSelfCheck
      *
      * ⚠️ Mirrors `CreatorReviewAdvisor`'s patterns in the admin app.
      */
-    private const EMAIL_PATTERN = '/[\w.+-]+@[\w-]+\.[\w.]{2,}/i';
+    /** ⚠️ Owned by `NoContactDetails` since 10 Sep 2026 — the form refuses on the same regex. */
+    private const EMAIL_PATTERN = NoContactDetails::EMAIL_PATTERN;
 
-    private const PHONE_PATTERN = '/(?:\+\d[\d\s().-]{7,}\d)/';
+    private const PHONE_PATTERN = NoContactDetails::PHONE_PATTERN;
 
-    private const URL_PATTERN = '#(?:https?://|www\.)\S+#i';
+    private const URL_PATTERN = NoContactDetails::URL_PATTERN;
 
     /** Link shorteners hide the destination from moderation and the supporter. */
-    private const SHORTENERS = [
-        'bit.ly', 'tinyurl.com', 't.co', 'goo.gl', 'ow.ly', 'buff.ly',
-        'is.gd', 'rebrand.ly', 'cutt.ly', 'shorturl.at', 'linktr.ee',
-    ];
+    /** ⚠️ Owned by `ProfileAutoApproval` since 10 Sep 2026 — the socials form refuses on the same list. */
+    private const SHORTENERS = ProfileAutoApproval::SHORTENERS;
 
     private const MIN_BIO_LENGTH = 15;
 
@@ -163,7 +163,7 @@ final class ProfileSelfCheck
                 'Bio',
                 self::ATTENTION,
                 'Your bio is very short. Write a line or two about what you make and what supporters '
-                .'get from you — there may not be enough here to review.'
+                .'get from you — a line or two is what supporters read first.'
             );
         }
 
@@ -200,7 +200,7 @@ final class ProfileSelfCheck
             $asset,
             $label,
             self::ATTENTION,
-            $reason.' Uploading a different image is usually quicker than waiting for a review.'
+            $reason.' Upload a different image and it is checked again straight away.'
         );
     }
 

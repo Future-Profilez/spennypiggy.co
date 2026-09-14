@@ -56,11 +56,12 @@ export default function MorConsent(props) {
                     {!finalStepsUnlocked && (
                         <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-box-sm text-yellow-800">
                             <p className="font-semibold">
-                                Admin Profile Approval Required
+                                Your page is not live yet
                             </p>
                             <p className="text-sm">
-                                Complete your basic profile and submit for admin
-                                approval to access payment setup.
+                                Finish your profile — photo, bio and a social handle.
+                                It goes live automatically once the checks pass, and
+                                payment setup unlocks with it.
                             </p>
                         </div>
                     )}

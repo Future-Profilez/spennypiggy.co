@@ -10,7 +10,6 @@ use App\Models\AuthRedirect;
 use App\Models\FanContract;
 use App\Models\FounderBonus;
 use App\Models\Post;
-use App\Models\ProfileChangeRequest;
 use App\Models\RyeProduct;
 use App\Models\SocialLinks;
 use App\Models\User;
@@ -29,6 +28,7 @@ use App\Support\Badges;
 use App\Support\DiscoveryPayload;
 use App\Support\DiscoverySources;
 use App\Support\GrowthBonusPanelPayload;
+use App\Support\Incentives;
 use App\Support\ProfileSelfCheck;
 use App\Support\SetupCelebrationPayload;
 use App\Support\SocialVisibility;
@@ -621,19 +621,37 @@ class AuthenticatedSessionController extends Controller
                 // don't know" as "the creator sent them" would remove the
                 // section from almost every profile view — a bigger change than
                 // the one being made.
-                'more_creators' => $user->role == 1
-                    && ! DiscoverySources::isCreatorGeneratedVisit(
+                /*
+                 * 🚨 A SUPPORTER'S PROFILE GETS THIS ROW TOO, AND IT IS THE ONLY
+                 * LINK OFF THE PAGE.
+                 *
+                 * This was `role == 1` only, and `ProfileRightRail` returns null
+                 * for anything but a creator — so a fan's own profile carried no
+                 * route onward to anywhere. A supporter with no purchases yet
+                 * landed on a default cover, an empty About tab and an empty
+                 * Feed, with nothing on the page to click.
+                 *
+                 * 🚨 PERSONALISATION IS OWNER-ONLY. The `for_you` slot is derived
+                 * from who this supporter buys from, and its LABEL says so out
+                 * loud — collecting that onto a page a stranger can read is the
+                 * exact exposure `UserProfileService::getGifterCreators()`
+                 * refuses in its own docblock. A visitor gets the generic slots.
+                 *
+                 * ⚠️ The creator-generated-visit gate does NOT apply to a
+                 * supporter profile: that rule exists so a creator's own
+                 * audience is not monetised against them with four competitors
+                 * at the foot of their money page. A supporter sells nothing,
+                 * so there is no audience of theirs to protect.
+                 */
+                'more_creators' => match ((int) $user->role) {
+                    1 => ! DiscoverySources::isCreatorGeneratedVisit(
                         AttributionService::sourceForCreator($user->id)
                     )
-                    ? app(CreatorRecommendationService::class)->forProfile($user)
-                    : [],
-                'pending_profile_changes' => Auth::id() === $user->id
-                    ? ProfileChangeRequest::query()
-                        ->where('user_id', $user->id)
-                        ->where('status', ProfileChangeRequest::STATUS_PENDING)
-                        ->pluck('asset')
-                        ->all()
-                    : [],
+                        ? app(CreatorRecommendationService::class)->forProfile($user)
+                        : [],
+                    0 => app(CreatorRecommendationService::class)->forSupporter($user, $isOwner),
+                    default => [],
+                },
             ];
         };
         $data = $getData();
@@ -1516,6 +1534,35 @@ class AuthenticatedSessionController extends Controller
      */
     private function getFounderData($user): array
     {
+        /*
+         * 🚨 THE DASHBOARD TRACKER AND THE MISSED BANNER BOTH DIE HERE
+         * (11 Sep 2026). `FounderProgressTracker` renders on
+         * `founderData.isEligible`, and the missed banner on the same flag with
+         * `founder_missed_at` — so returning "not eligible" takes down the
+         * progress card, the countdown and the missed banner in one place,
+         * with no JSX change and nothing to keep in step.
+         *
+         * ⚠️ The shape is unchanged, deliberately: every key the component
+         * reads is still present. A null payload would be a second contract to
+         * maintain for a component that has to work again the moment the scheme
+         * is switched back on.
+         *
+         * ⚠️ It also skips `calculateCompletedNetEarnings`, which is a ledger
+         * scan on the busiest authenticated page on the site — paid on every
+         * owner profile load to compute a number nothing renders.
+         */
+        if (! Incentives::founderEnabled()) {
+            return [
+                'first30DayEarnings' => 0.0,
+                'isEligible' => false,
+                'daysLeft' => 0,
+                'minEarnings' => (float) config('founder_bonus.qualification.min_first_30d_earnings', 2500),
+                'qualificationDays' => (int) config('founder_bonus.qualification.qualification_period_days', 30),
+                'windowStart' => null,
+                'windowEnd' => null,
+            ];
+        }
+
         $first30DayEarnings = 0;
         $isEligible = false;
         $daysLeft = 0;

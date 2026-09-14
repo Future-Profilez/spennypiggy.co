@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import FadeIn from '@/Components/animations/FadeIn';
 import StaggerItem from '@/Components/animations/StaggerItem';
 import {
@@ -5,6 +6,7 @@ import {
     FREE_UNTIL_FIRST_SALE,
     SUBSCRIPTION_COPY,
 } from '@/constants/creatorSubscription';
+import { feeIsAllIn, feeRateLabel } from '@/lib/fees';
 
 /**
  * What the platform costs a creator.
@@ -23,35 +25,58 @@ import {
  * policy off changes this section rather than leaving it advertising something
  * the billing code no longer does.
  *
- * ⚠️ No supporter fee PERCENTAGE appears here. Rates differ per payment method
- * (card and bank are priced differently) and per creator (bespoke agreements
- * exist), so any single number printed on a landing page is wrong for someone.
- * The page states that supporters see their full total before paying, and links
- * to the breakdown.
+ * 🚨 THE SUPPORTER RATE IS PRINTED NOW, AND IT IS READ FROM THE SERVER
+ * (11 Sep 2026). The note that used to sit here — "no supporter fee PERCENTAGE
+ * appears here, because rates differ per payment method and per creator" — was
+ * written for the stacked legacy model, where there was no single number to
+ * print. The all-in model has ONE advertised percentage and the client's §16
+ * asks for it in the headline, so withholding it now reads as evasion on the
+ * page whose whole subject is what things cost.
+ *
+ * 🚨 NEVER TYPED. `feeRateLabel()` reads the shared `fees` prop, which comes
+ * from `App\Services\Pricing\FeeModel` — the same class the checkout prices
+ * from. A literal "12%" here is a number that cannot follow a config change,
+ * and the client's §3 asks for pricing that moves with no development work.
+ *
+ * ⚠️ IT IS THE STANDARD CARD RATE, i.e. THE MOST ANYBODY PAYS. Pay by Bank is
+ * cheaper and a bespoke deal is cheaper still, so this figure can only ever
+ * overstate our own fee — the one safe direction to be wrong in on a pricing
+ * page.
  */
 
 /** TODO: point at the fees article itself once its help-centre URL is known. */
 const FEES_ARTICLE_URL = 'https://intercom.help/spenny-piggy';
 
-const FIGURES = [
-    {
-        figure: FREE_UNTIL_FIRST_SALE ? '£0' : PRICE_FORMATTED,
-        label: FREE_UNTIL_FIRST_SALE ? 'Until your first sale' : '+ VAT a month, flat',
-        accent: '#05EFB8',
-    },
-    {
-        figure: PRICE_FORMATTED,
-        label: FREE_UNTIL_FIRST_SALE ? '+ VAT a month after that, flat' : 'Whatever you earn, same price',
-        accent: '#E6EA7B',
-    },
-    {
-        figure: '0%',
-        label: 'Commission on your sales. Ever.',
-        accent: '#FF007F',
-    },
-];
-
 export default function PricingSection() {
+    const page = usePage();
+    const rate = feeRateLabel(page);
+    const allIn = feeIsAllIn(page);
+
+    /* ⚠️ Built inside the component because the third cell reads a prop. The
+       middle cell used to repeat the monthly price the paragraph above had
+       just given, so the row read as one figure, a restatement and a zero —
+       the supporter's side of the deal, which §16 puts in the headline, was
+       the one number missing. */
+    const FIGURES = [
+        {
+            figure: FREE_UNTIL_FIRST_SALE ? '£0' : PRICE_FORMATTED,
+            label: FREE_UNTIL_FIRST_SALE ? 'Until your first sale' : '+ VAT a month, flat',
+            accent: '#05EFB8',
+        },
+        {
+            figure: '0%',
+            label: 'Commission on your sales. Ever.',
+            accent: '#E6EA7B',
+        },
+        {
+            figure: allIn ? rate : 'Fees',
+            label: allIn
+                ? 'All-in supporter fee. Payment processing included.'
+                : 'Covered by supporters at checkout.',
+            accent: '#FF007F',
+        },
+    ];
+
     return (
         <section className="relative bg-transparent py-12 md:py-24 overflow-hidden">
             {/* No ambient orbs here. `PageCanvas` is the page's one light source —
@@ -84,9 +109,15 @@ export default function PricingSection() {
                             <p>
                                 {FREE_UNTIL_FIRST_SALE ? 'Once you’re earning, it’s' : 'It’s'}{' '}
                                 <span className="text-white font-semibold">{PRICE_FORMATTED} + VAT a month</span>
-                                {' '}&mdash; flat, whatever you make. That covers Stripe fees, content review,
-                                fraud screening and compliance.
+                                {' '}&mdash; flat, whatever you make. That covers content review, fraud
+                                screening and compliance.
                             </p>
+                            {/* 🚨 "THAT COVERS STRIPE FEES" WAS REMOVED FROM THE LINE ABOVE
+                                (11 Sep 2026). Card processing is paid out of the supporter's
+                                all-in fee now, not out of the creator's subscription — leaving
+                                both sentences standing told a reader processing was paid for
+                                twice, which is the one thing an all-in price must not sound
+                                like. */}
                             <p className="text-white font-semibold">
                                 No commission. No percentage of your sales. Cancel any time.
                             </p>
@@ -117,8 +148,10 @@ export default function PricingSection() {
 
                 <FadeIn y={16} delay={0.1}>
                     <p className="font-poppins text-white/60 text-xs md:text-sm text-center max-w-2xl mx-auto mt-8 leading-relaxed">
-                        Supporters cover a platform fee at checkout and see the full total before they pay
-                        &mdash;{' '}
+                        {allIn
+                            ? `Supporters pay your price plus ${rate}, all-in — payment processing is included and nothing is added afterwards. They see the full total before they pay`
+                            : 'Supporters cover a platform fee at checkout and see the full total before they pay'}
+                        {' '}&mdash;{' '}
                         <a
                             href={FEES_ARTICLE_URL}
                             target="_blank"

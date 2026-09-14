@@ -6,6 +6,7 @@ use App\Console\Commands\ReleaseReserves;
 use App\Helpers;
 use App\Services\CreatorPushService;
 use App\Services\PostingCadenceService;
+use App\Services\Pricing\FeeModel;
 use App\Services\Risk\ReservePolicy;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -51,14 +52,43 @@ class HelpTokens
                 : 'as soon as you add your card',
 
             // ---- Fees -----------------------------------------------------
-            // These are the STANDARD rates. A creator on a bespoke agreement
-            // pays a negotiated platform rate, which is why no article may
-            // present these as universal — the copy around them says "standard".
+            /*
+             * 🚨 THE ALL-IN RATE IS THE ONLY FEE FIGURE HELP COPY MAY QUOTE
+             * (11 Sep 2026). The supporter pays the listed price plus ONE advertised
+             * percentage and Stripe is paid out of it, so a "platform" figure beside a
+             * "compliance" figure beside a processing figure describes a charge the
+             * platform no longer makes.
+             *
+             * ⚠️ Use `{{fee.all_in}}` in new copy. The four legacy tokens below still
+             * resolve — an article written against them must not render a blank where a
+             * percentage used to be — but they now report what the legacy model WOULD
+             * charge, which is not what a supporter pays. Replace them as articles are
+             * touched.
+             *
+             * These are STANDARD rates. A creator on a bespoke agreement pays a
+             * negotiated rate, which is why no article may present them as universal.
+             */
+            // ---- Incentives that are OPEN ---------------------------------
+            // ⚠️ Read from config so the closed-programmes article and the promo deck
+            // cannot quote different figures at the same creator.
+            'credits.threshold' => fn () => self::money(config('membership_credits.threshold_gbp', 500)),
+            'credits.months' => fn () => (string) (int) config('membership_credits.months_per_threshold', 1),
+
+            'fee.all_in' => fn () => self::pct(FeeModel::supporterRate('card')),
+            'fee.all_in.bank' => fn () => self::pct(FeeModel::supporterRate('bank')),
+            'fee.lowest' => fn () => self::pct(FeeModel::lowestLiveRate()),
+
             'fee.card.platform' => fn () => self::pct(config('payments.fee_profiles.card.platform_rate')),
             'fee.card.compliance' => fn () => self::pct(config('payments.fee_profiles.card.compliance_rate')),
             'fee.bank.platform' => fn () => self::pct(config('payments.fee_profiles.bank.platform_rate')),
             'fee.bank.compliance' => fn () => self::pct(config('payments.fee_profiles.bank.compliance_rate')),
-            'fee.admin' => fn () => self::money(config('app.administration_fee', 1)),
+            /*
+             * ⚠️ ZERO UNDER ALL-IN, and it must render as such rather than as £1. The
+             * administration fee is not charged any more (client §2: "No separate £1 fee
+             * at launch"); an article still printing £1 would be quoting a charge the
+             * checkout does not make.
+             */
+            'fee.admin' => fn () => self::money(FeeModel::isAllIn() ? 0 : config('app.administration_fee', 1)),
 
             // ---- Payments / checkout --------------------------------------
             'payment.tier.open_max' => fn () => self::money(config('payments.tiers.open_max_gbp', 250)),
@@ -137,7 +167,17 @@ class HelpTokens
              * own sets somebody up to share their link, watch a signup land and
              * be paid nothing. The promo deck follows the same rule.
              */
-            'referral.threshold' => fn () => self::money(config('referral.qualifying_gmv', 1000)),
+            'referral.threshold' => fn () => self::money(config('referral.qualifying_gmv', 2000)),
+
+            // ---- Earn your membership back (11 Sep 2026) -------------------
+            /*
+             * 🚨 "A FREE MONTH", NEVER A SUM OF MONEY. It is a credit against
+             * the creator's own platform bill and is never convertible to cash,
+             * so there is deliberately no token for its cash value — one would
+             * be used, and the sentence it produced would be untrue.
+             */
+            'membership_credit.threshold' => fn () => self::money(config('membership_credits.threshold_gbp', 500)),
+            'membership_credit.months' => fn () => (string) (int) config('membership_credits.months_per_threshold', 1),
 
             // ---- Fast Start -----------------------------------------------
             /*

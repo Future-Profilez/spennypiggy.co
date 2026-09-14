@@ -184,6 +184,28 @@ export default function ListingRow({ item }) {
                             {item.moderation_reason}
                         </p>
                     )}
+
+                    {/*
+                        🚨 AMBER, AND A SEPARATE BLOCK FROM THE HOLD ABOVE. A held
+                        listing is OFF SALE and red is right for it; an edit request
+                        leaves the listing selling while the creator changes
+                        something, and painting that red tells them their live item
+                        is down. Red on this platform means somebody said no.
+
+                        ⚠️ Both can be true at once — a held listing an admin has
+                        also written to — so this is a sibling, never an `else`.
+                    */}
+                    {item.edit_requested_reason && (
+                        <p className="mt-2 rounded-box-sm border border-[#E8B400] bg-[#FFF6DF] px-3 py-2 text-[13px] font-medium text-[#8A6A00]">
+                            <span className="font-black uppercase tracking-wide">
+                                Change requested{" "}
+                            </span>
+                            {item.edit_requested_reason}
+                            <span className="mt-1 block font-normal text-[#8A6A00]/80">
+                                It is still live. Update it and we will check it again.
+                            </span>
+                        </p>
+                    )}
                 </div>
             </div>
 

@@ -9,6 +9,7 @@ use App\Models\Shop;
 use App\Models\Task;
 use App\Models\TipGoal;
 use App\Models\WishItem;
+use App\Rules\NoBlockedSymbols;
 use App\Rules\NoExpenseOrBrandName;
 use App\Support\SecureMedia;
 use Illuminate\Database\Eloquent\Model;
@@ -131,6 +132,7 @@ class RewardService
                 'string',
                 'max:'.config('rewards.title_max'),
                 new NoExpenseOrBrandName,
+                new NoBlockedSymbols,
             ],
             'reward_type' => ['nullable', 'string', Rule::in($types)],
             'reward_body' => [

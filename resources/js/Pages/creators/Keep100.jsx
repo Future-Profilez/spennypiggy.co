@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import HoldsUpBlock, { HOLDS_UP } from './components/HoldsUpBlock';
 import Guest from '@/Layouts/GuestLayout';
 import AdPage from './components/AdPage';
@@ -17,20 +17,35 @@ import {
     PRICE_FORMATTED,
     SUBSCRIPTION_COPY,
 } from '@/constants/creatorSubscription';
+import { feeIsAllIn, feeRateLabel } from '@/lib/fees';
 
 /**
  * Keep 100% — the pricing argument.
  *
- * ⚠️ NO SUPPORTER-FEE PERCENTAGE APPEARS ON THIS PAGE, including in the worked
- * example. The rate differs per payment method and per creator (bespoke
- * agreements), so any single figure is wrong for someone — the same rule
- * `home/PricingSection.jsx` follows. The example shows the two numbers that ARE
- * fixed: what you list, and what you receive.
+ * 🚨 THE SUPPORTER RATE IS ON THIS PAGE NOW, AND IT IS READ FROM THE SERVER
+ * (11 Sep 2026). The note that used to sit here — "no supporter-fee percentage
+ * appears on this page, because the rate differs per payment method and per
+ * creator" — described the stacked legacy model, where there was no single
+ * figure to state. Under all-in there is one, the client's §16 puts it in the
+ * headline, and a page called "Keep 100%" that will not say what the other
+ * side pays is the one page where withholding it reads worst.
+ *
+ * 🚨 NEVER TYPED — `feeRateLabel()` reads the shared `fees` prop, which comes
+ * from `App\Services\Pricing\FeeModel`, the class the checkout prices from.
+ *
+ * ⚠️ IT IS THE STANDARD CARD RATE, THE MOST ANYBODY PAYS. Pay by Bank is
+ * cheaper and a bespoke deal is cheaper again, so this figure can only
+ * overstate our own fee — the only safe direction on a pricing page.
  */
 export default function Keep100() {
+    const page = usePage();
+    const allIn = feeIsAllIn(page);
+    const rate = feeRateLabel(page);
     const accent = ACCENT.earn;
     const title = 'Keep 100% of what you list — Spenny Piggy for creators';
-    const description = `No revenue cut. The price you list is the amount that reaches you, supporters cover the platform fee at checkout, and payouts run weekly. ${SUBSCRIPTION_COPY.promise}.`;
+    const description = allIn
+        ? `No revenue cut. The price you list is the amount that reaches you, supporters pay ${rate} all-in with payment processing included, and payouts run weekly. ${SUBSCRIPTION_COPY.promise}.`
+        : `No revenue cut. The price you list is the amount that reaches you, supporters cover the platform fee at checkout, and payouts run weekly. ${SUBSCRIPTION_COPY.promise}.`;
     const promise = `${SUBSCRIPTION_COPY.promise} · ${PRICE_FORMATTED} + VAT / month after · cancel anytime`;
 
     return (
@@ -74,10 +89,13 @@ export default function Keep100() {
                             </h1>
 
                             <p className="mb-9 mt-7 max-w-lg text-base leading-relaxed text-gray-300 md:text-xl">
-                                There is no revenue cut. Supporters cover the
-                                platform fee at checkout and see their full
-                                total before they pay, so the number you set is
-                                the number that reaches your bank.
+                                There is no revenue cut.{' '}
+                                {allIn
+                                    ? `Supporters pay your price plus ${rate}, all-in — the payment processing is inside that, and nothing is added afterwards.`
+                                    : 'Supporters cover the platform fee at checkout.'}{' '}
+                                They see their full total before they pay, so
+                                the number you set is the number that reaches
+                                your bank.
                             </p>
 
                             <StartSelling promise={promise} />
@@ -90,10 +108,24 @@ export default function Keep100() {
                                 note="The price you choose, in your own currency."
                                 className="rounded-box border-2 border-white/15 bg-white/[0.04]"
                             />
+                            {/* 🚨 A RATE, NOT A RECOMPUTED TOTAL. The middle cell
+                                read "Their total" — a placeholder, because under
+                                the legacy model there was no single figure. It
+                                states the rate now rather than multiplying the
+                                £20 out in JavaScript: the engine's gross-up
+                                rounds UP (a £100 listing charges £112.01, not
+                                £112.00), so a total computed here would
+                                understate the charge by pennies on some prices,
+                                on the page whose whole claim is that our numbers
+                                match the checkout. */}
                             <StatCell
-                                figure="Their total"
+                                figure={allIn ? `+${rate}` : 'Their total'}
                                 label="Supporter pays"
-                                note="Shown in full at checkout, before they pay. It varies by payment method."
+                                note={
+                                    allIn
+                                        ? 'All-in, on card. Payment processing included, nothing added after. Pay by Bank is lower. Shown in full at checkout before they pay.'
+                                        : 'Shown in full at checkout, before they pay. It varies by payment method.'
+                                }
                                 className="rounded-box border-2 border-white/15 bg-white/[0.04]"
                             />
                             {/* The one filled block on the page — it is the
@@ -139,6 +171,17 @@ export default function Keep100() {
                             <LedgerRow
                                 title="Payout fees"
                                 line="Weekly payout runs to your own bank account through Stripe."
+                                figure="£0"
+                            />
+                            {/* 🚨 THE £1 ADMINISTRATION FEE WAS RETIRED ON
+                                11 Sep 2026 and the supporter fee absorbed the
+                                processing with it. Stated as a row rather than
+                                left out, because "what never comes out" is the
+                                section's subject and a reader arriving from an
+                                older article is looking for exactly this. */}
+                            <LedgerRow
+                                title="Separate processing fee"
+                                line="Card processing comes out of the supporter's all-in fee. There is no per-transaction charge added on top of it, and no administration fee."
                                 figure="£0"
                             />
                             <LedgerRow

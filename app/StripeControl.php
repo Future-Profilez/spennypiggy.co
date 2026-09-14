@@ -16,6 +16,7 @@ use Stripe\Balance;
 use Stripe\Checkout\Session;
 use Stripe\Collection;
 use Stripe\Customer;
+use Stripe\CustomerBalanceTransaction;
 use Stripe\Exception\ApiConnectionException;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\OAuth\InvalidRequestException;
@@ -285,6 +286,52 @@ class StripeControl
         } catch (\Throwable $e) {
             Log::error('Failed to fetch charge facts for payment intent', [
                 'payment_intent_id' => $paymentIntentId,
+                'connected_account_id' => $connectedAccountId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * The payment intent behind a Checkout Session.
+     *
+     * Five of the eight paid modules store only a session id, so measuring what
+     * their charges really cost needs this hop first — which is the second of
+     * the two Stripe reads `finance:record-processor-cost` pays per row, and
+     * half the reason it is a bounded out-of-band command rather than anything
+     * on the checkout path.
+     *
+     * ⚠️ A direct-charge session lives on the CONNECTED account, so omitting
+     * `$connectedAccountId` answers "no such session" rather than failing in a
+     * way anyone would read as a missing option.
+     *
+     * Returns null — never an empty string — when it cannot be read: the caller
+     * treats that as "not measured", and an empty id would be retrieved as one.
+     */
+    public static function paymentIntentIdForSession(string $sessionId, ?string $connectedAccountId = null): ?string
+    {
+        self::setClient();
+
+        try {
+            $opts = [];
+            if (! empty($connectedAccountId)) {
+                $opts['stripe_account'] = $connectedAccountId;
+            }
+
+            $session = self::$client->checkout->sessions->retrieve($sessionId, [], $opts);
+
+            $intent = $session->payment_intent ?? null;
+
+            if (is_object($intent)) {
+                $intent = $intent->id ?? null;
+            }
+
+            return is_string($intent) && $intent !== '' ? $intent : null;
+        } catch (\Throwable $e) {
+            Log::warning('Could not resolve the payment intent for a checkout session', [
+                'session_id' => $sessionId,
                 'connected_account_id' => $connectedAccountId,
                 'error' => $e->getMessage(),
             ]);
@@ -1372,6 +1419,27 @@ class StripeControl
      * @param  array  $payload  Product Payload
      * @return Throwable|Product
      */
+    /**
+     * ⚠️ A FAILURE HERE MEANS A CREATOR CANNOT PUBLISH, SO IT IS RECORDED BEFORE
+     * IT IS RETHROWN.
+     *
+     * Three of these four branches used to log NOTHING and the fourth logged at
+     * INFO — and the `sentry` channel carries error and above, so an
+     * `InvalidRequestException` (the commonest one: a rejected image url, a
+     * malformed unit amount, a restricted connected account) reached the
+     * creator's screen and no operator's. Every caller rolls its listing back,
+     * which removes the last trace of the attempt from the database too.
+     *
+     * ⚠️ WARNING, not error, and deliberately: the exception is rethrown, and
+     * the caller is the one that knows whether this was fatal (a create that is
+     * now being rolled back — see App\Support\ListingRollback, which alerts) or
+     * a retry it will handle. This line is the record and the Sentry breadcrumb,
+     * never the alert, so a busy caller cannot double-page anyone.
+     *
+     * ⚠️ The account id is CONTEXT, not text inside the message, so alerts can
+     * group on it. The payload is NOT logged — it carries the listing's own
+     * name and price, and the useful half (the Stripe message) is already here.
+     */
     public static function createProduct(array $payload, string $connectedAccountId)
     {
         self::setClient();
@@ -1381,15 +1449,27 @@ class StripeControl
                 ['stripe_account' => $connectedAccountId]
             );
         } catch (RateLimitException $e) {
-            throw new Exception('Stripe RateLimit: '.$e->getMessage());
+            throw new Exception('Stripe RateLimit: '.self::logProductFailure('RateLimit', $e, $connectedAccountId));
         } catch (InvalidRequestException $e) {
-            throw new Exception('Stripe InvalidRequest: '.$e->getMessage());
+            throw new Exception('Stripe InvalidRequest: '.self::logProductFailure('InvalidRequest', $e, $connectedAccountId));
         } catch (ApiConnectionException $e) {
-            throw new Exception('Stripe API Connection: '.$e->getMessage());
+            throw new Exception('Stripe API Connection: '.self::logProductFailure('ApiConnection', $e, $connectedAccountId));
         } catch (ApiErrorException $e) {
-            Log::info('Stripe API Error: '.$e->getMessage());
-            throw new Exception('Stripe API Error: '.$e->getMessage());
+            throw new Exception('Stripe API Error: '.self::logProductFailure('ApiError', $e, $connectedAccountId));
         }
+    }
+
+    /** Record a product-create failure and hand back the message to rethrow with. */
+    private static function logProductFailure(string $kind, \Throwable $e, string $connectedAccountId): string
+    {
+        $message = $e->getMessage();
+
+        Log::warning("Stripe product create failed ({$kind})", [
+            'stripe_account' => $connectedAccountId,
+            'error' => $message,
+        ]);
+
+        return $message;
     }
 
     /**
@@ -1838,6 +1918,75 @@ class StripeControl
      * @param  string  $sub_id  Stripe subscription ID
      * @return Throwable|Subscription
      */
+    /**
+     * Put a credit on the creator's own PLATFORM customer balance, which Stripe
+     * then applies to their next invoice by itself.
+     *
+     * 🚨 THIS IS HOW "EARN YOUR MEMBERSHIP BACK" PAYS, AND IT IS DELIBERATELY
+     * NOT A TRIAL EXTENSION. Pushing `trial_end` forward would move a paying
+     * creator's subscription back into `trialing`, which
+     * `SubscriptionActivationService::CONVERTIBLE_STATUSES`, the dashboard and
+     * the posting-cadence pauser all read as "not yet billed" — a free month
+     * would silently change what four other features believe about that
+     * account. A customer balance credit changes nothing except the next
+     * invoice's total.
+     *
+     * 🚨 A CREDIT IS A NEGATIVE AMOUNT. Stripe's customer balance is signed:
+     * negative is money we owe the customer, positive is money they owe us.
+     * Getting the sign wrong here does not error — it BILLS them extra.
+     * The caller passes a positive figure and this negates it, so the sign
+     * lives in exactly one place.
+     *
+     * 🚨 IT IS NOT CASH AND CANNOT BECOME CASH. A Stripe customer balance is
+     * only ever spent against that customer's own invoices; there is no path
+     * from it to a payout, which is precisely why it is the right instrument
+     * for a credit that must never be withdrawable.
+     *
+     * ⚠️ PLATFORM ACCOUNT, NO `stripe_account` OPTION. This is the creator's
+     * customer record on OUR account (their membership), not anything on their
+     * connected account.
+     *
+     * ⚠️ Pass an idempotency key. A retried apply must not credit twice — and
+     * unlike a transfer there is no downstream failure to notice it.
+     *
+     * @param  int  $amountMinor  a POSITIVE credit in minor units
+     * @return CustomerBalanceTransaction
+     */
+    public static function creditCustomerBalance(
+        string $customerId,
+        int $amountMinor,
+        string $currency,
+        string $description,
+        ?string $idempotencyKey = null,
+        array $metadata = [],
+    ) {
+        self::setClient();
+
+        if ($amountMinor <= 0) {
+            throw new Exception('creditCustomerBalance: the credit must be a positive amount.');
+        }
+
+        try {
+            $options = $idempotencyKey ? ['idempotency_key' => (string) $idempotencyKey] : [];
+
+            return self::$client->customers->createBalanceTransaction($customerId, [
+                // Negative = a credit to the customer. See the note above.
+                'amount' => -1 * $amountMinor,
+                'currency' => strtolower($currency),
+                'description' => $description,
+                'metadata' => $metadata,
+            ], $options);
+        } catch (RateLimitException $e) {
+            throw new Exception('Stripe RateLimit: '.$e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception('Stripe InvalidRequest: '.$e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception('Stripe API Connection: '.$e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception('Stripe API Error: '.$e->getMessage());
+        }
+    }
+
     public static function endSubscriptionTrial($sub_id, ?string $idempotencyKey = null)
     {
         self::setClient();
@@ -2057,14 +2206,34 @@ class StripeControl
              * `Cache::add` is atomic - a `has()` + `put()` pair lets two concurrent
              * runs both pass the check and both log.
              */
-            if (self::isAccountUnreachable($e)) {
+            if (self::accountIsUnreachable($e)) {
                 if (Cache::add('stripe:manual-payout:unreachable:'.$connectedAccountId, true, now()->addDay())) {
                     // Still ERROR, not warning: this creator can never be paid out until
                     // somebody looks at the account, so it has to reach whoever reads the
                     // alerts. The cooldown makes it once a day instead of 144 times -
                     // it does not make it silent.
+                    /*
+                     * ⚠️ NAME THE CREATOR, NOT JUST THE STRIPE ID.
+                     *
+                     * This alert says a creator can never be paid until somebody
+                     * looks — and for 17 days it carried only an `acct_…`, so
+                     * acting on it began with a database lookup nobody reading an
+                     * alert inbox can do (Sentry JAVASCRIPT-REACT-AA, 23 events).
+                     *
+                     * ⚠️ The query sits INSIDE the once-per-account-per-day gate,
+                     * not outside it. `payout:enforce-manual` sweeps every
+                     * connected account every ten minutes — 144 runs a day — and a
+                     * lookup on the outside would be a query per account per run
+                     * to add a name to a line that is written once.
+                     */
+                    $unreachableUser = User::query()
+                        ->where('account_id', $connectedAccountId)
+                        ->first(['id', 'username']);
+
                     Log::error('Connected account is unreachable - manual payout schedule not enforced', [
                         'account_id' => $connectedAccountId,
+                        'user_id' => $unreachableUser?->id,
+                        'username' => $unreachableUser?->username,
                         'currency' => $currency,
                         'error' => $e->getMessage(),
                     ]);
@@ -2093,8 +2262,14 @@ class StripeControl
      * Matched on the Stripe error CODE where there is one - `account_invalid` is the
      * documented code for "no such account, or access revoked". The string check is a
      * fallback for the permission error, which carries no code.
+     *
+     * 🚨 PUBLIC SINCE 12 Sep 2026, AND THERE IS STILL ONLY ONE OF IT.
+     * `payouts:check-connections` asks the same question to decide whether to
+     * flag an account and write to its creator, and a second copy of this
+     * classifier is how one of the two starts telling somebody to reconnect
+     * over a rate limit.
      */
-    private static function isAccountUnreachable(\Throwable $e): bool
+    public static function accountIsUnreachable(\Throwable $e): bool
     {
         if ($e instanceof PermissionException) {
             return true;

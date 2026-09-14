@@ -21,6 +21,7 @@ use App\Models\TaskPurchase;
 use App\Models\User;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Rules\NoBlockedSymbols;
 use App\Rules\NoExpenseOrBrandName;
 use App\Services\AbandonedCheckoutService;
 use App\Services\CheckoutMethodResolver;
@@ -39,9 +40,12 @@ use App\Services\Risk\RiskService;
 use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\AlertRouter;
 use App\Support\BlockedPaymentAlert;
 use App\Support\ContentDownloadMonitor;
+use App\Support\ListingPublication;
 use App\Support\NotificationContext;
+use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
@@ -140,7 +144,7 @@ class TaskController extends Controller
         }
 
         $request->validate([
-            'title' => ['required', 'string', 'max:100', new NoExpenseOrBrandName],
+            'title' => ['required', 'string', 'max:100', new NoExpenseOrBrandName, new NoBlockedSymbols],
             'description' => 'required|string',
             'price' => [
                 'required',
@@ -186,7 +190,11 @@ class TaskController extends Controller
         $task->creator_id = Auth::id();
         $task->title = $request->title;
         $task->description = $request->description;
-        $task->is_approved = false; // Default unapproved
+        /* 🚨 LIVE ON SAVE — `ListingPublication` carries the reasoning. This wrote
+           `false` and nothing in the codebase could ever write `true`, so a clean
+           task sat at PENDING REVIEW waiting for a queue the simplification plan
+           removes. The three scanners below still retract it. */
+        $task->is_approved = true;
         $task->price = $request->price;
         $task->currency = Auth::user()->default_currency ?? 'USD';
         $task->category = $request->category;
@@ -214,7 +222,7 @@ class TaskController extends Controller
         ItemTextModeration::apply(
             $task,
             ['reward_title', 'reward_body', 'reward_description', 'title', 'description'],
-            ['is_approved' => false]
+            ListingPublication::heldAttributes($task)
         );
 
         // SFW gate: AI-scan the task media; keep it unapproved if it fails moderation.
@@ -224,10 +232,17 @@ class TaskController extends Controller
                 Task::class,
                 $task->id,
                 $mediaUuid,
-                ['is_approved' => false],
+                ListingPublication::heldAttributes($task),
                 'task_image'
             );
         }
+
+        /*
+         * The paid deliverable, which is a different file from the listing image
+         * above and was never scanned at all — an instant task shipped whatever was
+         * attached straight to the buyer on payment.
+         */
+        RewardFileScan::dispatch($task, ListingPublication::heldAttributes($task));
 
         // Clear user caches
         $user = Auth::user();
@@ -265,7 +280,7 @@ class TaskController extends Controller
         }
 
         $request->validate([
-            'title' => ['required', 'string', 'max:100', new NoExpenseOrBrandName],
+            'title' => ['required', 'string', 'max:100', new NoExpenseOrBrandName, new NoBlockedSymbols],
             'description' => 'required|string',
             'price' => [
                 'required',
@@ -306,6 +321,12 @@ class TaskController extends Controller
             return back()->withErrors(['title' => 'The task contains blocked words or phrases. Please check the title, description and deliverable content.']);
         }
 
+        // Captured before the model is mutated: both scans below must be able to
+        // tell a changed file from an unchanged one, or a re-scan re-produces a
+        // false positive and un-approves a task an admin has already cleared.
+        $previousMedia = (string) $task->media_url;
+        $previousDeliverable = (string) RewardFileScan::currentFile($task);
+
         $task->title = $request->title;
         $task->description = $request->description;
         $task->price = $request->price;
@@ -318,9 +339,10 @@ class TaskController extends Controller
             $task->media_url = $request->media_file['url'] ?? null;
         }
 
-        if ($task->is_approved == 2 || $task->is_approved == 1) {
-            $task->is_approved = 0;
-        }
+        /* 🚨 AN EDIT NO LONGER PULLS A LIVE TASK OFF SALE. It used to drop straight
+           back to 0, which under the old model meant "wait for an admin" — and with
+           that queue gone it means "never live again". The scans below still run on
+           anything the creator CHANGED and retract it if they find something. */
 
         if ($request->type === 'instant') {
             if ($request->deliverable_file) {
@@ -332,13 +354,38 @@ class TaskController extends Controller
 
         $task->save();
 
-        // An edit already drops the task back to unapproved above, so this only
-        // records WHY when the new wording is the problem.
+        /* An edit lifts a hold only where this save could have fixed it — see
+           `ListingPublication::republish`. Editing is never itself a way past a check. */
+        ListingPublication::republish($task->refresh(), array_filter([
+            (string) $task->media_url !== (string) $previousMedia ? 'task_image' : null,
+            (string) RewardFileScan::currentFile($task) !== (string) $previousDeliverable ? 'reward_file' : null,
+        ]));
+
+        // The text is re-read on every edit and holds the task if the new wording
+        // is the problem — that hold is now the only thing that takes it off sale.
         ItemTextModeration::apply(
             $task,
             ['reward_title', 'reward_body', 'reward_description', 'title', 'description'],
-            ['is_approved' => false]
+            ListingPublication::heldAttributes($task)
         );
+
+        /*
+         * 🚨 AN EDIT USED TO BE A WAY PAST THE IMAGE SCAN. Only creation dispatched
+         * one, so a task could be published with a clean picture and then have its
+         * media swapped for anything at all. Same fault, same fix, as Shop's edit
+         * path.
+         */
+        if (! empty($task->media_url) && (string) $task->media_url !== $previousMedia) {
+            CheckMediaModeration::dispatch(
+                Task::class,
+                $task->id,
+                $task->media_url,
+                ListingPublication::heldAttributes($task),
+                'task_image'
+            );
+        }
+
+        RewardFileScan::dispatch($task, ListingPublication::heldAttributes($task), $previousDeliverable);
 
         // Clear user caches
         $user = Auth::user();
@@ -1402,16 +1449,33 @@ class TaskController extends Controller
                     Log::error('Failed to notify supporter about escalation: '.$e->getMessage());
                 }
 
-                // Notify Admin (via email)
+                /*
+                 * Notify whoever handles disputes — through the router, not a
+                 * literal.
+                 *
+                 * 🚨 THIS WAS TWO HARDCODED ADDRESSES BEHIND AN `APP_URL` MATCH,
+                 * ONE OF THEM A DEVELOPER'S PERSONAL INBOX. Exactly the fault
+                 * `AlertRouter` was built to remove from the intro-video mail:
+                 * changing who handles disputes was a code deploy, a real
+                 * person's address was receiving platform disputes, and — the
+                 * expensive half — **any host whose URL was not one of those
+                 * four literals sent to NOBODY AT ALL.** A preview environment
+                 * or a renamed dev domain escalated a supporter's dispute into
+                 * silence.
+                 *
+                 * ⚠️ `dispute_alerts` is the channel that already exists for
+                 * this, editable on /alert-routing without a deploy.
+                 */
                 try {
-                    $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
+                    $recipients = AlertRouter::recipients('dispute_alerts');
 
-                    if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
-                        Mail::to('prem@futureprofilez.com')->send(new TaskDisputeEscalatedMail($purchase, $task, null, 'admin'));
-                    } elseif ($appUrl == 'https://spennypiggy.co') {
-                        Mail::to('support@spennypiggy.co')->send(new TaskDisputeEscalatedMail($purchase, $task, null, 'admin'));
+                    if (! empty($recipients)) {
+                        Mail::to($recipients)->send(new TaskDisputeEscalatedMail($purchase, $task, null, 'admin'));
+                    } else {
+                        Log::warning('Task dispute escalated but the dispute_alerts channel has no recipients', [
+                            'purchase_id' => $purchase->id,
+                        ]);
                     }
-                    // Send to admin support email
                 } catch (\Exception $e) {
                     Log::error('Failed to notify admin about escalation: '.$e->getMessage());
                 }

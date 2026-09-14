@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Models\CreatorBioLink;
 use App\Models\User;
+use App\Rules\NoBlockedSymbols;
 use App\Rules\NoExpenseOrBrandName;
 use App\Services\BioPageService;
 use App\Services\CatalogueService;
@@ -148,6 +149,7 @@ class BioLinkController extends Controller
                 new NoExpenseOrBrandName(
                     BioLinkPlatforms::ownBrandTokens($request->input('platform'))
                 ),
+                new NoBlockedSymbols,
             ],
         ]);
 
@@ -216,6 +218,7 @@ class BioLinkController extends Controller
                 'sometimes', 'nullable', 'string', 'max:40',
                 // The platform comes from the stored row — an edit cannot change it.
                 new NoExpenseOrBrandName(BioLinkPlatforms::ownBrandTokens($row->platform)),
+                new NoBlockedSymbols,
             ],
             'handle' => ['sometimes', 'required', 'string', 'max:191'],
             'is_active' => ['sometimes', 'boolean'],

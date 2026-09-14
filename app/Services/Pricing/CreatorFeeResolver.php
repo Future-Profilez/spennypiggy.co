@@ -142,6 +142,36 @@ class CreatorFeeResolver
     {
         $profile = self::profileFor($creatorId, $feeProfile);
 
+        /*
+         * 🚨 UNDER ALL-IN THIS MUST STAMP THE ALL-IN FINGERPRINT (11 Sep 2026).
+         *
+         * `Helpers::storedFeeRates()` infers which model priced a row from its
+         * compliance rate: legacy records the configured 2%, all-in records exactly 0
+         * (there is no second fee line). This method wrote the legacy profile's 2% onto
+         * EVERY row whatever the live model, so an all-in wish or cart charge of
+         * £112.01 carried a legacy fingerprint and `finance:sync-transactions` re-cost
+         * it as legacy every 30 minutes — booking £17.74 of platform revenue per £100
+         * that was never collected. Three writers (CheckoutController, StripeController
+         * ×2), all on the wish/cart path. `Helpers::feeRateColumns()` was already
+         * right; this was the one stamp built from the profile instead of a breakdown.
+         *
+         * ⚠️ `platform_fee_rate` IS NULL UNDER ALL-IN, DELIBERATELY. On a real breakdown
+         * that column is the platform's take as a percentage of the TOTAL, and this
+         * method has no total to compute it from — it prices nothing. Writing the
+         * supporter rate (12) there would put a second quantity in the same column.
+         * The all-in re-cost never reads it: it reconstructs the split from the row's
+         * own recorded total (`supporter_total` in storedFeeRates). Null says "not
+         * recorded", which is the truth here.
+         */
+        if (FeeModel::isAllIn()) {
+            return [
+                'platform_fee_rate' => null,
+                'compliance_fee_rate' => 0.0,
+                'fee_source' => $profile['fee_source'],
+                'fee_override_id' => $profile['fee_override_id'],
+            ];
+        }
+
         return [
             'platform_fee_rate' => round((float) ($profile['platform_rate'] ?? 0), 2),
             'compliance_fee_rate' => round((float) ($profile['compliance_rate'] ?? 0), 2),
@@ -263,6 +293,27 @@ class CreatorFeeResolver
     {
         if ($rate < 0) {
             return false;
+        }
+
+        /*
+         * 🚨 UNDER ALL-IN, "SANE" MEANS "COVERS THE PLATFORM'S OWN MINIMUM LISTING"
+         * (11 Sep 2026). The legacy test below asks whether the gross-up is solvable,
+         * which is meaningless when the rate IS the fee. What matters is that Stripe's
+         * fixed 30p can be paid out of the percentage at £4.99 — below break-even the
+         * platform fee clamps to zero and the SHORTFALL LANDS ON THE CREATOR: measured,
+         * 8% on card paid £4.91 on a £4.99 listing. Same rule, same formula, as the
+         * admin `/pricing` screen's refusal of a platform rate (`PricingPreview::refuse`),
+         * so a bespoke deal cannot be a way round the break-even guard.
+         */
+        if (FeeModel::isAllIn()) {
+            $breakEven = PricingPreview::breakEven(
+                $rate,
+                FeeModel::fixedFee('GBP'),
+                (float) ($profile['stripe_rate'] ?? 3.4),
+                (float) ($profile['stripe_fixed_fee'] ?? 0.30)
+            );
+
+            return is_finite($breakEven) && $breakEven <= Helpers::MIN_PRICE_GBP;
         }
 
         $total = ($rate

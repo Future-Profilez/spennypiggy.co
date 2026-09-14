@@ -169,10 +169,10 @@ class AppServiceProvider extends ServiceProvider
              * fault `EmailDomainPolicyTest` documents ("a suite whose result depends on
              * the network ... fails for reasons unrelated to this code"), and it is how
              * `RegistrationValidationTest` began failing with a 422 for a password that
-             * was perfectly valid by our own policy: `Password123!` is 12 characters and
-             * clears `min(12)`, but it sits in the breach corpus.
+             * was perfectly valid by our own policy: `Password123!` clears the
+             * length floor, but it sits in the breach corpus.
              *
-             * Offline in `testing`, real everywhere else. `min(12)` still applies in
+             * Offline in `testing`, real everywhere else. The length floor still applies in
              * tests, so length is exercised; the breach check is Laravel's own rule and
              * is not ours to re-test. `PasswordPolicyTest` asserts the CONFIGURED policy
              * still carries `uncompromised`, so switching it off in production would
@@ -236,17 +236,20 @@ class AppServiceProvider extends ServiceProvider
          |
          | 🚨 `Password::defaults()` was called at EVERY password call site in this
          | app (register, reset, change) and CONFIGURED NOWHERE, so all of them
-         | silently fell back to Laravel's stock rule: minimum 8 characters and no
-         | breach check. Client Security Checklist §2 (Developer Master Plan,
-         | 19 Aug 2026): min 12 + breached-list check, no forced rotation.
+         | silently fell back to Laravel's stock rule. Client Security Checklist §2
+         | (Developer Master Plan, 19 Aug 2026) asked for min 12 + breached-list
+         | check, no forced rotation. ⚠️ THE FLOOR IS NOW 8 (client direction,
+         | 11 Sep 2026) — 12 was turning people away at signup. The breach check is
+         | what carries the weight here and it is unchanged: `password` and
+         | `12345678` are refused at any length, which is more than a length rule
+         | ever did.
          |
-         | 🚨 THE FORM'S RULE LIST IS THE OTHER HALF OF THIS NUMBER, AND IT SAID 8
-         | (fixed 2 Sep 2026). `register/constants.js` PASSWORD_RULES advertised
-         | "8 characters or more", so a password that ticked every rule the person
-         | could see was refused by the server with "The password field must be at
-         | least 12 characters" — a dead end on a rule the form never stated.
-         | ⚠️ If this floor ever moves, MOVE BOTH: the rule list is the only thing
-         | the person registering ever sees, and nothing links the two files.
+         | 🚨 THE FORM'S RULE LIST IS THE OTHER HALF OF THIS NUMBER. It is
+         | `PASSWORD_MIN_LENGTH` in `register/constants.js`, read by PASSWORD_RULES
+         | and by `Register.jsx`'s Continue gate. Nothing links it to this file, so
+         | a password that ticked every rule on screen was once refused with "must
+         | be at least 12 characters", naming a rule the form never drew.
+         | ⚠️ If this floor ever moves, MOVE BOTH.
          |
          | Length and a breach check, deliberately WITHOUT composition rules
          | (mixedCase/numbers/symbols). That is current NIST guidance and it is what
@@ -268,7 +271,7 @@ class AppServiceProvider extends ServiceProvider
          | in register() — the fail-open only helps if the request also gives up
          | quickly.
          */
-        Password::defaults(fn () => Password::min(12)->uncompromised());
+        Password::defaults(fn () => Password::min(8)->uncompromised());
 
         // Prevent Cloudflare Rocket Loader from interfering with Vite scripts
         Vite::useScriptTagAttributes([

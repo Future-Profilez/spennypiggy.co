@@ -17,6 +17,7 @@ import Turnstile from "@/Components/Turnstile";
 import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
 import { fieldClass } from "@/Components/Checkout/FormKit";
 import { creatorIdOf } from "@/utils/pricing";
+import { feeIsAllIn, feeRateLabel } from "@/lib/fees";
 import { riskMessageBody } from '@/constants/riskMessages';
 
 export default function BuyShopItem({
@@ -32,7 +33,20 @@ export default function BuyShopItem({
     card_capabilities,
 }) {
     const { formatMultiPrice, adminFeeInCurrency, calculateTotalSupporterPays } = PriceFormat();
-    const { auth, turnstileSiteKey, shop, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
+    const pageProps = usePage().props;
+    const { auth, turnstileSiteKey, shop, platform_fee_percentage, transaction_fee_percentage } = pageProps;
+    /*
+     * 🚨 ONE LINE, BECAUSE THERE IS ONE FEE. Under the all-in model (11 Sep 2026)
+     * the supporter pays the listed price plus ONE advertised percentage and the
+     * processor is paid from inside it — so "Platform & processing fees" names two
+     * charges the checkout does not make, on the one screen where the words and the
+     * total have to agree to the penny. The rate is read from the server's `fees`
+     * prop, never typed: a literal here cannot follow a config change, which is the
+     * whole point of `FeeModel`.
+     */
+    const feeLineLabel = feeIsAllIn(pageProps)
+        ? `Supporter fee (${feeRateLabel(pageProps)})`
+        : "Platform & processing fees";
     const turnstileRef = useRef(null);
     const [close, setClose] = useState();
 
@@ -484,7 +498,12 @@ export default function BuyShopItem({
                 text={text}
             >
                 <div className={`${loading ? "item-purchasing" : ""}`}>
-                    <div className="mx-auto w-32 h-32 relative -mt-16 border-2 border-white rounded-full overflow-hidden">
+                    {/* ⚠️ The `-mt-16` here was an OVERLAP TRICK: it pulled the
+                        avatar half onto `Popup`'s pink header band, so with that
+                        band removed (12 Sep 2026) it dragged the first element of
+                        the panel 64px up into the close button's clearance. The
+                        avatar is a normal first row now. */}
+                    <div className="mx-auto w-32 h-32 relative border-2 border-black rounded-full overflow-hidden">
                         <img
                             className="object-cover object-center h-32 w-full"
                             src={s.user.avatar_url || userdefaultphoto}
@@ -642,10 +661,19 @@ export default function BuyShopItem({
                                             </div>
                                         )}
                                         <div className="flex justify-between text-sm font-bold text-black/80 py-1">
-                                            <span>Platform &amp; processing fees</span>
+                                            <span>{feeLineLabel}</span>
                                             <span>{formatMultiPrice(Math.max(0, totalSupporterPays - baseBeforeFees), itemCurrency)}</span>
                                         </div>
-                                        <div className="flex justify-between items-baseline border-t-2 border-black mt-2 pt-2">
+                                        <div
+                                            className="flex justify-between items-baseline mt-2 pt-2"
+                                            /* 🚨 A RULE ABOVE THE TOTAL, NOT A BOX AROUND IT.
+                                               `resources/css/index.css:90` redefines `.border-black` as the
+                                               full `border: 2px solid` SHORTHAND and loads after the
+                                               utilities, so `border-t-2 border-black` boxed the checkout
+                                               total on all four sides. Inline is the only form the
+                                               shorthand cannot overwrite. */
+                                            style={{ borderTop: "2px solid #000" }}
+                                        >
                                             <span className="font-black uppercase tracking-wide">Total</span>
                                             <strong className="text-2xl font-black">
                                                 {formatMultiPrice(totalSupporterPays, itemCurrency)}

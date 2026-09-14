@@ -25,6 +25,7 @@ use App\Models\User;
 use App\Models\UserPayment;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Rules\NoBlockedSymbols;
 use App\Rules\NoExpenseOrBrandName;
 use App\Services\AbandonedCheckoutService;
 use App\Services\CreatorActivityService;
@@ -40,6 +41,9 @@ use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\ListingPublication;
+use App\Support\ListingRollback;
+use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
@@ -100,7 +104,7 @@ class MembershipController extends Controller
             Membership::class,
             $mem->id,
             $mem->thumbnail,
-            ['approved' => 0],
+            ListingPublication::heldAttributes($mem),
             'thumbnail'
         );
     }
@@ -115,8 +119,20 @@ class MembershipController extends Controller
         ItemTextModeration::apply(
             $mem,
             ['reward_title', 'reward_body', 'reward_description'],
-            ['approved' => 0]
+            ListingPublication::heldAttributes($mem)
         );
+    }
+
+    /**
+     * SFW gate on the paid file — the welcome content a member receives.
+     *
+     * ⚠️ The thumbnail scan above covers the shop front only. Memberships gained a
+     * `content_file` with the reward contract (24 July 2026) and nothing ever
+     * scanned it, so a level with a clean tile delivered unscanned media.
+     */
+    private function moderateMembershipFile(?Membership $mem, ?string $previousFile = null): void
+    {
+        RewardFileScan::dispatch($mem, ListingPublication::heldAttributes($mem), $previousFile);
     }
 
     public static function hasOnPlatformContent($rewards): bool
@@ -157,6 +173,7 @@ class MembershipController extends Controller
                 'required',
                 'string',
                 new NoExpenseOrBrandName,
+                new NoBlockedSymbols,
             ],
             'month_price' => [
                 'required',
@@ -239,8 +256,12 @@ class MembershipController extends Controller
         $mem->fill(RewardService::columnsWithFile($request->all()));
         $mem->save();
 
+        // Live on save; the three scans below retract it if they find something.
+        ListingPublication::publish($mem);
+
         $this->moderateMembership($mem);
         $this->moderateMembershipText($mem);
+        $this->moderateMembershipFile($mem);
 
         // Get currency metadata to handle zero-decimal currencies properly
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
@@ -279,17 +300,15 @@ class MembershipController extends Controller
             // Clear user caches
             $this->userProfileService->clearUserCaches($user->username, $user->id);
         } catch (Exception $e) {
-            $mem->delete();
-
             return response()->json([
                 'status' => false,
-                'msg' => 'Stripe Error: '.$e->getMessage(),
+                'msg' => ListingRollback::stripeFailed($mem, $e, ['module' => 'membership']),
             ]);
         }
 
         return response()->json([
             'status' => true,
-            'msg' => 'Membership added successfully, your upload will be approved shortly.',
+            'msg' => 'Membership added — it is live on your page now.',
         ]);
     }
 
@@ -305,6 +324,7 @@ class MembershipController extends Controller
                     'required',
                     'string',
                     new NoExpenseOrBrandName,
+                    new NoBlockedSymbols,
                 ],
                 'month_price' => [
                     'required',
@@ -365,6 +385,7 @@ class MembershipController extends Controller
                 $totalTaxAmount = $breakdown['application_fee'];
 
                 $previousThumbnail = (string) $mem->thumbnail;
+                $previousRewardFile = (string) RewardFileScan::currentFile($mem);
 
                 $mem->level = $newLevel;
                 $mem->price = $price;
@@ -379,8 +400,16 @@ class MembershipController extends Controller
                 $mem->fill(RewardService::columnsWithFile($request->all()));
                 $mem->save();
 
+                /* An edit lifts a hold only where this save could have fixed it —
+                   see `ListingPublication::republish`. */
+                ListingPublication::republish($mem, array_filter([
+                    (string) $mem->thumbnail !== (string) $previousThumbnail ? 'thumbnail' : null,
+                    (string) RewardFileScan::currentFile($mem) !== (string) $previousRewardFile ? 'reward_file' : null,
+                ]));
+
                 $this->moderateMembership($mem, $previousThumbnail);
                 $this->moderateMembershipText($mem);
+                $this->moderateMembershipFile($mem, $previousRewardFile);
 
                 $stripe = new StripeClient(config('services.stripe.secret'));
                 $connectedAccountId = $user->account_id;
@@ -424,10 +453,11 @@ class MembershipController extends Controller
 
                     $stripeProduct = StripeControl::createProduct($productPayload, $connectedAccountId);
 
+                    /* A recreated Stripe product is not a moderation signal —
+                       see `ListingPublication`. */
                     $mem->update([
                         'product_id' => $stripeProduct->id,
                         'price_id' => $stripeProduct->default_price,
-                        'approved' => 0,
                     ]);
 
                     Log::info("Recreated Stripe Product for membership {$mem->uuid}: ".$stripeProduct->id);
@@ -486,7 +516,6 @@ class MembershipController extends Controller
                 if ($mem->edited_status === 0 || $mem->edited_status === 3) {
                     $mem->edited_status = 1;
                 }
-                $mem->approved = 0;
                 $mem->save();
 
                 Logs::where('edited_membership_id', $mem->id)
@@ -496,9 +525,9 @@ class MembershipController extends Controller
                 // Clear user caches
                 $this->userProfileService->clearUserCaches($user->username, $user->id);
             } catch (Exception $e) {
-                Log::info('Stripe Error: '.$e->getMessage());
+                $message = ListingRollback::stripeFailed($mem, $e, ['module' => 'membership'], rollback: false);
 
-                return redirect()->back()->with('error', 'Stripe Error: '.$e->getMessage());
+                return redirect()->back()->with('error', $message);
             }
 
             return redirect()->back()->with('success', 'Membership level is Updated.');
