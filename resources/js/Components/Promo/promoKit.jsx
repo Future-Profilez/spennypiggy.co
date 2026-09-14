@@ -155,7 +155,7 @@ export function Cta({ promo, g, onAction, className = "" }) {
         "inline-flex shrink-0 items-center gap-2 rounded-box-sm border-black " +
         "px-4 md:px-5 py-2.5 md:py-3 min-h-[44px] transition-[filter,transform] duration-200 " +
         "hover:brightness-110 active:brightness-95 active:translate-y-[2px] " +
-        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 " +
+        "pb-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 " +
         className;
 
     const inner = (

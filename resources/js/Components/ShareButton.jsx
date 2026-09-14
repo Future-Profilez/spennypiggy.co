@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Share2, Copy, Check, QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -22,11 +23,23 @@ export default function ShareButton({ share, label = "Share", className = "" }) 
     const [copied, setCopied] = useState(false);
     const [open, setOpen] = useState(false);
     const [showQr, setShowQr] = useState(false);
+    const shareButtonRef = useRef(null);
+    const [menuPosition, setMenuPosition] = useState(null);
 
     const url = share?.url;
     const caption = share?.caption || share?.title || "";
 
-    if (!url) return null;
+    const positionMenu = () => {
+        const rect = shareButtonRef.current?.getBoundingClientRect();
+        if (!rect) return;
+
+        setMenuPosition({
+            // Keep the menu below the share control so it never covers the
+            // trigger or the QR button. The portal keeps it outside the card.
+            top: rect.bottom + 8,
+            left: Math.min(Math.max(8, rect.left), window.innerWidth - 232),
+        });
+    };
 
     const stop = (e) => {
         e?.preventDefault?.();
@@ -61,7 +74,13 @@ export default function ShareButton({ share, label = "Share", className = "" }) 
         stop(e);
 
         if (!navigator.share) {
-            setOpen((v) => !v);
+            setOpen((v) => {
+                const next = !v;
+                if (next) {
+                    positionMenu();
+                }
+                return next;
+            });
             return;
         }
 
@@ -80,11 +99,81 @@ export default function ShareButton({ share, label = "Share", className = "" }) 
     const encoded = encodeURIComponent(url);
     const encodedCaption = encodeURIComponent(caption);
 
+    useEffect(() => {
+        if (!open) return undefined;
+
+        const updateMenuPosition = () => {
+            positionMenu();
+        };
+
+        updateMenuPosition();
+        window.addEventListener("resize", updateMenuPosition);
+        window.addEventListener("scroll", updateMenuPosition, true);
+
+        return () => {
+            window.removeEventListener("resize", updateMenuPosition);
+            window.removeEventListener("scroll", updateMenuPosition, true);
+        };
+    }, [open]);
+
+    if (!url) return null;
+
+    const fallbackMenu = open && menuPosition && typeof document !== "undefined"
+        ? createPortal(
+              <div
+                  className="fixed z-[1000004] w-56 rounded-box border-2 border-black bg-white p-2"
+                  style={{ top: menuPosition.top, left: menuPosition.left }}
+                  onClick={stop}
+              >
+                  <button
+                      type="button"
+                      onClick={copy}
+                      className="flex min-h-[44px] w-full items-center gap-2 rounded-box-sm px-3 py-2 text-left text-sm font-bold hover:bg-gray-100"
+                  >
+                      {copied ? <Check size={15} /> : <Copy size={15} />}
+                      {copied ? "Link copied" : "Copy link"}
+                  </button>
+
+                  <button
+                      type="button"
+                      onClick={openWindow(
+                          `https://wa.me/?text=${encodedCaption}%20${encoded}`,
+                      )}
+                      className="flex min-h-[44px] w-full items-center gap-2 rounded-box-sm px-3 py-2 text-left text-sm font-bold hover:bg-gray-100"
+                  >
+                      WhatsApp
+                  </button>
+
+                  <button
+                      type="button"
+                      onClick={openWindow(
+                          `https://twitter.com/intent/tweet?url=${encoded}&text=${encodedCaption}`,
+                      )}
+                      className="flex min-h-[44px] w-full items-center gap-2 rounded-box-sm px-3 py-2 text-left text-sm font-bold hover:bg-gray-100"
+                  >
+                      X
+                  </button>
+
+                  <button
+                      type="button"
+                      onClick={openWindow(
+                          `https://www.facebook.com/sharer/sharer.php?u=${encoded}`,
+                      )}
+                      className="flex min-h-[44px] w-full items-center gap-2 rounded-box-sm px-3 py-2 text-left text-sm font-bold hover:bg-gray-100"
+                  >
+                      Facebook
+                  </button>
+              </div>,
+              document.body,
+          )
+        : null;
+
     return (
         <div className={`relative ${className}`} onClick={stop}>
             <div className="flex items-center gap-2">
                 <button
                     type="button"
+                    ref={shareButtonRef}
                     onClick={nativeShare}
                     className="inline-flex items-center justify-center gap-2 min-h-[44px] rounded-box-sm border-2 border-black bg-white px-4 py-2 text-sm font-black uppercase text-black transition-all hover:bg-yellow-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
                     aria-label={label}
@@ -122,49 +211,7 @@ export default function ShareButton({ share, label = "Share", className = "" }) 
                 </div>
             )}
 
-            {/* Fallback list, only on browsers with no share sheet. */}
-            {open && (
-                <div className="absolute right-0 z-20 mt-2 w-56 rounded-box border-2 border-black bg-white p-2 ">
-                    <button
-                        type="button"
-                        onClick={copy}
-                        className="flex w-full items-center gap-2 rounded-box-sm px-3 py-2 text-left text-sm font-bold hover:bg-gray-100 min-h-[44px]"
-                    >
-                        {copied ? <Check size={15} /> : <Copy size={15} />}
-                        {copied ? "Link copied" : "Copy link"}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={openWindow(
-                            `https://wa.me/?text=${encodedCaption}%20${encoded}`,
-                        )}
-                        className="flex w-full items-center gap-2 rounded-box-sm px-3 py-2 text-left text-sm font-bold hover:bg-gray-100 min-h-[44px]"
-                    >
-                        WhatsApp
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={openWindow(
-                            `https://twitter.com/intent/tweet?url=${encoded}&text=${encodedCaption}`,
-                        )}
-                        className="flex w-full items-center gap-2 rounded-box-sm px-3 py-2 text-left text-sm font-bold hover:bg-gray-100 min-h-[44px]"
-                    >
-                        X
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={openWindow(
-                            `https://www.facebook.com/sharer/sharer.php?u=${encoded}`,
-                        )}
-                        className="flex w-full items-center gap-2 rounded-box-sm px-3 py-2 text-left text-sm font-bold hover:bg-gray-100 min-h-[44px]"
-                    >
-                        Facebook
-                    </button>
-                </div>
-            )}
+            {fallbackMenu}
         </div>
     );
 }

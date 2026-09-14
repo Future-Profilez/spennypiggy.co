@@ -159,7 +159,7 @@ export default function InstallAppCard({ promo, onAction }) {
                 <LockScreen accent={accent} />
             </div>
 
-            <div className="relative flex h-full w-full flex-col px-5 py-5 sm:w-[60%] sm:px-6 sm:py-6 md:px-8 md:py-7">
+            <div className="p-5 relative flex h-full w-full flex-col px-5 py-5 sm:w-[60%] sm:px-6 sm:py-6 md:px-8 md:py-7">
                 <Chip g={g} accent={accent}>{promo.eyebrow}</Chip>
 
                 <h3 className={`${display("mt-3 text-[22px] sm:text-[29px] md:text-[37px]")} max-w-[13ch]`} style={{ color: g.ink }}>

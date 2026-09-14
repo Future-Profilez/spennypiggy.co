@@ -169,7 +169,7 @@ export default function SetupCompleteCelebration() {
             emoji: "📝",
             title: "Take an order",
             body: "A custom video, shoutout or service. Paid up front, delivered by you.",
-            go: () => go("task.create"),
+            go: () => go("shop", { type: "orders" }),
         },
         {
             emoji: "📦",

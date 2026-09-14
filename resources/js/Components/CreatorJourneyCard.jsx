@@ -176,7 +176,7 @@ function ThreeWays({ onPick }) {
             emoji: "📝",
             title: "Take an order",
             body: "Custom video, shoutout, or service. Fan pays first, you deliver.",
-            go: () => onPick("task.create"),
+            go: () => onPick("shop", { type: "orders" }),
         },
         {
             emoji: "📦",

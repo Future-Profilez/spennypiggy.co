@@ -116,11 +116,11 @@ function PodiumCard({ row, place, dense = false, windowDays, gap = null }) {
                 own name, which is Poppins here — and the name is the subject of
                 the card. This is the same small caps label the place uses
                 ("FIRST"), so it reads as data rather than as a headline. */}
-            {gap && (
+            {/* {gap && (
                 <span className="mt-2 max-w-full truncate text-12 font-semibold uppercase tracking-[0.12em] text-black/70">
                     {gap}
                 </span>
-            )}
+            )} */}
 
             {/* The rule is drawn inline: a one-sided arbitrary border class does
                 not compile here, and `border-black` would frame all four sides. */}
