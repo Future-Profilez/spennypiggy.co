@@ -323,7 +323,7 @@ export default function Wishlist(props) {
     }, [editpop, item]);
 
     const createWishList = async (e) => {
-        e.preventDefault();
+        e?.preventDefault();
         if (currency == null || undefined) {
             errorAlert("Please choose a default currency.");
             return false;

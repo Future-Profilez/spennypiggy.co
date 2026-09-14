@@ -787,15 +787,14 @@ export default function AddPost({
                             maxLength={TITLE_MAX}
                             required
                             aria-invalid={showTitleError || undefined}
-                            aria-describedby={`${titleFieldId}-hint`}
- placeholder="Give it a headline"
+                            aria-describedby={`${titleFieldId}-hint`} placeholder="Give it a headline"
                             /* ⚠️ NOT font-GillSans. It is a heavy display face
                                built for short uppercase headings; at input size,
                                in sentence case, a placeholder set in it reads as
                                a broken graphic rather than a field you type in.
                                Display type belongs in the page header, not in the
                                thing the creator is writing. */
- className="mt-1 w-full rounded-box-sm border-0 bg-transparent p-0 text-2xl font-bold leading-snug text-black placeholder:font-medium placeholder:text-black/60 focus:outline-none focus:ring-4 focus:ring-[#FF007F]/25 focus:ring-offset-2 focus:ring-offset-white sm:text-[28px]"
+                               className="p-2 mt-1 w-full rounded-box-sm border-0 bg-transparent text-2xl font-bold leading-snug text-black placeholder:font-medium placeholder:text-black/60 focus:outline-none focus:ring-4 focus:ring-[#FF007F]/25 focus:ring-offset-2 focus:ring-offset-white sm:text-[28px]"
                         />
                         <div className="mt-1 flex items-start justify-between gap-3">
                             <p
@@ -807,7 +806,7 @@ export default function AddPost({
                                     : "Required. This is the post's title and its link."}
                             </p>
                             {data.title.length > TITLE_MAX - 30 && (
- <span className="shrink-0 text-xs text-black/60">
+                                <span className="shrink-0 text-xs text-black/60">
                                 {data.title.length}/{TITLE_MAX}
                                 </span>
                             )}
@@ -820,8 +819,8 @@ export default function AddPost({
                             value={data.content}
                             name="content"
                             maxLength={CONTENT_MAX}
-                            placeholder="Say something to the people who pay for this…"
- className="h-[200px] w-full resize-none rounded-box-sm border-0 bg-transparent p-0 text-[17px] leading-relaxed text-black placeholder:text-black/60 focus:outline-none focus:ring-4 focus:ring-[#FF007F]/25 focus:ring-offset-2 focus:ring-offset-white lg:h-[280px]"
+                            placeholder="Say something to the people who pay for this…" 
+                            className="h-[200px] p-3 w-full resize-none rounded-box-sm border-0 bg-transparent p-0 text-[17px] leading-relaxed text-black placeholder:text-black/60 focus:outline-none focus:ring-4 focus:ring-[#FF007F]/25 focus:ring-offset-2 focus:ring-offset-white lg:h-[280px]"
                         />
                         <div className="mt-2 flex items-start justify-between gap-3 pb-3">
  <p className="text-xs text-black/60">
