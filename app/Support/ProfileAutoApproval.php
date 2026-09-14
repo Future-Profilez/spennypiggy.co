@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Mail\ProfileApprovalStatusMail;
 use App\Models\ProfileChangeRequest;
 use App\Models\SocialLinks;
 use App\Models\User;
@@ -9,6 +10,8 @@ use App\Rules\NoContactDetails;
 use App\Services\CreatorJourneyService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * A creator's profile approves ITSELF — a person only ever sees what the checks hold.
@@ -233,12 +236,41 @@ class ProfileAutoApproval
             return false;
         }
 
-        DB::table('users')->where('id', $user->id)->update([
+        $write = [
             'profile_status_lock' => 2,
             'profile_reject_reason' => null,
-        ]);
+        ];
+
+        /*
+         * 🚨 WHEN THE PROFILE WENT LIVE, IN THE SAME STATEMENT AS THE LOCK.
+         * The admin Daily Review feed dates a new creator profile by this, so a
+         * creator who signed up weeks ago and completes their photo and bio
+         * today appears in TODAY's feed instead of in no source at all. Writing
+         * it separately would let one succeed and the other fail, leaving a live
+         * profile the feed still cannot see.
+         *
+         * ⚠️ Guarded: the column is this app's migration and a deploy can
+         * legitimately reach this line first. Absent, the feed falls back to
+         * `created_at` — exactly what it did before.
+         *
+         * ⚠️ Only ever stamped on the 0 → 2 transition, which this method has
+         * already established. It is not "last approved".
+         */
+        if (Schema::hasColumn('users', 'profile_activated_at')) {
+            $write['profile_activated_at'] = now();
+        }
+
+        DB::table('users')->where('id', $user->id)->update($write);
 
         Log::info('Profile auto-activated', ['user_id' => $user->id]);
+
+        try {
+            if ($user->email && (int) ($user->notification_send ?? 1) !== 0) {
+                Mail::to($user->email)->queue(new ProfileApprovalStatusMail($user->fresh(), true));
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Queueing profile approval mail failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
 
         try {
             app(CreatorJourneyService::class)->syncStep($user->fresh());

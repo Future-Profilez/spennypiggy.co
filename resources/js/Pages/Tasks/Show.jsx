@@ -380,7 +380,7 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
                                     </div>
                                     <div className="ml-3">
                                         <h3 className="text-sm leading-[1.45] font-bold text-yellow-800 uppercase tracking-wide">
-                                            In Review
+                                            Needs a fix
                                         </h3>
                                         <div className="mt-2 text-sm leading-[1.55] text-yellow-700">
                                             <p>

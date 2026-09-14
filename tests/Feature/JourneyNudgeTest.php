@@ -204,16 +204,28 @@ class JourneyNudgeTest extends TestCase
      * creator is shown a support conversation and no retry button.
      */
 
-    public function test_a_punished_creator_is_never_coached_to_publish(): void
-    {
-        // profile_status_lock = 1 is "submitted, with the review team" — and for an
-        // already-approved creator, a demotion that delists everything they sell.
-        Queue::fake();
-        $this->stuckCreator('stripe', 5, ['profile_status_lock' => 1]);
-
-        $this->artisan('creators:nudge-journey')->assertSuccessful();
-        Queue::assertNothingPushed();
-    }
+    /*
+     * 🚨 `test_a_punished_creator_is_never_coached_to_publish` WAS HERE AND IS GONE
+     * (11 Sep 2026).
+     *
+     * It seeded `profile_status_lock = 1` — "submitted, with the review team", and for an
+     * already-approved creator a demotion that delisted everything they sold — and asserted
+     * the command walked past them. **That value no longer exists for a creator.** The
+     * profile auto-approval migration resolved every row to 0 or 2 and nothing writes 1 for
+     * role 1 again, so `nudgeCandidateQuery` dropped its exclusion in the same change and
+     * this test was left asserting behaviour against a state the platform cannot produce.
+     * It failed for exactly that reason, and only in a full run, which is why it survived
+     * the change that invalidated it.
+     *
+     * ⚠️ Gifters still use lock 1 (the £500 billing-address queue) — that query is role 1
+     * only, so it cannot reach them.
+     *
+     * 🚩 NOT REPLACED, and the gap is worth naming: a creator sitting at lock 0 with a
+     * `profile_reject_reason` is chased by `profiles:nudge-rejected` AND is still a
+     * candidate here, so they can be coached toward `stripe` while the thing actually
+     * blocking them is a held photo or bio. Whether this command should exclude them is a
+     * product decision, not a test fix.
+     */
 
     public function test_an_unverified_address_is_never_mailed(): void
     {

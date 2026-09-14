@@ -114,6 +114,14 @@ Route::post('/admin/emulate-stop', [EmulationLoginController::class, 'stop'])
 // Cache Check Route — local/testing only. Unauthenticated in production it wrote a
 // fresh cache key on every hit and leaked the cache driver in use.
 if (app()->environment('local', 'testing')) {
+    // TEMP-QA-LOGIN — local-only helper used to drive the add-item flows in a
+    // browser. REMOVE before committing.
+    Route::get('/__qa-login/{id}', function ($id) {
+        \Illuminate\Support\Facades\Auth::loginUsingId((int) $id);
+
+        return redirect('/');
+    });
+
     Route::get('/debug/cache-check', function () {
         $key = 'debug_cache_test_'.time();
         $value = 'working';
@@ -347,7 +355,7 @@ Route::get('/pride', function () {
         // 🚨 The page carried a "Join now" Founder Bonus block with no gate — the ONE
         // retired-scheme recruitment left on a public URL (11 Sep 2026). Server flag,
         // never a JS constant, same rule as every other Founder surface.
-        'founderOpen' => \App\Support\Incentives::founderEnabled(),
+        'founderOpen' => Incentives::founderEnabled(),
     ]);
 })->middleware('ssr')->name('pride.landing');
 
@@ -645,7 +653,6 @@ if (app()->environment('local')) {
 
     // delete all products from stripe
     Route::get('archived-all-products', [TestController::class, 'archiveAllStripeProducts'])->name('archived.all.products');
-    Route::get('send-identity-verification-failed-emails', [TestController::class, 'sendFailedVerificationEmails']);
     Route::get('create-product/{price}', [StripeController::class, 'makeProductId'])->name('create.product');
 }
 

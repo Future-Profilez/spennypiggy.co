@@ -10,7 +10,6 @@ use App\Models\AuthRedirect;
 use App\Models\FanContract;
 use App\Models\FounderBonus;
 use App\Models\Post;
-use App\Models\ProfileChangeRequest;
 use App\Models\RyeProduct;
 use App\Models\SocialLinks;
 use App\Models\User;
@@ -622,19 +621,37 @@ class AuthenticatedSessionController extends Controller
                 // don't know" as "the creator sent them" would remove the
                 // section from almost every profile view — a bigger change than
                 // the one being made.
-                'more_creators' => $user->role == 1
-                    && ! DiscoverySources::isCreatorGeneratedVisit(
+                /*
+                 * 🚨 A SUPPORTER'S PROFILE GETS THIS ROW TOO, AND IT IS THE ONLY
+                 * LINK OFF THE PAGE.
+                 *
+                 * This was `role == 1` only, and `ProfileRightRail` returns null
+                 * for anything but a creator — so a fan's own profile carried no
+                 * route onward to anywhere. A supporter with no purchases yet
+                 * landed on a default cover, an empty About tab and an empty
+                 * Feed, with nothing on the page to click.
+                 *
+                 * 🚨 PERSONALISATION IS OWNER-ONLY. The `for_you` slot is derived
+                 * from who this supporter buys from, and its LABEL says so out
+                 * loud — collecting that onto a page a stranger can read is the
+                 * exact exposure `UserProfileService::getGifterCreators()`
+                 * refuses in its own docblock. A visitor gets the generic slots.
+                 *
+                 * ⚠️ The creator-generated-visit gate does NOT apply to a
+                 * supporter profile: that rule exists so a creator's own
+                 * audience is not monetised against them with four competitors
+                 * at the foot of their money page. A supporter sells nothing,
+                 * so there is no audience of theirs to protect.
+                 */
+                'more_creators' => match ((int) $user->role) {
+                    1 => ! DiscoverySources::isCreatorGeneratedVisit(
                         AttributionService::sourceForCreator($user->id)
                     )
-                    ? app(CreatorRecommendationService::class)->forProfile($user)
-                    : [],
-                'pending_profile_changes' => Auth::id() === $user->id
-                    ? ProfileChangeRequest::query()
-                        ->where('user_id', $user->id)
-                        ->where('status', ProfileChangeRequest::STATUS_PENDING)
-                        ->pluck('asset')
-                        ->all()
-                    : [],
+                        ? app(CreatorRecommendationService::class)->forProfile($user)
+                        : [],
+                    0 => app(CreatorRecommendationService::class)->forSupporter($user, $isOwner),
+                    default => [],
+                },
             ];
         };
         $data = $getData();

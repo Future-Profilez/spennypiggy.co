@@ -11,7 +11,6 @@ use App\Models\FounderBonusMonthly;
 use App\Models\PayoutRecord;
 use App\StripeControl;
 use App\Support\Incentives;
-use App\Support\PayoutEligibility;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -151,10 +150,8 @@ class ProcessFounderMonthlyBonuses implements ShouldQueue
             if (! empty($creator->payout_paused_at) || $bonusAmount <= 0) {
                 continue;
             }
-            // 🚨 Identity is a payout gate (10 Sep 2026) — see PayoutEligibility.
-            if (PayoutEligibility::blocksPayout($creator)) {
-                continue;
-            }
+            /* 🚨 NO IDENTITY GATE (11 Sep 2026, client D5/Q20 — removed entirely, not
+               moved to payout). Stripe Connect's own KYC decides who may be paid. */
             if (! empty($row->payout_record_uuid) || ! empty($row->stripe_payout_id) || $row->payout_status === 'paid') {
                 continue;
             }

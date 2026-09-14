@@ -287,6 +287,51 @@ class Kernel extends ConsoleKernel
             ->everyTenMinutes()
             ->withoutOverlapping();
 
+        /*
+         * Who has Stripe stopped letting us reach — and does anybody know?
+         *
+         * 🚨 `payout:enforce-manual` above already DETECTS this every ten
+         * minutes and logs it at error once a day. That line names an `acct_…`
+         * and no person, appears on no screen, and never reaches the creator —
+         * who is the only party able to fix it. Measured 12 Sep 2026: two
+         * creators unreachable since at least 26 August, earning and unable to
+         * be paid, recorded nowhere a human reads.
+         *
+         * ⚠️ WEEKLY, not with the sweep above: this is one `accounts->retrieve`
+         * per connected creator, where the sweep's call is one it was making
+         * anyway. Nothing waits on it — a lost connection is a state, not an
+         * event, and a week's latency on a condition only the creator can clear
+         * costs nothing.
+         *
+         * **Needs `queue:work`** for the creator's notice.
+         */
+        $schedule->command('payouts:check-connections')
+            ->weeklyOn(1, '09:40')
+            ->withoutOverlapping();
+
+        /*
+         * Bank capability top-up — the sweep behind the webhook.
+         *
+         * 🚨 `account.updated` is the fast path and it only fires when the account
+         * CHANGES. A creator who connected before the self-heal shipped, or whose
+         * webhook Stripe gave up retrying, is silently left without the capability —
+         * and the symptom is a SUPPORTER refused at checkout, on a creator who looks
+         * perfectly healthy everywhere else. Measured on production 12 Sep 2026: 11
+         * creators already active, 17 never asked.
+         *
+         * ⚠️ `--unchecked-only` is what keeps this cheap: it reads only accounts nobody
+         * has successfully asked about, so the steady state is zero Stripe calls. Never
+         * schedule it without that flag — a full pass is one round trip per connected
+         * creator, every day, for an answer that almost never changes.
+         *
+         * ⚠️ `--max` bounds the first run, which has the whole backlog in front of it.
+         * 03:20 is clear of the 03:10/03:35/03:45 prunes — on Vapor every command due in
+         * one minute shares a single CLI timeout budget.
+         */
+        $schedule->command('stripe:request-bank-capabilities --unchecked-only --max=100')
+            ->dailyAt('03:20')
+            ->withoutOverlapping();
+
         // Risk Engine: Monitor Platform State (Every 5 Minutes)
         $schedule->command('risk:monitor-platform')
             ->everyFiveMinutes()
@@ -344,21 +389,8 @@ class Kernel extends ConsoleKernel
             ->weeklyOn(1, '09:55')
             ->withoutOverlapping();
 
-        /*
-         * Tell a creator holding money they cannot receive that their identity check is
-         * what is stopping it — 7, 30, 60 then 90 days from their first settled earning
-         * (10 Sep 2026: identity became a payout gate rather than an onboarding step).
-         *
-         * ⚠️ Only ever reaches a creator with earnings waiting; the payout page already
-         * says it to anyone who opens it, and this is for the creator who is not looking.
-         *
-         * Monday 10:00, clear of the three nudges above so they cannot share one
-         * cli-timeout budget on Vapor.
-         */
-        $schedule->command('payouts:remind-unverified')
-            ->weeklyOn(1, '10:00')
-            ->withoutOverlapping();
-
+        /* 🚨 `payouts:remind-unverified` IS GONE (11 Sep 2026, client D5/Q20).
+           It chased creators to finish an identity check that no longer exists. */
         // Recompute where each creator has got to. This must run BEFORE the admin app's
         // onboarding drip (10:00 and 20:00) reads `users.journey_step`, or the drip coaches
         // creators on a step they finished yesterday. Hourly rather than daily because the
@@ -430,18 +462,8 @@ class Kernel extends ConsoleKernel
             ->dailyAt('03:45')
             ->withoutOverlapping(30);
 
-        // Stripe sends NO event for a creator who opens the passport check and closes
-        // the tab, so `identity_status = 2` can mean "with Stripe" or "abandoned" and
-        // nothing would ever move them off it. This reads the session's real status
-        // and also repairs a `verified` webhook that never landed.
-        //
-        // ⚠️ Retrieving a session is a read, not a billable verification.
-        // ⚠️ 04:10 — clear of the 03:4x/03:5x prune block, which shares one Vapor
-        // cli-timeout budget per minute.
-        $schedule->command('identity:reconcile')
-            ->dailyAt('04:10')
-            ->withoutOverlapping(30);
-
+        /* 🚨 `identity:reconcile` IS GONE (11 Sep 2026). Spenny Piggy mints no
+           identity sessions, so there is nothing to reconcile against Stripe. */
         // Delivery log: a row per email, push and bell entry the platform sends,
         // so this table grows faster than any payment table. The same pass
         // settles rows the mail transport never confirmed, which would otherwise

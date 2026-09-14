@@ -7,7 +7,6 @@ use App\Models\CreatorReferralPayout;
 use App\Models\FinancialTransaction;
 use App\Models\ReferralCode;
 use App\Services\CreatorReferralService;
-use App\Support\PayoutEligibility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -262,14 +261,12 @@ class ReferAndEarnController extends Controller
          * off this platform reads. A referral reward IS money leaving, and
          * this request is what puts it into a payout batch.
          *
-         * ⚠️ Refused here rather than at the batch, so the creator is told
-         * what to do while they are looking at the button. The reward is not
-         * lost — the referral stays QUALIFIED and they can request it the
-         * moment their check clears.
+         * 🚨 THE IDENTITY CHECK THAT USED TO SIT HERE IS GONE (11 Sep 2026, client
+         * D5/Q20: "Remove the SP-specific ID-document and human identity-sign-off
+         * process entirely. Do not move it to payout."). Stripe Connect's own KYC
+         * decides whether the connected account may receive the transfer; Spenny
+         * Piggy does not run a second check on top of it.
          */
-        if (PayoutEligibility::blocksPayout($creator)) {
-            return back()->with('error', 'We need to finish verifying your identity before we can send a referral reward. Your reward is safe — request it again once your check is complete.');
-        }
 
         try {
             DB::beginTransaction();

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\FinancialTransaction;
 use App\Models\User;
 use App\Models\UserCategory;
 use App\Models\WishItem;
@@ -9,6 +10,7 @@ use App\Services\Discovery\CreatorRecommendationService;
 use App\Support\DiscoverySources;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -225,11 +227,172 @@ class DiscoveryRecommendationTest extends TestCase
     }
 
     /** A supporter profile is not a creator profile; the brief scopes the row to creators. */
-    public function test_a_supporter_profile_gets_no_row(): void
+    /**
+     * ⚠️ RENAMED 12 Sep 2026 — it used to be `test_a_supporter_profile_gets_no_row`,
+     * and that name is now a lie about the product: a supporter profile DOES get a
+     * row, through `forSupporter()`. What this pins is narrower and still true —
+     * `forProfile()` is the creator-profile entry point and answers nothing for a
+     * fan, so the two paths cannot be reached through one another.
+     */
+    public function test_the_creator_entry_point_answers_nothing_for_a_supporter(): void
     {
         $this->eligibleCreator();
         $fan = User::factory()->create(['role' => 0]);
 
         $this->assertSame([], $this->service()->forProfile($fan));
+    }
+
+    // ── The supporter's own row ──────────────────────────────────────────
+    //
+    // 🚨 THE FAULT THESE PIN: `more_creators` was gated `role == 1` and
+    // `ProfileRightRail` returns null for anything but a creator, so a fan's own
+    // profile carried NO link onward to anywhere — a default cover, an empty
+    // About tab and an empty Feed, with nothing on the page to click.
+
+    /** A supporter, and a creator they have actually bought from. */
+    private function supporter(array $force = []): User
+    {
+        return User::factory()->create(array_merge(['role' => 0], $force));
+    }
+
+    /**
+     * ⚠️ `Queue::fake()` is not optional. The suite runs the queue SYNC and
+     * `FinancialTransaction::created` dispatches the Growth Bonus evaluator, so an
+     * unfaked ledger row runs a whole unrelated engine inside every fixture here.
+     */
+    private function bought(User $supporter, User $creator): void
+    {
+        Queue::fake();
+
+        FinancialTransaction::create([
+            'user_id' => $creator->id,
+            'supporter_id' => $supporter->id,
+            'source_type' => 'App\Models\ShopPayment',
+            'source_id' => random_int(100000, 999999),
+            'type' => 'income',
+            'gross_amount' => 10.0,
+            'platform_fee' => 0,
+            'stripe_fee' => 0,
+            'vat_amount' => 0,
+            'net_amount' => 10.0,
+            'currency' => 'GBP',
+            'status' => 'completed',
+            'description' => 'test sale',
+            'transaction_date' => now(),
+        ]);
+    }
+
+    public function test_a_supporter_profile_now_gets_a_row(): void
+    {
+        $this->eligibleCreator();
+        $fan = $this->supporter();
+
+        $cards = $this->service()->forSupporter($fan);
+
+        $this->assertNotSame([], $cards, 'A supporter profile must carry a way off the page.');
+    }
+
+    /**
+     * 🚨 "Find someone new" is the whole point. A row that recommends the person
+     * whose page they bought from last week has discovered nobody — and the
+     * exclusion has to happen before a slot is filled, not as a filter afterwards,
+     * or a small pool quietly puts them back.
+     */
+    public function test_a_creator_the_supporter_already_backs_is_never_a_card(): void
+    {
+        $backed = $this->eligibleCreator();
+        $stranger = $this->eligibleCreator();
+        $fan = $this->supporter();
+        $this->bought($fan, $backed);
+
+        $usernames = array_column($this->service()->forSupporter($fan, true), 'username');
+
+        $this->assertNotContains($backed->username, $usernames);
+        $this->assertContains($stranger->username, $usernames);
+    }
+
+    /**
+     * 🚨 THE PRIVACY GUARD. `for_you` is derived from who this supporter buys
+     * from, and its LABEL says so out loud — collecting that onto a page a
+     * stranger can read is the exposure `getGifterCreators()` refuses in its own
+     * docblock.
+     */
+    public function test_a_visitor_never_sees_the_personalised_slot(): void
+    {
+        $backed = $this->eligibleCreator();
+        UserCategory::create(['user_id' => $backed->id, 'category' => 'Art']);
+        $this->eligibleCreator();
+        $fan = $this->supporter();
+        $this->bought($fan, $backed);
+
+        $slots = array_column($this->service()->forSupporter($fan, false), 'slot');
+
+        $this->assertNotContains(CreatorRecommendationService::SLOT_FOR_YOU, $slots);
+    }
+
+    public function test_the_owner_does_see_the_personalised_slot(): void
+    {
+        $backed = $this->eligibleCreator();
+        UserCategory::create(['user_id' => $backed->id, 'category' => 'Art']);
+        $this->eligibleCreator();
+        $fan = $this->supporter();
+        $this->bought($fan, $backed);
+
+        $slots = array_column($this->service()->forSupporter($fan, true), 'slot');
+
+        $this->assertContains(CreatorRecommendationService::SLOT_FOR_YOU, $slots);
+    }
+
+    /**
+     * ⚠️ A card labelled "Near you" showing somebody on another continent is
+     * worse than one card fewer, which is why `pickNearby()` returns null rather
+     * than falling back the way `pickSimilar()` does.
+     */
+    public function test_the_nearby_slot_only_ever_names_someone_in_the_same_country(): void
+    {
+        $local = $this->eligibleCreator(['country' => 'GB']);
+        $this->eligibleCreator(['country' => 'US']);
+        $fan = $this->supporter(['country' => 'GB']);
+
+        $cards = $this->service()->forSupporter($fan, true);
+        $nearby = collect($cards)->firstWhere('slot', CreatorRecommendationService::SLOT_NEARBY);
+
+        $this->assertNotNull($nearby);
+        $this->assertSame($local->username, $nearby['username']);
+    }
+
+    public function test_a_supporter_with_no_country_simply_gets_no_nearby_card(): void
+    {
+        $this->eligibleCreator(['country' => 'GB']);
+        $fan = $this->supporter(['country' => null]);
+
+        $slots = array_column($this->service()->forSupporter($fan, true), 'slot');
+
+        $this->assertNotContains(CreatorRecommendationService::SLOT_NEARBY, $slots);
+    }
+
+    /**
+     * The same whitelist `test_a_card_carries_only_the_five_public_fields` pins
+     * for the creator row. `country` and every signal behind the ordering are
+     * INTERNAL — `card()` copies six keys by name and must never spread the pool.
+     */
+    public function test_a_supporter_card_leaks_no_internal_signal(): void
+    {
+        $this->eligibleCreator(['country' => 'GB']);
+        $fan = $this->supporter(['country' => 'GB']);
+
+        foreach ($this->service()->forSupporter($fan, true) as $card) {
+            $this->assertSame(
+                ['slot', 'name', 'username', 'avatar_url', 'cover_url', 'line'],
+                array_keys($card),
+            );
+        }
+    }
+
+    public function test_the_supporter_entry_point_answers_nothing_for_a_creator(): void
+    {
+        $this->eligibleCreator();
+
+        $this->assertSame([], $this->service()->forSupporter($this->eligibleCreator(), true));
     }
 }

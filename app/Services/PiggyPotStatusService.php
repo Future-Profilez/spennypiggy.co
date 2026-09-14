@@ -141,9 +141,9 @@ class PiggyPotStatusService
             return [
                 'visible' => false,
                 'code' => 'moderation_hold',
-                'title' => 'Waiting for review',
-                'message' => 'This pot is not on your profile yet. Our team is checking it.',
-                'fix' => null,
+                'title' => 'Not visible yet',
+                'message' => 'A check flagged something on this pot, so only you can see it.',
+                'fix' => 'Fix what the reason names and save — it goes back on your profile straight away.',
             ];
         }
 

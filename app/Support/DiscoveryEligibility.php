@@ -56,6 +56,15 @@ class DiscoveryEligibility
         'bio', 'bio_approved', 'profile_status_lock',
         'identity_status', 'identity_admin_status', 'suspended_account',
         'content_posting_paused_at',
+        /*
+         * ⚠️ SELECTED, NEVER GATED ON. `country` is read by the supporter
+         * recommendation row (CreatorRecommendationService::pickNearby) to put
+         * one creator from the supporter's own country in front of them. It is
+         * not a clause in scope() and must not become one — a creator is
+         * eligible for discovery wherever they are, and filtering the pool by
+         * country would empty the row for every supporter in a small market.
+         */
+        'country',
     ];
 
     /**

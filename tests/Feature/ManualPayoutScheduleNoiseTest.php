@@ -38,27 +38,24 @@ class ManualPayoutScheduleNoiseTest extends TestCase
 
     public function test_an_unreachable_account_is_classified_as_permanent(): void
     {
-        $method = new \ReflectionMethod(StripeControl::class, 'isAccountUnreachable');
-        $method->setAccessible(true);
-
+        // ⚠️ Public since 12 Sep 2026 — `payouts:check-connections` asks the
+        // same question, and the reflection this used to need would have hidden
+        // that a SECOND classifier had appeared beside it.
         $permission = new PermissionException(
             "The provided key 'sk_live_xxx' does not have access to account 'acct_1QHzEN2RsYS7cGKq' "
             .'(or that account does not exist). Application access may have been revoked.'
         );
 
-        $this->assertTrue($method->invoke(null, $permission));
+        $this->assertTrue(StripeControl::accountIsUnreachable($permission));
     }
 
     public function test_a_transient_failure_is_not_classified_as_permanent(): void
     {
-        $method = new \ReflectionMethod(StripeControl::class, 'isAccountUnreachable');
-        $method->setAccessible(true);
-
         // A network blip is a failure of THIS run and must keep its error level.
         $transient = new ApiConnectionException('Could not connect to Stripe.');
 
         $this->assertFalse(
-            $method->invoke(null, $transient),
+            StripeControl::accountIsUnreachable($transient),
             'A connection failure must stay at error level - it is not a fact about the account.'
         );
     }

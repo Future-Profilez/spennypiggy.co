@@ -22,7 +22,7 @@ function Radio({ checked }) {
  *
  * Fetches /payments/price-preview (single source of truth — the same pricing
  * engine the checkout charges with) and renders both prices so the supporter
- * sees the bank saving. Renders nothing when bank payments are disabled or
+ * sees both prices. Renders nothing when bank payments are disabled or
  * unavailable for the currency, so parents can drop it in unconditionally.
  *
  * Props:
@@ -132,12 +132,12 @@ export default function PaymentMethodSelector({
  : "bg-white transition-colors duration-200 hover:bg-black/[0.04]"
                     }`}
                 >
-                    {/* Signature: tilted save sticker */}
-                    {prices.saving > 0 && (
-                        <span className="absolute -top-3 right-3 rotate-[-4deg] bg-[#FF007F] text-black border-[3px] border-black rounded-box-sm px-2.5 py-0.5 text-[12px] font-black uppercase tracking-wider pointer-events-none">
-                            Save {fmt(prices.saving)}
-                        </span>
-                    )}
+                    {/* 🚨 THE "SAVE £X" STICKER IS GONE (11 Sep 2026, client D2: *"Do not
+                        centre the proposition on one rail being cheaper."*). Both rails
+                        charge the same 12%, so there is nothing to advertise — and a
+                        sticker reading "Save £0.00" the day the rates matched would have
+                        been worse than none. `prices.saving` is still computed and still
+                        correct; nothing draws it as a headline any more. */}
 
                     <span className="flex items-center gap-3">
                         <Radio checked={value === "bank"} />
@@ -146,8 +146,12 @@ export default function PaymentMethodSelector({
                                 Pay by bank
                             </span>
                             <span className="block text-[12px] font-bold text-black/60 mt-0.5">
+                                {/* ⚠️ NOT "lower fees" — both rails cost the supporter
+                                    the same. Higher limits is a real, unrelated property
+                                    of the bank rail and is why it is recommended on a
+                                    large payment. */}
                                 {rules.bank_recommended
-                                    ? "Lower fees · higher limits"
+                                    ? "Higher limits · approve in your banking app"
                                     : "Approve in your banking app"}
                             </span>
                             {preview.delayed_settlement && (
@@ -161,11 +165,9 @@ export default function PaymentMethodSelector({
                             <span className="block font-black text-lg leading-none">
                                 {fmt(prices.bank)}
                             </span>
-                            {prices.saving > 0 && (
-                                <span className="block text-[12px] font-bold text-black/60 line-through mt-1">
-                                    {fmt(prices.card)}
-                                </span>
-                            )}
+                            {/* ⚠️ The struck-through card price went with the sticker: at
+                                one rate for both rails it struck through the same number
+                                it sat beside. */}
                         </span>
                     </span>
                 </button>

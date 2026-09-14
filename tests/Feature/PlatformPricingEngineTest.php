@@ -330,7 +330,7 @@ class PlatformPricingEngineTest extends TestCase
 
         DB::table('creator_fee_overrides')->insert([
             'user_id' => $creator->id,
-            'platform_rate_card' => 8.0,
+            'platform_rate_card' => 14.0,
             'platform_rate_bank' => null,
             'effective_from' => now()->subDay(),
             'created_at' => now(),
@@ -339,7 +339,7 @@ class PlatformPricingEngineTest extends TestCase
 
         CreatorFeeResolver::flushCache();
 
-        $this->assertSame(8.0, FeeModel::supporterRate('card', $creator->id));
+        $this->assertSame(14.0, FeeModel::supporterRate('card', $creator->id));
         // ⚠️ A card-only deal must not reprice the bank rail — that falls through to
         // the published version, not to config.
         $this->assertSame(11.0, FeeModel::supporterRate('bank', $creator->id));

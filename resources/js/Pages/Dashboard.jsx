@@ -8,6 +8,16 @@ const Wishlist = lazyRetry(() => import("./Auth/Wishlist"));
 const Wishlistbox = lazyRetry(() => import("@/wishlist/Wishlistbox"));
 import Userprofile from "@/wishlist/Userprofile";
 import ProfileRightRail from "@/Components/Profile/ProfileRightRail";
+import ExploreNext from "@/Components/Gifter/ExploreNext";
+/*
+ * ⚠️ Lazy, because `RecentlyViewed` pulls in `FeaturedCarousel` and through it
+ * every listing-card component — a chunk no creator profile has any use for.
+ * `lazyRetry`, never bare `React.lazy`: a chunk that resolves without a default
+ * export across a deploy is a white screen with no error to catch.
+ */
+const RecentlyViewed = lazyRetry(
+    () => import("@/Pages/discover/components/RecentlyViewed"),
+);
 const CoverIdentity = lazyRetry(
     () => import("@/Components/Profile/CoverIdentity"),
 );
@@ -111,8 +121,8 @@ const GrowthBonusTracker = lazyRetry(
     () => import("@/Components/GrowthBonusTracker"),
 );
 const FounderBadge = lazyRetry(() => import("@/Components/FounderBadge"));
-import PendingChangesNotice from "@/Components/PendingChangesNotice";
 import SuspendedBanner from "@/Components/SuspendedBanner";
+import EditRequestNotice from "@/Components/EditRequestNotice";
 import SetupCompleteCelebration from "@/Components/SetupCompleteCelebration";
 import ListingProgressStrip from "@/Components/ListingProgressStrip";
 import lazyRetry from "@/utils/lazyRetry";
@@ -217,7 +227,6 @@ export default function Dashboard(props) {
         founderData,
         monthly_charges,
         profile_overview,
-        pending_profile_changes,
         // Discovery Phase 2. An OBJECT of real month-to-date figures for the
         // owner of a creator profile; null on every other view. Null is "not
         // your dashboard", never "no data yet" — zeros are a real payload.
@@ -431,14 +440,27 @@ export default function Dashboard(props) {
     }, [tab]);
 
     // The activity card only exists once there is money to stop — Stripe
-    // connected AND identity verified. Same predicate gates the fetch and the
-    // render; two copies would drift and this one costs a request per page load
-    // for the largest cohort of creators (everyone still before Connect).
+    /*
+     * 🚨 THE IDENTITY CLAUSE IS GONE (12 Sep 2026, client direction). Identity
+     * left onboarding on 10 Sep and is a PAYOUT gate now — a creator sells,
+     * earns and is charged for their subscription with no check at all — so
+     * `identity_status == 1` here hid this card from every creator on the
+     * platform who had connected Stripe and not done a passport check they are
+     * no longer asked for at that point. Reported live on a fully connected
+     * creator whose card had simply vanished.
+     *
+     * ⚠️ Stripe connected STAYS, and it is not the same kind of clause. The
+     * card's headline is "YOUR PAYMENTS ARE PAUSED", and a creator who has not
+     * finished Connect has no payments to pause — that reads as a fault on
+     * their account at the exact moment they are being asked to trust us with
+     * their bank details. The journey card speaks to them before this point.
+     *
+     * Same predicate gates the fetch and the render; two copies would drift.
+     */
     const canSeeActivityCard =
         IsloggedIn &&
         auth?.user?.role === 1 &&
-        auth?.user?.stripe_details_submitted == 1 &&
-        auth?.user?.identity_status == 1;
+        auth?.user?.stripe_details_submitted == 1;
 
     // Fetch creator activity status
     const fetchActivityStatus = async () => {
@@ -1318,6 +1340,17 @@ export default function Dashboard(props) {
                                 Moved here from AuthenticatedLayout (client direction, 5 Sep 2026). */}
                             {IsloggedIn && <SuspendedBanner className="mb-4" />}
 
+                            {/* 🚨 What a reviewer asked this creator to change about
+                                their profile. The prop shipped with the Daily Review
+                                feed and was drawn NOWHERE — so the request reached them
+                                by e-mail and bell only, and a missed e-mail meant a
+                                reviewer waiting on somebody who never heard.
+
+                                ⚠️ `IsloggedIn` is load-bearing: `/{username}` is also
+                                the public profile, and this names what we asked of one
+                                person. Same gate as SuspendedBanner above. */}
+                            {IsloggedIn && <EditRequestNotice className="mb-4" />}
+
                             {/* 🚨 THE OWNER GATE IS LOAD-BEARING, exactly as it is on the
                                 banner above. `auth.setup_celebration` describes the SIGNED-IN
                                 creator's own account, and this route is also the public
@@ -1370,6 +1403,28 @@ export default function Dashboard(props) {
                                                 />
                                             </Suspense>
                                         )}
+
+                                    {/* 🚨 THE RAIL BELOW RETURNS NULL FOR A
+                                        SUPPORTER (`ProfileRightRail` gates on
+                                        `role != 1`), so a fan's profile had an
+                                        empty left column and no route anywhere
+                                        — on a page whose Feed and Purchases
+                                        tabs are both empty until they have
+                                        bought something. This is that column's
+                                        supporter half.
+
+                                        ⚠️ `hidden md:block`, matching the rail
+                                        it stands in for: on a phone the aside
+                                        renders ABOVE the tabs, so a nav block
+                                        here would push the page's own content
+                                        off the first screen. The recommendation
+                                        row at the foot of the page carries the
+                                        same job on mobile. */}
+                                    {!isCreatorProfile && (
+                                        <div className="hidden md:block">
+                                            <ExploreNext />
+                                        </div>
+                                    )}
 
                                     <div className="hidden md:block">
                                         <ProfileRightRail
@@ -1461,14 +1516,6 @@ export default function Dashboard(props) {
                                                     </div>
                                                 )}
 
-                                            {IsloggedIn && (
-                                                <PendingChangesNotice
-                                                    assets={
-                                                        pending_profile_changes
-                                                    }
-                                                    className="mb-3"
-                                                />
-                                            )}
 
                                             {IsloggedIn && (
                                                 <CreatorRiskBanner />
@@ -1577,7 +1624,19 @@ export default function Dashboard(props) {
                                                                                     NOT read off `discovery.analytics_live`, which
                                                                                     governs the mock numbers in marketing and stays
                                                                                     false until the client flips it. */}
-                                                                                {discoveryPanel && (
+                                                                                {/* 🚨 BOTH OF THESE WAIT FOR STRIPE CONNECT (client direction, 12 Sep 2026).
+                                                                                    They are MONEY panels — who discovered you, what you earned from
+                                                                                    them, who is buying and what they are worth. A creator who has not
+                                                                                    connected Stripe cannot be paid at all, so every figure in both reads
+                                                                                    £0 and 0 for as long as that is true, and reads as a dead product
+                                                                                    rather than as a step they have not taken yet. The one thing that
+                                                                                    screen should be pointing them at is Connect.
+
+                                                                                    ⚠️ `AuthUserStripeConnected`, not `UserStripeConnected` — the question
+                                                                                    is whether the SIGNED-IN creator can be paid. On this block the two
+                                                                                    are the same person (it is owner-only), but the viewer's own state is
+                                                                                    what the sentence means and is what survives a future re-mount. */}
+                                                                                {discoveryPanel && AuthUserStripeConnected == 1 && (
                                                                                     <DiscoveryStatsPanel
                                                                                         stats={discoveryPanel}
                                                                                         live={true}
@@ -1625,7 +1684,7 @@ export default function Dashboard(props) {
                                                                                     "the creator is viewing their OWN profile" — the same
                                                                                     gate as "My listings" directly below, which this card
                                                                                     deliberately matches so the two read as one pair. */}
-                                                                                {IsloggedIn && (
+                                                                                {IsloggedIn && AuthUserStripeConnected == 1 && (
                                                                                     <Link
                                                                                         href={route(
                                                                                             "financial.opportunities",
@@ -1816,8 +1875,9 @@ export default function Dashboard(props) {
                                                                                     different tones. This card is the one that carries BOTH
                                                                                     payment rules, so it is the one that moved.
 
-                                                                                    ⚠️ Gated on Stripe connected AND identity verified
-                                                                                    (3 Aug 2026, client direction). It briefly ran for every
+                                                                                    ⚠️ Gated on Stripe connected (3 Aug 2026, client
+                                                                                    direction; the identity half was dropped 12 Sep 2026
+                                                                                    with the check itself). It briefly ran for every
                                                                                     creator on the reasoning that the component states its
                                                                                     own "finish verifying" case — but its headline is "YOUR
                                                                                     PAYMENTS ARE PAUSED", and a creator who has not finished
@@ -3114,7 +3174,63 @@ export default function Dashboard(props) {
 
                             ⚠️ Returns null on an empty list, so there is no heading with
                             nothing under it and no gap on a fan profile. */}
-                        <MoreCreators creators={moreCreators} />
+                        {/* 🚨 THE RAIL IS `hidden md:block`, SO A PHONE HAD NONE OF IT.
+                            On a phone the aside renders ABOVE the tabs, so the rail
+                            cannot live there without pushing the page's own content
+                            off the first screen — and most of this audience is on a
+                            phone. The same block is rendered BELOW the body instead,
+                            where it costs nothing above the fold and reaches every
+                            tab rather than just About. */}
+                        {!isCreatorProfile && (
+                            <div className="mt-6 md:hidden">
+                                <ExploreNext />
+                            </div>
+                        )}
+
+                        {/* ⚠️ WARMER THAN THE ROW BELOW IT, SO IT GOES FIRST. These are
+                            creators this browser has already opened; the row under it is
+                            people they have never met. Deepening beats widening — the
+                            same order the payment-success page uses.
+
+                            🚨 IT NEVER LEAVES THE DEVICE. `RecentlyViewed` reads
+                            localStorage and nothing else: no request, no row, nothing
+                            stored server-side, and it renders under 2 entries as null.
+                            So it is the viewer's OWN continuity even on somebody else's
+                            page, and there is nothing here to leak.
+
+                            ⚠️ Supporter profiles only. This route is also the creator
+                            dashboard, and a creator's own page is not the place to send
+                            them back to creators they were browsing. */}
+                        {!isCreatorProfile && (
+                            <Suspense fallback={null}>
+                                <RecentlyViewed
+                                    excludeUsernames={[user?.username].filter(
+                                        Boolean,
+                                    )}
+                                />
+                            </Suspense>
+                        )}
+
+                        {/* ⚠️ THE COPY CHANGES ON A SUPPORTER'S PAGE, THE ROW DOES NOT.
+                            "More creators to support" is addressed to somebody
+                            reading a creator's page, and on a fan's own profile
+                            it is wrong twice over — they are the one doing the
+                            supporting, and they may not have supported anybody
+                            yet, so "more" names a set that is empty. The cards,
+                            the grid and the attribution are identical. */}
+                        <MoreCreators
+                            creators={moreCreators}
+                            heading={
+                                isCreatorProfile
+                                    ? undefined
+                                    : "Creators worth a look"
+                            }
+                            intro={
+                                isCreatorProfile
+                                    ? undefined
+                                    : "A few people selling things you can unlock today."
+                            }
+                        />
                     </div>
                 </div>
 

@@ -147,7 +147,7 @@ function BillItem(props) {
             reason: itm?.suspend_reason,
         },
         IsloggedIn &&
-            Number(itm?.approved) === 0 && { state: "in_review", reason: null },
+            Number(itm?.approved) === 0 && { state: "flagged", reason: null },
     ].filter(Boolean);
 
     return (

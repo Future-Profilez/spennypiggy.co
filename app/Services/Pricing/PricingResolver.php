@@ -78,8 +78,23 @@ final class PricingResolver
     /** @var array<int, string|null> creator id => created_at, for the grandfather test */
     private static array $creatorAges = [];
 
-    /** Hard defaults: the state if config itself is broken. */
-    private const DEFAULTS = ['card' => 12.0, 'bank' => 9.0];
+    /*
+     * Hard defaults: the state if config itself is broken.
+     *
+     * 🚨 BANK WAS 9.0 HERE UNTIL 12 Sep 2026 AND THAT WAS A PRE-D2 LEFTOVER.
+     * Client decision D2 put BOTH rails on the same all-in 12% — the shipped
+     * config was moved and this last-resort default was not, so a broken or
+     * half-cached config would have quietly priced bank at 9%.
+     *
+     * ⚠️ That is not merely under-charging the platform. Below break-even the
+     * CREATOR is short: Stripe's fixed component does not shrink with the sale,
+     * so at 9% a bank payment stops covering itself around £5.67 while the
+     * minimum listing is £4.99 — the platform fee clamps at zero and the
+     * shortfall lands on the creator. `FeeModel::minimumSellable()` is the
+     * calculation and `AllInFeeModelTest` fails the build on the SHIPPED config,
+     * but it reads the config — it can never see this constant.
+     */
+    private const DEFAULTS = ['card' => 12.0, 'bank' => 12.0];
 
     /**
      * 🚨 CALL AFTER ANY WRITE, AND IN `Tests\TestCase::setUp()`.

@@ -128,7 +128,14 @@ return [
     */
     'all_in' => [
         'card' => (float) env('ALL_IN_CARD_RATE', 12),
-        'bank' => (float) env('ALL_IN_BANK_RATE', 9),
+        /*
+         * 🚨 12%, THE SAME AS CARD (11 Sep 2026, client D2 CONFIRMED): *"12% Spenny Piggy
+         * fee at launch. **Do not centre the proposition on one rail being cheaper.**"*
+         * It was seeded at 9 while D2 was open. One advertised percentage, whichever rail
+         * the supporter picks — the difference in processing cost is ours to carry, not a
+         * marketing position.
+         */
+        'bank' => (float) env('ALL_IN_BANK_RATE', 12),
     ],
 
     /*

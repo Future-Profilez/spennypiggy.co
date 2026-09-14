@@ -2173,7 +2173,7 @@ class StripeControl
              * `Cache::add` is atomic - a `has()` + `put()` pair lets two concurrent
              * runs both pass the check and both log.
              */
-            if (self::isAccountUnreachable($e)) {
+            if (self::accountIsUnreachable($e)) {
                 if (Cache::add('stripe:manual-payout:unreachable:'.$connectedAccountId, true, now()->addDay())) {
                     // Still ERROR, not warning: this creator can never be paid out until
                     // somebody looks at the account, so it has to reach whoever reads the
@@ -2209,8 +2209,14 @@ class StripeControl
      * Matched on the Stripe error CODE where there is one - `account_invalid` is the
      * documented code for "no such account, or access revoked". The string check is a
      * fallback for the permission error, which carries no code.
+     *
+     * 🚨 PUBLIC SINCE 12 Sep 2026, AND THERE IS STILL ONLY ONE OF IT.
+     * `payouts:check-connections` asks the same question to decide whether to
+     * flag an account and write to its creator, and a second copy of this
+     * classifier is how one of the two starts telling somebody to reconnect
+     * over a rate limit.
      */
-    private static function isAccountUnreachable(\Throwable $e): bool
+    public static function accountIsUnreachable(\Throwable $e): bool
     {
         if ($e instanceof PermissionException) {
             return true;

@@ -65,7 +65,7 @@ export default function PayByBankAnnouncement() {
                     </FadeIn>
                     <FadeIn y={20} delay={0.2}>
                         <p className="fading text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto font-medium leading-relaxed">
-                            Pay straight from your bank across the UK, Europe and the US — lower fees, no card required.
+                            Pay straight from your bank across the UK, Europe and the US — no card needed, higher limits.
                         </p>
                     </FadeIn>
                 </div>

@@ -60,13 +60,21 @@ export const itemLabelClass =
 /** Helper copy under a label or field. Bottom of the ink ramp, never a gray. */
 export const itemHintClass = "text-sm font-medium text-black/60";
 
-export const itemErrorClass = "mt-2 text-left text-[13px] font-bold text-[#C81E5B]";
+export const itemErrorClass =
+    "mt-2 text-left text-[13px] font-bold text-[#C81E5B]";
 
-export function ItemLabel({ htmlFor, children, optional = false, className = "" }) {
+export function ItemLabel({
+    htmlFor,
+    children,
+    optional = false,
+    className = "",
+}) {
     return (
         <label htmlFor={htmlFor} className={`${itemLabelClass} ${className}`}>
             {children}
-            {optional && <span className="ml-2 font-bold text-black/60">Optional</span>}
+            {optional && (
+                <span className="ml-2 font-bold text-black/60">Optional</span>
+            )}
         </label>
     );
 }
@@ -86,5 +94,68 @@ export function ItemError({ children, className = "" }) {
         <p role="alert" className={`${itemErrorClass} ${className}`}>
             {children}
         </p>
+    );
+}
+
+/**
+ * 🚨 A SWITCH AND THE FIELD IT CONTROLS ARE ONE OBJECT.
+ *
+ * An optional setting on an item form is a card that carries its own switch and
+ * reveals its input when that switch is on. The layout this replaced put a bare
+ * checkbox beside a label, and the input it governed appeared further down the
+ * form out of nowhere — so on a phone, where the two were rarely on screen
+ * together, turning something on made an unexplained field materialise.
+ *
+ * ⚠️ THE WHOLE CARD IS THE LABEL. `htmlFor` makes the title, the hint and the
+ * padding around them all hit the checkbox, which on a touch screen is the
+ * difference between a 20px target and a 300px one.
+ *
+ * ⚠️ CHILDREN RENDER ONLY WHEN IT IS ON, and are OUTSIDE the `<label>`. An
+ * `<input>` nested inside a label whose `htmlFor` points at the checkbox has its
+ * own clicks forwarded to that checkbox — so typing in the box would toggle the
+ * switch that reveals it.
+ *
+ * ⚠️ House rules this follows, each of which has its own note above: radius from
+ * the tokens (`rounded-box` / `rounded-box-sm`, never the named scale, which is
+ * overridden in this project); NO shadow — the frame is the border; no scale on
+ * interaction; and `border-black` is a full 2px `border` SHORTHAND here, so a
+ * width class beside it is silently discarded and none is written.
+ */
+export function OptionCard({ id, title, hint, checked, onChange, children }) {
+    return (
+        <div
+            className={`rounded-box border-black transition-colors duration-150 motion-reduce:transition-none ${
+                checked ? "bg-[#F2FBF5]" : "bg-white"
+            }`}
+        >
+            <label
+                htmlFor={id}
+                className="flex cursor-pointer items-start gap-3 p-4"
+            >
+                <input
+                    id={id}
+                    type="checkbox"
+                    checked={checked}
+                    onChange={onChange}
+                    className={`mt-0.5 cursor-pointer ${itemCheckboxClass}`}
+                />
+                <span className="min-w-0">
+                    <span className="block text-sm font-black text-black">
+                        {title}
+                    </span>
+                    {hint && (
+                        <span className={`mt-1 block ${itemHintClass}`}>
+                            {hint}
+                        </span>
+                    )}
+                </span>
+            </label>
+
+            {checked && children && (
+                <div className="border-t-2 border-black/10 px-4 pb-4 pt-3">
+                    {children}
+                </div>
+            )}
+        </div>
     );
 }

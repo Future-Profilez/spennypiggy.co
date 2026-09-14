@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Bills;
 use App\Models\Membership;
 use App\Models\PiggyPot;
+use App\Models\Post;
 use App\Models\Shop;
 use App\Models\Task;
 use App\Models\WishItem;
@@ -44,6 +45,9 @@ final class ListingPublication
         PiggyPot::class => ['status' => 'active'],
         Shop::class => ['approved' => 1],
         Task::class => ['is_approved' => 1],
+        // A post is content, not a listing, and it publishes on the same contract:
+        // the client's §8 is literally "don't make admins approve every normal post".
+        Post::class => ['approved' => 1],
     ];
 
     /**
@@ -60,6 +64,7 @@ final class ListingPublication
         PiggyPot::class => ['status' => 'moderation_hold'],
         Shop::class => ['approved' => 0],
         Task::class => ['is_approved' => 0],
+        Post::class => ['approved' => 0],
     ];
 
     /** The attributes marking this listing held, for a scanner's `$flagOnViolation`. */

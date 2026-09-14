@@ -52,6 +52,20 @@ const SLOTS = {
         className: "bg-[#FF007F] text-black",
     },
     pick: { label: "Discovery pick", className: "bg-black text-white" },
+
+    /*
+     * Two slots that only ever appear on a SUPPORTER's profile.
+     *
+     * ⚠️ `for_you` reuses mint because `similar` — the slot it is the supporter
+     * equivalent of — never appears on the same row as it. One colour, one
+     * meaning: "this is close to what you already look at".
+     *
+     * ⚠️ `nearby` is the plain white card rather than a fifth brand colour. Four
+     * saturated chips on one row is a row with no accent at all, and the label
+     * already carries the whole of what this slot means.
+     */
+    for_you: { label: "Matches what you back", className: "bg-[#05EFB8] text-black" },
+    nearby: { label: "Near you", className: "bg-white text-black" },
 };
 
 /*
@@ -194,7 +208,14 @@ function CreatorCard({ creator }) {
 function BrowseAllTile() {
     return (
         <Link
-            href="/creators/discovery"
+            /* 🚨 `/discover`, NOT `/creators/discovery`. This tile is shown to
+               SUPPORTERS at the foot of every profile and says "Browse all
+               creators · Find someone new to support" — and it pointed at ad
+               page A2, headlined "Don't just bring your audience. Grow it.",
+               which is addressed to creators. Every `/creators*` path is a paid
+               landing page for creator acquisition; the browse surface a
+               supporter wants is `/discover`. */
+            href="/discover"
             /* ⚠️ SOLID, NOT DASHED. A dashed edge is this codebase's signal
                for "announced, not built" — it is what the stablecoin Tip block
                wears while its flag is off. This link works today, so a dashed
@@ -254,7 +275,16 @@ function BrowseAllTile() {
 const GRID_COLUMNS =
     "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
 
-export default function MoreCreators({ creators }) {
+/**
+ * ⚠️ `heading` / `intro` are OPTIONAL and default to the creator-profile wording.
+ *
+ * The same row runs at the foot of a creator's page ("more creators to support")
+ * and at the foot of a supporter's own page, where the reader is the person
+ * doing the supporting and "more" is wrong — they may not have supported anybody
+ * yet. Two words of copy is the whole difference; a second component would be a
+ * second card design waiting to drift from this one.
+ */
+export default function MoreCreators({ creators, heading, intro }) {
     if (!Array.isArray(creators) || creators.length === 0) return null;
 
     // One card alone cannot make a row; two or more already read as a set.
@@ -285,10 +315,11 @@ export default function MoreCreators({ creators }) {
                         id="more-creators-heading"
                         className="font-gulfs text-2xl uppercase leading-[1.05] tracking-tight text-black md:text-3xl"
                     >
-                        More creators to support
+                        {heading || "More creators to support"}
                     </h2>
                     <p className="mt-2 font-poppins text-sm leading-[1.55] text-black/60">
-                        Picked for you — have a look at what they have on offer.
+                        {intro ||
+                            "Picked for you — have a look at what they have on offer."}
                     </p>
                 </div>
 

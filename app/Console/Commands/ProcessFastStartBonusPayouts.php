@@ -12,7 +12,6 @@ use App\Models\PayoutRecord;
 use App\Models\User;
 use App\StripeControl;
 use App\Support\Incentives;
-use App\Support\PayoutEligibility;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -193,19 +192,11 @@ class ProcessFastStartBonusPayouts extends Command
                 continue;
             }
 
-            /*
-             * 🚨 Identity is a payout gate (10 Sep 2026) — see PayoutEligibility.
-             * ⚠️ Its own status, not `payout_paused`: nobody paused this creator, and
-             * a run report saying "paused" sends somebody looking for an admin hold
-             * that was never placed.
-             */
-            if (PayoutEligibility::blocksPayout($creator)) {
-                $payoutRow->status = 'identity_unverified';
-                $payoutRow->save();
-                $skipped++;
-
-                continue;
-            }
+            /* 🚨 NO IDENTITY GATE (11 Sep 2026, client D5/Q20 — removed entirely, not
+               moved to payout). ⚠️ The `identity_unverified` status this used to write
+               is left on the model as a legacy value: rows already carrying it are
+               history, and rewriting them would restate a run that really did skip a
+               creator for that reason. Nothing writes it any more. */
 
             if ($bonusMinor <= 0) {
                 $payoutRow->status = 'no_bonus';

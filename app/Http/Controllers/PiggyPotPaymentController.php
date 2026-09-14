@@ -137,13 +137,16 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
-        if (! empty($user) && $user->role === 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
-            return response()->json([
-                'status' => false,
-                'card_verification_required' => true,
-                'msg' => 'Please complete your card verification process.',
-            ]);
-        }
+        /*
+         * 🚨 THE £500 CARD-VERIFICATION GATE WAS REMOVED HERE (12 Sep 2026,
+         * client direction). A supporter past £500 used to be refused until an
+         * admin compared their address against the one their bank returned —
+         * and the screen that took that decision was deleted the same day, so
+         * the gate had become a permanent block with nobody able to clear it.
+         * `is_500_limit_exceeded` is still written and now earns the grey badge
+         * (`App\Support\VerifiedBadge`); nothing reads it to refuse a purchase
+         * any more, and nothing may start to.
+         */
 
         // Same rule as the locked re-check below, so the "max you can add"
         // figure shown here matches what the insert will actually allow.

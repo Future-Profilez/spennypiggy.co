@@ -18,6 +18,34 @@ class FinancialTransaction extends Model
     protected $fillable = [
         'platform_fee_rate',
         'compliance_fee_rate',
+        /*
+         * 🚨 THESE TWO WERE EMITTED BY `Helpers::feeRateColumns()` AND DROPPED
+         * SILENTLY ON EVERY WRITE until 12 Sep 2026, because they were never in
+         * this list. Measured then: 0 of 225 rows populated across all four
+         * payment tables.
+         *
+         * What it cost: `Helpers::storedFeeRates()` reads `stripe_fee_rate`,
+         * finds null and falls back to `LEGACY_CARD_STRIPE_RATE` (2.9%) — while
+         * the configured card estimate has been 3.4% since 11 Aug 2026. So every
+         * card sale since then is RE-COST 0.5pp cheap, understating Stripe's cost
+         * and overstating the platform's margin on the screens the platform reads
+         * its own margin from. Nothing errors.
+         *
+         * ⚠️ SAFE TO MAKE FILLABLE ONLY BECAUSE THE RECOMPUTE RE-COSTS FROM THE
+         * ROW'S OWN FROZEN RATES. `finance:sync-transactions` builds its
+         * breakdown from `Helpers::storedFeeRates($payment)` — the SOURCE row's
+         * stored values — so a historic row is written back with what it already
+         * had, never with today's configured rate. If a recompute is ever changed
+         * to read config directly, this becomes the way history gets restated.
+         *
+         * ⚠️ FORWARD ONLY, DELIBERATELY. Rows charged between 11 Aug and 12 Sep
+         * 2026 keep the 2.9% fallback and stay 0.5pp understated. Backfilling
+         * them would write recorded economics from an inference, which is the one
+         * thing the fee columns exist to avoid; making them TRUE means reading
+         * Stripe's own balance transactions, and that is a separate decision.
+         */
+        'stripe_fee_rate',
+        'stripe_fixed_fee',
         'fee_source',
         'fee_override_id',
         'compliance_fee',

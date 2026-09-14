@@ -236,9 +236,6 @@ Route::withoutMiddleware([VerifyCsrfToken::class])
 // referral code exists. Throttled to match.
 Route::get('/check-referral-code/{code}', [ReferAndEarnController::class, 'checkCreatorReferral'])
     ->middleware('throttle:40,1');
-// ⚠️ `stripe/identity/verify` used to be declared HERE, unauthenticated. It now sits in
-// the `auth`+`verified` group below with a throttle — the controller carries the same
-// role/lock/Connect gate the identity PAGE has. (31 Aug 2026)
 Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
 Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
 Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
@@ -1275,21 +1272,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/upload-dalle-image', [ProfileController::class, 'uploadDalleImage'])->name('upload.dalle.image');
     });
 
-    // stripe identity verification routes
-    Route::get('/stripe/identity-verification', function () {
-        $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
-
-        // if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
-        //     $user = Auth::user();
-        //     $user->identity_admin_status = 0;
-        //     $user->identity_status = 1;
-        //     $user->save();
-        // }
-        return Inertia::render('Auth/StripeIdentity', [
-            'status' => false,
-            'message' => 'Please complete your Stripe identity verification.',
-        ]);
-    })->name('stripe.identity.verification');
+    /* 🚨 `stripe.identity.verification` AND `stripe.identity.verify` ARE GONE
+       (11 Sep 2026, client D5/Q20). Spenny Piggy no longer runs an identity check
+       of its own: no ID upload page, no billable Stripe Identity session minted by
+       us, no human sign-off. Stripe Connect performs its own KYC when payment
+       capability requires it and we follow the status it returns. */
 
     Route::post('/update/move-wish', [WishitemController::class, 'moveWishes'])->name('move-wish');
 
@@ -1513,7 +1500,7 @@ Route::middleware('auth')->group(function () {
         Route::get('delete-creator-products/{uuid}', [WishitemController::class, 'deleteAndRestoredRyeProduct'])->name('delete.creator.products');
         Route::post('create-cart', [WishitemController::class, 'createCart'])->name('create.cart');
         Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
-        Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment')->middleware('mustCompletedCardVerification');
+        Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment');
         Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');
         Route::get('rye-success-payment/{uuid}', [WishitemController::class, 'ryeSuccessPayment'])->name('rye.success.payment');
         Route::get('rye-cancel-payment/{uuid}', [WishitemController::class, 'ryeCancelPayment'])->name('rye.cancel.payment');
@@ -1555,7 +1542,7 @@ Route::middleware('auth')->group(function () {
 Route::prefix('shop')->group(function () {
     Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
     Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');
-    Route::match(['get', 'post'], '/buy/{uuid}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item')->middleware('mustCompletedCardVerification');
+    Route::match(['get', 'post'], '/buy/{uuid}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
     Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
     Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
     Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
@@ -1570,7 +1557,7 @@ Route::prefix('shop')->group(function () {
     });
 });
 
-Route::get('/create-checkout-session/{creator_id}/{user_id_or_device?}', [CheckoutController::class, 'createCheckout'])->name('create.checkout')->middleware('mustCompletedCardVerification');
+Route::get('/create-checkout-session/{creator_id}/{user_id_or_device?}', [CheckoutController::class, 'createCheckout'])->name('create.checkout');
 
 Route::get('/success-checkout/{id}', [CheckoutController::class, 'successCheckout'])->name('checkout.success');
 
@@ -1591,12 +1578,12 @@ Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class,
 Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
 Route::prefix('tip-jar')->name('tip-jar.')->group(function () {
-    Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name('pay')->middleware('mustCompletedCardVerification');
+    Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name('pay');
     Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
 });
 
 Route::prefix('piggy-pot')->name('piggy-pot.')->group(function () {
-    Route::post('pay/{piggy_pot_uuid}/', [PiggyPotPaymentController::class, 'contributeToPiggyPot'])->name('pay')->middleware('mustCompletedCardVerification');
+    Route::post('pay/{piggy_pot_uuid}/', [PiggyPotPaymentController::class, 'contributeToPiggyPot'])->name('pay');
     Route::get('/handle/{uuid}/{status?}', [PiggyPotPaymentController::class, 'handlePiggyPotPayment'])->name('handle');
 });
 
@@ -1725,13 +1712,6 @@ Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('us
 Route::get('/founder/bonus', [FounderBonusController::class, 'index'])->middleware('ssr')->name('founder.bonus');
 Route::get('/founder/winners/all-time', [FounderBonusController::class, 'getAllTimeWinners'])->name('founder.winners.all-time');
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Opens a billable Stripe Identity session. Gated in the controller on role 1 +
-    // approved profile + Connect done (the gate the deleted identity-page middleware used), and
-    // throttled: a person needs one click, a loop needs thousands.
-    Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])
-        ->middleware('throttle:6,1')
-        ->name('stripe.identity.verify');
-
     Route::get('/founder/leaderboard', [FounderBonusController::class, 'getLeaderboard'])->name('founder.leaderboard');
     Route::get('/founder-program', [FounderBonusController::class, 'programInfo'])->name('founder.program');
     // Manual triggers — admin only (these mutate founder status / move money)
@@ -1746,7 +1726,7 @@ Route::middleware(['auth', 'verified'])->prefix('task')->name('task.')->group(fu
     Route::get('/dashboard', [TaskController::class, 'index'])->name('dashboard');
     Route::get('/create', [TaskController::class, 'create'])->name('create');
     Route::post('/', [TaskController::class, 'store'])->name('store');
-    Route::post('/{uuid}/purchase', [TaskController::class, 'purchase'])->name('purchase')->middleware('mustCompletedCardVerification');
+    Route::post('/{uuid}/purchase', [TaskController::class, 'purchase'])->name('purchase');
     Route::get('/{uuid}/success', [TaskController::class, 'success'])->name('success');
     Route::get('/{uuid}/download', [TaskController::class, 'download'])->name('download');
     Route::get('/order/{uuid}', [TaskController::class, 'order'])->name('order');
@@ -1858,8 +1838,10 @@ Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUs
  * `auth` + `mustHaveToVerify` group above (named `*.checkout.auth`) and again
  * here. Laravel's RouteCollection keys on method+URI and the LAST registration
  * wins, so these are what actually answer and the earlier pair is dead. Verified
- * with `route:list -v`: the live route carries only `web` +
- * `CheckGifterCardVerification` — not `Authenticate`, not `UserEmailVerify`.
+ * with `route:list -v`: the live route carries only `web` and its throttle —
+ * not `Authenticate`, not `UserEmailVerify`. (It also carried
+ * `CheckGifterCardVerification` until 12 Sep 2026, when the whole £500 gate was
+ * removed; the shadowing itself is unchanged.)
  *
  * ⚠️ That means the login requirement for Bills and Memberships is enforced by
  * the CONTROLLER (`buyBill` / `buyLevel` redirect a guest to login), not by route
@@ -1876,7 +1858,7 @@ Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUs
  * and are unaffected by anyone else's traffic.
  */
 Route::prefix('wish')->name('wish.')->group(function () {
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name('subscribe.checkout')->middleware(['mustCompletedCardVerification', 'throttle:60,1']);
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name('subscribe.checkout')->middleware(['throttle:60,1']);
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleSubscription'])->name('subscribe.handle');
 });
 
@@ -1894,13 +1876,13 @@ Route::post('membership-offer/dismiss', [ThankYouController::class, 'dismissMemb
 
 Route::prefix('membership')->name('membership.')->group(function () {
     // See the shadowing note above the `wish` group — same rule, same 60/min.
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name('checkout')->middleware(['mustCompletedCardVerification', 'throttle:60,1']);
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name('checkout')->middleware(['throttle:60,1']);
     Route::get('/handle/{uuid}/{status}', [MembershipController::class, 'handlePayment'])->name('handle');
 });
 
 Route::prefix('bill')->name('bill.')->group(function () {
     // See the shadowing note above the `wish` group — same rule, same 60/min.
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name('checkout')->middleware(['mustCompletedCardVerification', 'throttle:60,1']);
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name('checkout')->middleware(['throttle:60,1']);
     Route::get('/handle/{uuid}/{status}', [BillsController::class, 'handlePayment'])->name('handle');
 });
 

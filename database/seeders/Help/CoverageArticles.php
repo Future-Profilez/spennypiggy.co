@@ -96,7 +96,7 @@ MD,
                 'slug' => 'my-profile-was-rejected',
                 'title' => 'My profile was rejected — what do I do?',
                 'audience' => 'creator',
-                'keywords' => 'rejected, declined, turned down, refused, not approved, resubmit, submit again, fix, reason, why rejected, appeal',
+                'keywords' => 'rejected, declined, turned down, refused, not approved, resubmit, save again, fix, reason, why rejected, appeal',
                 'summary' => 'A rejection names what needs changing and puts your profile back in your hands. Change the thing it names and save — it is checked again straight away, and there is no limit on how many times.',
                 'related' => ['why-is-my-profile-still-in-review', 'why-was-my-photo-rejected', 'what-content-is-allowed', 'getting-help-from-us'],
                 'body' => <<<'MD'

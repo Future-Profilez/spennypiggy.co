@@ -162,64 +162,33 @@ export default function PiggyPotModal({
         <Popup
             title={pot ? "Edit content goal" : "New content goal"}
             dismissable
-            size="xl"
+            size="lg"
             classes="hidden"
-            fullscreen
-            hidecontrols
-            hideclose
             action={show}
             onHide={requestClose}
         >
-            <div className="flex min-h-0 flex-1 flex-col bg-[#F2EFE7]">
-                {/* PWA standalone has no browser chrome — inset the header's content
-                    so the status bar never lands on the title. See `Sheet.jsx`. */}
-                <header
-                    className="shrink-0 border-b-[3px] border-black bg-black px-4 py-3 sm:px-6"
-                    style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
-                >
-                    <div className="mx-auto flex w-full max-w-3xl items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={handleClose}
-                            aria-label="Close"
-                            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-white/25 text-white transition-colors hover:border-white hover:bg-white hover:text-black"
-                        >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                        </button>
+            {/* 🚨 NO HEADER BAR AND NO PINNED SUBMIT. This panel drew its own
+                black bar carrying a title, a subtitle and a second copy of the
+                Create button — the exact chrome removed from `Sheet` and
+                `Popup` on 12 Sep 2026 — so the Piggy Pot form opened from the
+                dashboard looked like a different product from the one opened
+                on /piggy-pots, which is the SAME FORM. The panel supplies the
+                ground, the scroll and the one close control; this file supplies
+                the words and the fields. The submit at the foot of the form is
+                now the only one. */}
+            <div>
+                <h3 className="font-gulfs text-[32px] uppercase leading-[1.05] text-black md:text-[46px]">
+                    {isEditing ? "Edit Piggy Pot" : "Create Piggy Pot"}
+                </h3>
+                <p className="mt-3 text-base font-bold leading-[1.55] text-black/70 md:text-lg">
+                    Sell content towards a visible goal.
+                </p>
 
-                        <div className="min-w-0 flex-1">
-                            <h3 className="truncate font-GillSans text-lg uppercase leading-none tracking-wide text-white sm:text-2xl">
-                                {isEditing ? "Edit Piggy Pot" : "Create Piggy Pot"}
-                            </h3>
-                            <p className="mt-1 truncate text-[12px] font-black uppercase tracking-[0.16em] text-white/60">
-                                Sell content towards a visible goal
-                            </p>
-                        </div>
-
-                        {/* Reachable without scrolling the whole form. Submits the
-                            form below by id, so there is one handler, not two. */}
-                        <button
-                            type="submit"
-                            form="piggy-pot-form"
-                            disabled={processing}
-                            className="hidden h-11 shrink-0 items-center rounded-box-sm border-2 border-black bg-[#FF007F] px-6 text-xs font-black uppercase tracking-[0.14em] text-black transition-colors duration-200 hover:brightness-110 active:brightness-95 disabled:opacity-60 motion-reduce:transform-none sm:inline-flex"
-                        >
-                            {processing ? "Saving…" : isEditing ? "Save changes" : "Create pot"}
-                        </button>
-                    </div>
-                </header>
-
-                {/* The action scrolls with the form — a pinned bar covered the
-                    last field, and on a phone it stacked on the bottom nav. */}
-                <div className="customScrollbar min-h-0 flex-1 overflow-y-auto px-4 py-6 pb-28 sm:px-6 md:py-8">
-                    {/* 🚨 Frameless on a phone — see the same note in
-                        `ItemFormShell`. This panel is already the whole screen, so
-                        the card around the form is a second frame on the same
-                        content and costs 22px a side. It returns at `sm`. */}
-                    <div className="mx-auto w-full max-w-3xl rounded-box border-2 border-black bg-white p-5 sm:p-6 max-sm:!rounded-none max-sm:!border-0 max-sm:!bg-transparent max-sm:!p-0">
+                {/* 🚨 Frameless on a phone — see the same note in
+                    `ItemFormShell`. The panel is already the whole screen, so a
+                    card around the form is a second frame on the same content
+                    and costs 22px a side. It returns at `sm`. */}
+                <div className="mt-7 rounded-box border-2 border-black bg-white p-5 sm:p-6 max-sm:!rounded-none max-sm:!border-0 max-sm:!bg-transparent max-sm:!p-0">
 
                 <form id="piggy-pot-form" onSubmit={handleSubmit} className="space-y-5">
                     <div>
@@ -524,7 +493,6 @@ export default function PiggyPotModal({
                         </button>
                     </div>
                 </form>
-                    </div>
                 </div>
             </div>
         </Popup>
