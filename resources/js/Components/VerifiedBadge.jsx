@@ -80,6 +80,7 @@ export default function VerifiedBadge({
   size = 'sm',
   className = '',
   founder,
+  contrast = false,
 }) {
   const resolved = tierOf(user, tier);
   const meta = TIERS[resolved];
@@ -110,7 +111,7 @@ export default function VerifiedBadge({
         role="img"
         aria-label={label}
         title={label}
-        className={`inline-block shrink-0 text-yellow-500 ${className}`}
+        className={`inline-flex shrink-0 rounded-full ${className} ${contrast ? 'bg-black text-white p-0.5' : 'text-yellow-500'}`}
       />
     );
   }
@@ -123,7 +124,7 @@ export default function VerifiedBadge({
       role="img"
       aria-label={meta.label}
       title={meta.label}
-      className={`inline-block shrink-0 ${meta.className} ${className}`}
+      className={`inline-flex shrink-0 rounded-full ${className} ${contrast ? 'bg-black text-white p-0.5' : meta.className}`}
     />
   );
 }

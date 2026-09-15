@@ -664,7 +664,7 @@ export default function EditProfile({
                             </h2>
                             <button
                                 onClick={() => setUploadingStart(false)}
- className="mr-4 bg-gray-200 px-4 py-1 rounded-box-sm"
+                                className="mr-4 bg-gray-200 px-4 py-1 rounded-box-sm"
                             >
                                 Exit
                             </button>

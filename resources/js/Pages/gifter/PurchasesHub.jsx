@@ -397,6 +397,19 @@ export default function PurchasesHub({
                 onOverdue={() => { setTab("transactions"); setView("transactions"); }}
             />
 
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 rounded-box-sm bg-white/70 px-3">
+                <HelpLink
+                    slug="i-cannot-find-my-purchase"
+                    categorySlug="my-purchases"
+                    label="Can't find a purchase?"
+                />
+                <HelpLink
+                    slug="refunds-and-cancellations"
+                    categorySlug="my-purchases"
+                    label="Refunds & cancelling"
+                />
+            </div>
+
             {renewingSoon.length > 0 && (
                 <RenewingBanner
                     items={renewingSoon}
@@ -997,22 +1010,6 @@ function Hero({ embedded, media, summary, money, reduce, status, overdue, onOver
 
                     {status && <SupporterStatus status={status} reduce={reduce} />}
 
-                    {/* The two things a supporter comes to this page confused
-                        about. Dark tone — this hero is a near-black band. */}
-                    <div className="mt-4 flex flex-wrap items-center gap-x-5">
-                        <HelpLink
-                            slug="i-cannot-find-my-purchase"
-                            categorySlug="my-purchases"
-                            label="Can't find a purchase?"
-                            tone="dark"
-                        />
-                        <HelpLink
-                            slug="refunds-and-cancellations"
-                            categorySlug="my-purchases"
-                            label="Refunds & cancelling"
-                            tone="dark"
-                        />
-                    </div>
                 </div>
 
                 {/* Decorative — desktop only */}

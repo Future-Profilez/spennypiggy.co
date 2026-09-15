@@ -23,6 +23,19 @@ export default function TopSupporters({grid = false}) {
   const { data: section, loading, error } = useBundleSection('top_supporters');
   const data = section?.data || [];
 
+  const displayName = (supporter) => {
+    const name = String(supporter?.name || '').trim();
+
+    // Do not publish a malformed source-comment fragment as a person's name.
+    // This protects both leaderboard surfaces while the affected account data
+    // is corrected, without changing ranking or the stored username.
+    if (/attribute position is a syntax error|whole vite build/i.test(name)) {
+      return 'Supporter';
+    }
+
+    return name || 'Supporter';
+  };
+
   const SupporterItem = ({ supporter, index }) => (
     <div className="rank py-3 border-b flex items-center justify-between">
       <div className="flex items-center justify-between">
@@ -30,7 +43,7 @@ export default function TopSupporters({grid = false}) {
           <Avatar
             role={supporter.role}
             profile_status_lock={supporter.profile_status_lock == 2 ? true : false}
-            name={supporter.name}
+            name={displayName(supporter)}
             link={supporter.username || null}
             subhead={`@${supporter.username || "anonymous"}`}
             username={supporter.username || ""}

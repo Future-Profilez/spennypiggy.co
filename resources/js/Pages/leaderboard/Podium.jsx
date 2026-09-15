@@ -108,7 +108,12 @@ function PodiumCard({ row, place, dense = false, windowDays, gap = null }) {
                 >
                     {row.name || "Anonymous"}
                 </span>
-                <VerifiedBadge user={row} size="sm" />
+                <VerifiedBadge
+                    user={row}
+                    size="sm"
+                    className="self-center translate-y-[1px]"
+                    contrast
+                />
             </div>
             <span className="max-w-full truncate text-12 text-black/70">@{row.username}</span>
 
