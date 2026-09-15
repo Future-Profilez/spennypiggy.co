@@ -23,6 +23,19 @@ export default function TopSupporters({grid = false}) {
   const { data: section, loading, error } = useBundleSection('top_supporters');
   const data = section?.data || [];
 
+  const displayName = (supporter) => {
+    const name = String(supporter?.name || '').trim();
+
+    // Do not publish a malformed source-comment fragment as a person's name.
+    // This protects both leaderboard surfaces while the affected account data
+    // is corrected, without changing ranking or the stored username.
+    if (/attribute\s+position\s+is\s+a\s+syntax\s+error|whole\s+vite\s+build|image-avatar.*ucarecdn/i.test(name)) {
+      return 'Supporter';
+    }
+
+    return name || 'Supporter';
+  };
+
   const SupporterItem = ({ supporter, index }) => (
     <div className="rank py-3 border-b flex items-center justify-between">
       <div className="flex items-center justify-between">
@@ -39,13 +52,14 @@ export default function TopSupporters({grid = false}) {
               `Number(true) === 2` is false. Three independent reasons for one symptom:
               no verified tick anywhere on the leaderboard, with nothing in any log.
 
-              ⚠️ The note lives ABOVE the element on purpose — `{/* … */}` in ATTRIBUTE
-              position is a syntax error that fails the whole Vite build. */}
+              ⚠️ The note lives ABOVE the element on purpose — placing a JSX comment
+              marker inside an attribute list is a syntax error that fails the whole
+              Vite build. */}
           <Avatar
             role={supporter.role}
             verified_badge={supporter.verified_badge}
             profile_status_lock={supporter.profile_status_lock}
-            name={supporter.name}
+            name={displayName(supporter)}
             link={supporter.username || null}
             subhead={`@${supporter.username || "anonymous"}`}
             username={supporter.username || ""}

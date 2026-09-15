@@ -17,8 +17,7 @@ import PotVisibilityNotice from './PotVisibilityNotice';
 
 const DEFAULT_COVER = 'https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/';
 
-const FIELD =
-    'w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-medium focus:outline-none focus:ring-0 ';
+const FIELD = 'w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-medium focus:outline-none focus:ring-0 ';
 const FIELD_LABEL = 'mb-2 block text-left text-[12px] font-black uppercase tracking-[0.14em]';
 
 export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
