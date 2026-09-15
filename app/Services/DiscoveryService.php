@@ -10,6 +10,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\WishItem;
 use App\Support\Badges;
+use App\Support\DiscoveryEligibility;
 use App\Support\MediaUrl;
 use App\Support\VerifiedBadge;
 use Carbon\Carbon;
@@ -17,6 +18,30 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * 🚨 EVERY QUERY IN HERE IS GATED ON `DiscoveryEligibility::payable()`.
+ *
+ * A Discovery surface is Spenny Piggy CHOOSING to put a creator, or something
+ * they sell, in front of a supporter — every card carries a price and a button.
+ * A creator who has not finished Stripe Connect, or whose account Stripe has
+ * since disabled, is refused at the checkout, so promoting them spends the
+ * supporter's click on a dead end and records a `blocked_payment_attempts` row
+ * against a creator who did nothing wrong.
+ *
+ * ⚠️ THE RULE IS WRITTEN ONCE, IN `App\Support\DiscoveryEligibility` — read its
+ * docblock before changing any clause, in particular why an unstamped
+ * `charges_enabled` deliberately PASSES. `DiscoveryEligibility::scope()` calls
+ * `payable()` too, so the collections, the recommendation row and the birthday
+ * campaign inherit it without a second copy.
+ *
+ * 🚨 ADDING A CREATOR OR LISTING QUERY HERE MEANS ADDING THE `->tap(...)` WITH
+ * IT. Nothing errors if you forget: the surface simply advertises a creator
+ * nobody can buy from, which reads as a working card.
+ *
+ * ⚠️ EVERY CACHE KEY IN THIS FILE WAS VERSION-BUMPED when the gate went in. A
+ * stale entry is a pre-gate result list, and it would go on advertising
+ * unconnected creators for the whole TTL with the code above it correct.
+ */
 class DiscoveryService
 {
     private function applyApprovalFilter($query, string $table)
@@ -54,7 +79,7 @@ class DiscoveryService
      */
     public function getTrendingCreators($limit = 12)
     {
-        return Cache::remember('trending_creators_v5_limit_'.$limit, 900, function () use ($limit) {
+        return Cache::remember('trending_creators_v6_limit_'.$limit, 900, function () use ($limit) {
             $ranked = $this->rankedCreatorIds(['sortBy' => 'Trending']);
 
             return $this->creatorCardsByIds(array_slice($ranked['ids'], 0, $limit));
@@ -63,13 +88,13 @@ class DiscoveryService
 
     public function getNewVerifiedCreators($limit = 12)
     {
-        return Cache::remember('new_verified_creators_limit_'.$limit, 300, function () use ($limit) {
+        return Cache::remember('new_verified_creators_v2_limit_'.$limit, 300, function () use ($limit) {
             $nowUtc = Carbon::now('UTC');
 
             $creators = User::query()
                 ->where('role', 1)
                 ->where('suspended_account', 0)
-                ->where('profile_status_lock', 2)
+                ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq))
                 /*
                  * 🚨 THE IDENTITY CLAUSE IS GONE (12 Sep 2026, client direction).
                  * Identity left onboarding on 10 Sep and is a PAYOUT gate now —
@@ -144,7 +169,7 @@ class DiscoveryService
         )
             ->whereHas('user', function ($q) {
                 $q->where('suspended_account', 0)
-                    ->where('profile_status_lock', 2);
+                    ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq));
             })
             ->with('wishCategories.category');
 
@@ -232,7 +257,7 @@ class DiscoveryService
             $limit = 50;
         }
 
-        $cacheKey = 'top_earners_v5_'.($period ?: 'all_time').'_limit_'.$limit;
+        $cacheKey = 'top_earners_v6_'.($period ?: 'all_time').'_limit_'.$limit;
 
         return Cache::remember($cacheKey, 3600, function () use ($period, $limit) {
             $nowLondon = Carbon::now('Europe/London');
@@ -302,7 +327,7 @@ class DiscoveryService
                 ->where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
                 ->where('role', 1)
-                ->where('profile_status_lock', 2)
+                ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq))
                 ->with(['wishes' => function ($q) {
                     $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
                 }])
@@ -356,14 +381,14 @@ class DiscoveryService
 
     public function getFeaturedWishes($limit = 12)
     {
-        return Cache::remember('featured_wishes_limit_'.$limit, 300, function () use ($limit) {
+        return Cache::remember('featured_wishes_v2_limit_'.$limit, 300, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
                 $this->applyApprovalFilter(WishItem::query(), 'wish_items'),
                 'wish_items'
             )
                 ->whereHas('user', function ($q) {
                     $q->where('suspended_account', 0)
-                        ->where('profile_status_lock', 2);
+                        ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq));
                 })
                 ->orderByDesc('supporter_count')
                 ->orderByDesc('id')
@@ -411,7 +436,7 @@ class DiscoveryService
             ->where('suspended_account', 0)
             ->where(function ($q) {
                 $q->where(function ($q2) {
-                    $q2->where('role', 1)->where('profile_status_lock', 2);
+                    $q2->where('role', 1)->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq));
                 })->orWhere('role', 0);
             })
             ->where(function ($q) use ($like) {
@@ -442,7 +467,7 @@ class DiscoveryService
         $items = $this->listingQuery($source)
             ->whereIn('wish_items.user_id', User::query()
                 ->where('suspended_account', 0)
-                ->where('profile_status_lock', 2)
+                ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq))
                 ->select('id'))
             ->where('wish_items.wishname', 'like', $like)
             ->orderBy('wish_items.price')
@@ -488,7 +513,7 @@ class DiscoveryService
 
     public function getFeaturedBills($limit = 12)
     {
-        return Cache::remember('featured_bills_limit_'.$limit, 300, function () use ($limit) {
+        return Cache::remember('featured_bills_v2_limit_'.$limit, 300, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
                 $this->applyApprovalFilter(Bills::query(), 'bills'),
                 'bills'
@@ -500,7 +525,7 @@ class DiscoveryService
                 })
                 ->whereHas('user', function ($q) {
                     $q->where('suspended_account', 0)
-                        ->where('profile_status_lock', 2);
+                        ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq));
                 })
                 ->orderByDesc('supporter_count')
                 ->orderByDesc('id')
@@ -542,7 +567,7 @@ class DiscoveryService
 
     public function getFeaturedMemberships($limit = 12)
     {
-        return Cache::remember('featured_memberships_limit_'.$limit, 300, function () use ($limit) {
+        return Cache::remember('featured_memberships_v2_limit_'.$limit, 300, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
                 $this->applyApprovalFilter(Membership::query(), 'memberships'),
                 'memberships'
@@ -554,7 +579,7 @@ class DiscoveryService
                 })
                 ->whereHas('user', function ($q) {
                     $q->where('suspended_account', 0)
-                        ->where('profile_status_lock', 2);
+                        ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq));
                 })
                 ->orderByDesc('supporter_count')
                 ->orderByDesc('id')
@@ -609,7 +634,7 @@ class DiscoveryService
             })
             ->whereHas('user', function ($q) {
                 $q->where('suspended_account', 0)
-                    ->where('profile_status_lock', 2);
+                    ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq));
             });
 
         if (! empty($filters['search'])) {
@@ -692,7 +717,7 @@ class DiscoveryService
             })
             ->whereHas('user', function ($q) {
                 $q->where('suspended_account', 0)
-                    ->where('profile_status_lock', 2);
+                    ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq));
             });
 
         if (! empty($filters['search'])) {
@@ -771,7 +796,7 @@ class DiscoveryService
             ->where('status', 'active')
             ->whereHas('creator', function ($q) {
                 $q->where('suspended_account', 0)
-                    ->where('profile_status_lock', 2);
+                    ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq));
             });
 
         if (! empty($filters['search'])) {
@@ -829,7 +854,7 @@ class DiscoveryService
 
     public function getFeaturedTasks($limit = 12)
     {
-        return Cache::remember('featured_tasks_limit_'.$limit, 1800, function () use ($limit) {
+        return Cache::remember('featured_tasks_v2_limit_'.$limit, 1800, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
                 $this->applyApprovalFilter(Task::query(), 'tasks'),
                 'tasks'
@@ -837,7 +862,7 @@ class DiscoveryService
                 ->where('status', 'active')
                 ->whereHas('creator', function ($q) {
                     $q->where('suspended_account', 0)
-                        ->where('profile_status_lock', 2);
+                        ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq));
                 })
                 ->orderByDesc('id')
                 ->limit($limit)
@@ -879,7 +904,7 @@ class DiscoveryService
         )
             ->whereHas('user', function ($q) {
                 $q->where('suspended_account', 0)
-                    ->where('profile_status_lock', 2);
+                    ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq));
             });
 
         /*
@@ -962,7 +987,7 @@ class DiscoveryService
 
     public function getFeaturedShops($limit = 12)
     {
-        return Cache::remember('featured_shops_limit_'.$limit, 1800, function () use ($limit) {
+        return Cache::remember('featured_shops_v2_limit_'.$limit, 1800, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
                 $this->applyApprovalFilter(Shop::query(), 'shops'),
                 'shops'
@@ -970,7 +995,7 @@ class DiscoveryService
                 ->where('status', 1)
                 ->whereHas('user', function ($q) {
                     $q->where('suspended_account', 0)
-                        ->where('profile_status_lock', 2);
+                        ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq));
                 })
                 ->orderByDesc('id')
                 ->limit($limit)
@@ -1093,11 +1118,11 @@ class DiscoveryService
      */
     public function interestFacets(int $limit = 12): array
     {
-        return Cache::remember('discover_interest_facets_v1_'.$limit, 900, function () use ($limit) {
+        return Cache::remember('discover_interest_facets_v2_'.$limit, 900, function () use ($limit) {
             $rows = User::query()
                 ->where('role', 1)
                 ->where('suspended_account', 0)
-                ->where('profile_status_lock', 2)
+                ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq))
                 ->whereNotNull('creator_category')
                 ->pluck('creator_category');
 
@@ -1472,20 +1497,20 @@ class DiscoveryService
         $unlock = $filters['unlock'] ?? null;
         $interest = $filters['interest'] ?? null;
 
-        $cacheKey = 'discover_ranked_creators_v2_'.md5(json_encode([$search, $sort, $band, $unlock, $interest, $poolCap]));
+        $cacheKey = 'discover_ranked_creators_v3_'.md5(json_encode([$search, $sort, $band, $unlock, $interest, $poolCap]));
 
         return Cache::remember($cacheKey, 300, function () use ($search, $sort, $band, $unlock, $interest, $poolCap) {
             $query = User::query()->where('suspended_account', 0);
 
             if ($search === '') {
-                $query->where('role', 1)->where('profile_status_lock', 2);
+                $query->where('role', 1)->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq));
             } else {
                 // A keyword search is someone looking for a person by name, so a
                 // fan account still answers it — but a creator profile that is not
                 // public must not, which is what this pairing protects.
                 $query->where(function ($q) {
                     $q->where(function ($q2) {
-                        $q2->where('role', 1)->where('profile_status_lock', 2);
+                        $q2->where('role', 1)->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq));
                     })->orWhere('role', 0);
                 });
             }
@@ -1709,7 +1734,7 @@ class DiscoveryService
      */
     public function getSearchCounts(array $filters): array
     {
-        $cacheKey = 'discover_counts_v1_'.md5(json_encode(array_intersect_key($filters, array_flip([
+        $cacheKey = 'discover_counts_v2_'.md5(json_encode(array_intersect_key($filters, array_flip([
             'search', 'contentType', 'sortBy', 'type', 'priceBand', 'unlock', 'categories',
         ]))));
 
@@ -1796,7 +1821,7 @@ class DiscoveryService
             return [];
         }
 
-        return Cache::remember('discover_recent_unlocks_v1_'.$limit, 60, function () use ($limit) {
+        return Cache::remember('discover_recent_unlocks_v2_'.$limit, 60, function () use ($limit) {
             /*
              * product_type → where the title lives, and what the buyer got.
              * `mandatory_platform_access` is deliberately absent: it is a
@@ -1838,7 +1863,7 @@ class DiscoveryService
             $creators = User::query()
                 ->whereIn('id', $rows->pluck('creator_id')->filter()->unique()->all())
                 ->where('suspended_account', 0)
-                ->where('profile_status_lock', 2)
+                ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq))
                 ->pluck('username', 'id')
                 ->toArray();
 
@@ -1893,14 +1918,14 @@ class DiscoveryService
         $creator = User::query()
             ->where('username', $username)
             ->where('suspended_account', 0)
-            ->where('profile_status_lock', 2)
+            ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq))
             ->first(['id', 'name', 'username', 'vat_amount_percentage']);
 
         if (! $creator) {
             return [];
         }
 
-        return Cache::remember('discover_creator_preview_v1_'.$creator->id.'_'.$limit, 300, function () use ($creator, $limit) {
+        return Cache::remember('discover_creator_preview_v2_'.$creator->id.'_'.$limit, 300, function () use ($creator, $limit) {
             $titleColumns = [
                 'wish_items' => 'wishname',
                 'shops' => 'name',
@@ -2071,7 +2096,7 @@ class DiscoveryService
             ->whereIn('id', $ids)
             ->where('role', 1)
             ->where('suspended_account', 0)
-            ->where('profile_status_lock', 2)
+            ->where('profile_status_lock', 2)->tap(fn ($qq) => DiscoveryEligibility::payable($qq))
             ->pluck('id')
             ->map(fn ($i) => (int) $i)
             ->sortBy(fn ($id) => $position[$id] ?? PHP_INT_MAX)

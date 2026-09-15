@@ -6237,6 +6237,54 @@ disclosure, and a separate decision from using it to order a row.
   separately against a leak (`$personalised` ignored) — it asserts an ABSENCE, so an empty
   row passes it and it proves nothing unless verified that way round.
 
+### 🚨 THREE SUPPORTER CTAs SENT SUPPORTERS TO CREATOR RECRUITMENT (12 Sep 2026)
+
+Found while improving the supporter profile, and it is the most expensive thing on this
+page. **Every `/creators*` path is a paid-ads landing page aimed at CREATORS** — `/creators`
+opens with the eyebrow *"For creators"* and the headline *"Sell your content. Keep all of
+it."*; `/creators/discovery` is headlined *"Don't just bring your audience. Grow it."*
+
+| Surface | Label the reader saw | Where it went |
+|---|---|---|
+| `Components/Gifter/SupporterLevel.jsx` | **"Find creators to support"** — the ONE button on a brand-new supporter's own profile | `/creators` |
+| `Components/discovery/MoreCreators.jsx` (`BrowseAllTile`) | **"Browse all creators · Find someone new to support"**, at the foot of every profile | `/creators/discovery` |
+| `Pages/gifter/PurchasesHub.jsx` (`EmptyState`) | **"Find creators"**, on EVERY empty state in a supporter's own hub | `/creators` |
+
+🚨 **NOTHING ERRORS AND NOTHING LOOKS BROKEN.** Each is a real page answering 200, so the
+button simply does the opposite of what its own label says — and no route test, scanner or
+build step can see it. **A link to the wrong real page is indistinguishable from a correct
+one.** All three now point at `/discover`, the supporter's browse surface.
+
+- ⚠️ **`includes/Header.jsx`'s "Link in Bio" row → `/creators/link-in-bio` is DELIBERATE** and
+  was left alone: it is shown to every signed-in account as an upsell toward becoming a
+  creator, which is a product decision rather than a mistake. Do not "fix" it.
+- 🚨 **GUARDED — `tests/Feature/SupporterLinkAudienceTest.php` (2).** A SOURCE SCAN over an
+  explicit list of supporter-facing files, because nothing else can see this class of fault.
+  ⚠️ The list is explicit rather than a sweep of `resources/js`: a creator-facing surface
+  linking to a creator landing page is correct. ⚠️ It blanks comments first — all three fixes
+  left a note QUOTING the wrong path, and a raw scan finds the very string it is checking has
+  gone. ⚠️ It carries a control asserting the regex still matches a planted link, without
+  which the scan passes just as happily against a pattern that matches nothing. Verified red:
+  it names the exact file and path.
+
+### 🚨 THE HUB'S EMPTY-STATE CTA HAD NO LEGIBLE INK AT ALL (12 Sep 2026)
+
+`PurchasesHub`'s `EmptyState` button was a `linear-gradient(135deg, #FF007F, #7C3AED)` with
+white type. **Measured, not assumed:**
+
+| Fill | vs white | vs black |
+|---|---|---|
+| `#FF007F` | **3.78** ✗ | 5.56 ✓ |
+| `#7C3AED` | 5.70 ✓ | **3.69** ✗ |
+
+So white fails AA at the pink end and black fails at the violet end — **there is no ink
+colour that works across that fill**, which is the "mid-luminance ground has no headroom"
+trap already documented for the promo cards, in its worst form. The gradient is dropped for
+solid brand pink with BLACK type (5.56), the house accent button every other primary action
+on this platform uses. ⚠️ Its `hover:-translate-y-0.5` went with it — the banned bare lift,
+allowed only when paired with a hard offset-shadow change, and there are no shadows left in
+this app to move into. Press is `hover:brightness-110` / `active:brightness-95`.
+
 ### Three more on the same page, same day
 
 - 🚨 **THE WHOLE FIX WAS DESKTOP-ONLY UNTIL THIS.** `ExploreNext` sits in the aside, and the
@@ -6351,6 +6399,47 @@ a `max-w-*` reading column, and a single **fixed close button, top-LEFT**. Nothi
   close, which is what the forms' dirty guards ride on.
 - Verified: `npm run build` (all six scanners, `check-bottom-bar` included) and `npx jest`
   (15 suites, 225 tests) green.
+
+### 🚨 What driving the six add flows in a real browser found (12 Sep 2026)
+
+Every add-a-listing flow was opened as a signed-in creator in headless Chrome at 500px and
+1440px and measured, not read. **The panels were fine; three faults around them were not,
+and none of the three is visible from the source alone.**
+
+- 🚨 **THE CURRENCY ASK OPENED UNDERNEATH EVERY ADD FORM.** `Dashboard.jsx`'s
+  `if (global_currency == null) setOpenCurrency(true)` effect had **no dependency array**, so
+  it re-ran on every render of the busiest page in the app. Survivable while that panel was a
+  small centred card; once every panel became full-screen it meant **two stacked full-screen
+  panels** — measured `panels: 2` on all five sheet modules — and closing the form left the
+  creator looking at a currency picker they never opened.
+  - 🚨 **THE GUARD MUST READ `?add=` AT FIRST RENDER, NOT INSIDE THE EFFECT.** The add flow
+    STRIPS that parameter from the address bar as soon as it has consumed it, and **a child's
+    effects run before its parent's** — so an effect reading `window.location.search` here
+    sees an empty string and opens anyway. The first fix did exactly that and measured
+    identically to the bug. `arrivedWithAddIntent` is a `useState` initialiser, the same
+    device `addIntent` already uses. Measured after: every add flow renders **one** panel, and
+    a plain `/{username}` load still asks for a currency.
+- 🚨 **A CTA THAT LOOKED LIVE AND DID NOTHING.** Bills and Membership pass
+  `onSubmit={canSubmit ? submit : undefined}` when a precondition is unmet and explain it in
+  `error` — but `ItemFormShell` still drew Publish at full strength, so the creator pressed it
+  on the last step and the form sat there. `blocked = isLast && !onSubmit` now disables it;
+  the reason is already on screen directly above.
+- 🚨 **TWO NUMBERING SYSTEMS ON ONE SCREEN.** `shop/AddItem` drew its own "1. Select Product
+  Type" / "2. Visuals & Details" headings INSIDE step 1 of a three-step rail. Numbering is
+  information — it belongs to a real sequence, and there was only one. The inline numbers are
+  gone, the words stay. Wish and Shop also gained step `hint` leads, so all six modules open
+  the same way.
+- ⚠️ **Piggy Pot's goal label read "Progress Goal* (GBP) — optional"** — an asterisk and the
+  word optional on one label.
+- ⚠️ **A horizontal-overflow detector must skip a Swiper.** The bill form reported 14
+  elements past the panel edge at both widths; every one was a `swiper-slide`, which sits
+  off-canvas by design. Check the list before believing the count.
+- ⚠️ **`public/hot` means the browser is served by the VITE DEV SERVER, not `public/build`** —
+  so a `npm run build` proves nothing about what a local browser is running, and a source edit
+  is live immediately. Check for that file before concluding a fix "did not take".
+- **Still open, deliberately:** the Uploadcare "Choose file" control is a dashed grey box
+  containing a second grey box — two frames for one affordance, on every module. It is the
+  vendor widget's own markup and restyling it is its own task.
 
 ## 🚨 The welcome email splits by role, and every figure in it is config (12 Sep 2026)
 
@@ -6663,6 +6752,222 @@ decision, not a mail one.
 Two were reported dead and are live: `new SendAvatarRestrictionMail` is written without
 parentheses. Match `new X\b|X::class`, and then check the CHAIN — a live sender called only
 from a dead job is still dead.
+
+## 🚨 A DISCOVERY CARD IS A PROMISE THE UNLOCK BUTTON WORKS (14 Sep 2026)
+
+Reported from the live Discover page: a test account was in the Spotlight and its listing was
+on the board, and it could not take a payment. **Discovery had no payability gate of any
+kind** — `DiscoveryService` repeated `suspended_account = 0 AND profile_status_lock = 2` by
+hand at **twenty** sites, and `DiscoveryEligibility` (the shared rule the collections, the
+recommendation row and the birthday campaign read) had no Stripe clause either. Only
+`getTopEarners` ever checked one.
+
+So every rail, the board, the grid, search, suggestions, quick view and the homepage could
+promote a creator whose checkout refuses — spending the supporter's click on a dead end and
+recording a `blocked_payment_attempts` row against a creator who did nothing wrong.
+
+- 🚨 **`DiscoveryEligibility::payable()` IS THE ONE DEFINITION, AND `scope()` CALLS IT.**
+  Three clauses, each argued in its own docblock:
+  - `account_id LIKE 'acct%'` — ⚠️ **`acct%`, NOT `acct_%`**: `_` is a single-character
+    WILDCARD in LIKE, so the second form says less than it looks like it says. The prefix
+    itself is load-bearing — this column has been found holding a Stripe **customer** id
+    (`cus_…`), which a bare `whereNotNull` would pass.
+  - `stripe_details_submitted = 1` — onboarding FINISHED. An abandoned account carries an
+    `acct_` id and can take nothing.
+  - NOT explicitly charges-disabled — `charges_enabled = 0` honoured **only** when
+    `charges_checked_at` says somebody actually asked Stripe.
+- 🚨 **A NULL `charges_checked_at` PASSES, DELIBERATELY, AND IT IS THE WEAKEST PART OF THE
+  RULE.** `charges_enabled` defaults to 0 and was written by nothing for years, so 0 means
+  BOTH "Stripe says no" and "nobody ever asked" — and `stripe:sync-charges-enabled` shipped
+  with a skip that stepped over exactly the rows Stripe reports as false, leaving them
+  unstamped. Reading an unstamped 0 as a refusal would hide healthy creators on the strength
+  of a column nobody filled in. **A dead Unlock button is one bad click; an unjustly hidden
+  creator earns nothing and is never told why.**
+  ⚠️ **ONCE `stripe:sync-charges-enabled` HAS RUN ON PRODUCTION (post-fix), the column is
+  authoritative and this should tighten to a plain `charges_enabled = 1`. Until then, do
+  not.**
+- ⚠️ **THE PLATFORM SUBSCRIPTION IS NOT A CLAUSE.** `validateCreatorSubscription` also
+  refuses a creator whose own subscription lapsed, and it reads live `monthly_charges`
+  periods through an accessor — not expressible in this query, and a SQL approximation that
+  disagreed with the checkout would be a second answer to the same question. Discovery is
+  deliberately the looser of the two.
+- 🚨 **THE LIVE CAPABILITY CHECK REMAINS THE AUTHORITY AT CHECKOUT.** `charges_enabled` is a
+  CACHE for screens and queries and can be stale by as long as a webhook takes; nothing that
+  refuses a payment may read it.
+- **Applied as `->tap(fn ($qq) => DiscoveryEligibility::payable($qq))`** at all twenty sites —
+  it composes mid-chain, inside a `whereHas` closure and inside the two nested creator
+  branches, so no query had to be restructured. 🚨 **A NEW CREATOR OR LISTING QUERY MEANS A
+  NEW `tap` WITH IT.** Nothing errors if you forget: the surface advertises a creator nobody
+  can buy from, and the card renders perfectly.
+- 🚨 **`Schema::hasColumn` IS MEMOISED PER PROCESS — `DiscoveryEligibility::hasColumn()`.**
+  On MySQL it reads `information_schema` for the WHOLE table to answer one question, and
+  `payable()` is asked ~25 times on a cold `/discover` render (creators plus all six listing
+  modules), so the three guards cost three probes **per call site**. Measured after: 3 probes
+  for 3 `scope()` calls instead of 9. ⚠️ **NOT memoised under `testing`** — a static outlives
+  one test and the suite mixes classes that migrate with classes that do not, so the first
+  class to ask would pin the answer for every class after it (the
+  `BulkEmailAudience::suppressionTableExists()` rule). ⚠️ A long-running worker keeps its
+  answer until it restarts; **restart queue workers after a migration that adds one of these
+  columns.**
+- 🚨 **EVERY CACHE KEY THAT HOLDS A CREATOR OR LISTING LIST WAS VERSION-BUMPED** —
+  `DiscoveryService` (13 keys), `routes/web.php`'s three homepage rails,
+  `discovery_pool_v2` / `discovery_more_creators_v2` / `discovery_supporter_row_v2`,
+  `discovery_collection_v2`, `discovery_birthdays_week_v2`. A stale entry is a PRE-GATE
+  result list and would go on advertising unconnected creators for the whole TTL with the
+  code above it correct.
+- 🚨 **TWO DISCOVER SURFACES LIVE OUTSIDE `DiscoveryService` AND WERE MISSED BY THE FIRST
+  SWEEP** — `WishitemController::discover_all_creators` (the intros rail,
+  `/discover/creators/{order}/{gender}`) and `all_creators_categories`
+  (`/discover/creators/categories`), plus `discover_all_wishes`, which had
+  `stripe_details_submitted` and neither of the other two clauses.
+  ⚠️ `all_creators_categories` had **no `role` filter at all** — any account with a
+  `creator_category` and one approved wish built the facet list. **Grep for `/discover` in
+  `routes/` before assuming a Discovery change is complete; the service is not the whole
+  surface.**
+- ⚠️ **A NAMED SEARCH EXCLUDES THEM TOO.** `getSuggestions` and `rankedCreatorIds` apply the
+  gate to their creator branch, so typing an unconnected creator's exact name returns
+  nothing on Discover; their profile is still reachable by URL. That follows the rule
+  literally — revisit it if search should become an exception.
+- ⚠️ **The gifter's own "Creators you follow" / "You've supported these" rails are gated too**
+  (`publicCreatorCards`). They lead to a buy like everything else on that page.
+- ⚠️ **Blast radius in the suite was fixtures, not behaviour.** Eight discovery test classes
+  built creators with no Stripe columns and were therefore invisible to the surfaces they
+  assert on; each gained `account_id` + `stripe_details_submitted` with the reason written
+  beside it. That is the correct cost of the rule, not a workaround.
+- Tests: `tests/Feature/DiscoveryPayableGateTest.php` (9). ⚠️ Verified red twice — once with
+  one `tap` removed (2 fail), once with the rule emptied (5 fail) — and the controls held
+  each time. The last test is a **SOURCE SCAN** asserting the count of creator gates equals
+  the count of `payable` calls: the original fault was twelve hand-written copies, and a
+  behavioural test of one rail passes while the other nineteen stay open, which is exactly
+  how it survived. ⚠️ It blanks comments first — the class docblock quotes the clause it
+  scans for.
+
+## 🚨 The stale-flow sweep — four things that were live and silent (13 Sep 2026)
+
+A pass over both apps for anything the simplification programme left behind. Everything
+below was shipped, looked correct, and produced nothing in any log.
+
+### 1 · `profile_status_lock = 1` was being written again, by a £1 card check
+
+Migration `2026_09_11_100000` resolved every row to **0 (drafting)** or **2 (live)** and
+that is the whole vocabulary now. `RegisteredUserController::cardVerificationSuccess` —
+the gifter card-verification return leg — went on writing
+`['profile_status_lock' => 1, 'is_subscribed' => 1]`, and `gifterCardVerification` **has
+no role gate**, so any signed-in account can reach it.
+
+- 🚨 **ON A LIVE CREATOR THAT IS A SILENT DEMOTION**: badge gone, dropped from Discover,
+  search and trending, **every listing delisted** — and nothing on the site sets the lock
+  back to 2, so they are stranded until somebody runs a repair by hand.
+- 🚨 **`is_subscribed` IS THE CREATOR PLATFORM SUBSCRIPTION FLAG.** Every other writer is
+  a Stripe subscription webhook or `SubscriptionCheckoutService`, and `UserProfileService`
+  reads it to decide whether a creator is paying. A card verification is not a
+  subscription.
+- ⚠️ Nothing was lost by removing the line: the verification's own record is the
+  `gifter_card_verifications` row and the `user_verification_statuses` row that method
+  still writes.
+- 🚨 **`profile:restore-wrongly-demoted` IS NOT A SPENT ONE-OFF — RUN IT ON PRODUCTION.**
+  Any creator who verified a card between 11 and 13 Sep is delisted right now. Its own
+  docblock carries the reasoning; it is dry-run by default and restores only a demotion
+  that cannot have been a real decision.
+- Pinned by `tests/Feature/NoResurrectedProfileLockTest.php` (3) — a **source scan**,
+  because that method makes three live Stripe calls before it reaches the write and the
+  suite's `OfflineStripeHttpClient` makes those throw, so a route test cannot get there
+  and would pass against the bug. Verified 2-of-2 red.
+
+### 2 · The verified tick was missing from every leaderboard row — three reasons at once
+
+- 🚨 **`$user->profile_status_lockNone` — A COLUMN THAT DOES NOT EXIST — AT ELEVEN SITES
+  IN `LeaderBoardController`.** `preventAccessingMissingAttributes()` is off, so an
+  unknown attribute reads as NULL rather than throwing: eleven payload keys were
+  permanently null on a public page. Likeliest cause is a find-and-replace that ran past
+  the end of the attribute name.
+- 🚨 **FIVE COMPONENTS NEVER FORWARDED `verified_badge`.** `TopSupporters`,
+  `RecentSupporters`, `LeaderboardStars`, `GrowthTrends` and `VipSupporters` passed only
+  the raw lock to `Avatar`, which builds `{ role, profile_status_lock, verified_badge }`
+  for `VerifiedBadge`. `tierOf` returns the SERVER tier whenever it is defined and only
+  falls back to the lock for a surface that was never sent one — so every row took the
+  fallback, and the fallback had a null to read.
+- ⚠️ **Three of those five also coerced the lock to a BOOLEAN** (`== 2 ? true : false`),
+  where `Number(true) === 2` is false — so even a correct value could not have answered.
+- **The rule: pass `verified_badge`.** `VerifiedBadge.jsx`'s own docblock forbids
+  re-deriving a tier, and the raw lock is carried only for the transitional fallback.
+
+### 3 · Six identity fields and an admin's private note shipped on every page
+
+`HandleInertiaRequests` serialised `identity_status`, `identity_session_status`,
+`identity_verified_at`, `identity_admin_status`, **`identity_admin_notes`**,
+`identity_admin_reviewed_at`, `identity_verification_error` and a whole `admin_identity`
+block into `data-page` for every signed-in user on every navigation — and `resources/js`
+read **none** of them. Two of those columns are an ADMIN's own review record about that
+person. The Spenny Piggy identity check was removed on 11 Sep and its screens went with
+it; the payload did not. ⚠️ The columns stay and are still read in PHP
+(`VerifiedBadge::COLUMNS`, vestigially, and the admin archive screens) — what is gone is
+publishing them to the browser.
+
+⚠️ **`Dashboard.jsx` also gated the whole setup checklist on
+`auth?.user?.identity_status != 1`** — so the ~20 creators verified before 11 Sep, the
+ones furthest along, saw no social, photo, bio, Connect or card step at all, on every
+tab. The component self-gates on each step's own state; no second gate was needed.
+
+### 4 · Two classes were imported by live controllers and were NOT in the repository
+
+`App\Support\CreatorAge` (imported by `ProfileController`'s date-of-birth rule and
+`StripeController`'s Connect gate) and `App\Support\ListingRollback` (imported by
+`BillsController`, `ShopsController` and `MembershipController`) existed locally and were
+untracked. 🚨 **`git commit -a` does not add an untracked file**, so a deploy would have
+fataled profile save, Stripe onboarding and listing creation on three modules with
+`Class ... not found`. One `git add` each was the fix.
+
+⚠️ **`ScheduledCommandsExistTest` is the NARROW form of this and could not see it** — it
+judges commands named in `Console\Kernel`, and neither of these is a command.
+`tests/Feature/ImportedClassesAreTrackedTest.php` asks the general question: is every
+first-party class our own code imports actually in the repository? Verified red against
+the real state.
+
+### 5 · The deleted £500 gate was still on screen for the biggest spenders
+
+`Pages/gifter/ActivateCard.jsx` is the £500 card-verification gate's UI, and the gate was
+removed on 12 Sep 2026 — the middleware, its nine route guards, the `verification_gate`
+prop and the admin screen that decided it. **The screen was not removed with it**, and it
+is mounted twice (`gifter/Gifter.jsx` and `gifter/GifterCardVerification.jsx`).
+
+- 🚨 **`users.is_500_limit_exceeded` IS STILL WRITTEN** — it is the supporter verified
+  badge now — so the component's `state` resolved to `"action"` and **every supporter past
+  £500 went on being shown *"One quick check · You've spent over £500 supporting
+  creators"*** on their own page, about a check nobody performs.
+- 🚨 **`hasAddress` reads `auth.verification_gate`, which stopped being sent the same
+  day**, so it was permanently false: the button answered *"Please add your billing
+  address first"* and the form behind it had no data. A dead end aimed at the supporters
+  who spend the most.
+- The `"pending"` branch promised *"Someone here confirms the last bit"*. Nobody does.
+- **It renders nothing now** (`if (!gate) return null`), one line to reverse. ⚠️ **Placed
+  AFTER every hook and after `state`** — an early return above `useState` changes the hook
+  count between renders the day that prop comes back, which is a React error rather than a
+  missing panel.
+- ⚠️ **The markup is kept, not deleted.** The £1 verification ROUTES still exist
+  (`gifter.card.verification`, `card.verification.success`), and whether that flow is
+  retired outright is a client decision — it would need its `TipJar/TipInner` entry point
+  and its controller retired with it.
+- 🚨 **THE RULE THIS LEAVES BEHIND: `is_500_limit_exceeded` IS RECOGNITION, NEVER A
+  CONTROL.** Nothing may read it to gate, prompt or interrupt a supporter again.
+
+### Two guards added for whole classes of fault
+
+- **`tests/Feature/RouteNamesResolveTest.php`** — every `route('name')` in PHP must name a
+  route this app has. `route()` **throws** for an unknown name; a caller inside a
+  `catch (\Exception)` turns that into a feature that silently stops working.
+  🚨 **The receiver decides what the argument means**: `$request->route('username')` takes
+  a PARAMETER name while `redirect()->route('home')` takes a ROUTE name, and both are
+  written `->route(`. A blanket `(?<!->)` exclusion makes the guard pass against the exact
+  bug it exists for — proved by replanting one in the admin app. Four names here are
+  ACCEPTED **with a measured reason each**: all four sit in dead code
+  (`RequireActiveMembership` is aliased and applied to no route,
+  `StripeController::showAllData()` is routed nowhere, `verify-email.blade.php` is
+  rendered by nothing, and the Laravel PWA view is already documented dead). A second test
+  fails the day one of those becomes real or loses its caller.
+- **`admin.spennypiggy.co/tests/Unit/JsEndpointsResolveTest.php`** — the JS mirror: every
+  literal path a component posts to must be a registered route. Measured clean on this app
+  (23 literal paths); it exists because deleting `/dispatch` broke ten admin screens.
 
 ## Detailed topic index — load the skill, do not inline this content
 

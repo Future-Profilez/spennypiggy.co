@@ -30,11 +30,30 @@ class UserFlagRaised extends Mailable
         public string $reason = '',
         public int $userId = 0,
         protected string $adminUrl = '',
+        /*
+         * 🚨 THE USERNAME, BECAUSE "#203" IS NOT A PERSON. The first version of
+         * this alert named only the id, so an admin opening it could not tell
+         * who it was about, what had happened or what to do — it read as a
+         * system error rather than as one account needing a look. Reported the
+         * day it shipped.
+         */
+        public string $username = '',
+        /** What this flag type MEANS, from config — one definition, not retyped. */
+        public string $meaning = '',
+        /** The one thing to do about it. */
+        public string $action = '',
     ) {}
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Critical account flag: '.$this->flagLabel);
+        /*
+         * ⚠️ The creator's name in the subject line. An inbox full of
+         * "Critical account flag: Stripe connection lost" is indistinguishable
+         * row to row, so two different accounts read as one repeated error.
+         */
+        $who = $this->username !== '' ? ' — @'.$this->username : '';
+
+        return new Envelope(subject: $this->flagLabel.$who);
     }
 
     public function content(): Content
@@ -47,7 +66,15 @@ class UserFlagRaised extends Mailable
                 'flagLabel' => $this->flagLabel,
                 'reason' => $this->reason,
                 'userId' => $this->userId,
+                'username' => $this->username,
+                'meaning' => $this->meaning,
+                'action' => $this->action,
                 'flagsUrl' => $base.'/user-flags',
+                // ⚠️ The account's own page, which is where the decision is
+                // actually taken — the flags list only says who to look at.
+                'accountUrl' => $this->username !== ''
+                    ? $base.'/'.$this->username.'/details'
+                    : $base.'/user-flags',
             ],
         );
     }

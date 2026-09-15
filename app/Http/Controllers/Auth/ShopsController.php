@@ -46,6 +46,7 @@ use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
 use App\Support\ListingPublication;
+use App\Support\ListingRollback;
 use App\Support\NotificationContext;
 use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
@@ -511,13 +512,23 @@ class ShopsController extends Controller
                 'msg' => 'Shop item added — it is live on your page now.',
             ]);
         } catch (Exception $e) {
-            $shop->delete();
+            /*
+             * ⚠️ The row, its shipping zones, its categories and its `listing_created`
+             * activity were all written BEFORE this call — the Stripe payload needs
+             * the saved row's uuid and image url. Rolling the shop row back on its
+             * own left those children orphaned, so they go with it.
+             */
+            ShopShippingInfo::where('shop_id', $shop->id)->delete();
+            ShopCategory::where('shop_id', $shop->id)->delete();
 
             return response()->json([
                 'status' => false,
-                'msg' => 'Stripe Error: '.$e->getMessage(),
+                'msg' => ListingRollback::stripeFailed($shop, $e, [
+                    'module' => 'shop',
+                    'type' => $request->type,
+                    'currency' => $user->default_currency ?? 'gbp',
+                ]),
             ]);
-            // return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
         }
     }
 
@@ -802,9 +813,8 @@ class ShopsController extends Controller
                 // update — that would destroy the creator's shop item (and orphan its orders).
                 return response()->json([
                     'status' => false,
-                    'msg' => 'Stripe Error: '.$e->getMessage(),
+                    'msg' => ListingRollback::stripeFailed($shop, $e, ['module' => 'shop'], rollback: false),
                 ]);
-                // return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
             }
         }
     }

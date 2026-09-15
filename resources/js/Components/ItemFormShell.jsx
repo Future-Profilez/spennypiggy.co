@@ -83,6 +83,13 @@ export default function ItemFormShell({
     }, []);
 
     const visibleError = stepError || error;
+    /* 🚨 A BUTTON THAT LOOKS LIVE AND DOES NOTHING IS WORSE THAN A DISABLED ONE.
+       Bills and Membership pass `onSubmit={canSubmit ? submit : undefined}` when
+       a precondition is unmet (a member-only post has to exist first) and explain
+       it in `error` — but the CTA still rendered at full strength, so the creator
+       pressed Publish on the last step and the form sat there. The reason is
+       already on screen directly above it; the control now agrees with it. */
+    const blocked = isLast && !onSubmit;
     const actionLabel = processing ? "Processing…" : isLast ? submitLabel : "Continue";
 
     return (
@@ -158,8 +165,9 @@ export default function ItemFormShell({
                         <button
                             type="button"
                             onClick={goNext}
-                            disabled={processing}
-                            className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-box-sm border-2 border-black bg-[#FF007F] px-8 text-base font-black uppercase tracking-wide text-black transition-all active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-60 md:flex-none md:min-w-[240px]"
+                            disabled={processing || blocked}
+                            aria-disabled={processing || blocked}
+                            className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-box-sm border-2 border-black bg-[#FF007F] px-8 text-base font-black uppercase tracking-wide text-black transition-all active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-60 disabled:active:translate-x-0 disabled:active:translate-y-0 md:flex-none md:min-w-[240px]"
                         >
                             {processing && <Loader2 size={18} className="animate-spin" strokeWidth={3} />}
                             {actionLabel}

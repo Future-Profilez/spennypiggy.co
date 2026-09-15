@@ -5,15 +5,44 @@ import { useAlerts } from "@/Components/Alerts";
 import VerificationAddressForm from "./VerificationAddressForm";
 
 /**
- * The £500 card-verification gate.
+ * The £500 card-verification gate — 🚨 **THE GATE IS GONE AND THIS DRAWS NOTHING NOW**
+ * (13 Sep 2026).
  *
- * 🚨 ONE state, resolved in order — the screen used to compute two independent
- * booleans and could satisfy both at once. `cardVerificationSuccess` sets
- * `profile_status_lock = 1` and `is_subscribed = 1` but never clears
- * `is_500_limit_exceeded`, so after paying, `needsVerification` AND `isPending`
- * were both true: the gifter saw "We're reviewing your details" with the
- * "Activate Account" button still sitting above it, and could pay a second time
- * for nothing. Every state below is exclusive by construction.
+ * The whole gate was removed on 12 Sep 2026 on the client's direction: the middleware,
+ * its nine route guards, the `verification_gate` prop and the admin screen that decided
+ * it. `Helpers::checkGifterCardVerificationStatus()` returns false, so no checkout can
+ * ever refuse a supporter for spend again. **This screen was not removed with it**, and
+ * it stayed reachable in the one state that still fires:
+ *
+ *  - `users.is_500_limit_exceeded` IS STILL WRITTEN — it is the supporter verified badge
+ *    now — so `state` resolved to `"action"` and every supporter past £500 went on being
+ *    shown *"One quick check · You've spent over £500 supporting creators"*, on their own
+ *    gifter page, about a check nobody performs.
+ *  - `hasAddress` reads `auth.verification_gate`, which the server stopped sending on the
+ *    same day, so it was permanently false — the button answered *"Please add your
+ *    billing address first"* and the form behind it had no data to work from. **A dead
+ *    end aimed at the supporters who spend the most.**
+ *  - The `"pending"` state promised *"Someone here confirms the last bit"*. Nobody does;
+ *    that screen was deleted too.
+ *
+ * ⚠️ RENDERING NOTHING IS THE HONEST ANSWER, and it is one line to reverse. The markup
+ * below is kept rather than deleted because the £1 verification ROUTES still exist
+ * (`gifter.card.verification`, `card.verification.success`) — whether that flow is
+ * retired outright is a client decision, not a developer one, and it needs its
+ * `TipJar/TipInner` entry point and its controller retired with it.
+ *
+ * ⚠️ The rule this leaves behind: `is_500_limit_exceeded` is RECOGNITION, never a
+ * control. Nothing may read it to gate, prompt or interrupt a supporter again.
+ *
+ * --- history, kept because the reasoning still holds for the markup below ---
+ *
+ * ONE state, resolved in order — the screen used to compute two independent booleans and
+ * could satisfy both at once. `cardVerificationSuccess` set `profile_status_lock = 1` and
+ * `is_subscribed = 1` but never cleared `is_500_limit_exceeded`, so after paying,
+ * `needsVerification` AND `isPending` were both true: the gifter saw "We're reviewing
+ * your details" with the "Activate Account" button still sitting above it, and could pay
+ * a second time for nothing. (Both of those writes were themselves removed on
+ * 13 Sep 2026 — see `NoResurrectedProfileLockTest`.)
  */
 
 const STEPS = [
@@ -127,6 +156,19 @@ export default function ActivateCard() {
             : user?.is_500_limit_exceeded == 1
               ? "action"
               : null;
+
+    /*
+     * 🚨 THE GATE IS REMOVED — THIS RENDERS NOTHING (13 Sep 2026). See the docblock
+     * above. Everything below is left intact, so restoring the screen is deleting this
+     * one line — but while the gate does not exist there is nothing truthful for it to
+     * say, and it was telling every supporter past £500 to complete a check nobody
+     * performs, through a form fed by a prop the server no longer sends.
+     *
+     * ⚠️ AFTER the hooks and after `state`, deliberately. An early return placed above
+     * `useState` changes the hook count between renders the day this prop comes back —
+     * which is a React error rather than a missing panel.
+     */
+    if (!gate) return null;
 
     if (!state) return null;
 

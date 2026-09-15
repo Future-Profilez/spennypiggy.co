@@ -377,7 +377,7 @@ class CollectionService
     {
         $gen = (int) (Cache::get(self::generationKey($key)) ?: 1);
 
-        return "discovery_collection_v1_{$key}_g{$gen}_{$scope}_{$limit}_{$bucket}";
+        return "discovery_collection_v2_{$key}_g{$gen}_{$scope}_{$limit}_{$bucket}";
     }
 
     /** Phase 6's admin controls need this to mean something. */

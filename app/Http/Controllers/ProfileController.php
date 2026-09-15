@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\CheckMediaModeration;
+use App\Jobs\ScanIntroPoster;
 use App\Models\AccountDeletionFeedback;
 use App\Models\BillPayment;
 use App\Models\Bills;
@@ -56,6 +57,7 @@ use App\Services\Risk\RiskIdentityService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\Badges;
+use App\Support\CreatorAge;
 use App\Support\InvisibleText;
 use App\Support\PresetCovers;
 use App\Support\ProfileAutoApproval;
@@ -73,6 +75,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -267,6 +270,10 @@ class ProfileController extends Controller
             } else {
                 $messages = [
                     'username.regex' => 'The username must only contain letters, numbers, periods (.), and underscores (_).',
+                    // ⚠️ Laravel's default for this rule quotes the raw cut-off date
+                    // ("must be a date before 2008-09-13"), which reads as a system
+                    // detail rather than the rule it is enforcing.
+                    'date_of_birth.before' => 'You must be at least '.CreatorAge::MINIMUM_YEARS.' years old to use Spenny Piggy. Please check the year.',
                 ];
 
                 $request->validate([
@@ -289,7 +296,26 @@ class ProfileController extends Controller
                     'pride_badges.*' => [Rule::in(Badges::prideSlugs())],
                     'gender' => ['nullable', 'string', 'max:50'],
                     'country' => ['nullable', 'string', 'max:100'],
-                    'date_of_birth' => ['nullable', 'date', 'before:today'],
+                    /*
+                     * 🚨 `before:today` LET YESTERDAY THROUGH, AND STRIPE THEN
+                     * REFUSED THE CREATOR'S WHOLE PAYOUT ACCOUNT.
+                     *
+                     * There was no minimum age anywhere in the app — on a platform
+                     * whose Terms require 18+ and whose shop form makes a creator
+                     * tick a box saying so. One mistyped year became a permanent,
+                     * unexplained block on being paid (Sentry JAVASCRIPT-REACT-C6,
+                     * 13 Sep 2026: "Must be at least 13 years of age to use Stripe",
+                     * three attempts in 28 seconds).
+                     *
+                     * ⚠️ Refused HERE as an ordinary field error, where the person
+                     * can see which field is wrong and fix it in seconds — not at
+                     * Connect, days later, as a failure naming nothing.
+                     */
+                    'date_of_birth' => [
+                        'nullable',
+                        'date',
+                        'before:'.now()->subYears(CreatorAge::MINIMUM_YEARS)->toDateString(),
+                    ],
                     // Discovery Phase 4 — the creator's own opt-in to Birthday
                     // Discovery. `sometimes`, like every other partial-payload
                     // field on this form: several callers post a subset, and
@@ -1055,6 +1081,19 @@ class ProfileController extends Controller
                 'user_id' => Auth::id(),
                 'height' => 720, // Default height for videos
                 'width' => 1280, // Default width for videos
+                /*
+                 * 🚨 LIVE ON SAVE (13 Sep 2026, client direction). The intro was
+                 * the last creator asset a person still had to approve, and it
+                 * sat behind an admin queue while everything around it published
+                 * itself — so a creator could finish their whole profile and
+                 * still have a blank space where their video should be.
+                 *
+                 * ⚠️ Publish-then-check: `ScanIntroPoster` judges the first
+                 * frame and pulls it back if it fails. Read that job before
+                 * changing this — one frame is a floor, not a guarantee, and the
+                 * admin screen stays for exactly that reason.
+                 */
+                'approved' => 1,
             ]);
         } else {
             $intro->uuid = $uuid;
@@ -1069,7 +1108,22 @@ class ProfileController extends Controller
              * Measured 17 Aug 2026: 10 of 12 approved intros had been changed
              * after approval.
              */
-            $intro->approved = 0;
+            /*
+             * 🚨 A RE-UPLOAD IS LIVE TOO, AND IS RE-SCANNED. This used to drop
+             * back to 0 because an admin had to look again — the note below is
+             * why it can never simply INHERIT the old approval, and that is
+             * still true. Under publish-then-check the new video goes live and
+             * `ScanIntroPoster` judges it on its own terms; the previous verdict
+             * never carries over.
+             */
+            $intro->approved = 1;
+
+            if (Schema::hasColumn('user_intros', 'moderation_reason')) {
+                // A new video is not the old one — a reason for a video since
+                // replaced would read as a verdict on the replacement.
+                $intro->moderation_reason = null;
+            }
+
             $intro->save();
         }
 
@@ -1077,6 +1131,24 @@ class ProfileController extends Controller
 
         // Trigger poster generation/accessor side effects
         $intro->poster_url;
+
+        /*
+         * 🚨 THE ONLY CHECK AN INTRO NOW GETS. Dispatched AFTER `poster_url`,
+         * which is what asks Uploadcare to convert the video — the job reads the
+         * stored group uuid and never makes that blocking call itself, so
+         * without this line it would re-queue six times and give up on a poster
+         * nobody had started.
+         *
+         * ⚠️ Needs `queue:work`. Without a worker the video is live and
+         * unscanned, which is the state every intro was in before today anyway —
+         * so a missing worker is not a regression here, but it is not safe
+         * either.
+         */
+        try {
+            ScanIntroPoster::dispatch($intro->id);
+        } catch (\Throwable $e) {
+            Log::warning('Could not queue the intro poster scan: '.$e->getMessage());
+        }
 
         /*
          * 🚨 NO ADMIN MAIL, AND NO REVIEW (19 Aug 2026, client direction).

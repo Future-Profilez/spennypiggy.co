@@ -154,7 +154,7 @@ class CreatorRecommendationService
         $bucket = (int) floor(Carbon::now()->getTimestamp() / self::ROTATION_SECONDS);
 
         return Cache::remember(
-            'discovery_more_creators_v1_'.$creator->id.'_'.$bucket,
+            'discovery_more_creators_v2_'.$creator->id.'_'.$bucket,
             self::SELECTION_TTL,
             fn () => $this->select($creator, $bucket),
         );
@@ -163,11 +163,11 @@ class CreatorRecommendationService
     /** Drop both caches for a creator — used by tests and by any admin action that changes eligibility. */
     public function forget(?int $creatorId = null): void
     {
-        Cache::forget('discovery_pool_v1');
+        Cache::forget('discovery_pool_v2');
 
         if ($creatorId !== null) {
             $bucket = (int) floor(Carbon::now()->getTimestamp() / self::ROTATION_SECONDS);
-            Cache::forget('discovery_more_creators_v1_'.$creatorId.'_'.$bucket);
+            Cache::forget('discovery_more_creators_v2_'.$creatorId.'_'.$bucket);
         }
     }
 
@@ -204,7 +204,7 @@ class CreatorRecommendationService
         $bucket = (int) floor(Carbon::now()->getTimestamp() / self::ROTATION_SECONDS);
 
         return Cache::remember(
-            'discovery_supporter_row_v1_'.$supporter->id.'_'.($personalised ? 'own' : 'pub').'_'.$bucket,
+            'discovery_supporter_row_v2_'.$supporter->id.'_'.($personalised ? 'own' : 'pub').'_'.$bucket,
             self::SELECTION_TTL,
             fn () => $this->selectForSupporter($supporter, $personalised, $bucket),
         );
@@ -576,7 +576,7 @@ class CreatorRecommendationService
      */
     private function pool(): array
     {
-        return Cache::remember('discovery_pool_v1', self::POOL_TTL, function () {
+        return Cache::remember('discovery_pool_v2', self::POOL_TTL, function () {
             $rows = $this->eligibleCreators();
 
             if ($rows->isEmpty()) {

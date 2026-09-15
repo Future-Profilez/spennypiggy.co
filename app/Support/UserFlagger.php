@@ -214,7 +214,28 @@ class UserFlagger
                 return;
             }
 
-            $label = (string) config('user_flags.types.'.$flag->flag_type.'.label', $flag->flag_type);
+            $type = 'user_flags.types.'.$flag->flag_type;
+            $label = (string) config($type.'.label', $flag->flag_type);
+
+            /*
+             * ⚠️ THE WORDING COMES FROM CONFIG, NEVER FROM HERE. The admin
+             * screen renders the same `label` and `description`, so retyping
+             * either in the mail is how one flag ends up described two ways —
+             * and the config is mirrored into the admin app, which is where the
+             * decision is actually taken.
+             */
+            $meaning = (string) config($type.'.description', '');
+            $action = (string) config($type.'.action', '');
+
+            /*
+             * 🚨 THE USERNAME, BECAUSE "#203" IS NOT A PERSON. Reported the day
+             * this shipped: an admin opening the alert could not tell who it was
+             * about and read it as a system error.
+             *
+             * ⚠️ `withTrashed()` — a flag outlives the account it is about, and
+             * an alert naming nobody is the fault this exists to fix.
+             */
+            $username = (string) (User::withTrashed()->whereKey($flag->user_id)->value('username') ?? '');
 
             /*
              * ⚠️ The REASON is already redacted — `SecurityRedactor::scrub()`
@@ -226,6 +247,9 @@ class UserFlagger
                 (string) ($flag->reason ?? ''),
                 (int) $flag->user_id,
                 (string) (config('services.admin.url') ?: config('app.url')),
+                $username,
+                $meaning,
+                $action,
             ));
         } catch (\Throwable $e) {
             Log::warning('UserFlagger critical alert failed', [

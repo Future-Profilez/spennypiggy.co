@@ -25,6 +25,22 @@ use Illuminate\Support\Facades\Schema;
  * 🚨 DRY RUN BY DEFAULT. Putting an unreviewed profile into Discover is the one
  * mistake this must not make, so it restores only a demotion that CANNOT have
  * been a real decision.
+ *
+ * 🚨 STILL LIVE WORK — DO NOT DELETE THIS AS A SPENT ONE-OFF (13 Sep 2026).
+ * Migration 2026_09_11_100000 resolved every historic row to 0 or 2, which makes this
+ * look finished. It was not: `RegisteredUserController::cardVerificationSuccess` — the
+ * £1 gifter card-verification return leg, which has NO ROLE GATE — went on writing
+ * `profile_status_lock = 1` for whoever completed it until 13 Sep 2026. **Any creator
+ * who verified a card between those two dates is delisted right now**, with no badge,
+ * no Discover listing and nothing on the site that sets them back to 2.
+ *
+ * ⚠️ RUN IT ON PRODUCTION. `NoResurrectedProfileLockTest` stops the write coming back;
+ * only this repairs the accounts it already stranded.
+ *
+ * ⚠️ A GIFTER left at lock 1 by that same write is deliberately NOT touched — the query
+ * is `role = 1`, and the column is the creator review state, so on a supporter the value
+ * is meaningless rather than harmful. Widening a repair command to rewrite rows that
+ * change nothing is how one of them eventually rewrites something that does.
  */
 class RestoreWronglyDemotedProfiles extends Command
 {

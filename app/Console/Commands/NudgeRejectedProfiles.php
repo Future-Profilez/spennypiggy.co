@@ -34,7 +34,8 @@ class NudgeRejectedProfiles extends Command
 {
     protected $signature = 'profiles:nudge-rejected
         {--max= : Maximum creators to remind in this run (default: config)}
-        {--dry-run : Report what would be sent without sending or claiming}';
+        {--dry-run : Report what would be sent without sending or claiming}
+                            {--ignore-age : Send the FIRST reminder regardless of how recently the rejection was recorded}';
 
     protected $description = 'Re-engage creators whose profile was rejected — two-monthly ×3, then yearly';
 
@@ -45,6 +46,33 @@ class NudgeRejectedProfiles extends Command
     {
         $dryRun = (bool) $this->option('dry-run');
         $enabled = (bool) config('profile_rejection.nudge_enabled', true);
+
+        /*
+         * 🚨 THE 7 Sep COLLAPSE SWEEP RE-DATED EVERY HISTORIC REJECTION, AND
+         * THAT SILENTLY PUSHED THIS WHOLE COHORT OUT OF REACH.
+         *
+         * `rejectedAt()` reads `profile_rejections.created_at`, and
+         * `profiles:collapse-rejections` wrote those rows on 7 Sep 2026 for
+         * rejections actually taken around May. Measured on production 13 Sep:
+         * all 44 rows dated 6–11 Sep, so the 60-day first-send gate reported
+         * "told no this morning" for every one of them and 39 of 39 were
+         * skipped. Left alone, creators rejected four months ago would not have
+         * been contacted until November.
+         *
+         * ⚠️ THIS SKIPS THE AGE GATE AND NOTHING ELSE. Reachability, marketing
+         * suppression, the opt-out and the per-attempt claim all still apply,
+         * and the LADDER for second and later sends is untouched — it is the
+         * "is this rejection fresh?" question alone that the sweep made
+         * unanswerable.
+         *
+         * ⚠️ For a one-off, instructed run. The default is still the gate: a
+         * creator told no this morning is not lapsed.
+         */
+        $ignoreAge = (bool) $this->option('ignore-age');
+
+        if ($ignoreAge) {
+            $this->warn('--ignore-age: the first-send age gate is off for this run.');
+        }
         $max = max(1, (int) ($this->option('max') ?: config('profile_rejection.nudge_max_per_run', 50)));
         $stagger = max(0, (int) config('profile_rejection.nudge_stagger_seconds', 2));
         $firstAfter = max(1, (int) config('profile_rejection.nudge_first_after_days', 60));
@@ -80,7 +108,7 @@ class NudgeRejectedProfiles extends Command
 
             $attempts = $this->attemptsFor($user->id);
 
-            if (! $this->isDue($user, $attempts, $firstAfter)) {
+            if (! $ignoreAge && ! $this->isDue($user, $attempts, $firstAfter)) {
                 $skipped++;
 
                 continue;

@@ -164,11 +164,11 @@ export default function CollectionRow({ collection, className = "", tone = "ligh
                     ))}
                 </ul>
             ) : (
-                <ul className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 scrollbar-hide">
+                <ul className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 scrollbar-hide md:mx-0 md:grid md:grid-cols-3 md:gap-3 md:overflow-visible md:px-0 lg:grid-cols-4">
                     {cards.map((card) => (
                         <li
                             key={card.id ?? card.uuid}
-                            className="w-[200px] shrink-0 snap-start sm:w-[220px]"
+                            className="w-[200px] shrink-0 snap-start sm:w-[220px] md:w-auto"
                         >
                             {kind === "item" ? (
                                 <ItemCard card={card} source={source} campaign={key} ink={ink} />

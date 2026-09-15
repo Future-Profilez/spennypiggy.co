@@ -114,14 +114,6 @@ Route::post('/admin/emulate-stop', [EmulationLoginController::class, 'stop'])
 // Cache Check Route — local/testing only. Unauthenticated in production it wrote a
 // fresh cache key on every hit and leaked the cache driver in use.
 if (app()->environment('local', 'testing')) {
-    // TEMP-QA-LOGIN — local-only helper used to drive the add-item flows in a
-    // browser. REMOVE before committing.
-    Route::get('/__qa-login/{id}', function ($id) {
-        \Illuminate\Support\Facades\Auth::loginUsingId((int) $id);
-
-        return redirect('/');
-    });
-
     Route::get('/debug/cache-check', function () {
         $key = 'debug_cache_test_'.time();
         $value = 'working';
@@ -235,13 +227,13 @@ Route::get('/', function (DiscoveryService $discoveryService) {
 
     // Use shared cache for both guests and authenticated users for public discovery data
     $trendingCreators = function () use ($discoveryService) {
-        return Cache::remember('home_trending_creators_v3_limit_6', 900, function () use ($discoveryService) {
+        return Cache::remember('home_trending_creators_v4_limit_6', 900, function () use ($discoveryService) {
             return $discoveryService->getTrendingCreators(6);
         });
     };
 
     $newVerifiedCreators = function () use ($discoveryService) {
-        return Cache::remember('home_new_verified_creators_v3_limit_6', 900, function () use ($discoveryService) {
+        return Cache::remember('home_new_verified_creators_v4_limit_6', 900, function () use ($discoveryService) {
             return $discoveryService->getNewVerifiedCreators(6);
         });
     };
@@ -255,7 +247,7 @@ Route::get('/', function (DiscoveryService $discoveryService) {
             default => 1200,
         };
 
-        return Cache::remember('home_top_earners_v3_'.$period.'_limit_6', $ttl, function () use ($discoveryService, $period, $limit) {
+        return Cache::remember('home_top_earners_v4_'.$period.'_limit_6', $ttl, function () use ($discoveryService, $period, $limit) {
             return $discoveryService->getTopEarners($period, $limit);
         });
     };

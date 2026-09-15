@@ -47,7 +47,9 @@ use App\Services\RewardService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\DiscoveryEligibility;
 use App\Support\ListingPublication;
+use App\Support\ListingRollback;
 use App\Support\RewardFileScan;
 use App\Support\SuspendedAccount;
 use App\Support\VerifiedBadge;
@@ -502,9 +504,9 @@ class WishitemController extends Controller
                     AutoTweetWishAdd::dispatch($wish);
                 }
             } catch (Exception $e) {
-                $wish->delete();
+                $message = ListingRollback::stripeFailed($wish, $e, ['module' => 'wish']);
 
-                return redirect(route('user.show', ['username' => Auth::user()->username, 'page' => 'wishes']))->with('error', 'Stripe Error: '.$e->getMessage());
+                return redirect(route('user.show', ['username' => Auth::user()->username, 'page' => 'wishes']))->with('error', $message);
             }
         }
 
@@ -783,8 +785,11 @@ class WishitemController extends Controller
                         $logs->save();
                     }
                 } catch (Exception $e) {
-                    // $wish->delete();
-                    return redirect(route('user.show', ['username' => Auth::user()->username, 'page' => 'wishes']))->with('error', 'Stripe Error: '.$e->getMessage());
+                    // Do NOT delete on an EDIT — the wish already exists and its
+                    // purchases point at it. Report it and leave it alone.
+                    $message = ListingRollback::stripeFailed($wish, $e, ['module' => 'wish'], rollback: false);
+
+                    return redirect(route('user.show', ['username' => Auth::user()->username, 'page' => 'wishes']))->with('error', $message);
                 }
             }
 
@@ -939,8 +944,8 @@ class WishitemController extends Controller
             }])
             ->whereHas('user', function ($q) use ($tag) {
                 $q->whereNull('deleted_at')
-                    ->where('stripe_details_submitted', 1)
                     ->where('suspended_account', 0);
+                DiscoveryEligibility::payable($q);
                 if ($tag) {
                     $q->whereJsonContains('creator_category', $tag);
                 }
@@ -1011,6 +1016,7 @@ class WishitemController extends Controller
                         ->where('role', 1)
                         ->whereNotNull('username')
                         ->where('username', '!=', '');
+                    DiscoveryEligibility::payable($q);
                     if ($gender != 'all') {
                         $q->where('gender', $gender);
                     }
@@ -1026,6 +1032,7 @@ class WishitemController extends Controller
                     ->where('suspended_account', 0)
                     ->where('role', 1)
                     ->where('username', '!=', '');
+                DiscoveryEligibility::payable($q);
                 if ($gender != 'all') {
                     $q->where('gender', $gender);
                 }
@@ -1092,6 +1099,8 @@ class WishitemController extends Controller
                 $query->where('is_approved', 1);
             })
             ->where('suspended_account', 0)
+            ->where('role', 1)
+            ->tap(fn ($q) => DiscoveryEligibility::payable($q))
             ->pluck('creator_category')
             ->map(function ($item) {
                 return json_decode($item, true);

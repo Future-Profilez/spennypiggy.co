@@ -435,6 +435,7 @@ export default function Wishlist(props) {
         {
             key: "details",
             title: "What you're selling",
+            hint: "Name the content a supporter unlocks, and set its price.",
             validate: () => {
                 if (!data.wishname) return "Please enter a wish name.";
 
@@ -682,6 +683,7 @@ export default function Wishlist(props) {
         {
             key: "visuals",
             title: "Images",
+            hint: "Pick a cover, or upload your own.",
             render: () => (
                 <>
                                 <div className="mb-6">
@@ -788,6 +790,7 @@ export default function Wishlist(props) {
         {
             key: "reward",
             title: "What they get",
+            hint: "The file, link or message delivered the moment they pay.",
             render: () => (
                 <>
                                 <div className="mb-8">

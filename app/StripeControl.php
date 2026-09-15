@@ -1419,6 +1419,27 @@ class StripeControl
      * @param  array  $payload  Product Payload
      * @return Throwable|Product
      */
+    /**
+     * ⚠️ A FAILURE HERE MEANS A CREATOR CANNOT PUBLISH, SO IT IS RECORDED BEFORE
+     * IT IS RETHROWN.
+     *
+     * Three of these four branches used to log NOTHING and the fourth logged at
+     * INFO — and the `sentry` channel carries error and above, so an
+     * `InvalidRequestException` (the commonest one: a rejected image url, a
+     * malformed unit amount, a restricted connected account) reached the
+     * creator's screen and no operator's. Every caller rolls its listing back,
+     * which removes the last trace of the attempt from the database too.
+     *
+     * ⚠️ WARNING, not error, and deliberately: the exception is rethrown, and
+     * the caller is the one that knows whether this was fatal (a create that is
+     * now being rolled back — see App\Support\ListingRollback, which alerts) or
+     * a retry it will handle. This line is the record and the Sentry breadcrumb,
+     * never the alert, so a busy caller cannot double-page anyone.
+     *
+     * ⚠️ The account id is CONTEXT, not text inside the message, so alerts can
+     * group on it. The payload is NOT logged — it carries the listing's own
+     * name and price, and the useful half (the Stripe message) is already here.
+     */
     public static function createProduct(array $payload, string $connectedAccountId)
     {
         self::setClient();
@@ -1428,15 +1449,27 @@ class StripeControl
                 ['stripe_account' => $connectedAccountId]
             );
         } catch (RateLimitException $e) {
-            throw new Exception('Stripe RateLimit: '.$e->getMessage());
+            throw new Exception('Stripe RateLimit: '.self::logProductFailure('RateLimit', $e, $connectedAccountId));
         } catch (InvalidRequestException $e) {
-            throw new Exception('Stripe InvalidRequest: '.$e->getMessage());
+            throw new Exception('Stripe InvalidRequest: '.self::logProductFailure('InvalidRequest', $e, $connectedAccountId));
         } catch (ApiConnectionException $e) {
-            throw new Exception('Stripe API Connection: '.$e->getMessage());
+            throw new Exception('Stripe API Connection: '.self::logProductFailure('ApiConnection', $e, $connectedAccountId));
         } catch (ApiErrorException $e) {
-            Log::info('Stripe API Error: '.$e->getMessage());
-            throw new Exception('Stripe API Error: '.$e->getMessage());
+            throw new Exception('Stripe API Error: '.self::logProductFailure('ApiError', $e, $connectedAccountId));
         }
+    }
+
+    /** Record a product-create failure and hand back the message to rethrow with. */
+    private static function logProductFailure(string $kind, \Throwable $e, string $connectedAccountId): string
+    {
+        $message = $e->getMessage();
+
+        Log::warning("Stripe product create failed ({$kind})", [
+            'stripe_account' => $connectedAccountId,
+            'error' => $message,
+        ]);
+
+        return $message;
     }
 
     /**
@@ -2179,8 +2212,28 @@ class StripeControl
                     // somebody looks at the account, so it has to reach whoever reads the
                     // alerts. The cooldown makes it once a day instead of 144 times -
                     // it does not make it silent.
+                    /*
+                     * ⚠️ NAME THE CREATOR, NOT JUST THE STRIPE ID.
+                     *
+                     * This alert says a creator can never be paid until somebody
+                     * looks — and for 17 days it carried only an `acct_…`, so
+                     * acting on it began with a database lookup nobody reading an
+                     * alert inbox can do (Sentry JAVASCRIPT-REACT-AA, 23 events).
+                     *
+                     * ⚠️ The query sits INSIDE the once-per-account-per-day gate,
+                     * not outside it. `payout:enforce-manual` sweeps every
+                     * connected account every ten minutes — 144 runs a day — and a
+                     * lookup on the outside would be a query per account per run
+                     * to add a name to a line that is written once.
+                     */
+                    $unreachableUser = User::query()
+                        ->where('account_id', $connectedAccountId)
+                        ->first(['id', 'username']);
+
                     Log::error('Connected account is unreachable - manual payout schedule not enforced', [
                         'account_id' => $connectedAccountId,
+                        'user_id' => $unreachableUser?->id,
+                        'username' => $unreachableUser?->username,
                         'currency' => $currency,
                         'error' => $e->getMessage(),
                     ]);

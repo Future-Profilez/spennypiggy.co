@@ -26,12 +26,25 @@ class SecureMediaTest extends TestCase
     /** An even-length hex string — the shape hex2bin() requires. */
     private const KEY = 'a1b2c3d4e5f60718293a4b5c6d7e8f90';
 
+    /** The shape Uploadcare issues: `<project>.s.ucarecd.net`. */
+    private const SECURE_HOST = 'testproject.s.ucarecd.net';
+
     private function on(?int $ttl = null): void
     {
         config([
             'media.secure.enabled' => true,
             'media.secure.ttl' => $ttl ?? 3600,
             'services.uploadcare.secure_key' => self::KEY,
+            /*
+             * 🚨 REQUIRED SINCE 12 Sep 2026, AND ITS ABSENCE IS NOW A REAL
+             * OUTCOME, NOT A FIXTURE GAP. Uploadcare enforces on a separate
+             * secure subdomain; a token on the public host is ignored. With no
+             * host configured `SecureMedia` deliberately returns the URL
+             * UNSIGNED rather than handing back something that looks protected
+             * and is not — so every signing test failed the moment that landed,
+             * which is exactly what it should do.
+             */
+            'media.secure.host' => self::SECURE_HOST,
         ]);
         SecureMedia::resetWarningLatch();
     }
@@ -62,9 +75,20 @@ class SecureMediaTest extends TestCase
 
         $signed = SecureMedia::sign($url);
 
-        // 🚨 A paid reward file is never re-processed to add auth: the whole
-        // original path must survive untouched and the token lives after it.
-        $this->assertStringStartsWith($url.'?token=exp=', $signed);
+        /*
+         * 🚨 A paid reward file is never re-processed to add auth: the whole
+         * original path must survive untouched and the token lives after it.
+         *
+         * ⚠️ THE HOST MOVES AND THE PATH DOES NOT. This asserted the full
+         * original URL as a prefix until 12 Sep 2026, which pinned signing onto
+         * `ucarecdn.com` — the PUBLIC host, which ignores the token. Enforcement
+         * lives on the secure subdomain, so the swap is the fix and this
+         * assertion had to follow it. What still must not change is everything
+         * after the host: the uuid and the operation chain are the bytes the
+         * buyer paid for.
+         */
+        $this->assertStringStartsWith('https://'.self::SECURE_HOST.'/'.self::UUID.$ops.'?token=exp=', $signed);
+        $this->assertStringNotContainsString('ucarecdn.com', $signed, 'A token on the public host is ignored.');
         $this->assertStringContainsString($ops, $signed);
         $this->assertMatchesRegularExpression('/~hmac=[0-9a-f]{64}$/', $signed);
     }
@@ -250,5 +274,32 @@ class SecureMediaTest extends TestCase
         preg_match('/exp=(\d+)/', (string) $signed, $m);
 
         return (int) ($m[1] ?? 0);
+    }
+
+    /**
+     * 🚨 WITH NO SECURE HOST, NOTHING IS SIGNED — AND THAT IS THE POINT.
+     *
+     * Uploadcare enforces on a separate subdomain; a token appended to
+     * `ucarecdn.com` is an ignored query parameter. Returning a tokenised public
+     * URL would be worse than returning a bare one: the bare URL is visibly
+     * unprotected, the tokenised one only looks protected, and every screen and
+     * every reviewer downstream would believe it.
+     *
+     * Verified on production 12 Sep 2026 with the account setting ON: signed
+     * 200, unsigned 200 — the signature was being discarded.
+     */
+    public function test_with_no_secure_host_it_signs_nothing_rather_than_pretending(): void
+    {
+        $this->on();
+        config(['media.secure.host' => null]);
+        SecureMedia::resetWarningLatch();
+
+        $url = 'https://ucarecdn.com/'.self::UUID.'/';
+
+        $this->assertSame(
+            $url,
+            SecureMedia::sign($url),
+            'A token on the public host is ignored — handing one back is a false claim of protection.'
+        );
     }
 }

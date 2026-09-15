@@ -495,12 +495,45 @@ export default function Dashboard(props) {
         }
     };
 
-    const [openCurrency, setOpenCurrency] = useState(null);
-    useEffect(() => {
-        if (global_currency == null) {
-            setOpenCurrency(true);
+    /* 🚨 READ AT FIRST RENDER, NEVER INSIDE THE EFFECT. The add flow STRIPS
+       `?add=` from the address bar as soon as it has consumed it, and a child's
+       effects run before its parent's — so by the time an effect here looked at
+       `window.location.search` the parameter was already gone and the currency
+       ask opened over the form anyway. `addIntent` below is captured the same
+       way, for the same reason. */
+    const [arrivedWithAddIntent] = useState(() => {
+        if (typeof window === "undefined") return false;
+        try {
+            return !!new URLSearchParams(window.location.search).get("add");
+        } catch {
+            return false;
         }
     });
+
+    const [openCurrency, setOpenCurrency] = useState(null);
+    /* 🚨 THIS EFFECT HAD NO DEPENDENCY ARRAY, so it re-ran on EVERY render of the
+       busiest page in the app and re-asserted the currency panel each time. It
+       was survivable while that panel was a small centred card; since every
+       panel became full-screen (12 Sep 2026) it is the whole viewport, and it
+       was found sitting UNDERNEATH every add-a-listing sheet — so closing the
+       form left the creator looking at a currency picker they never opened.
+       It asks once, when the cookie is genuinely absent. */
+    useEffect(() => {
+        if (global_currency != null) {
+            return;
+        }
+        /* 🚨 AND IT MUST NOT FIRE OVER AN ADD FLOW. A creator arriving with an
+           explicit `?add=` intent asked for ONE thing; the currency ask opened
+           anyway and, now that both are full-screen, they stacked — the form on
+           top, a currency picker nobody opened waiting underneath it. Measured
+           live: every add intent on this page rendered two panels. The ask is
+           not lost, it is simply deferred to a load where the creator has not
+           already said what they came for. */
+        if (arrivedWithAddIntent) {
+            return;
+        }
+        setOpenCurrency(true);
+    }, [arrivedWithAddIntent, global_currency]);
 
     const updateMovement = async (updated) => {
         const array = [];
@@ -1502,15 +1535,23 @@ export default function Dashboard(props) {
                                                 </div>
                                             )}
 
-                                            {/* The setup checklist (socials · photo · bio · card · submit · payouts · ID)
-                                                sits HERE, on every tab, for the same reason the journey card above it
+                                            {/* The setup checklist (social · avatar · bio · payouts · card) sits
+                                                HERE, on every tab, for the same reason the journey card above it
                                                 does. It used to render inside the About tab only, so a creator who
                                                 landed on /{username}/shop or /wishes had no checklist at all — and the
                                                 journey card's "Add a social handle" CTA lands on this very screen.
-                                                Self-gates on the viewer being the creator and the ID check unfinished. */}
-                                            {IsloggedIn &&
-                                                auth?.user?.role == 1 &&
-                                                auth?.user?.identity_status != 1 && (
+
+                                                🚨 THE `identity_status != 1` GATE IS GONE (13 Sep 2026, client
+                                                D5/Q20), AND IT WAS HIDING THE CHECKLIST FROM THE CREATORS FURTHEST
+                                                ALONG. It meant "the ID check is unfinished" — but Spenny Piggy
+                                                removed the check on 11 Sep, so nobody is ever set to 1 again and the
+                                                ~20 creators who HAD been verified before that date were the only ones
+                                                excluded. They saw no social, photo, bio, Connect or card step at all,
+                                                on every tab, with nothing wrong in any log.
+
+                                                ⚠️ The component self-gates on each step's own state and renders
+                                                nothing once they are all done, so no second gate is needed here. */}
+                                            {IsloggedIn && auth?.user?.role == 1 && (
                                                     <div className="mb-3">
                                                         <CreatorVerification IsloggedIn={IsloggedIn} />
                                                     </div>

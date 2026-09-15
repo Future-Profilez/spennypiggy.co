@@ -57,6 +57,14 @@ class BirthdayReminderClaimTest extends TestCase
         $user->forceFill([
             'suspended_account' => 0,
             'profile_status_lock' => 2,
+            /*
+             * ⚠️ A DISCOVERABLE CREATOR IS NOW A PAYABLE ONE (DiscoveryEligibility::payable):
+             * connected, onboarding finished, not charges-disabled. Without these two
+             * columns the fixture is invisible to every Discovery surface and the class
+             * fails for a reason unrelated to what it asserts.
+             */
+            'account_id' => 'acct_test',
+            'stripe_details_submitted' => 1,
             'avatar' => (string) Str::uuid(),
             'avatar_approved' => 1,
             'date_of_birth' => self::DOB,

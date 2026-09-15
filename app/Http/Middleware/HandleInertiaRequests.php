@@ -73,15 +73,22 @@ class HandleInertiaRequests extends Middleware
                 'cover_url' => $user->cover_url,
                 'cover_approved' => $user->cover_approved,
                 'is_founder' => $user->is_founder,
-                'identity_status' => $user->identity_status,
-                // 🚨 Without this the front end cannot tell a check Stripe is deciding
-                // from a session the creator opened and abandoned — `identity_status`
-                // is 2 for both. See App\Support\IdentityCheckState.
-                'identity_session_status' => $user->identity_session_status,
-                'identity_verified_at' => $user->identity_verified_at,
-                'identity_admin_status' => $user->identity_admin_status,
-                'identity_admin_notes' => $user->identity_admin_notes,
-                'identity_admin_reviewed_at' => $user->identity_admin_reviewed_at,
+                /*
+                 * 🚨 SIX IDENTITY FIELDS LEFT THIS PAYLOAD (13 Sep 2026, client D5/Q20).
+                 * `identity_status` · `identity_session_status` · `identity_verified_at` ·
+                 * `identity_admin_status` · `identity_admin_notes` ·
+                 * `identity_admin_reviewed_at` were serialised into the `data-page`
+                 * attribute of EVERY page, for every signed-in user, and `resources/js`
+                 * read NONE of them — the Spenny Piggy identity check was removed on
+                 * 11 Sep and its screens went with it. Two of those columns
+                 * (`identity_admin_notes`, `identity_admin_reviewed_at`) are an ADMIN's
+                 * own review record about that person, shipped to their browser on every
+                 * navigation.
+                 *
+                 * ⚠️ The columns still exist and are still read in PHP by
+                 * `VerifiedBadge::COLUMNS` (vestigially) and by the archive screens in
+                 * the admin app. What is gone is publishing them to the browser.
+                 */
                 'profile_status_lock' => $user->profile_status_lock,
                 'verified_badge' => VerifiedBadge::tierFor($user),
                 'default_currency' => $user->default_currency,
@@ -179,7 +186,6 @@ class HandleInertiaRequests extends Middleware
                 'terms_accepted_at' => $user->terms_accepted_at,
                 'gender' => $user->gender,
                 'ip_address' => $user->ip_address,
-                'identity_verification_error' => $user->identity_verification_error,
                 'grace_period_started_at' => $user->grace_period_started_at,
                 'grace_period_ends_at' => $user->grace_period_ends_at,
                 'is_in_grace_period' => $user->is_in_grace_period,
@@ -275,11 +281,11 @@ class HandleInertiaRequests extends Middleware
                 'opposite_user' => $followedUser,
                 'verification_status' => $userBioStatus,
                 'is_emulated' => $request->session()->get('emulated_by_admin', false),
-                'admin_identity' => $user ? [
-                    'status' => $user->identity_admin_status,
-                    'reviewed_at' => $user->identity_admin_reviewed_at,
-                    'notes' => $user->identity_admin_notes,
-                ] : null,
+                /*
+                 * 🚨 `admin_identity` IS GONE (13 Sep 2026) — it published an admin's
+                 * identity verdict and their free-text note about this person on every
+                 * page, and `resources/js` never read it. See the note on `$leanUser`.
+                 */
                 'subscriber_only_posts_count' => $subscriber_only_posts_count,
                 'member_only_posts_count' => $member_only_posts_count,
                 // The single "what do I do next" answer, rendered by every creator-facing
