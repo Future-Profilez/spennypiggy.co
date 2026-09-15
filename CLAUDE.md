@@ -6969,6 +6969,59 @@ is mounted twice (`gifter/Gifter.jsx` and `gifter/GifterCardVerification.jsx`).
   literal path a component posts to must be a registered route. Measured clean on this app
   (23 literal paths); it exists because deleting `/dispatch` broke ten admin screens.
 
+## 🚨 AN UNPAID SUBSCRIPTION NO LONGER SUSPENDS AN ACCOUNT (14 Sep 2026, client direction)
+
+`app:auto-suspend-account` is **deleted** — command, schedule entry, test, and the one-off
+`subscription:restore-wrongly-suspended` that existed to repair it.
+
+🚨 **SELLING WAS NEVER WHAT IT STOPPED.** Every checkout already calls
+`CreatorSubscriptionService::validateCreatorSubscription`, which refuses `subscription_status`
+0 or 3 at all eleven gates including the two guest ones — so the instant a creator's plan
+lapses nobody can buy from them, with no suspension involved. The command's own docblock said
+as much. What the suspension ADDED on top was hiding the profile, blocking every write,
+pausing the supporters' subscriptions, cancelling the outgoing ones and **freezing payouts** —
+i.e. withholding money the creator earned while their subscription WAS live, over a bill
+raised afterwards. That last one is invisible from every screen: the creator reads
+"suspended", and `Risk\PayoutService::calculatePayouts` simply never lists them.
+
+- 🚨 **THE BUG THAT FORCED IT: A ~45-MINUTE GAP, EVERY MONTH, AT 00:02 UTC.** A period ends at
+  **00:00** on its end date (`$isSubscriptionActive` needs `now < subscription_end`, and
+  `Carbon::parse('2026-09-02')` is midnight), the renewal `monthly_charges` row is written
+  **~00:47 the following day**, and the sweep ran at **00:02** — inside the gap, reading a
+  perfectly healthy creator as `subscription_status = 0`. There was no auto-UNsuspend, so a
+  data gap became a permanent suspension until an admin noticed. Measured on one creator:
+  suspended 4 Jun, 5 Jun, 3 Jul and 2 Sep; an admin cleared the first three by hand, nobody
+  cleared the fourth, and £25 of settled earnings sat unpaid through the 11 Sep payout run.
+- 🚨 **IT WROTE THE BARE FLAG, SO THE BANNER ACCUSED THEM.** It never went through
+  `SuspensionService` and never set `suspension_reason_code`, so the account fell back to the
+  default reason — tone **`suspended`** (red, "a person judged this account") instead of
+  `subscription_unpaid` → tone **`limited`** (amber) with its "Renew my subscription" action.
+  A declined card was reported to the creator as misconduct, with no route out. That is
+  exactly the distinction the 4 Sep client direction drew (*"suspended is harsh for that"*).
+- ⚠️ **`subscription_unpaid` STAYS in `config/suspension.php`.** An admin may still suspend for
+  it deliberately — what is gone is the platform doing it on a timer.
+- **`subscription:release-auto-suspended [--apply] [--user=] [--max=]`** releases the accounts
+  it had taken. 🚨 **Run it on production.**
+  - **It flips `suspended_account` and clears the reason columns, and NOTHING else.**
+    `suspension:enforce` already sweeps `suspended_account = 0 AND suspension_enforced_at IS
+    NOT NULL` every five minutes and is what resumes the supporters' subscriptions and
+    releases the payout hold. Reversing those here would be a second definition of "lift".
+  - 🚨 **`suspension_enforced_at` IS NOT CLEARED** — it is the marker that sweep looks for.
+  - 🚨 **IDENTIFIED BY THE NEWEST `logs` ROW CARRYING `ReleaseSubscriptionSuspensions::LOG_MARKER`.**
+    The marker string outlives the command that wrote it; it is the only thing separating the
+    cron's suspensions from a person's. **Newest, not "carries it anywhere"** — an account the
+    cron took and an admin later re-suspended by hand is the admin's.
+  - ⚠️ **A suspension with NO log at all is named in the summary and never touched.** The cron
+    only started writing one part-way through its life, so that state is genuinely ambiguous,
+    and releasing an account somebody deliberately removed is the costlier direction. Measured
+    on the live copy: 1 released, **10 reported for a human to decide**.
+  - ⚠️ **`DB::table`, never `save()`** — `updated_at` keys the public profile cache and ORDERS
+    the admin creator-review queue, so a backfill would reshuffle that queue in one command.
+- Tests: `tests/Feature/NoSubscriptionAutoSuspensionTest.php` (10). ⚠️ Three were verified
+  FAILING against the restored bugs (the schedule re-added; the marker check removed), and the
+  controls — a dry run writing nothing, an unlogged suspension left alone — correctly stayed
+  green.
+
 ## Detailed topic index — load the skill, do not inline this content
 
 The dated feature write-ups that used to sit in this file now live as **skills**: only the

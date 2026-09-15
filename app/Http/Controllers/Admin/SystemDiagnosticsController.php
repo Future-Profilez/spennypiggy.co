@@ -1385,16 +1385,67 @@ class SystemDiagnosticsController extends Controller
         }
     }
 
+    /**
+     * Can the cache store actually accept and return a value right now?
+     *
+     * 🚨 A ROUND TRIP, NOT A `Cache::get`. A missing key and an unreachable
+     * store both return null, so reading one of the app's own keys cannot tell
+     * "the scheduler has not run" from "the cache is down" — which is exactly
+     * how a Redis blip came to be reported to an admin as a stopped cron job.
+     *
+     * ⚠️ The probe key is its own, is written with a short TTL and is forgotten
+     * immediately: this must not disturb any key a real check reads, and a
+     * diagnostic that leaves state behind is a diagnostic that changes what the
+     * next run sees.
+     *
+     * ⚠️ NEVER THROWS. It is asked precisely when the cache may be broken, and
+     * its whole purpose is to answer rather than to fail.
+     */
+    private static function cacheRoundTrips(): bool
+    {
+        $key = 'diagnostics_cache_probe';
+        $value = (string) microtime(true);
+
+        try {
+            Cache::put($key, $value, 10);
+            $read = Cache::get($key);
+            Cache::forget($key);
+
+            return $read === $value;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
     private function testScheduledTasks()
     {
         try {
             $start = microtime(true);
             $issues = [];
 
-            // Check if the schedule:run command cache key exists (set by our scheduler heartbeat)
-            $lastHeartbeat = Cache::get('scheduler_heartbeat');
+            /*
+             * 🚨 PROVE THE CACHE CAN ANSWER BEFORE BLAMING CRON.
+             *
+             * Both heartbeats below are cache keys, so an unreachable or wiped
+             * cache produces exactly the reading a dead scheduler does — and this
+             * tile then tells an admin "the cron job may not be running", sending
+             * the investigation at the one subsystem the evidence says nothing
+             * about. Seen live as a Redis blip on the writing side (Sentry
+             * JAVASCRIPT-REACT-CA).
+             *
+             * ⚠️ "CANNOT JUDGE" IS A THIRD ANSWER, not a quiet yes and not a no —
+             * the same rule `DiscoveryEligibility` follows for an unstamped
+             * column. A round-trip is the only honest test: `Cache::get` on a
+             * missing key returns null whether the store is empty or broken.
+             */
+            $cacheReadable = self::cacheRoundTrips();
 
-            if (! $lastHeartbeat) {
+            // Check if the schedule:run command cache key exists (set by our scheduler heartbeat)
+            $lastHeartbeat = $cacheReadable ? Cache::get('scheduler_heartbeat') : null;
+
+            if (! $cacheReadable) {
+                $issues[] = 'The cache is not answering, so neither heartbeat can be read — this check cannot say whether the scheduler or the queue worker is running. Fix the cache first, then re-run.';
+            } elseif (! $lastHeartbeat) {
                 $issues[] = 'No scheduler heartbeat found. The cron job may not be running. Ensure "php artisan schedule:run" runs every minute.';
             } else {
                 $minutesAgo = round((time() - $lastHeartbeat) / 60, 1);
@@ -1404,9 +1455,14 @@ class SystemDiagnosticsController extends Controller
             }
 
             // Check horizon or queue worker via cache key (if set by worker)
-            $queueWorkerAlive = Cache::get('queue_worker_heartbeat');
-            if (! $queueWorkerAlive) {
-                $issues[] = 'No queue worker heartbeat detected. Consider setting a heartbeat in a scheduled command.';
+            // ⚠️ Only asked when the cache can answer — see above. An unreadable
+            // cache already reported itself and must not also be reported as a
+            // stopped worker.
+            if ($cacheReadable) {
+                $queueWorkerAlive = Cache::get('queue_worker_heartbeat');
+                if (! $queueWorkerAlive) {
+                    $issues[] = 'No queue worker heartbeat detected. Consider setting a heartbeat in a scheduled command.';
+                }
             }
 
             $time = round((microtime(true) - $start) * 1000, 2);

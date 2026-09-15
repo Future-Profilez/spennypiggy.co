@@ -820,7 +820,7 @@ export default function AddPost({
                             name="content"
                             maxLength={CONTENT_MAX}
                             placeholder="Say something to the people who pay for this…" 
-                            className="h-[200px] p-3 w-full resize-none rounded-box-sm border-0 bg-transparent p-0 text-[17px] leading-relaxed text-black placeholder:text-black/60 focus:outline-none focus:ring-4 focus:ring-[#FF007F]/25 focus:ring-offset-2 focus:ring-offset-white lg:h-[280px]"
+                            className="h-[200px] p-3 w-full resize-none rounded-box-sm border-0 bg-transparent text-[17px] leading-relaxed text-black placeholder:text-black/60 focus:outline-none focus:ring-4 focus:ring-[#FF007F]/25 focus:ring-offset-2 focus:ring-offset-white lg:h-[280px]"
                         />
                         <div className="mt-2 flex items-start justify-between gap-3 pb-3">
  <p className="text-xs text-black/60">

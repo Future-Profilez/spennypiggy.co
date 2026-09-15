@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\UserIntro;
 use App\Services\DiscoveryService;
 use App\Support\DiscoveryEligibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -152,6 +153,56 @@ class DiscoveryPayableGateTest extends TestCase
             'A creator gate in DiscoveryService does not apply DiscoveryEligibility::payable(). '
             .'Every query that picks a creator, or a listing by its creator, must carry it — '
             .'without it that surface advertises someone no supporter can buy from, and nothing errors.'
+        );
+    }
+
+    /**
+     * 🚨 AN EAGER-LOAD CONSTRAINT IS HANDED A RELATION, NOT A BUILDER.
+     *
+     * `->whereHas('user', fn ($q) => …)` passes a `Builder`; `->with(['user' =>
+     * fn ($q) => …])` passes the `BelongsTo` itself (`Builder::eagerLoadRelation`
+     * calls `$constraints($relation)`). The two read identically at a call site
+     * and differ in type, so a `Builder` type hint on the gate turned one
+     * eager-load constraint into a **TypeError on a public page** —
+     * `/discover/creators/new/all`, a 500 for every visitor, and nothing wrong
+     * at the site that wrote it (Sentry JAVASCRIPT-REACT-C8).
+     *
+     * 🚨 IT ASSERTS THE CLAUSES STILL APPLY, not merely that nothing throws.
+     * Widening a type is one edit away from a gate that accepts anything and
+     * filters nothing — and on this class that puts creators no supporter can
+     * buy from onto a Discovery surface, which is the one thing it exists to
+     * prevent. So: the connected creator's intro loads its user, the
+     * unconnected one's resolves to NULL.
+     */
+    public function test_the_gate_filters_inside_an_eager_load_constraint(): void
+    {
+        $connected = $this->creator();
+        $unconnected = $this->creator(['account_id' => null]);
+
+        foreach ([$connected, $unconnected] as $creator) {
+            UserIntro::create([
+                'uuid' => 'intro-'.$creator->id,
+                'user_id' => $creator->id,
+                'approved' => 1,
+            ]);
+        }
+
+        $rows = UserIntro::query()
+            ->with(['user' => function ($q) {
+                // $q is the BelongsTo, exactly as the live controller receives it.
+                DiscoveryEligibility::payable($q);
+            }])
+            ->get()
+            ->keyBy('user_id');
+
+        $this->assertNotNull(
+            $rows[$connected->id]->user,
+            'A connected creator was filtered out of an eager load by the payable gate.'
+        );
+        $this->assertNull(
+            $rows[$unconnected->id]->user,
+            'The payable gate did not filter inside the eager-load constraint — '
+            .'widening its type must not turn it into a rule that accepts everything.'
         );
     }
 }

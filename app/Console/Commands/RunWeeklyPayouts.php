@@ -226,9 +226,29 @@ class RunWeeklyPayouts extends Command
                     .'Either everything has already been paid out, or no sales have settled.';
             }
 
+            // 🚨 THE PAUSED COUNT ON ITS OWN SENDS THE READER TO THE WRONG PLACE.
+            // calculatePayouts() drops a paused creator BEFORE it counts anything, so
+            // when the unpaid payments all belong to paused creators the run is empty
+            // for exactly that reason — and a bare "N creator(s) have payouts paused"
+            // beside a separate unpaid figure reads as two unrelated facts. On
+            // 14 Sep 2026 that cost a whole investigation: every unpaid payment on the
+            // platform belonged to one suspended account, and nothing said so.
+            $ownedByPaused = Payment::whereNull('payments.payout_run_id')
+                ->whereIn('payments.status', ['succeeded', 'review_hold'])
+                ->whereIn(
+                    'payments.creator_id',
+                    User::whereNotNull('payout_paused_at')->select('uuid')
+                )
+                ->count();
+
+            $pausedLine = $ownedByPaused === $unpaid
+                ? "ALL {$unpaid} belong to creator(s) whose payouts are paused, so the run had nobody to pay. "
+                : "{$ownedByPaused} of them belong to creator(s) whose payouts are paused. ";
+
             return "There are {$unpaid} unpaid payment(s), but none qualified. "
                 ."Of those, {$insideHold} are still inside an earning week that has not closed and been held. "
-                ."{$paused} creator(s) have payouts paused. "
+                .$pausedLine
+                ."{$paused} creator(s) have payouts paused in total. "
                 .'Remaining reasons are per-payment: a physical shop order not yet delivered, '
                 .'a timed task not yet accepted, or a net below the £1 minimum.';
         } catch (\Throwable $e) {

@@ -33,7 +33,32 @@ class Kernel extends ConsoleKernel
                     // \Illuminate\Support\Facades\Cache::store('dynamodb')->put('scheduler_last_run_dynamodb', now()->toDateTimeString(), 600);
                 }
             } catch (\Throwable $e) {
-                Log::error('Scheduler heartbeat failed to write cache', [
+                /*
+                 * 🚨 WARNING, NOT ERROR — THE SCHEDULER RAN. THE CACHE DID NOT
+                 * ACCEPT A DIAGNOSTIC.
+                 *
+                 * This write is read by exactly one thing: the "scheduled tasks"
+                 * tile on the diagnostics page. Nothing waits on it and no task
+                 * is skipped when it fails — so at `error` level a one-minute
+                 * Redis blip ("Can't communicate with any node in the cluster",
+                 * Sentry JAVASCRIPT-REACT-CA) files a production issue reporting
+                 * the SCHEDULER as broken, which is the one thing this line
+                 * proves is working: it only runs because the closure ran.
+                 *
+                 * ⚠️ DOWNGRADED, NEVER SILENCED — the house rule. It still logs
+                 * and still rides into Sentry as a breadcrumb on whatever fails
+                 * next.
+                 *
+                 * 🚨 AND THERE IS DELIBERATELY NO ESCALATE-AFTER-N HERE, unlike
+                 * `TransientDatabaseError`. That counter lives in the cache, and
+                 * the cache is the thing that is broken — a rule whose own state
+                 * store is the failing component cannot count, and "an
+                 * unreachable cache answers escalate" would restore the
+                 * every-minute issue exactly. A cache that is genuinely down
+                 * announces itself on every request path in the app, far louder
+                 * and with more in it than a heartbeat noticing it.
+                 */
+                Log::warning('Scheduler heartbeat failed to write cache', [
                     'error' => $e->getMessage(),
                 ]);
             }
@@ -163,7 +188,21 @@ class Kernel extends ConsoleKernel
             ->everyFiveMinutes()
             ->withoutOverlapping();
 
-        $schedule->command('app:auto-suspend-account')->daily()->withoutOverlapping(4);
+        /*
+         * 🚨 `app:auto-suspend-account` IS GONE (14 Sep 2026, client direction).
+         * An unpaid platform subscription no longer suspends a creator. Selling
+         * was never what that command stopped — every checkout already refuses a
+         * creator whose `subscription_status` is 0 or 3, in
+         * `CreatorSubscriptionService::validateCreatorSubscription`, at all
+         * eleven gates including the two guest ones. What the suspension added
+         * on top was hiding the profile, pausing their supporters'
+         * subscriptions, cancelling their outgoing ones and FREEZING PAYOUTS —
+         * i.e. withholding money already earned under a subscription that was
+         * live at the time of the sale, over a bill raised afterwards.
+         *
+         * ⚠️ Do not reinstate it. See NoSubscriptionAutoSuspensionTest, and
+         * `subscription:release-auto-suspended` for the accounts it had taken.
+         */
 
         // Capture each period's standing once a day. Rank movement on the
         // leaderboard is measured against these captures, so a day missed is a

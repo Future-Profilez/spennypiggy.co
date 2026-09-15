@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -84,7 +85,7 @@ class DiscoveryEligibility
     /** @var array<string, bool> */
     private static array $columnCache = [];
 
-    public static function scope(Builder $query): Builder
+    public static function scope(Builder|Relation $query): Builder|Relation
     {
         $query
             ->where('role', 1)
@@ -162,7 +163,28 @@ class DiscoveryEligibility
      * arrived 4 Sep 2026 and the apps share one database; a missing column must
      * degrade to "cannot judge", never throw on a public page.
      */
-    public static function payable(Builder $query): Builder
+    /**
+     * 🚨 A RELATION IS NOT A BUILDER, AND AN EAGER-LOAD CONSTRAINT IS HANDED A
+     * RELATION.
+     *
+     * `->whereHas('user', fn ($q) => …)` passes a `Builder`; `->with(['user' =>
+     * fn ($q) => …])` passes the `BelongsTo` itself (`Builder::eagerLoadRelation`
+     * calls `$constraints($relation)`). The two read identically at a call site
+     * and differ in type, so a `Builder` hint here turns one eager-load
+     * constraint into a **TypeError on a public page** — measured live on
+     * `/discover/creators/new/all` (Sentry JAVASCRIPT-REACT-C8), a 500 for every
+     * visitor, with nothing wrong at the site that wrote it.
+     *
+     * ⚠️ Nothing else changes: `Relation::__call` forwards every builder method
+     * and returns the Relation for a fluent call, so each clause below applies
+     * exactly as it does to a Builder — including the nested closure, which
+     * receives the underlying Builder either way.
+     *
+     * ⚠️ WIDENED HERE RATHER THAN FIXED AT THE CALL SITE. This class is the one
+     * definition and is applied at ~38 sites; the next eager-load constraint to
+     * ask for it would be the same 500, and the build cannot see it coming.
+     */
+    public static function payable(Builder|Relation $query): Builder|Relation
     {
         $query
             ->where('account_id', 'like', 'acct%')
