@@ -6221,7 +6221,43 @@ class StripeWebhookController extends Controller
 
             if (! $isPlatformPayout && $payout->status !== 'canceled' && $payout->status !== 'failed') {
                 $accountId = $event->account ?? null;
-                Log::critical("Stripe Risk: Unexpected payout created {$payout->id} on account {$accountId}.");
+
+                /*
+                 * 🚨 ONE PAYOUT IS JUDGED ONCE, AND THE REASON IS AN ADMIN'S
+                 * DECISION — NOT THE NOISE.
+                 *
+                 * `payout.created` is commented out of the dispatch above, so this
+                 * runs on `payout.paid` AND `payout.in_transit` — and a payout
+                 * passes through BOTH, days apart (a standard GBP payout is
+                 * `in_transit` for the whole banking wait). Without this claim the
+                 * same payout suspends the same creator twice.
+                 *
+                 * 🚨 THE SECOND FIRE IS THE EXPENSIVE ONE. `suspend()` is
+                 * idempotent only while the account is still suspended: an admin
+                 * who investigates the `in_transit` alert, decides the creator did
+                 * nothing wrong and LIFTS the suspension is then silently
+                 * overruled when `paid` lands days later and suspends them again —
+                 * for the payout that admin has already judged. Same rule as a
+                 * resolved user flag, which a recurrence never reopens.
+                 *
+                 * ⚠️ The claim is `Cache::add` — atomic, so two webhook workers
+                 * racing on the same payout cannot both pass. 30 days comfortably
+                 * outlives a payout's lifecycle. ⚠️ It is CACHE, so a flush inside
+                 * that window can let a late `paid` re-judge; durable storage would
+                 * mean a new table for one boolean, and the alert below is
+                 * `critical` either way. Worth knowing, not worth a migration.
+                 *
+                 * ⚠️ The claim is taken BEFORE the alert, so the log line is not
+                 * duplicated either — an alert repeated days later on one event
+                 * reads as a second incident.
+                 */
+                if (! Cache::add('stripe_risk:payout_judged:'.$payout->id, 1, now()->addDays(30))) {
+                    return;
+                }
+
+                // ⚠️ Names the event that actually arrived. `payout.created` is not
+                // dispatched, so "created" here described a webhook nobody handles.
+                Log::critical("Stripe Risk: Unexpected payout {$payout->id} on account {$accountId} (seen on {$eventType}).");
 
                 // ⚠️ An AUTOMATIC payout is Stripe's own scheduler, not the
                 // creator. A creator cannot create one — only a payout schedule
