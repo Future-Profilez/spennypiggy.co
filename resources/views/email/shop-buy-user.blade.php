@@ -37,9 +37,8 @@
 
             {{-- Heading --}}
             <tr>
-                <td align="center"
-                    style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
-                           line-height:30px;padding:0 0 10px 0;text-align:center;">
+                <td align="center" style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;line-height:30px;padding:0 0 10px 0;   
+                    text-align:center;">
                     Purchase Confirmed!
                 </td>
             </tr>

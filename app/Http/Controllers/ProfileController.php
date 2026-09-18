@@ -59,7 +59,6 @@ use App\StripeControl;
 use App\Support\Badges;
 use App\Support\CreatorAge;
 use App\Support\InvisibleText;
-use App\Support\PresetCovers;
 use App\Support\ProfileAutoApproval;
 use App\Support\ProfileSelfCheck;
 use App\Support\SecureMedia;
@@ -599,12 +598,9 @@ class ProfileController extends Controller
                         $logs->save();
                     }
                 }
-                // SFW gate on profile media. Both are uploaded unapproved and wait
-                // for an admin either way; the scan is what tells the reviewer
-                // which photo to look at hardest, and writes the reason the
-                // creator sees. Only dispatched when the upload actually changed,
-                // so an unrelated profile edit does not re-scan (and re-flag) a
-                // photo an admin already cleared.
+                // Profile photos are published immediately, then the existing scan
+                // can retract one if it violates the media rules. Cover images use
+                // the same immediate-publish behavior without an approval queue.
                 //
                 if ($avatarChanged && ! empty($user->avatar)) {
                     // 🚨 A NEW image gets a FRESH verdict. The scan only ever
@@ -636,30 +632,8 @@ class ProfileController extends Controller
                     );
                 }
 
-                // A curated cover is never re-scanned: it has already been
-                // reviewed, and a false positive would pull the same banner off
-                // every profile using it, on an unrelated profile edit.
-                if ($coverChanged && ! empty($user->cover) && ! PresetCovers::isPreApproved($user->cover)) {
-                    // Same fresh-verdict rule as the avatar above.
-                    if ($user->moderation_asset === 'cover') {
-                        $user->forceFill([
-                            'moderation_asset' => null,
-                            'moderation_reason' => null,
-                        ])->save();
-                    }
-
-                    CheckMediaModeration::dispatch(
-                        User::class,
-                        $user->id,
-                        $user->cover,
-                        ['cover_approved' => 0],
-                        'cover',
-                        ['cover_approved' => 1]
-                    );
-                }
-
-                // Bio and handles approve synchronously; the photo approves when its
-                // scan returns and calls this again. Whichever lands last goes live.
+                // Bio, handles and covers approve synchronously; only the profile photo
+                // remains subject to the existing scan/retraction path.
                 ProfileAutoApproval::activateIfComplete($user->fresh());
 
                 $this->userProfileService->clearUserCaches($user->username, $user->id);
