@@ -686,31 +686,31 @@ MD,
                 'summary' => 'Listings go on sale the moment you save them. One is hidden only when an automatic check flags something.',
                 'related' => ['what-content-is-allowed', 'words-you-cannot-use', 'schedule-a-listing'],
                 'body' => <<<'MD'
-Your listing goes on sale **the moment you save it**. Nobody approves it first and there is no queue to wait in.
+                Your listing goes on sale **the moment you save it**. Nobody approves it first and there is no queue to wait in.
 
-A listing is hidden from buyers only when an automatic check flags something on it. When that happens the card says **Needs a fix** and names the reason.
+                A listing is hidden from buyers only when an automatic check flags something on it. When that happens the card says **Needs a fix** and names the reason.
 
-## What gets checked
+                ## What gets checked
 
-- **Images and files** — an automatic scan of the picture buyers see *and* of the file they pay for.
-- **Your words** — the title, description and reward text are checked against the platform's content rules.
+                - **Images and files** — an automatic scan of the picture buyers see *and* of the file they pay for.
+                - **Your words** — the title, description and reward text are checked against the platform's content rules.
 
-The checks run as you save. A picture scan takes a few seconds, so a listing can go on sale and then be pulled back if the scan finds something.
+                The checks run as you save. A picture scan takes a few seconds, so a listing can go on sale and then be pulled back if the scan finds something.
 
-## How to make it live again
+                ## How to make it live again
 
-Fix the thing the reason names and save. It goes back on sale straight away — there is nothing to submit and nobody to wait for.
+                Fix the thing the reason names and save. It goes back on sale straight away — there is nothing to submit and nobody to wait for.
 
-If you think a check got it wrong, use **Get help** on the listing itself and a person will look.
+                If you think a check got it wrong, use **Get help** on the listing itself and a person will look.
 
-## Why an item can be flagged twice
+                ## Why an item can be flagged twice
 
-A Shop listing has both a product image and a paid reward file, and both are scanned — so an item can be flagged for either. The reason names which one.
+                A Shop listing has both a product image and a paid reward file, and both are scanned — so an item can be flagged for either. The reason names which one.
 
-## If your listing is scheduled
+                ## If your listing is scheduled
 
-A scheduled listing still goes live at the time you set. Fixing a flag before then does not publish it early.
-MD,
+                A scheduled listing still goes live at the time you set. Fixing a flag before then does not publish it early.
+                MD,
             ],
             [
                 'slug' => 'schedule-a-listing',
@@ -720,32 +720,32 @@ MD,
                 'summary' => 'Set a publish time on any listing from My Listings. It goes on sale at that minute, whether or not you are at a keyboard.',
                 'related' => ['why-is-my-listing-under-review', 'what-can-i-sell'],
                 'body' => <<<'MD'
-Any listing can be given a publish time, set from **My Listings** rather than from the individual forms. A schedule is a property of your catalogue, so it lives in one place.
+                Any listing can be given a publish time, set from **My Listings** rather than from the individual forms. A schedule is a property of your catalogue, so it lives in one place.
 
-## What happens
+                ## What happens
 
-Until the time you set, the listing is invisible to everyone but you. Nobody can find it, nobody can buy it, and it does not appear on your profile or in Discover. At the minute you chose, it goes on sale.
+                Until the time you set, the listing is invisible to everyone but you. Nobody can find it, nobody can buy it, and it does not appear on your profile or in Discover. At the minute you chose, it goes on sale.
 
-## It does not depend on anything running
+                ## It does not depend on anything running
 
-Visibility is decided by the clock. There is no job that has to fire for your drop to happen.
+                Visibility is decided by the clock. There is no job that has to fire for your drop to happen.
 
-## Review still applies
+                ## Review still applies
 
-A scheduled listing is reviewed normally. If it reaches its publish time still unapproved, it goes live when it is approved instead.
+                A scheduled listing is reviewed normally. If it reaches its publish time still unapproved, it goes live when it is approved instead.
 
-## What you see
+                ## What you see
 
-Your own screens show a "Goes live" badge on anything scheduled, so a listing that nobody can buy yet never looks identical to one that is selling.
+                Your own screens show a "Goes live" badge on anything scheduled, so a listing that nobody can buy yet never looks identical to one that is selling.
 
-## Limits
+                ## Limits
 
-Up to 90 days ahead. Setting a time in the past simply publishes it now.
+                Up to 90 days ahead. Setting a time in the past simply publishes it now.
 
-## It still counts as having listed
+                ## It still counts as having listed
 
-Scheduling your first item counts — you will not be nudged to "publish your first item" while one is queued.
-MD,
+                Scheduling your first item counts — you will not be nudged to "publish your first item" while one is queued.
+                MD,
             ],
             [
                 'slug' => 'price-limits',

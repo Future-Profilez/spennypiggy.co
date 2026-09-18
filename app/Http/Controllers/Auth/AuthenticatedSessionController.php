@@ -446,6 +446,7 @@ class AuthenticatedSessionController extends Controller
                 'email',
                 'date_of_birth',
                 'ip_address',
+                'identity_admin_status',
                 'identity_admin_notes',
                 'kyc_error',
                 'identity_verification_error',
