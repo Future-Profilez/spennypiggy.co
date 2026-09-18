@@ -13,7 +13,7 @@ module.exports = {
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/resources/js/$1',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
+    '\\.(css|less|scss|sass)$': '<rootDir>/tests/javascript/__mocks__/styleMock.js'
   },
   /*
    * Babel options are declared INLINE with `configFile: false` on purpose.

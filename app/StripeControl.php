@@ -4,6 +4,7 @@ namespace App;
 
 use App\Models\User;
 use App\Support\StripeRequirementLabels;
+use App\Support\StripeUrl;
 use App\Support\UserFlagger;
 use Carbon\Carbon;
 use Exception;
@@ -1443,6 +1444,15 @@ class StripeControl
     public static function createProduct(array $payload, string $connectedAccountId)
     {
         self::setClient();
+
+        /*
+         * 🚨 `url` and `images` are built from CREATOR TEXT at every call site, and
+         * Stripe refuses a raw non-ASCII byte in either — failing the whole create,
+         * not just the field. Sanitised HERE rather than at the six call sites,
+         * because the one that forgets is a creator who cannot publish.
+         */
+        $payload = StripeUrl::sanitiseProductPayload($payload);
+
         try {
             return self::$client->products->create(
                 $payload,
@@ -1555,6 +1565,10 @@ class StripeControl
     public static function updateSubscription($productId, $payload, $accountId = null)
     {
         self::setClient();
+
+        // ⚠️ Despite the name this updates a PRODUCT, so it carries the same
+        // creator-built `url`/`images` as createProduct and needs the same guard.
+        $payload = StripeUrl::sanitiseProductPayload($payload);
 
         try {
             if (! $accountId) {

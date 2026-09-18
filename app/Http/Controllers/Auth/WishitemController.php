@@ -882,6 +882,13 @@ class WishitemController extends Controller
         // dd($request->all());
         try {
 
+            /*
+             * ⚠️ `alpha_dash` IS DELIBERATE, NOT A MISTAKE — a category becomes a
+             * discovery tag in a URL (`discover_all_wishes` reads `?tag=` and turns
+             * dashes back into spaces), so a space here would break the link the
+             * category creates. The rule stays; what changes is that the creator is
+             * told what to type instead of being read Laravel's own sentence.
+             */
             $request->validate([
                 'category' => [
                     'required',
@@ -890,6 +897,10 @@ class WishitemController extends Controller
                     'max:30',
                     'alpha_dash',
                 ],
+            ], [
+                'category.alpha_dash' => 'Use letters, numbers and dashes — write "art-supplies" rather than "art supplies".',
+                'category.min' => 'A category needs at least 3 characters.',
+                'category.max' => 'A category can be at most 30 characters.',
             ]);
 
             $blockedWord = Helpers::checkBlockData($request);
@@ -923,14 +934,33 @@ class WishitemController extends Controller
                 'status' => true,
                 'msg' => 'Category Saved.',
             ]);
+        } catch (ValidationException $e) {
+            /*
+             * 🚨 A REFUSED INPUT IS THE CALLER'S, AND MUST NOT BE AN ALERT.
+             * `ValidationException` implements Throwable, so the generic catch below
+             * used to swallow it — logging every creator typo at ERROR level, which
+             * the `sentry` channel carries, and answering with
+             * "Error saving category: The category field must only contain letters…",
+             * a system sentence that reads as the site being broken. Sentry
+             * JAVASCRIPT-REACT-CH. Same fault, same fix, as ProfileController::updateProfile.
+             *
+             * ⚠️ The JSON SHAPE is deliberately unchanged (`status` + `msg`) — the caller
+             * in Auth/Wishlist.jsx reads `res.data.msg` and would show nothing for a 422.
+             */
+            return response()->json([
+                'status' => false,
+                'msg' => $e->validator->errors()->first('category') ?: 'That category could not be saved.',
+            ]);
         } catch (Exception $e) {
+            report($e);
+
             Log::error('Error saving user category', [
                 'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'status' => false,
-                'msg' => 'Error saving category: '.$e->getMessage(),
+                'msg' => 'That category could not be saved. Please try again.',
             ]);
         }
     }

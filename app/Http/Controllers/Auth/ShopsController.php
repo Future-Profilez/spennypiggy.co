@@ -240,6 +240,24 @@ class ShopsController extends Controller
         ];
     }
 
+    /**
+     * The slug half of a shop item's public url.
+     *
+     * 🚨 THE TWO CALL SITES USED TO DISAGREE — create slugged spaces to `-` and
+     * update to `_`, so editing an item silently moved the url Stripe holds.
+     * 🚨 AND BOTH POINTED AT `/shop/{slug}/{uuid}`, WHICH IS NOT A ROUTE: the
+     * real one is `shop/item/{slug}/{uuid}` (`single-shop-list`), so every
+     * product link in every connected creator's Stripe dashboard was a 404.
+     *
+     * ⚠️ `Str::slug` transliterates, so it always returns ASCII — a name written
+     * in a script it cannot transliterate comes back empty, hence the fallback.
+     * The route resolves on the uuid, so the slug is only ever readability.
+     */
+    private static function itemSlug(?string $name): string
+    {
+        return Str::slug((string) $name) ?: 'item';
+    }
+
     public function addShopItems(Request $request)
     {
         $request->validate(
@@ -481,7 +499,7 @@ class ShopsController extends Controller
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
-        $slug = strtolower(str_replace(' ', '-', $shop->name));
+        $slug = self::itemSlug($shop->name);
         $productPayload = [
             'name' => "Shop Item: {$shop->name} (Total value including all fees)",
             'images' => [$shop->perma_link],
@@ -489,7 +507,7 @@ class ShopsController extends Controller
                 'currency' => $currency,
                 'unit_amount_decimal' => round($createpriceid * $multiplier, 2, PHP_ROUND_HALF_UP),
             ],
-            'url' => env('APP_URL')."/shop/$slug/$shop->uuid",
+            'url' => rtrim(config('app.url'), '/')."/shop/item/$slug/$shop->uuid",
             'metadata' => [
                 'shop_item_name' => $shop->name,
                 'creator_id' => $user->id,
@@ -715,14 +733,14 @@ class ShopsController extends Controller
             $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
             $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
-            $slug = strtolower(str_replace(' ', '_', $shop->name));
+            $slug = self::itemSlug($shop->name);
             // NOTE: no `default_price_data` here — that key is accepted by Stripe's product
             // CREATE endpoint only. On update the price is minted separately below and the
             // product is pointed at it with `default_price`.
             $productPayload = [
                 'name' => 'Total value of item including all fees',
                 'images' => [$shop->perma_link],
-                'url' => env('APP_URL')."/shop/$slug/$shop->uuid",
+                'url' => rtrim(config('app.url'), '/')."/shop/item/$slug/$shop->uuid",
                 'metadata' => [
                     'shop_item_name' => $shop->name,
                     'creator_id' => $user->id,
@@ -1024,6 +1042,9 @@ class ShopsController extends Controller
 
     public function saveUserShopCategory(Request $request)
     {
+        // ⚠️ Same rule and same wording as the wishlist category box
+        // (WishitemController::saveUserCategory) — one creator, two forms, and
+        // Laravel's own sentence reads as a system fault rather than a rule.
         $request->validate([
             'category' => [
                 'required',
@@ -1032,6 +1053,10 @@ class ShopsController extends Controller
                 'max:30',
                 'alpha_dash',
             ],
+        ], [
+            'category.alpha_dash' => 'Use letters, numbers and dashes — write "art-supplies" rather than "art supplies".',
+            'category.min' => 'A category needs at least 3 characters.',
+            'category.max' => 'A category can be at most 30 characters.',
         ]);
 
         $checkdata = Helpers::checkBlockData($request);

@@ -103,6 +103,13 @@ function parsePerks(raw) {
 
 /** The columns to submit, given the editor's value. */
 export function rewardToPayload(value, fileColumns = {}) {
+    /* ⚠️ SIX FORMS SHARE THIS. A caller that hands over a missing reward used to
+       throw here and take its whole page down on the Publish tap; normalised, the
+       worst case is a payload the server refuses with a field error the creator
+       can read. The real fix for that slip belongs at the caller — this is the
+       floor under it, not a substitute. */
+    value = value || emptyReward();
+
     const {
         file = "content_file",
         mime = "content_file_type",
@@ -135,6 +142,10 @@ export function rewardToPayload(value, fileColumns = {}) {
 // late-server-error the inline validation exists to prevent.
 export function validateReward(value, { showPerks, recurring = false } = {}) {
     const requirePerks = showPerks ?? recurring;
+
+    // ⚠️ Same floor as rewardToPayload: a missing reward is an INVALID one, and
+    // saying so is what the creator needs. Throwing here crashed the step.
+    value = value || emptyReward();
 
     if (!value.title?.trim()) return "Add a reward title — supporters see this before they pay.";
     if (value.title.trim().length > REWARD_TITLE_MAX)

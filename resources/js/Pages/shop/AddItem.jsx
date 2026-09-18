@@ -28,6 +28,7 @@ import { ShoppingBagIcon } from "@animateicons/react/lucide";
 import { FileText, Package } from "lucide-react";
 import PriceFormat from "@/includes/PriceFormat";
 import RewardEditor, {
+    emptyReward,
     rewardFromItem,
     rewardToPayload,
     validateReward,
@@ -394,7 +395,14 @@ export default function AddItem(props) {
             price: "",
         });
         setThumb(null);
-        setReward(null);
+        /* 🚨 `null` IS NOT AN EMPTY REWARD — it is a missing one, and everything
+           downstream reads the object's shape. After publishing once, the reset
+           left `reward` null and the NEXT publish threw
+           "null is not an object (evaluating 'e.type')" inside rewardToPayload,
+           taking the whole form down on the Publish tap (Sentry
+           JAVASCRIPT-REACT-CG). `emptyReward()` is the same value the form
+           starts life with. */
+        setReward(emptyReward());
         setCheckboxes([]);
         setQuestion("");
         setSlots("");
