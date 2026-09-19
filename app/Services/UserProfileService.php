@@ -1266,6 +1266,12 @@ class UserProfileService
      */
     public function overviewForViewer(array $overview, User $creator): array
     {
+        if (Auth::check() && Auth::id() === $creator->id && $creator->role == 1) {
+            $overview['piggy_pots'] = PiggyPot::where('user_id', $creator->id)
+                ->whereIn('status', ['active', 'completed', 'expired', 'moderation_hold'])
+                ->count();
+        }
+
         if ($this->earningsVisibleTo($creator)) {
             return $overview;
         }
@@ -1594,6 +1600,7 @@ class UserProfileService
         // ⚠️ The pre-v2 key is forgotten too: a row cached before the deploy is still
         // live for its TTL and still readable by anything that has not been rebuilt.
         Cache::forget('user_profile_basic_'.$username);
+        Cache::forget('profile_overview_v3_'.$userId);
         Cache::forget('user_followers_count_'.$userId);
         Cache::forget('user_following_count_'.$userId);
 
